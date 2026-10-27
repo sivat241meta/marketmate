@@ -1,0 +1,45 @@
+{
+  "id": "chatcmpl-01a17e65-7878-761b-843c-c324a5045238",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "```json\n[\n  {\n    \"item_tamil\": \"thakkali\",\n    \"item_english\": \"tomato\",\n    \"unit\": \"per kilo\",\n    \"price_inr\": 18,\n    \"available_quantity\": \"40 kilo\"\n  },\n  {\n    \"item_english\": \"big onion\",\n    \"unit\": \"per kilo\",\n    \"price_inr\": 25\n  },\n  {\n    \"item_tamil\": \"chinna vengayam\",\n    \"item_english\": \"small onion / shallot\",\n    \"unit\": \"per kilo\",\n    \"price_inr\": 40\n  },\n  {\n    \"item_tamil\": \"urulaikizhangu\",\n    \"item_english\": \"potato\",\n    \"unit\": \"per kilo\",\n    \"price_inr\": 30,\n    \"note\": \"seller corrected to muppathu / 30\"\n  },\n  {\n    \"item_english\": \"carrot\",\n    \"unit\": \"per kaal kilo / quarter kilo\",\n    \"price_inr\": 15\n  },\n  {\n    \"item_tamil\": \"vazhaipazham\",\n    \"item_english\": \"banana\",\n    \"unit\": \"per dozen\",\n    \"price_inr\": 60\n  },\n  {\n    \"item_tamil\": \"thengai\",\n    \"item_english\": \"coconut\",\n    \"unit\": \"per piece\",\n    \"price_inr\": 30\n  }\n]\n```",
+        "refusal": null,
+        "role": "assistant",
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": null
+      }
+    }
+  ],
+  "created": 1793121941,
+  "model": "muse-spark-1.3",
+  "object": "chat.completion",
+  "metadata": null,
+  "moderation": null,
+  "service_tier": null,
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 2988,
+    "prompt_tokens": 126,
+    "total_tokens": 3114,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": null,
+      "audio_tokens": null,
+      "reasoning_tokens": 2663,
+      "rejected_prediction_tokens": null,
+      "text_tokens": null
+    },
+    "prompt_tokens_details": {
+      "audio_tokens": null,
+      "cache_write_tokens": null,
+      "cached_tokens": 0,
+      "image_tokens": null,
+      "text_tokens": null
+    }
+  }
+}

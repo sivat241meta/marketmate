@@ -1,0 +1,11 @@
+{"clip":"synth1.mp4",
+ "note":"Synthetic test: Wikimedia Commons photos + macOS voices (Vani = Tamil, Rishi = Indian English). Clean computer speech, so results will look better than a real market. Photo 4 shows printed price tags in euros; they must never be read as prices.",
+ "items":[
+  {"name_en":"tomato","variety":"bengaluru","price":18,"per_amount":1,"unit":"kg","qty":40,"qty_unit":"kg","speech_ms":[500,4500],"expect_flags":[]},
+  {"name_en":"onion","variety":null,"price":25,"per_amount":1,"unit":"kg","qty":null,"qty_unit":null,"speech_ms":[6500,9100],"expect_flags":["QTY_MISSING"]},
+  {"name_en":"small onion","variety":null,"price":40,"per_amount":1,"unit":"kg","qty":null,"qty_unit":null,"speech_ms":[11100,13300],"expect_flags":["SOUND_ALIKE","QTY_MISSING"]},
+  {"name_en":"potato","variety":null,"price":35,"also_said":[30],"per_amount":1,"unit":"kg","qty":null,"qty_unit":null,"speech_ms":[15300,19400],"expect_flags":["TWO_PRICES","QTY_MISSING"]},
+  {"name_en":"carrot","variety":null,"price":15,"per_amount":250,"unit":"g","qty":null,"qty_unit":null,"speech_ms":[21400,23800],"expect_flags":["QTY_MISSING"]},
+  {"name_en":"banana","variety":null,"price":60,"per_amount":1,"unit":"dozen","qty":null,"qty_unit":null,"speech_ms":[25800,28200],"expect_flags":["SOUND_ALIKE","QTY_MISSING"]},
+  {"name_en":"coconut","variety":null,"price":30,"per_amount":1,"unit":"piece","qty":null,"qty_unit":null,"speech_ms":[30100,31800],"expect_flags":["QTY_MISSING"]}
+ ]}

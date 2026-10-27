@@ -98,7 +98,7 @@ Task 21 is stretch.
 - Git identity: `sivat241meta` / `348483894+sivat241meta@users.noreply.github.com`.
 - Remote: `github.com/sivat241meta/marketmate`, **private until Task 20**, then public.
   Muse Code commits but does **not** push: git network access is blocked in its sandbox. The
-  reviewer pushes after approving each task. Never force-push.
+  The owner pushes from their own terminal after review. Never force-push.
 - Every commit message written by Muse Code ends with the trailer line
   `Built-with: Muse Code`, so the history shows the build tool.
 
