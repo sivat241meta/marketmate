@@ -86,9 +86,9 @@ def _proof_times(quote: str, turn_ids: list, transcript: Transcript) -> tuple[in
 def parse_extract_json(data: dict, transcript: Transcript) -> list[DraftItem]:
     """Build DraftItems from model JSON; unknown turns fall back to quote search."""
     items: list[DraftItem] = []
-    for raw in data.get("items", []):
-        name_en = raw.get("name_en", "other")
-        name_spoken = raw.get("name_spoken", "")
+    for raw in data.get("items") or []:
+        name_en = raw.get("name_en") or "other"
+        name_spoken = raw.get("name_spoken") or ""
         price_lines = [
             PriceLine(
                 price=_decimal_or_none(line.get("price")),
@@ -96,10 +96,10 @@ def parse_extract_json(data: dict, transcript: Transcript) -> list[DraftItem]:
                 unit=line.get("unit"),
                 said=line.get("said", ""),
             )
-            for line in raw.get("prices", [])
+            for line in raw.get("prices") or []
         ]
-        quote = raw.get("quote", "")
-        turn_ids = list(raw.get("turn_ids", []))
+        quote = raw.get("quote") or ""
+        turn_ids = list(raw.get("turn_ids") or [])
         start_ms, end_ms = _proof_times(quote, turn_ids, transcript)
         variety = raw.get("variety")
         if isinstance(variety, str):

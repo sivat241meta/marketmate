@@ -109,6 +109,25 @@ def test_name_ta_from_canonical(transcript_3_turns):
     assert CANONICAL_NAMES["tomato"] == "தக்காளி"
 
 
+def test_null_items_means_no_items(transcript_3_turns):
+    assert parse_extract_json({"items": None}, transcript_3_turns) == []
+
+
+def test_null_prices_means_no_price_lines(transcript_3_turns):
+    data = {"items": [dict(CANNED["items"][0], prices=None)]}
+    (item,) = parse_extract_json(data, transcript_3_turns)
+    assert item.name_en == "tomato"
+    assert item.price_lines == []
+
+
+def test_null_turn_ids_falls_back_to_quote(transcript_3_turns):
+    data = {"items": [dict(CANNED["items"][0], turn_ids=None)]}
+    (item,) = parse_extract_json(data, transcript_3_turns)
+    assert item.proof.turn_ids == []
+    assert item.proof.start_ms == transcript_3_turns.turns[2].start_ms
+    assert item.proof.end_ms == transcript_3_turns.turns[2].end_ms
+
+
 def test_null_price_stays_none(transcript_3_turns):
     assert parse_extract_json(CANNED_NO_PRICE, transcript_3_turns)[0].price_lines[0].price is None
 

@@ -146,8 +146,8 @@ def parse_update_json(data: dict, transcript: Transcript,
     previous = {item.name_en: item.price_lines[0] for item in current
                 if item.price_lines}
     changes: list[Change] = []
-    for raw in data.get("changes", []):
-        name_en = raw.get("name_en", "other")
+    for raw in data.get("changes") or []:
+        name_en = raw.get("name_en") or "other"
         action = raw.get("action", "set_price")
         if action not in ACTIONS:
             action = "set_price"
@@ -158,10 +158,10 @@ def parse_update_json(data: dict, transcript: Transcript,
                 unit=line.get("unit"),
                 said=line.get("said", ""),
             )
-            for line in raw.get("prices", [])
+            for line in raw.get("prices") or []
         ]
-        quote = raw.get("quote", "")
-        turn_ids = list(raw.get("turn_ids", []))
+        quote = raw.get("quote") or ""
+        turn_ids = list(raw.get("turn_ids") or [])
         start_ms, end_ms = _proof_times(quote, turn_ids, transcript)
         change = Change(
             name_en=name_en,

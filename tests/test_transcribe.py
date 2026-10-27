@@ -33,6 +33,12 @@ def test_empty_turns_become_one_turn():
     assert t.turns == [Turn(1, 0, 4000, "thakkali 18")]
 
 
+def test_null_turns_become_one_turn():
+    t = transcript_from_json(
+        {"transcript": "thakkali 18", "audioDurationMs": 4000, "turns": None})
+    assert t.turns == [Turn(1, 0, 4000, "thakkali 18")]
+
+
 def test_request_part_uses_endpointing(respx_mock, ledger, settings, tmp_path):
     respx_mock.post(_TRANSCRIBE_URL).mock(return_value=Response(200, json=_FIXTURE))
     wav = tmp_path / "a.wav"

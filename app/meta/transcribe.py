@@ -20,7 +20,7 @@ def transcript_from_json(data: dict) -> Transcript:
     """Build a Transcript from a Voice Transcribe response body."""
     text = data.get("transcript", "")
     duration_ms = int(data.get("audioDurationMs", 0))
-    raw_turns = data.get("turns", [])
+    raw_turns = data.get("turns") or []
     turns = [
         Turn(id=int(turn.get("turnId", i)) + 1,
              start_ms=int(turn.get("startMs", 0)),

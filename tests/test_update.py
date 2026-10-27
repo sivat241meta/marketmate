@@ -66,6 +66,44 @@ def seed_shop(conn, name="Kannan Store"):
     return shop_id, slug, token
 
 
+def seeded_current(tmp_path):
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop_id, _, _ = seed_shop(conn)
+        base = seed_version(conn, shop_id)
+        return db.version_items(conn, base)
+    finally:
+        conn.close()
+
+
+def test_null_changes_means_no_changes(tmp_path):
+    assert parse_update_json({"changes": None}, update_transcript(),
+                             seeded_current(tmp_path)) == []
+
+
+def test_null_prices_sold_out_stays_sold_out(tmp_path):
+    data = {"changes": [{
+        "name_en": "onion", "action": "sold_out",
+        "prices": None, "qty": None, "qty_unit": None, "turn_ids": [2],
+        "quote": "vengayam sold out"}]}
+    (change,) = parse_update_json(data, update_transcript(),
+                                  seeded_current(tmp_path))
+    assert change.action == "sold_out"
+    assert change.price_lines == []
+
+
+def test_null_turn_ids_falls_back_to_quote(tmp_path):
+    data = {"changes": [{
+        "name_en": "tomato", "action": "set_price",
+        "prices": [{"said": "22", "price": 22, "per_amount": 1, "unit": "kg"}],
+        "qty": None, "qty_unit": None, "turn_ids": None,
+        "quote": "thakkali 22 today"}]}
+    (change,) = parse_update_json(data, update_transcript(),
+                                  seeded_current(tmp_path))
+    assert change.proof.turn_ids == []
+    assert (change.proof.start_ms, change.proof.end_ms) == (0, 3000)
+
+
 def test_parse_update_two_changes(tmp_path):
     conn = db.connect(tmp_path / "data")
     try:
