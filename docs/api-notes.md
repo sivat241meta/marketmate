@@ -144,3 +144,53 @@ expect_flags missed: QTY_MISSING×1
   with variety `big` ("big onion") while the key says variety None, so it
   no longer matches and its expected QTY_MISSING counts as missed.
   Everything else scores exactly as the previous re-gate.
+
+## Day-4 eval (synthetic + real video, Meta vs Baseten)
+
+- `eval/clips/real1.answers.json` (owner's key for a real 32 s portrait
+  phone video, Tamil speech, 5 items) copied to `eval/answers/real1.json`.
+- Benchmark change: a key item with variety null now matches any variety
+  (preferring a variety-less hit) — "big onion" vs key variety None counts
+  as found again.
+- `run_clip.py` now prints the run's own Meta spend (ledger delta), not the
+  day total.
+- Meta table (`benchmark.py` on the two `run_clip` outputs):
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| real1.mp4 | 5 | 5 | 5 | 0 | 0 |
+| synth1.mp4 | 7 | 7 | 6 | 1 | 0 |
+| TOTAL | 12 | 12 | 11 | 1 | 0 |
+
+expect_flags raised: QTY_MISSING×11, SOUND_ALIKE×2, TWO_PRICES×1
+expect_flags missed: (none)
+
+- Run spend: synth1 **$0.0920**, real1 **$0.0581**.
+- real1 per-item detail (all exact by rate): small onion 15 per 0.5 kg
+  (key 15 per 500 g); onion 20 per 1 kg; potato 5 per 1 kg; ginger 150 per
+  1 kg; garlic 90 per 1 kg. Every card carries non-blocking QTY_MISSING.
+  Real-speech wins: `அரை கிலோ` → 0.5 kg and colloquial `அஞ்சு` → 5 both
+  parse. One gap: ginger's `நூற்று அம்பது` (150) extracts correctly but
+  `find_numbers` cannot parse `நூற்று` (hundred-compounds unsupported), so
+  ginger also carries blocking NOT_HEARD ("price 150 not heard in quote")
+  and needs a seller tick. Its transcript turn holds two items
+  (turn 2: small onion + onion), handled fine.
+- Baseten table (`benchmark.py --provider baseten`, extraction re-run
+  through `meta-models/muse-spark-open-1026` with `reasoning_effort: low`,
+  which the endpoint accepts):
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| real1.mp4 | 5 | 5 | 4 | 0 | 1 |
+| synth1.mp4 | 7 | 7 | 6 | 0 | 1 |
+| TOTAL | 12 | 12 | 10 | 0 | 2 |
+
+expect_flags raised: (none)
+expect_flags missed: QTY_MISSING×11, SOUND_ALIKE×2, TWO_PRICES×1
+
+- Baseten misses: real1 small onion (price 15 with no amount/unit; 0.5
+  landed in qty instead) and synth1 potato (first line 30 vs key 35).
+  Caveat: the `--provider baseten` path re-runs extraction only, without
+  the honesty checks, so no flags are raised and both misses count
+  unflagged — a harness artifact, not a model verdict. Otherwise Baseten
+  extraction matches Meta item for item (even coconut's `piece` unit).

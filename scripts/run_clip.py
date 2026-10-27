@@ -32,6 +32,7 @@ def main() -> None:
             conn, name=clip.stem, phone="", area="demo", language="ta",
             currency="INR", shop_type="vegetable", is_demo=True)
         session_id = db.create_session(conn, shop_id, "video")
+        spent_before = ledger.today_usd("meta")
         # The pipeline deletes the video it processes; work on a temp copy so
         # the owner's clip (e.g. an eval asset) is never destroyed.
         with tempfile.TemporaryDirectory(prefix="run_clip_") as tmp:
@@ -39,6 +40,7 @@ def main() -> None:
             shutil.copy(clip, src_copy)
             process_video_session(conn, session_id, src_copy,
                                   settings=settings, ledger=ledger)
+        run_usd = ledger.today_usd("meta") - spent_before
         row = conn.execute("SELECT status, message FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()
         transcript_path = (Path(settings.data_dir) / "sessions" / str(session_id)
@@ -52,7 +54,7 @@ def main() -> None:
             "message": row["message"],
             "transcript": transcript,
             "items": [_draft_to_dict(item) for item in db.load_drafts(conn, session_id)],
-            "meta_usd": ledger.today_usd("meta"),
+            "meta_usd": round(run_usd, 4),
         }
         out_path = Path("eval/out") / (clip.stem + ".json")
         out_path.parent.mkdir(parents=True, exist_ok=True)

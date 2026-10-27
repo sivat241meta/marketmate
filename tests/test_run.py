@@ -166,6 +166,21 @@ def test_run_clip_preserves_source_clip(monkeypatch, tmp_path, fakes, video):
     assert (tmp_path / "eval" / "out" / "clip.json").exists()
 
 
+def test_run_clip_reports_run_cost_not_day_total(monkeypatch, tmp_path, fakes, video):
+    import json
+    import sys
+
+    from scripts import run_clip
+
+    monkeypatch.chdir(tmp_path)
+    earlier = CostLedger(tmp_path / "data" / "costs.db", 100.0)
+    earlier.add("meta", "muse-spark-1.3", 0.05, "earlier run")
+    monkeypatch.setattr(sys, "argv", ["run_clip.py", str(video)])
+    run_clip.main()
+    out = json.loads((tmp_path / "eval" / "out" / "clip.json").read_text())
+    assert out["meta_usd"] == 0
+
+
 def test_no_speech_gives_empty_review(conn, settings, video, tmp_path, monkeypatch):
     def empty_transcribe(wav, **kwargs):
         return Transcript(text="", duration_ms=2000, turns=[])

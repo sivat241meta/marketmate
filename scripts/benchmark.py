@@ -62,24 +62,29 @@ def _out_first_rate(out_item) -> tuple[Decimal, str] | None:
     return None
 
 
-def _out_key(out_item) -> tuple[str, str | None]:
-    return (str(out_item.get("name_en", "")).lower(),
-            normalize_variety(out_item.get("variety")))
+def _match_item(out_items: list[dict], name: str, variety: str | None):
+    """Find an output item by name; a null key variety matches any variety."""
+    candidates = [item for item in out_items
+                  if str(item.get("name_en", "")).lower() == name]
+    if variety is None:
+        plain = [item for item in candidates
+                 if normalize_variety(item.get("variety")) is None]
+        return (plain or candidates or [None])[0]
+    return next((item for item in candidates
+                 if normalize_variety(item.get("variety")) == variety), None)
 
 
 def compare_clips(key: dict, out: dict) -> dict:
     """Score one clip: exact prices, flagged vs unflagged misses, flag recall."""
-    index: dict[tuple, dict] = {}
-    for out_item in out.get("items", []):
-        index.setdefault(_out_key(out_item), out_item)
+    out_items = out.get("items", [])
     row: dict = {"clip": key.get("clip", ""), "in_key": 0, "found": 0,
                  "exact": 0, "flagged": 0, "unflagged": 0,
                  "raised": {}, "missed": {}}
     for key_item in key.get("items", []):
         row["in_key"] += 1
         expected = key_item.get("expect_flags", []) or []
-        out_item = index.get((str(key_item.get("name_en", "")).lower(),
-                              normalize_variety(key_item.get("variety"))))
+        out_item = _match_item(out_items, str(key_item.get("name_en", "")).lower(),
+                               normalize_variety(key_item.get("variety")))
         if out_item is None:
             for code in expected:
                 row["missed"][code] = row["missed"].get(code, 0) + 1

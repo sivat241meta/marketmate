@@ -57,3 +57,22 @@ def test_benchmark_rate_equality():
     ]}
     row = compare_clips(key, out)
     assert (row["exact"], row["flagged"], row["unflagged"]) == (1, 0, 0)
+
+
+def test_null_variety_matches_any_variety():
+    key = {"clip": "t.mp4", "items": [
+        {"name_en": "Onion", "variety": None, "price": 25,
+         "per_amount": 1, "unit": "kg", "qty": None, "qty_unit": None,
+         "expect_flags": ["QTY_MISSING"]},
+    ]}
+    out = {"clip": "t.mp4", "items": [
+        {"name_en": "onion", "variety": "big",
+         "price_lines": [{"price": "25", "per_amount": "1",
+                          "unit": "kg", "said": "big onion 25"}],
+         "flags": [{"code": "QTY_MISSING", "blocking": False,
+                    "message": "x", "options": []}]},
+    ]}
+    row = compare_clips(key, out)
+    assert (row["found"], row["exact"]) == (1, 1)
+    assert row["raised"] == {"QTY_MISSING": 1}
+    assert row["missed"] == {}

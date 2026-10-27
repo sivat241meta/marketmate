@@ -1,0 +1,66 @@
+{
+ "clip": "real1.mp4",
+ "note": "Real speech by the owner in a kitchen (32 s, portrait phone video). All prices confirmed by the owner.",
+ "items": [
+  {
+   "name_en": "small onion",
+   "variety": null,
+   "price": 15,
+   "per_amount": 500,
+   "unit": "g",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "onion",
+   "variety": null,
+   "price": 20,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "potato",
+   "variety": null,
+   "price": 5,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "ginger",
+   "variety": null,
+   "price": 150,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "garlic",
+   "variety": null,
+   "price": 90,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  }
+ ]
+}
