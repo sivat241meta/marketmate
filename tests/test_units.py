@@ -31,6 +31,14 @@ def test_rate_missing_price():
     assert rate(PriceLine(None, Decimal(1), "kg")) is None
 
 
+@pytest.mark.parametrize("said,amt", [
+    ("half kilo", (500, "g")),
+    ("quarter kilo", (250, "g")),
+])
+def test_parse_amount_half_quarter(said, amt):
+    assert parse_amount(said) == (Decimal(amt[0]), amt[1])
+
+
 @pytest.mark.parametrize("said,unit", [
     ("kilo", "kg"),
     ("KILOS", "kg"),

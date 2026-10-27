@@ -34,3 +34,45 @@ def test_find_numbers_kinds():
 
 def test_find_numbers_english_kind():
     assert find_numbers("small onion forty rupees")[0] == (40, "english")
+
+
+def test_no_unit_tens_compound():
+    assert find_numbers("தேங்காய்ஒன்னுமுப்பதரூபாய்") == [(1, "tamil"), (30, "tamil")]
+
+
+def test_english_no_unit_tens_compound():
+    assert find_numbers("one thirty") == [(1, "english"), (30, "english")]
+
+
+def test_tens_unit_compound_still_combines():
+    assert find_numbers("muppathu onnu") == [(31, "tamil")]
+    assert find_numbers("one hundred twenty") == [(120, "english")]
+
+
+@pytest.mark.parametrize("said,val", [
+    ("முப்பத்தைந்து", 35),
+    ("இருபத்தைந்து", 25),
+    ("நாற்பத்தைந்து", 45),
+    ("எழுபத்தைந்து", 75),
+    ("embadhu", 80),
+    ("enpathu", 80),
+    ("pathinanju", 15),
+    ("pathinaindhu", 15),
+    ("nalupathu", 40),
+    ("naarpathu", 40),
+    ("aimbathu", 50),
+    ("ambathu", 50),
+    ("அம்பது", 50),
+])
+def test_parse_number_reviewer_spellings(said, val):
+    assert parse_number(said) == val
+
+
+def test_potato_correction_sentence():
+    text = "உருளைக்கிழங்கு கிலோ முப்பது ரூபாய். இல்ல இல்ல, முப்பத்தைந்து ரூபாய்."
+    assert find_numbers(text) == [(30, "tamil"), (35, "tamil")]
+
+
+def test_digits_stuck_to_text():
+    assert find_numbers("Rs.40/kg, ₹25 per kilo, 2.5kg, 1,200 rupees") == [
+        (40, "digits"), (25, "digits"), (Decimal("2.5"), "digits"), (1200, "digits")]

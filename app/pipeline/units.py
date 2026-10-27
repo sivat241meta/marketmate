@@ -26,12 +26,16 @@ def normalise_unit(said: str) -> str | None:
     return _UNIT_WORDS.get(said.strip().lower())
 
 
+_KILO_WORDS = {"kilo", "kilos", "kilogram", "kilograms", "kg", "கிலோ"}
+
+
 def parse_amount(said: str) -> tuple[Decimal, str] | None:
     """Parse e.g. "kaal kilo", "1 kilo", "oru kattu" into (amount, unit)."""
     words = [w for w in _words(said) if w]
-    if "kaal" in words or "கால்" in words:
+    kilo_said = any(w in _KILO_WORDS for w in words)
+    if "kaal" in words or "கால்" in words or ("quarter" in words and kilo_said):
         return (Decimal(250), "g")
-    if "arai" in words or "அரை" in words:
+    if "arai" in words or "அரை" in words or ("half" in words and kilo_said):
         return (Decimal(500), "g")
     unit: str | None = None
     number_words: list[str] = []
