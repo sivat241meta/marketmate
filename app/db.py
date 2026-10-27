@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import secrets
+import shutil
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -314,3 +315,206 @@ def version_time(conn, version_id: int) -> datetime:
     row = conn.execute("SELECT created_at FROM versions WHERE id = ?",
                        (version_id,)).fetchone()
     return datetime.fromisoformat(row["created_at"])
+
+
+def _as_utc(moment: datetime) -> datetime:
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
+
+
+def _inside(data_dir: Path, candidate: Path) -> Path | None:
+    try:
+        resolved = candidate.resolve()
+    except OSError:
+        return None
+    try:
+        resolved.relative_to(data_dir.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def _media_candidate(data_dir: Path, stored: str | None) -> Path | None:
+    if not stored:
+        return None
+    raw = Path(stored)
+    if raw.is_absolute():
+        return _inside(data_dir, raw)
+    return _inside(data_dir, data_dir.parent / raw)
+
+
+def _unlink_quietly(path: Path | None) -> None:
+    if path is None:
+        return
+    try:
+        if path.is_file() or path.is_symlink():
+            path.unlink()
+    except OSError:
+        pass
+
+
+def _rmtree_quietly(path: Path) -> None:
+    try:
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+    except OSError:
+        pass
+
+
+def _delete_shop_rows(conn, shop_id: int) -> None:
+    session_ids = [row["id"] for row in conn.execute(
+        "SELECT id FROM sessions WHERE shop_id = ?", (shop_id,))]
+    version_ids = [row["id"] for row in conn.execute(
+        "SELECT id FROM versions WHERE shop_id = ?", (shop_id,))]
+    for session_id in session_ids:
+        conn.execute("DELETE FROM drafts WHERE session_id = ?", (session_id,))
+    for version_id in version_ids:
+        item_ids = [row["id"] for row in conn.execute(
+            "SELECT id FROM items WHERE version_id = ?", (version_id,))]
+        for item_id in item_ids:
+            conn.execute("DELETE FROM price_lines WHERE item_id = ?",
+                         (item_id,))
+        conn.execute("DELETE FROM items WHERE version_id = ?", (version_id,))
+    conn.execute("DELETE FROM sessions WHERE shop_id = ?", (shop_id,))
+    conn.execute("DELETE FROM versions WHERE shop_id = ?", (shop_id,))
+    conn.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
+
+
+def _delete_shop_files(conn, data_dir: Path, shop_id: int) -> None:
+    session_ids = [row["id"] for row in conn.execute(
+        "SELECT id FROM sessions WHERE shop_id = ?", (shop_id,))]
+    version_ids = [row["id"] for row in conn.execute(
+        "SELECT id FROM versions WHERE shop_id = ?", (shop_id,))]
+    for session_id in session_ids:
+        for row in conn.execute("SELECT data FROM drafts WHERE session_id = ?",
+                                (session_id,)):
+            item = _draft_from_json(row["data"])
+            _unlink_quietly(_media_candidate(data_dir, item.photo))
+            _unlink_quietly(_media_candidate(data_dir, item.proof.frame))
+            _unlink_quietly(_media_candidate(data_dir, item.proof.audio_clip))
+        for photo in (data_dir / "photos").glob(f"s{session_id}_*"):
+            _unlink_quietly(_inside(data_dir, photo))
+        for upload in (data_dir / "uploads").glob(f"{session_id}_*"):
+            _unlink_quietly(_inside(data_dir, upload))
+        _rmtree_quietly(data_dir / "sessions" / str(session_id))
+    for version_id in version_ids:
+        for item in version_items(conn, version_id):
+            _unlink_quietly(_media_candidate(data_dir, item.photo))
+
+
+def _session_id_of_photo(name: str) -> int | None:
+    match = re.match(r"s(\d+)_\d+\.", name)
+    return int(match.group(1)) if match else None
+
+
+def _session_id_of_upload(name: str) -> int | None:
+    match = re.match(r"(\d+)_", name)
+    return int(match.group(1)) if match else None
+
+
+def _dir_newest_mtime(path: Path) -> float | None:
+    """Newest mtime of the files inside; the dir's own mtime is entry churn."""
+    try:
+        children = list(path.rglob("*"))
+    except OSError:
+        return None
+    newest: float | None = None
+    for child in children:
+        try:
+            if child.is_file():
+                stamp = child.stat().st_mtime
+                newest = stamp if newest is None else max(newest, stamp)
+        except OSError:
+            continue
+    if newest is None:
+        try:
+            return path.stat().st_mtime
+        except OSError:
+            return None
+    return newest
+
+
+def _purge_old_media(conn, data_dir: Path, now: datetime) -> None:
+    cutoff = _as_utc(now).timestamp() - 30 * 86400
+    demo_shops = {row["id"] for row in
+                  conn.execute("SELECT id FROM shops WHERE is_demo = 1")}
+    demo_sessions = {row["id"] for row in
+                     conn.execute("SELECT id, shop_id FROM sessions")
+                     if row["shop_id"] in demo_shops}
+    protected: set[Path] = set()
+    for row in conn.execute(
+            "SELECT sessions.shop_id AS shop_id, drafts.data AS data"
+            " FROM drafts JOIN sessions ON sessions.id = drafts.session_id"):
+        if row["shop_id"] not in demo_shops:
+            continue
+        item = _draft_from_json(row["data"])
+        for stored in (item.photo, item.proof.frame, item.proof.audio_clip):
+            candidate = _media_candidate(data_dir, stored)
+            if candidate is not None:
+                protected.add(candidate)
+    photos = data_dir / "photos"
+    if photos.is_dir():
+        for path in photos.iterdir():
+            if not path.is_file() or path.resolve() in protected:
+                continue
+            if _session_id_of_photo(path.name) in demo_sessions:
+                continue
+            try:
+                old = path.stat().st_mtime < cutoff
+            except OSError:
+                continue
+            if old:
+                _unlink_quietly(path)
+    sessions = data_dir / "sessions"
+    if sessions.is_dir():
+        for path in sessions.iterdir():
+            if not path.is_dir() or path.is_symlink():
+                continue
+            try:
+                session_id = int(path.name)
+            except ValueError:
+                continue
+            if session_id in demo_sessions:
+                continue
+            newest = _dir_newest_mtime(path)
+            if newest is not None and newest < cutoff:
+                _rmtree_quietly(path)
+    uploads = data_dir / "uploads"
+    if uploads.is_dir():
+        for path in uploads.iterdir():
+            if not path.is_file():
+                continue
+            if _session_id_of_upload(path.name) in demo_sessions:
+                continue
+            try:
+                old = path.stat().st_mtime < cutoff
+            except OSError:
+                continue
+            if old:
+                _unlink_quietly(path)
+
+
+def purge_expired(conn, data_dir: Path, now: datetime) -> int:
+    """Delete expired judge shops with their files, plus old non-demo media.
+
+    Media (photos, session dirs, uploads) older than 30 days is removed for
+    non-demo shops; demo shops keep theirs forever. Returns the number of
+    shops removed.
+    """
+    data_dir = Path(data_dir)
+    now = _as_utc(now)
+    removed = 0
+    for shop in conn.execute("SELECT * FROM shops WHERE is_judge = 1"):
+        if shop["expires_at"] is None:
+            continue
+        try:
+            expires = _as_utc(datetime.fromisoformat(shop["expires_at"]))
+        except ValueError:
+            continue
+        if expires > now:
+            continue
+        _delete_shop_files(conn, data_dir, shop["id"])
+        _delete_shop_rows(conn, shop["id"])
+        removed += 1
+    conn.commit()
+    _purge_old_media(conn, data_dir, now)
+    return removed

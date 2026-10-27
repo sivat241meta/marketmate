@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ shop["name"] }}{% endblock %}
 {% block content %}
+{% if shop["is_judge"] %}<p class="banner">Test shop - not listed in the market, deleted after 7 days</p>{% endif %}
 <h1>{{ shop["name"] }}</h1>
 <p class="muted">{{ shop["area"] }} · {{ shop["slug"] }}</p>
 <h2>Upload a clip</h2>

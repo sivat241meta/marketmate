@@ -14,6 +14,11 @@ class CostCapExceeded(Exception):
     pass
 
 
+BUDGET_EXHAUSTED_MESSAGE = (
+    "Today's demo budget is used up - please try the sample shops."
+)
+
+
 def _today_ist() -> str:
     return datetime.now(IST).date().isoformat()
 

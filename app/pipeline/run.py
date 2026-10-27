@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from app import db
-from app.costs import CostLedger
+from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
 from app.meta.transcribe import transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
 from app.pipeline.checks import check_item
@@ -114,6 +114,8 @@ def process_video_session(conn, session_id: int, video: Path, *,
             _finish_session(conn, session_id, transcript, frames, wav, session_dir,
                             settings=settings, ledger=ledger)
         video.unlink(missing_ok=True)
+    except CostCapExceeded:
+        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
         db.set_session_status(conn, session_id, "failed", f"Processing failed: {exc}")
 
@@ -132,5 +134,7 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
         wav = session_dir / "audio.wav"
         _finish_session(conn, session_id, transcript, frames, wav, session_dir,
                         settings=settings, ledger=ledger)
+    except CostCapExceeded:
+        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
         db.set_session_status(conn, session_id, "failed", f"Processing failed: {exc}")

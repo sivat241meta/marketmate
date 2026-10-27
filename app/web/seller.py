@@ -16,7 +16,13 @@ from fastapi.responses import (
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
-from app.costs import IST, CostCapExceeded, CostLedger
+from app.costs import (
+    BUDGET_EXHAUSTED_MESSAGE,
+    IST,
+    CostCapExceeded,
+    CostLedger,
+)
+from app.limits import RATE_LIMIT_MESSAGE
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
@@ -229,9 +235,35 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         _, items = _version_items(conn, token, version_id)
         return Response(posapp_pos_csv(items), media_type="text/csv")
 
+    @app.get("/try")
+    def try_judge(conn: Conn):
+        _, _, token = db.create_shop(
+            conn, name="Judge Test Shop", phone="+910000000000",
+            area="Judge trial", language="en", currency="INR",
+            shop_type="vegetable", is_judge=True, listed=False)
+        return RedirectResponse(f"/e/{token}", status_code=303)
+
     @app.post("/e/{token}/upload")
     def upload(request: Request, token: str, video: UploadFile, conn: Conn):
         shop = _shop_or_404(conn, token)
+        db.purge_expired(conn, data_dir, datetime.now(UTC))
+        limiter = request.app.state.limiter
+        client_ip = request.client.host if request.client else "unknown"
+        if not limiter.allow(client_ip, datetime.now(UTC)):
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                status_code=429)
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        try:
+            ledger.check()
+        except CostCapExceeded:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Demo budget used up",
+                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                status_code=503)
         session_id = db.create_session(conn, shop["id"], "video")
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)

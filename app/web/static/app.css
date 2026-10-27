@@ -16,6 +16,12 @@ h2 { font-size: 1.15rem; margin: 20px 0 8px; }
   border-radius: 8px;
   padding: 10px 12px;
 }
+.banner {
+  background: #fff8e1;
+  border: 1px solid #e0a800;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
 label { display: block; margin: 8px 0; }
 input, select {
   width: 100%;

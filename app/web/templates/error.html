@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ title | safe }}{% endblock %}
+{% block content %}
+<h1>{{ title | safe }}</h1>
+<p>{{ message | safe }}</p>
+<p><a class="btn" href="/market">Try the sample shops</a></p>
+{% endblock %}
