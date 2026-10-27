@@ -625,6 +625,9 @@ Answer key format:
 - Consumes: everything from Tasks 3–10.
 - Produces:
   - `submit(fn: Callable, *args) -> None` in `jobs.py`: ThreadPoolExecutor with 2 workers.
+    Every background job opens its own connection with `connect(settings.data_dir)`
+    and never reuses the web request's connection (SQLite WAL mode allows the
+    concurrent writers).
   - `process_video_session(conn, session_id: int, video: Path, *, settings, ledger) -> None`.
     Steps:
     1. check length;

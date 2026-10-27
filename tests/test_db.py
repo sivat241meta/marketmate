@@ -1,3 +1,5 @@
+import sqlite3
+import threading
 from decimal import Decimal
 
 import pytest
@@ -95,6 +97,59 @@ def test_publish_switches(conn):
     db.set_published(conn, v2, True)
     assert db.latest_version(conn, shop_id, published_only=True) == v2
     assert db.latest_version(conn, shop_id) == v2
+
+
+def test_wal_two_connections_write_in_turn(tmp_path):
+    first = db.connect(tmp_path)
+    try:
+        assert first.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+        assert first.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
+    finally:
+        first.close()
+    errors = []
+
+    def write_many(base):
+        connection = db.connect(tmp_path)
+        try:
+            for i in range(10):
+                make_shop(connection, name=f"Shop {base}-{i}")
+        except sqlite3.Error as exc:
+            errors.append(exc)
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=write_many, args=(base,)) for base in ("a", "b")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert not errors
+    check = db.connect(tmp_path)
+    try:
+        assert check.execute("SELECT COUNT(*) FROM shops").fetchone()[0] == 20
+    finally:
+        check.close()
+
+
+def test_approve_rejects_two_prices_same_amount(conn):
+    shop_id, _, _ = make_shop(conn)
+    session_id = db.create_session(conn, shop_id, "video")
+    item = make_draft()
+    item.price_lines.append(PriceLine(Decimal(20), Decimal(1), "kg", "kilo twenty"))
+    item.confirmed = True
+    with pytest.raises(ApprovalError):
+        db.approve(conn, session_id, [item])
+
+
+def test_approve_drops_empty_lines(conn):
+    shop_id, _, _ = make_shop(conn)
+    session_id = db.create_session(conn, shop_id, "video")
+    item = make_draft()
+    item.price_lines.insert(0, PriceLine(None, Decimal(1), "kg", ""))
+    item.confirmed = True
+    version_id = db.approve(conn, session_id, [item])
+    (stored,) = db.version_items(conn, version_id)
+    assert [line.price for line in stored.price_lines] == [Decimal("18.50")]
 
 
 def test_last_prices(conn):

@@ -30,6 +30,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(data_dir / "marketmate.db")
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS shops (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -202,8 +204,16 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
     for item in items:
         if any(flag.blocking for flag in item.flags) and not item.confirmed:
             raise ApprovalError(f"unconfirmed blocking flag on {item.name_en}")
-        if not any(line.price is not None for line in item.price_lines):
+        priced = [line for line in item.price_lines if line.price is not None]
+        if not priced:
             raise ApprovalError(f"no priced line for {item.name_en}")
+        seen_amounts: set[tuple] = set()
+        for line in priced:
+            key = (line.per_amount, line.unit)
+            if key in seen_amounts:
+                raise ApprovalError(
+                    f"two prices for the same amount on {item.name_en}: pick one")
+            seen_amounts.add(key)
     shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()["shop_id"]
     cursor = conn.execute(
@@ -223,11 +233,12 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
                          "audio_clip": item.proof.audio_clip})),
         )
         item_id = item_cursor.lastrowid
+        priced = [line for line in item.price_lines if line.price is not None]
         conn.executemany(
             "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
             " VALUES (?, ?, ?, ?, ?)",
             [(item_id, _decimal_to_str(line.price), _decimal_to_str(line.per_amount),
-              line.unit, line.said) for line in item.price_lines],
+              line.unit, line.said) for line in priced],
         )
     conn.commit()
     return version_id
