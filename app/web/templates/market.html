@@ -30,7 +30,33 @@
 <p class="form-error">Sorry, these words were not understood: {{ unknown | join(", ") }}.</p>
 {% endif %}
 
-{% if searched and not rows and not error %}
+{% if basket %}
+<section class="basket">
+  <h2>Budget basket{% if basket.budget %} — ₹{{ basket.budget }}{% endif %}</h2>
+  <p>{{ basket.explanation }}</p>
+  {% for plan in basket.plans %}
+  <div class="card">
+    {% if plan.kind == "split" %}
+    <h3>Cheapest split — ₹{{ plan.total }}</h3>
+    {% else %}
+    <h3>{{ plan.shop }} alone — ₹{{ plan.total }}</h3>
+    {% endif %}
+    {% if plan.lines %}
+    <ul>
+      {% for line in plan.lines %}
+      <li>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — ₹{{ line.cost }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if plan.missing %}
+    <p>No fresh prices for: {{ plan.missing | join(", ") }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if searched and not rows and not error and not basket %}
 <p class="muted">No shops have what you asked for today.</p>
 {% endif %}
 {% for row in rows %}

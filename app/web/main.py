@@ -15,9 +15,11 @@ from starlette.requests import Request
 from app import db
 from app.config import Settings, load_settings
 from app.costs import CostCapExceeded, CostLedger
+from app.market.basket import explain_basket, plan_basket
 from app.market.search import find_listings, parse_query
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
+from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.web import seller as seller_routes
@@ -59,9 +61,9 @@ def create_app(settings: Settings) -> FastAPI:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
-    def _listing_rows(conn, query, now):
+    def _rows_from_listings(listings, now):
         rows = []
-        for found in find_listings(conn, query, now):
+        for found in listings:
             name = (f"{found.name_en} ({found.variety})"
                     if found.variety else found.name_en)
             rows.append({
@@ -78,12 +80,53 @@ def create_app(settings: Settings) -> FastAPI:
             })
         return rows
 
+    def _basket_dict(plans, budget, explanation):
+        plan_dicts = []
+        for plan in plans:
+            lines = []
+            for line in plan.lines:
+                if line.assumed:
+                    amount = ("1 kg" if line.want.name_en in WEIGHT_ITEMS
+                              else "1 piece")
+                else:
+                    qty = line.want.amount
+                    qty_text = format(qty.normalize(), "f") if qty is not None else "1"
+                    amount = f"{qty_text} {line.want.unit}"
+                lines.append({
+                    "want": line.want.name_en,
+                    "amount": amount,
+                    "assumed": line.assumed,
+                    "shop": line.listing.shop_name,
+                    "slug": line.listing.slug,
+                    "cost": _fmt_rate(line.cost),
+                })
+            plan_dicts.append({
+                "kind": plan.kind,
+                "shop": plan.shop,
+                "total": _fmt_rate(plan.total),
+                "lines": lines,
+                "missing": list(plan.missing),
+            })
+        return {
+            "budget": _fmt_rate(budget) if budget is not None else "",
+            "explanation": explanation,
+            "plans": plan_dicts,
+        }
+
+    def _build_basket(query, listings, ledger):
+        if query.budget is None or not query.wants:
+            return None
+        plans = plan_basket(query.wants, listings, query.budget)
+        explanation = explain_basket(plans, query.budget, ledger=ledger,
+                                     settings=app.state.settings)
+        return _basket_dict(plans, query.budget, explanation)
+
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
-                        error=None, searched=False):
+                        error=None, searched=False, basket=None):
         return templates.TemplateResponse(request, "market.html", {
             "q": q, "heard": heard, "rows": rows or [],
             "unknown": list(query.unknown) if query else [],
-            "error": error, "searched": searched})
+            "error": error, "searched": searched, "basket": basket})
 
     @app.get("/")
     def home(request: Request):
@@ -106,9 +149,11 @@ def create_app(settings: Settings) -> FastAPI:
             return _market_context(request, q=q.strip(), error=str(exc),
                                    searched=True)
         now = datetime.now(UTC)
+        listings = find_listings(conn, query, now)
         return _market_context(
             request, q=q.strip(), query=query,
-            rows=_listing_rows(conn, query, now), searched=True)
+            rows=_rows_from_listings(listings, now),
+            basket=_build_basket(query, listings, ledger), searched=True)
 
     @app.post("/market/voice")
     async def market_voice(request: Request):
@@ -147,9 +192,11 @@ def create_app(settings: Settings) -> FastAPI:
             saved.unlink(missing_ok=True)
             wav.unlink(missing_ok=True)
         now = datetime.now(UTC)
+        listings = find_listings(conn, query, now)
         return _market_context(
             request, q=transcript.text, heard=transcript.text, query=query,
-            rows=_listing_rows(conn, query, now), searched=True)
+            rows=_rows_from_listings(listings, now),
+            basket=_build_basket(query, listings, ledger), searched=True)
 
     return app
 
