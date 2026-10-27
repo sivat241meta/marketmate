@@ -36,6 +36,11 @@ def test_find_numbers_english_kind():
     assert find_numbers("small onion forty rupees")[0] == (40, "english")
 
 
+def test_live_transcript_spellings():
+    assert parse_number("padinettu") == 18
+    assert parse_number("pathinaindu") == 15
+
+
 def test_no_unit_tens_compound():
     assert find_numbers("தேங்காய்ஒன்னுமுப்பதரூபாய்") == [(1, "tamil"), (30, "tamil")]
 
