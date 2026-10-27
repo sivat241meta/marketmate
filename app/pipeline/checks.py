@@ -34,6 +34,29 @@ def _raw_tokens(quote: str) -> list[str]:
     return [t.strip(".,;:!?\"'()[]{}").lower() for t in quote.split()]
 
 
+def _within(rate: tuple[Decimal, str], ref: tuple[Decimal, str],
+            tolerance: Decimal) -> bool:
+    """True when rate is within tolerance of ref on the same per-unit base."""
+    if rate[1] != ref[1] or ref[0] == 0:
+        return False
+    return abs(rate[0] - ref[0]) / abs(ref[0]) <= tolerance
+
+
+def _sound_alike_rates(item: DraftItem, line: PriceLine, pair: list[int],
+                       previous: dict[str, PriceLine]):
+    """(heard rate, alternative rate, previous rate); None when incomparable."""
+    prev_line = (previous or {}).get(item.name_en)
+    if prev_line is None:
+        return (None, None, None)
+    heard = rate(line)
+    alt_value = pair[1] if pair[0] == int(line.price) else pair[0]
+    alt = rate(PriceLine(Decimal(alt_value), line.per_amount, line.unit))
+    old = rate(prev_line)
+    if heard is None or alt is None or old is None:
+        return (None, None, None)
+    return (heard, alt, old)
+
+
 def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
     """Flag risky values on a draft item. Proof decides; nothing is guessed."""
     flags: list[Flag] = []
@@ -50,10 +73,20 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
                 if (kind == "english" and value == line.price
                         and int(value) in _PAIR_OF):
                     pair = sorted([int(value), _PAIR_OF[int(value)]])
+                    message = f"did you say {pair[0]} or {pair[1]}?"
+                    blocking = True
+                    heard_rate, alt_rate, prev_rate = _sound_alike_rates(
+                        item, line, pair, previous)
+                    if (heard_rate is not None and alt_rate is not None
+                            and prev_rate is not None
+                            and _within(heard_rate, prev_rate, Decimal("0.3"))
+                            and not _within(alt_rate, prev_rate, Decimal("0.3"))):
+                        blocking = False
+                        message += (f" {int(value)} matches the previous price"
+                                    f" ({prev_rate[0]} per {prev_rate[1]})")
                     flags.append(Flag(
-                        field="price", code="SOUND_ALIKE",
-                        message=f"did you say {pair[0]} or {pair[1]}?",
-                        options=[str(pair[0]), str(pair[1])]))
+                        field="price", code="SOUND_ALIKE", message=message,
+                        options=[str(pair[0]), str(pair[1])], blocking=blocking))
                     break
 
     if item.qty is not None and item.qty not in heard_values:

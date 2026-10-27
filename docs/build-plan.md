@@ -499,7 +499,7 @@ Answer key format:
   | Flag code | When | Blocking |
   |---|---|---|
   | `NOT_HEARD` | A price/qty value is not among `find_numbers(quote)` | yes |
-  | `SOUND_ALIKE` | The value was said in English (kind `"english"`) and is in the pairs; options `["18","80"]` | yes |
+  | `SOUND_ALIKE` | The value was said in English (kind `"english"`) and is in the pairs; options `["18","80"]` | yes, unless the heard value's rate is within 30% of the confirmed previous rate while the alternative's is not (then non-blocking, message names the match) |
   | `CORRECTION_SAID` | The quote holds a correction marker (`illa illa`, `illai`, `sorry`, `no no`, `wait`, `correction`, `இல்ல`, `இல்லை`) | yes |
   | `UNCLEAR_NUMBER` | The word before a currency word (`rupai`, `rupees`, `rupee`, `rs`, `₹`, `ரூபாய்`, `ரூபா`) is not a number or unit; the message names that word | yes |
   | `UNIT_MISSING` | A price is present but its unit is None; a sibling line's unit is offered as the option (e.g. `"per 1 kg"`) | yes |

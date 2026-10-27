@@ -75,6 +75,22 @@ def test_sound_alike_both_directions():
     assert flag.options == ["18", "80"]
 
 
+def test_sound_alike_matching_previous_non_blocking():
+    previous = {"tomato": pl(20, 1, "kg")}
+    item = draft(quote="tomato eighteen rupees", lines=[pl(18, 1, "kg")])
+    flag = next(x for x in check_item(item, previous) if x.code == "SOUND_ALIKE")
+    assert flag.blocking is False
+    assert "matches the previous price" in flag.message
+    assert "18" in flag.message
+
+
+def test_sound_alike_far_from_previous_blocking():
+    previous = {"tomato": pl(75, 1, "kg")}
+    item = draft(quote="tomato eighteen rupees", lines=[pl(18, 1, "kg")])
+    flag = next(x for x in check_item(item, previous) if x.code == "SOUND_ALIKE")
+    assert flag.blocking is True
+
+
 def test_jump_uses_rate_not_raw_price():
     previous = {"tomato": pl(40, 1, "kg")}
     jumped = draft(quote="tomato kilo sixteen", lines=[pl(16, 250, "g")])
