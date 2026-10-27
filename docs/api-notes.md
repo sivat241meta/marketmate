@@ -38,6 +38,14 @@ credits for the clip sources: `eval/clips/src_wikimedia/ATTRIBUTION.txt`
 - **SDK calls need explicit timeouts.** One run hung 20 min on the Spark text
   call with SDK defaults; the probe now passes `timeout=180, max_retries=2`
   (Task 4 should do the same).
+- **Transcripts mix three writing styles** (live run
+  `tests/fixtures/transcribe_live_mixed.json`): Latin-script Tamil
+  (`thakkali`), Tamil script (`இருக்கு`, `ஒரு`, `ஒன்னு`, `முப்பது`), and
+  English, including **Tamil numbers as English words** (`eighteen`,
+  `twenty five`, `forty`, `thirty five`, `fifteen`, `sixty`). Number parsing
+  must accept all three. **One turn can hold several items**: turn 0 of the
+  live run packs tomato, onion, small onion and potato, so extraction quotes
+  must be per-item slices of shared turn text, each copied exactly.
 
 ## Costs (successful run, 27 Oct)
 

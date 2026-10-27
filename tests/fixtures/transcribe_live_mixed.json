@@ -1,0 +1,31 @@
+{
+ "note": "Reviewer's live Voice Transcribe run on eval/clips/synth1.mp4 (ENDPOINTING). Shows mixed scripts and 4 items in one turn.",
+ "transcript": "id Bangalore thakkali kilo eighteen rupees forty kilo இருக்கு. big onion twenty five rupees per kilo. chinna vengayam kilo forty rupees. urulaikizhangu kilo thirty rupees இல்ல இல்ல thirty five rupees. carrot kaal kilo fifteen rupees. vazhaipazham ஒரு dozen sixty rupees. thengai ஒன்னு முப்பது rupees.",
+ "audioDurationMs": 33411,
+ "turns": [
+  {
+   "turnId": 0,
+   "startMs": 140,
+   "endMs": 19580,
+   "transcript": "id Bangalore thakkali kilo eighteen rupees forty kilo இருக்கு. big onion twenty five rupees per kilo. chinna vengayam kilo forty rupees. urulaikizhangu kilo thirty rupees இல்ல இல்ல thirty five rupees."
+  },
+  {
+   "turnId": 1,
+   "startMs": 21260,
+   "endMs": 23660,
+   "transcript": "carrot kaal kilo fifteen rupees."
+  },
+  {
+   "turnId": 2,
+   "startMs": 25500,
+   "endMs": 28060,
+   "transcript": "vazhaipazham ஒரு dozen sixty rupees."
+  },
+  {
+   "turnId": 3,
+   "startMs": 30060,
+   "endMs": 31980,
+   "transcript": "thengai ஒன்னு முப்பது rupees."
+  }
+ ]
+}
