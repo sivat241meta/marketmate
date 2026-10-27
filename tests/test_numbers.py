@@ -78,6 +78,36 @@ def test_potato_correction_sentence():
     assert find_numbers(text) == [(30, "tamil"), (35, "tamil")]
 
 
+@pytest.mark.parametrize("said,val", [
+    ("பதினைஞ்சு", 15),
+    ("இருவது", 20),
+    ("இருவத்தஞ்சு", 25),
+    ("நாப்பது", 40),
+    ("அறுவது", 60),
+    ("எழுவது", 70),
+    ("எம்பது", 80),
+    ("iruvathu", 20),
+    ("naappathu", 40),
+    ("aruvathu", 60),
+    ("ezhuvathu", 70),
+    ("embathu", 80),
+    ("நூற்றி அம்பது", 150),
+    ("நூத்தி அம்பது", 150),
+    ("நூற்று அம்பது", 150),
+    ("noothi ambathu", 150),
+    ("nootri ambathu", 150),
+])
+def test_parse_number_spoken_tamil(said, val):
+    assert parse_number(said) == val
+    assert find_numbers(said) == [(val, "tamil")]
+
+
+def test_english_hundreds_before_currency():
+    assert find_numbers("one fifty rupees") == [(150, "english")]
+    assert find_numbers("two twenty rupees") == [(220, "english")]
+    assert find_numbers("one thirty") == [(1, "english"), (30, "english")]
+
+
 def test_digits_stuck_to_text():
     assert find_numbers("Rs.40/kg, ₹25 per kilo, 2.5kg, 1,200 rupees") == [
         (40, "digits"), (25, "digits"), (Decimal("2.5"), "digits"), (1200, "digits")]

@@ -44,6 +44,24 @@ def test_not_heard_price():
     assert "NOT_HEARD" in codes(item)
 
 
+def test_real_ginger_quote_hears_150():
+    # Quote copied from eval/out/real1.json (gitignored run output).
+    quote = "இது இஞ்சி இது ஒரு கிலோ நூற்று அம்பது ரூபா"
+    item = draft(quote=quote, lines=[pl(150, 1, "kg")], name_en="ginger")
+    found = codes(item)
+    assert "NOT_HEARD" not in found
+    assert "UNCLEAR_NUMBER" not in found
+
+
+def test_real_small_onion_quote_hears_15():
+    # Quote copied from eval/out/real1.json (gitignored run output).
+    quote = "இந்த வங்காயம் அரை கிலோ பதினைந்து ரூபா சின்ன வங்காயம்"
+    item = draft(quote=quote, lines=[pl(15, "0.5", "kg")], name_en="small onion")
+    found = codes(item)
+    assert "NOT_HEARD" not in found
+    assert "UNCLEAR_NUMBER" not in found
+
+
 def test_not_heard_qty():
     item = draft(quote="thakkali kilo 18", lines=[pl(18, 1, "kg")],
                  qty=40, qty_unit="kg")

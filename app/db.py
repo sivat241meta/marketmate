@@ -214,6 +214,8 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
                 raise ApprovalError(
                     f"two prices for the same amount on {item.name_en}: pick one")
             seen_amounts.add(key)
+    conn.execute("UPDATE sessions SET status = 'approved', message = ? WHERE id = ?",
+                   (f"{len(items)} items approved", session_id))
     shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()["shop_id"]
     cursor = conn.execute(

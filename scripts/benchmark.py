@@ -7,7 +7,7 @@ Compares eval/out/<clip>.json with eval/answers/<clip>.json, matching items by
 name_en + variety (case-insensitive, bangalore == bengaluru) and prices by
 rate. Prints a markdown table plus raised/missed expect_flags.
 With --provider baseten, extraction reruns through Baseten into
-eval/out/<clip>.baseten.json first.
+eval/out/<clip>.baseten.json first, with the same honesty checks as Meta.
 """
 
 from __future__ import annotations
@@ -135,15 +135,25 @@ def _table(rows: list[dict]) -> str:
 
 
 def _rerun_baseten(out_path: Path) -> Path:
-    """Rerun extraction only through Baseten; write <stem>.baseten.json."""
+    """Rerun extraction through Baseten, with honesty checks, into <stem>.baseten.json."""
+    from app import db
+    from app.pipeline.checks import check_item
+
     out = json.loads(out_path.read_text())
     env = dict(os.environ)
     env["TEXT_PROVIDER"] = "baseten"
     settings = load_settings(env)
     ledger = CostLedger(Path(settings.data_dir) / "costs.db",
                         settings.daily_budget_usd)
+    conn = db.connect(Path(settings.data_dir))
+    try:
+        previous = db.last_prices(conn, out.get("shop_id"))
+    finally:
+        conn.close()
     transcript = _transcript_from_json(out["transcript"])
     items = extract_items(transcript, ledger=ledger, settings=settings)
+    for item in items:
+        item.flags = check_item(item, previous)
     from scripts.run_clip import _draft_to_dict
 
     out = dict(out)

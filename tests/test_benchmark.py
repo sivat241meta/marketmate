@@ -76,3 +76,39 @@ def test_null_variety_matches_any_variety():
     assert (row["found"], row["exact"]) == (1, 1)
     assert row["raised"] == {"QTY_MISSING": 1}
     assert row["missed"] == {}
+
+
+def test_rerun_baseten_runs_honesty_checks(tmp_path, monkeypatch):
+    import json
+    from decimal import Decimal
+
+    from app.models import DraftItem, PriceLine, Proof
+    from scripts import benchmark
+
+    monkeypatch.setenv("MODEL_API_KEY", "k")
+    monkeypatch.setenv("BASETEN_API_KEY", "b")
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+
+    def fake_extract(transcript, *, ledger, settings):
+        return [DraftItem(
+            name_spoken="potato", name_ta="உருளைக்கிழங்கு", name_en="potato",
+            variety=None,
+            price_lines=[PriceLine(Decimal(30), Decimal(1), "kg", "thirty"),
+                         PriceLine(Decimal(35), Decimal(1), "kg", "thirty five")],
+            qty=None, qty_unit=None,
+            proof=Proof(quote="potato thirty rupees thirty five rupees",
+                        turn_ids=[1], start_ms=0, end_ms=1000),
+        )]
+
+    monkeypatch.setattr(benchmark, "extract_items", fake_extract)
+    out_path = tmp_path / "t.json"
+    out_path.write_text(json.dumps({
+        "clip": "t.mp4", "shop_id": 1, "items": [],
+        "transcript": {"text": "potato", "duration_ms": 1000, "turns": [
+            {"id": 1, "start_ms": 0, "end_ms": 1000, "text": "potato"}]},
+    }))
+    target = benchmark._rerun_baseten(out_path)
+    rerun = json.loads(target.read_text())
+    rerun_codes = [f["code"] for f in rerun["items"][0]["flags"]]
+    assert "TWO_PRICES" in rerun_codes
+    assert "QTY_MISSING" in rerun_codes

@@ -25,6 +25,10 @@ _ENGLISH_NUMBER_WORDS = (
     set(_ENGLISH_ONES) | set(_ENGLISH_TENS) | {"hundred", "a", "an"}
 )
 
+CURRENCY_WORDS = frozenset(
+    {"rupai", "rupees", "rupee", "rs", "₹", "ரூபாய்", "ரூபா"}
+)
+
 # Romanised Tamil and Tamil-script number words. Spoken markets mix
 # spellings, so common variants share one value.
 _TAMIL: dict[str, int] = {
@@ -43,21 +47,25 @@ _TAMIL: dict[str, int] = {
     "pathimoonu": 13, "பதிமூன்று": 13,
     "pathinaalu": 14, "பதினான்கு": 14,
     "pathinainju": 15, "pathinanchu": 15, "pathinanju": 15,
-    "pathinaindhu": 15, "pathinaindu": 15, "பதினைந்து": 15,
+    "pathinaindhu": 15, "pathinaindu": 15, "பதினைந்து": 15, "பதினைஞ்சு": 15,
     "pathinaaru": 16, "பதினாறு": 16,
     "pathinezhu": 17, "pathineyezhu": 17, "பதினேழு": 17,
     "pathinettu": 18, "padhinettu": 18, "padinettu": 18, "பதினெட்டு": 18,
     "pathonbathu": 19, "பத்தொன்பது": 19,
-    "irupathu": 20, "இருபது": 20,
+    "irupathu": 20, "iruvathu": 20, "இருபது": 20, "இருவது": 20,
     "muppathu": 30, "முப்பது": 30,
     "naapathu": 40, "narpathu": 40, "nalupathu": 40, "naarpathu": 40,
-    "நாற்பது": 40,
+    "naappathu": 40, "நாற்பது": 40, "நாப்பது": 40,
     "ambathu": 50, "aimbathu": 50, "ஐம்பது": 50, "அம்பது": 50,
-    "arupathu": 60, "அறுபது": 60,
-    "ezhupathu": 70, "yezhupathu": 70, "எழுபது": 70,
-    "enbathu": 80, "embadhu": 80, "enpathu": 80, "எண்பது": 80,
+    "arupathu": 60, "aruvathu": 60, "அறுபது": 60, "அறுவது": 60,
+    "ezhupathu": 70, "yezhupathu": 70, "ezhuvathu": 70,
+    "எழுபது": 70, "எழுவது": 70,
+    "enbathu": 80, "embadhu": 80, "enpathu": 80, "embathu": 80,
+    "எண்பது": 80, "எம்பது": 80,
     "thonnooru": 90, "thonnuru": 90, "தொண்ணூறு": 90,
-    "nooru": 100, "nuru": 100, "நூறு": 100,
+    "இருவத்தஞ்சு": 25,
+    "nooru": 100, "nuru": 100, "noothi": 100, "nootri": 100,
+    "நூறு": 100, "நூற்றி": 100, "நூத்தி": 100, "நூற்று": 100,
     "irunooru": 200, "இருநூறு": 200,
     "moonnooru": 300, "முந்நூறு": 300,
     "naanooru": 400, "நானூறு": 400,
@@ -110,6 +118,7 @@ _MUNCH_KEYS = sorted(_TAMIL_ALL, key=len, reverse=True)
 
 _WORD_SPLIT_RE = re.compile(r"[^\s]+")
 _STRIP_CHARS = ".,;:!?\"'()[]{}₹"
+_CURRENCY_STRIP_CHARS = ".,;:!?\"'()[]{}"
 
 
 def _words(text: str) -> list[str]:
@@ -262,6 +271,15 @@ def _segment_tamil(run: str) -> list[tuple[str, int, int]]:
     return out
 
 
+def _currency_ahead(seg: str, rel_end: int) -> bool:
+    """True when the next whitespace-separated token is a currency word."""
+    rest = seg[rel_end:].split(None, 1)
+    if not rest:
+        return False
+    token = rest[0].strip(_CURRENCY_STRIP_CHARS)
+    return token in CURRENCY_WORDS
+
+
 def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
     """Number hits in digit-free text: ascii spans plus Tamil segmentation."""
     hits: list[tuple[int, int, str]] = []
@@ -272,9 +290,18 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
         for width in range(min(4, len(ascii_words) - i), 0, -1):
             span = [w for w, _ in ascii_words[i:i + width]]
             value = _words_value(span)
+            kind = None
             if value is not None:
                 kind = ("english" if all(w in _ENGLISH_NUMBER_WORDS for w in span)
                         else "tamil")
+            elif (width == 2 and span[0] in _ENGLISH_ONES
+                    and 1 <= _ENGLISH_ONES[span[0]] <= 9
+                    and span[1] in _ENGLISH_TENS
+                    and _currency_ahead(seg, ascii_words[i + 1][1]
+                                        + len(span[1]) - base)):
+                value = _ENGLISH_ONES[span[0]] * 100 + _ENGLISH_TENS[span[1]]
+                kind = "english"
+            if value is not None and kind is not None:
                 hits.append((ascii_words[i][1], value, kind))
                 i += width
                 matched = True

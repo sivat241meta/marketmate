@@ -194,3 +194,34 @@ expect_flags missed: QTY_MISSING×11, SOUND_ALIKE×2, TWO_PRICES×1
   the honesty checks, so no flags are raised and both misses count
   unflagged — a harness artifact, not a model verdict. Otherwise Baseten
   extraction matches Meta item for item (even coconut's `piece` unit).
+
+## Day-5 fixes (spoken numbers, approved status, fair Baseten rerun)
+
+- Numbers: Tamil-script பதினைஞ்சு/இருவது/இருவத்தஞ்சு/நாப்பது/அறுவது/
+  எழுவது/எம்பது, romanised iruvathu/naappathu/aruvathu/ezhuvathu/
+  embathu, hundreds prefixes நூற்றி/நூத்தி/நூற்று and noothi/nootri
+  combining with a following tens word (நூற்று அம்பது = 150), and English
+  "one fifty"/"two twenty" directly before a currency word = 150/220
+  (bare "one thirty" still parses as 1 and 30). Ginger's real quote now
+  yields 150, so NOT_HEARD is gone; small onion's quote stays clean.
+- `db.approve` sets the session status to `approved`; the session page
+  shows "Approved ✓" with a back-to-shop link instead of the working
+  spinner.
+- `benchmark.py --provider baseten` now runs the same `check_item`
+  honesty checks (against the shop's previous prices) as the Meta run.
+  Re-ran both on the current outputs — the tables are identical:
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| real1.mp4 | 5 | 5 | 5 | 0 | 0 |
+| synth1.mp4 | 7 | 7 | 6 | 1 | 0 |
+| TOTAL | 12 | 12 | 11 | 1 | 0 |
+
+expect_flags raised: QTY_MISSING×11, SOUND_ALIKE×2, TWO_PRICES×1
+expect_flags missed: (none)
+
+- No new Meta spend (benchmark scoring only); the Baseten rerun is 3
+  extraction chunks on the saved transcripts, Baseten-side billing.
+  Baseten even fixed its own earlier misses this round (small onion
+  15 per 0.5 kg); the remaining flagged item on both providers is
+  synth1 potato (first line 30 vs key 35, TWO_PRICES + CORRECTION_SAID).

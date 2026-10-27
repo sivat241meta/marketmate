@@ -221,3 +221,23 @@ def test_approve_after_choosing_35_keeps_one_line(tmp_path, monkeypatch):
             Decimal(35), Decimal(1), "kg")
     finally:
         conn.close()
+
+
+def test_approved_session_status(tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch)
+    location = create_shop(client)
+    session_url = client.post(
+        location + "/upload", files={"video": ("clip.mp4", b"fakevideo", "video/mp4")}
+    ).headers["location"]
+    response = client.post(
+        session_url + "/approve", json={"items": [canned_dict()], "confirmed": [0]})
+    assert response.status_code in (302, 303)
+    session_id = int(session_url.rsplit("/s/", 1)[1])
+    conn = db.connect(tmp_path / "data")
+    try:
+        row = conn.execute(
+            "SELECT status FROM sessions WHERE id = ?", (session_id,)).fetchone()
+        assert row["status"] == "approved"
+    finally:
+        conn.close()
+    assert "Approved" in client.get(session_url).text

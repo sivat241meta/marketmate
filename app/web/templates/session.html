@@ -8,6 +8,9 @@
 <form method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
   <button class="btn" type="submit">Try again</button>
 </form>
+{% elif session["status"] == "approved" %}
+<p>Approved ✓ — the price list is saved.</p>
+<p><a class="btn" href="/e/{{ token }}">Back to shop</a></p>
 {% else %}
 <meta http-equiv="refresh" content="3">
 <p class="muted">Working on it… this page refreshes every 3 s.</p>

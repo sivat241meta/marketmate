@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from app.models import DraftItem, Flag, PriceLine
-from app.pipeline.numbers import find_numbers, parse_number
+from app.pipeline.numbers import CURRENCY_WORDS, find_numbers, parse_number
 from app.pipeline.units import normalise_unit, rate
 
 SOUND_ALIKE_PAIRS = {13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90}
@@ -23,10 +23,6 @@ WEIGHT_ITEMS: set[str] = {
 
 CORRECTION_MARKERS = (
     "illa illa", "illai", "sorry", "no no", "wait", "correction", "இல்ல", "இல்லை",
-)
-
-CURRENCY_WORDS = frozenset(
-    {"rupai", "rupees", "rupee", "rs", "₹", "ரூபாய்", "ரூபா"}
 )
 
 
