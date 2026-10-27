@@ -98,6 +98,9 @@ input[type="checkbox"] { width: auto; }
   font-size: 1.05rem;
   margin: 12px 0;
 }
+.card.soldout {
+  opacity: 0.55;
+}
 .flag-note {
   color: #666;
   font-size: 0.85rem;

@@ -1,7 +1,7 @@
 import json
 import re
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -63,6 +63,19 @@ def _photo_url(photo: str | None) -> str | None:
     if not photo:
         return None
     return "/m/" + Path(photo).name
+
+
+def _relative_time(when, now) -> str:
+    seconds = max(0, int((now - when).total_seconds()))
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} minutes ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hours ago"
+    return f"{hours // 24} days ago"
 
 
 def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
@@ -281,6 +294,59 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except ValueError as exc:
             raise HTTPException(400, str(exc))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
+
+    @app.post("/e/{token}/v/{version_id}/publish")
+    def publish_version(token: str, version_id: int, conn: Conn):
+        shop = _shop_or_404(conn, token)
+        _version_of_shop(conn, shop["id"], version_id)
+        db.set_published(conn, version_id, True)
+        return RedirectResponse(f"/e/{token}", status_code=303)
+
+    @app.post("/e/{token}/v/{version_id}/unpublish")
+    def unpublish_version(token: str, version_id: int, conn: Conn):
+        shop = _shop_or_404(conn, token)
+        _version_of_shop(conn, shop["id"], version_id)
+        db.set_published(conn, version_id, False)
+        return RedirectResponse(f"/e/{token}", status_code=303)
+
+    @app.post("/e/{token}/item/{item_id}/soldout")
+    def toggle_soldout(token: str, item_id: int, conn: Conn):
+        shop = _shop_or_404(conn, token)
+        row = conn.execute(
+            "SELECT items.sold_out, versions.shop_id FROM items"
+            " JOIN versions ON versions.id = items.version_id"
+            " WHERE items.id = ?", (item_id,)).fetchone()
+        if row is None or row["shop_id"] != shop["id"]:
+            raise HTTPException(404, "unknown item")
+        db.set_sold_out(conn, item_id, not bool(row["sold_out"]))
+        return RedirectResponse(f"/e/{token}", status_code=303)
+
+    @app.get("/s/{slug}")
+    def public_shop(request: Request, conn: Conn, slug: str, lang: str = "en"):
+        shop = conn.execute("SELECT * FROM shops WHERE slug = ?",
+                            (slug,)).fetchone()
+        if shop is None:
+            raise HTTPException(404, "unknown shop")
+        language = lang if lang in ("ta", "en") else "en"
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        rows = []
+        rel = ""
+        if version_id is not None:
+            for item in db.version_items(conn, version_id):
+                name = item.name_ta if language == "ta" else item.name_en
+                rows.append({
+                    "name": f"{name} ({item.variety})" if item.variety else name,
+                    "photo_url": _photo_url(item.photo),
+                    "sold_out": item.sold_out,
+                    "lines": [{"price": str(line.price),
+                               "per": f"{line.per_amount} {line.unit}"}
+                              for line in item.price_lines],
+                })
+            rel = _relative_time(db.version_time(conn, version_id),
+                                 datetime.now(UTC))
+        digits = re.sub(r"\D", "", shop["phone"] or "")
+        return templates.TemplateResponse(request, "shop.html", {
+            "shop": shop, "rows": rows, "rel": rel, "digits": digits})
 
     @app.get("/m/{path:path}")
     def public_photo(path: str):

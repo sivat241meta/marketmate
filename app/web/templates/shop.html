@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ shop["name"] }}{% endblock %}
+{% block content %}
+<h1>{{ shop["name"] }}</h1>
+{% if shop["is_demo"] %}<p class="muted">Demo data</p>{% endif %}
+{% if not rows %}
+<p>No prices published yet.</p>
+{% else %}
+{% for row in rows %}
+<section class="card{% if row.sold_out %} soldout{% endif %}">
+  {% if row.photo_url %}<img class="photo" src="{{ row.photo_url }}" alt="">{% endif %}
+  <h2>{{ row.name }}</h2>
+  {% if row.sold_out %}
+  <p><strong>Sold out</strong></p>
+  {% else %}
+  {% for line in row.lines %}
+  <p class="price-line"><strong>₹{{ line.price }}</strong> per {{ line.per }}</p>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endfor %}
+<p class="muted">Set by seller · {{ rel }}</p>
+{% endif %}
+<p><a href="tel:{{ shop["phone"] }}">{{ shop["phone"] }}</a> · <a href="https://wa.me/{{ digits }}">WhatsApp</a></p>
+{% endblock %}
