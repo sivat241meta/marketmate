@@ -7,7 +7,9 @@ Writes eval/out/<stem>.json and prints the Meta spend for the run.
 from __future__ import annotations
 
 import json
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 from app import db
@@ -30,7 +32,13 @@ def main() -> None:
             conn, name=clip.stem, phone="", area="demo", language="ta",
             currency="INR", shop_type="vegetable", is_demo=True)
         session_id = db.create_session(conn, shop_id, "video")
-        process_video_session(conn, session_id, clip, settings=settings, ledger=ledger)
+        # The pipeline deletes the video it processes; work on a temp copy so
+        # the owner's clip (e.g. an eval asset) is never destroyed.
+        with tempfile.TemporaryDirectory(prefix="run_clip_") as tmp:
+            src_copy = Path(tmp) / clip.name
+            shutil.copy(clip, src_copy)
+            process_video_session(conn, session_id, src_copy,
+                                  settings=settings, ledger=ledger)
         row = conn.execute("SELECT status, message FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()
         transcript_path = (Path(settings.data_dir) / "sessions" / str(session_id)

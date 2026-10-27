@@ -6,6 +6,7 @@ import pytest
 from app.config import load_settings
 from app.costs import CostLedger
 from app.models import Transcript, Turn
+from app.pipeline.checks import check_item
 from app.pipeline.extract import (
     build_extract_messages,
     extract_items,
@@ -134,6 +135,41 @@ def test_live_mixed_turn_shared_quotes(live_transcript):
     assert "இல்ல" in items[3].proof.quote
     assert items[0].name_ta == "தக்காளி"
     assert items[2].name_ta == "சின்ன வெங்காயம்"
+
+
+def test_variety_lowercased_english(transcript_3_turns):
+    data = {"items": [dict(CANNED["items"][0], variety="Bengaluru")]}
+    assert parse_extract_json(data, transcript_3_turns)[0].variety == "bengaluru"
+
+
+def test_prompt_says_variety_english_letters(transcript_3_turns):
+    content = build_extract_messages(transcript_3_turns)[-1]["content"]
+    assert "English letters" in content
+    assert "bengaluru" in content
+
+
+def test_unit_from_earlier_price_backfills(transcript_3_turns):
+    data = {"items": [{
+        "name_spoken": "urulaikizhangu",
+        "name_en": "potato",
+        "variety": None,
+        "prices": [{"said": "kilo thirty", "price": 30, "per_amount": 1, "unit": "kg"},
+                   {"said": "thirty five", "price": 35,
+                    "per_amount": None, "unit": None}],
+        "range_said": False,
+        "qty_said": None,
+        "qty": None,
+        "qty_unit": None,
+        "turn_ids": [3],
+        "quote": "urulaikizhangu kilo thirty rupees thirty five rupees",
+    }]}
+    items = parse_extract_json(data, transcript_3_turns)
+    second = items[0].price_lines[1]
+    assert (second.price, second.per_amount, second.unit) == (35, 1, "kg")
+    backfill = next(f for f in items[0].flags if f.code == "UNIT_FROM_EARLIER")
+    assert backfill.blocking is False
+    two = next(f for f in check_item(items[0], {}) if f.code == "TWO_PRICES")
+    assert two.options == ["30", "35"]
 
 
 def test_extract_items_wires_chat_json(monkeypatch, transcript_3_turns, tmp_path):

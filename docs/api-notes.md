@@ -63,7 +63,7 @@ gate (Task 11) must measure with real token counts before fixing batch sizes.
 
 ## Day-3 gate (Task 11, 27 Oct): `run_clip.py` on synth1.mp4 + benchmark
 
-Run: status `review`, 7 draft items, Meta spend **$0.1253** (inside the
+First run: status `review`, 7 draft items, Meta spend **$0.1253** (inside the
 $0.10–0.20 estimate).
 
 | clip | in key | found | exact | wrong+flagged | wrong+unflagged |
@@ -74,15 +74,39 @@ $0.10–0.20 estimate).
 expect_flags raised: QTY_MISSING×6, SOUND_ALIKE×2
 expect_flags missed: TWO_PRICES×1
 
-Reading the misses honestly:
+That run's misses: tomato's variety came back in Tamil script (`பெங்களூர்`
+vs key `bengaluru`), and potato's unit-less `35` line could not group with
+`30 per 1 kg`, so TWO_PRICES missed (blocking CORRECTION_SAID still caught
+it). Both led to Task 7 fixes.
 
-- Tomato counts as missed: the extractor returned variety in Tamil script
-  (`பெங்களூர்`) while the key says `bengaluru`. Same variety, different
-  script — matching stays script-sensitive; no new rule added.
-- Potato's correction (`30` then `35`) carries blocking CORRECTION_SAID plus
-  UNIT_MISSING on the unit-less `35` line, but not TWO_PRICES (the two lines
-  have different amounts). The wrong value is still caught before review, so
-  it scores wrong-but-flagged.
+## Day-3 re-gate (Task 7 fix, 28 Oct)
+
+Two process lessons first. The Task 11 gate run deleted the source clip
+(`process_video_session` unlinks the video it processes), so `run_clip.py`
+now works on a temp copy and never destroys the owner's clip
+(regression-tested). The clip was rebuilt from its own session assets —
+exact original audio plus original frames as a 2 fps slideshow at 1280x720
+— after which one gate attempt died on a transient double length-cutoff
+with empty content and the retry went clean.
+
+Re-run: status `review`, 7 draft items, run spend **$0.1411**.
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| synth1.mp4 | 7 | 7 | 5 | 2 | 0 |
+| TOTAL | 7 | 7 | 5 | 2 | 0 |
+
+expect_flags raised: QTY_MISSING×6, SOUND_ALIKE×2, TWO_PRICES×1
+expect_flags missed: (none)
+
+- Variety fix works: tomato comes back `bangalore` and matches.
+- Potato's `35` inherits `1 kg` via UNIT_FROM_EARLIER, so TWO_PRICES fires
+  `[30, 35]` alongside blocking CORRECTION_SAID; first line `30` still
+  scores wrong-but-flagged, which is correct (the seller corrected it).
+- Coconut `(30, no unit)` scores wrong-but-flagged via blocking
+  UNIT_MISSING — also correct, the unit is genuinely unknown.
 - Carrot `15 per 0.25 kg` scores exact against key `15 per 250 g` by rate.
+- This run's transcript came back in Tamil script (same audio as the
+  Latin-script runs) — script choice varies run to run, like turn splits.
 - No price landed on the wrong item, so no "one item per sentence" recording
   tip was added.

@@ -154,6 +154,18 @@ def test_reprocess_uses_cached_transcript(conn, settings, fakes, video, tmp_path
     assert fakes["transcribe"] == 1
 
 
+def test_run_clip_preserves_source_clip(monkeypatch, tmp_path, fakes, video):
+    import sys
+
+    from scripts import run_clip
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["run_clip.py", str(video)])
+    run_clip.main()
+    assert video.exists()
+    assert (tmp_path / "eval" / "out" / "clip.json").exists()
+
+
 def test_no_speech_gives_empty_review(conn, settings, video, tmp_path, monkeypatch):
     def empty_transcribe(wav, **kwargs):
         return Transcript(text="", duration_ms=2000, turns=[])
