@@ -90,16 +90,24 @@ def chat_json(
         base_url, key, model = META_BASE_URL, settings.model_api_key, SPARK_MODEL
         log_provider = "meta"
     client = OpenAI(base_url=base_url, api_key=key, timeout=180.0, max_retries=2)
+    budget = max_tokens
     current = list(messages)
     for attempt in (1, 2):
         try:
             response = client.chat.completions.create(
-                model=model, max_tokens=max_tokens, messages=current)
+                model=model, max_tokens=budget, messages=current)
         except Exception as exc:
             raise SparkError(f"Spark request failed: {exc}") from exc
-        reply = response.choices[0].message.content or ""
+        _log_usage(ledger, log_provider, model, response.usage)
+        choice = response.choices[0]
+        reply = choice.message.content or ""
+        if choice.finish_reason == "length" and not reply.strip():
+            if attempt == 2:
+                raise SparkError("cut off by max_tokens twice")
+            budget = min(budget * 2, 16000)
+            continue
         try:
-            result = _parse_first_json(reply)
+            return _parse_first_json(reply)
         except SparkError:
             if attempt == 2:
                 raise
@@ -107,14 +115,15 @@ def chat_json(
                        {"role": "assistant", "content": reply},
                        {"role": "user", "content": "Return only valid JSON."}]
             continue
-        usage = response.usage
-        prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
-        completion_tokens = getattr(usage, "completion_tokens", 0) or 0
-        if log_provider == "meta":
-            usd = spark_cost({"prompt_tokens": prompt_tokens,
-                              "completion_tokens": completion_tokens})
-        else:
-            usd = 0.0
-        ledger.add(log_provider, model, usd, "chat_json")
-        return result
     raise SparkError("could not get JSON after retry")
+
+
+def _log_usage(ledger: CostLedger, provider: str, model: str, usage) -> None:
+    prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
+    completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+    if provider == "meta":
+        usd = spark_cost({"prompt_tokens": prompt_tokens,
+                          "completion_tokens": completion_tokens})
+    else:
+        usd = 0.0
+    ledger.add(provider, model, usd, "chat_json")

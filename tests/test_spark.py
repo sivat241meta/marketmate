@@ -5,8 +5,15 @@ import pytest
 from httpx import Response
 
 from app.config import load_settings
-from app.costs import CostCapExceeded, CostLedger
+from app.costs import CostCapExceeded, CostLedger, spark_cost
 from app.meta.spark import SparkError, chat_json, image_part
+
+
+def _length_body() -> dict:
+    body = make_body("")
+    body["choices"][0]["message"]["content"] = ""
+    body["choices"][0]["finish_reason"] = "length"
+    return body
 
 _FIXTURE_BODY = json.loads(Path("tests/fixtures/spark_text.json").read_text())
 _META_URL = "https://api.meta.ai/v1/chat/completions"
@@ -79,6 +86,42 @@ def test_baseten_text_logged_zero_usd(respx_mock, ledger, settings_baseten):
     assert chat_json([{"role": "user", "content": "hi"}],
                      ledger=ledger, settings=settings_baseten) == {"a": 1}
     assert ledger.today_usd("meta") == 0
+
+
+def test_failed_attempts_still_logged(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(side_effect=[
+        Response(200, json=make_body("not json at all")),
+        Response(200, json=make_body("still not json")),
+    ])
+    with pytest.raises(SparkError):
+        chat_json([{"role": "user", "content": "hi"}],
+                  ledger=ledger, settings=settings)
+    usage = _FIXTURE_BODY["usage"]
+    expected = 2 * spark_cost({"prompt_tokens": usage["prompt_tokens"],
+                               "completion_tokens": usage["completion_tokens"]})
+    assert route.call_count == 2
+    assert ledger.today_usd("meta") == pytest.approx(expected)
+
+
+def test_length_cutoff_retries_with_doubled_budget(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(side_effect=[
+        Response(200, json=_length_body()),
+        Response(200, json=make_body('{"a":1}')),
+    ])
+    assert chat_json([{"role": "user", "content": "hi"}],
+                     ledger=ledger, settings=settings) == {"a": 1}
+    assert route.call_count == 2
+    assert json.loads(route.calls[1].request.content)["max_tokens"] == 8000
+
+
+def test_length_cutoff_caps_doubled_budget(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(side_effect=[
+        Response(200, json=_length_body()),
+        Response(200, json=make_body('{"a":1}')),
+    ])
+    assert chat_json([{"role": "user", "content": "hi"}],
+                     ledger=ledger, settings=settings, max_tokens=10000) == {"a": 1}
+    assert json.loads(route.calls[1].request.content)["max_tokens"] == 16000
 
 
 def test_cap_checked_before_call(respx_mock, settings, tmp_path):
