@@ -47,7 +47,7 @@ def pick_best_frame(item: DraftItem, candidates: list[Frame], *,
     content: list[dict] = [{"type": "text", "text": prompt}]
     content.extend(image_part(frame.path) for frame in candidates)
     reply = chat_json([{"role": "user", "content": content}],
-                      ledger=ledger, settings=settings)
+                      ledger=ledger, settings=settings, reasoning_effort="low")
     try:
         index = int(reply["best_index"])
     except (KeyError, TypeError, ValueError) as exc:

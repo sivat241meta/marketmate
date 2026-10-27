@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -111,7 +112,59 @@ def test_length_cutoff_retries_with_doubled_budget(respx_mock, ledger, settings)
     assert chat_json([{"role": "user", "content": "hi"}],
                      ledger=ledger, settings=settings) == {"a": 1}
     assert route.call_count == 2
-    assert json.loads(route.calls[1].request.content)["max_tokens"] == 8000
+    assert json.loads(route.calls[0].request.content)["max_tokens"] == 8000
+    assert json.loads(route.calls[1].request.content)["max_tokens"] == 16000
+
+
+def test_double_length_cutoff_raises(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(side_effect=[
+        Response(200, json=_length_body()),
+        Response(200, json=_length_body()),
+    ])
+    with pytest.raises(SparkError, match="cut off by max_tokens twice"):
+        chat_json([{"role": "user", "content": "hi"}],
+                  ledger=ledger, settings=settings)
+    assert route.call_count == 2
+
+
+def test_reasoning_effort_sent_to_meta(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(
+        return_value=Response(200, json=make_body('{"a":1}')))
+    assert chat_json([{"role": "user", "content": "hi"}],
+                     ledger=ledger, settings=settings,
+                     reasoning_effort="low") == {"a": 1}
+    assert json.loads(route.calls[0].request.content)["reasoning_effort"] == "low"
+
+
+def test_reasoning_effort_omitted_by_default(respx_mock, ledger, settings):
+    route = respx_mock.post(_META_URL).mock(
+        return_value=Response(200, json=make_body('{"a":1}')))
+    chat_json([{"role": "user", "content": "hi"}],
+              ledger=ledger, settings=settings)
+    assert "reasoning_effort" not in json.loads(route.calls[0].request.content)
+
+
+def test_reasoning_effort_sent_to_baseten(respx_mock, ledger, settings_baseten):
+    route = respx_mock.post(_BASETEN_URL).mock(
+        return_value=Response(200, json=make_body('{"a":1}')))
+    assert chat_json([{"role": "user", "content": "hi"}],
+                     ledger=ledger, settings=settings_baseten,
+                     reasoning_effort="low") == {"a": 1}
+    assert json.loads(route.calls[0].request.content)["reasoning_effort"] == "low"
+
+
+def test_ledger_detail_records_budget_and_finish(respx_mock, ledger, settings,
+                                                 tmp_path):
+    respx_mock.post(_META_URL).mock(side_effect=[
+        Response(200, json=_length_body()),
+        Response(200, json=make_body('{"a":1}')),
+    ])
+    chat_json([{"role": "user", "content": "hi"}],
+              ledger=ledger, settings=settings)
+    rows = sqlite3.connect(tmp_path / "c.db").execute(
+        "SELECT detail FROM costs ORDER BY id").fetchall()
+    assert rows[0][0] == "chat_json max=8000 finish=length"
+    assert rows[1][0] == "chat_json max=16000 finish=stop"
 
 
 def test_length_cutoff_caps_doubled_budget(respx_mock, ledger, settings):

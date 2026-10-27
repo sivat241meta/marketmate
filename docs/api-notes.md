@@ -110,3 +110,37 @@ expect_flags missed: (none)
   Latin-script runs) — script choice varies run to run, like turn splits.
 - No price landed on the wrong item, so no "one item per sentence" recording
   tip was added.
+
+## Day-3 re-gate 2 (reasoning/cutoff fix)
+
+Live failure: a mostly-Tamil-script web upload died in extraction with
+"cut off by max_tokens twice" — Spark spent ~4000-7900 reasoning tokens
+before hitting the 4000 budget. Fixes: `chat_json` takes
+`reasoning_effort` (passed to Meta and Baseten — a live probe showed
+Baseten's OpenAI-compatible endpoint accepts `reasoning_effort: low`
+with HTTP 200) and every JSON task (extraction, best-frame check) uses
+`"low"`; default `max_tokens` is 8000 with one escalation to 16000;
+extraction splits transcripts into ≤6-turn groups (one Spark call each);
+ledger detail now records budget and finish reason
+(`chat_json max=8000 finish=stop`).
+
+Re-run (`run_clip.py` + `benchmark.py`): status `review`, 7 draft items.
+This run's transcript came back Tamil-script again (7 turns → 2 chunks).
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| synth1.mp4 | 7 | 6 | 4 | 2 | 0 |
+| TOTAL | 7 | 6 | 4 | 2 | 0 |
+
+expect_flags raised: QTY_MISSING×5, SOUND_ALIKE×2, TWO_PRICES×1
+expect_flags missed: QTY_MISSING×1
+
+- Run spend **$0.0896**: transcribe $0.0017, extraction 2× $0.0200,
+  best-frame 7× $0.0504, SAM 7× $0.0175. (`run_clip` prints the whole
+  day's ledger total, $0.4105, not the run delta.)
+- Reasoning with `"low"`, re-measured per chunk: 1650 + 1990 = 3640
+  tokens total, both calls `finish=stop` at max=8000 — no cutoffs.
+- The 1 miss is run-to-run model variation, not the fix: onion came back
+  with variety `big` ("big onion") while the key says variety None, so it
+  no longer matches and its expected QTY_MISSING counts as missed.
+  Everything else scores exactly as the previous re-gate.

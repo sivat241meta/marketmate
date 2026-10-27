@@ -76,9 +76,15 @@ def chat_json(
     ledger: CostLedger,
     settings: Settings,
     provider: str | None = None,
-    max_tokens: int = 4000,
+    max_tokens: int = 8000,
+    reasoning_effort: str | None = None,
 ) -> dict:
-    """Chat via Muse Spark (Meta) or the Baseten open-weights mirror; parse JSON."""
+    """Chat via Muse Spark (Meta) or the Baseten open-weights mirror; parse JSON.
+
+    reasoning_effort is passed to both providers when set (Baseten's
+    OpenAI-compatible endpoint accepts it); an empty reply cut off by length
+    escalates the token budget once to 16000 before giving up.
+    """
     ledger.check()
     wanted = provider or settings.text_provider
     if _has_image(messages):
@@ -94,14 +100,17 @@ def chat_json(
     current = list(messages)
     for attempt in (1, 2):
         try:
-            response = client.chat.completions.create(
-                model=model, max_tokens=budget, messages=current)
+            call: dict = {"model": model, "max_tokens": budget, "messages": current}
+            if reasoning_effort is not None:
+                call["reasoning_effort"] = reasoning_effort
+            response = client.chat.completions.create(**call)
         except Exception as exc:
             raise SparkError(f"Spark request failed: {exc}") from exc
-        _log_usage(ledger, log_provider, model, response.usage)
         choice = response.choices[0]
+        finish = choice.finish_reason or "unknown"
+        _log_usage(ledger, log_provider, model, response.usage, budget, finish)
         reply = choice.message.content or ""
-        if choice.finish_reason == "length" and not reply.strip():
+        if finish == "length" and not reply.strip():
             if attempt == 2:
                 raise SparkError("cut off by max_tokens twice")
             budget = min(budget * 2, 16000)
@@ -118,7 +127,8 @@ def chat_json(
     raise SparkError("could not get JSON after retry")
 
 
-def _log_usage(ledger: CostLedger, provider: str, model: str, usage) -> None:
+def _log_usage(ledger: CostLedger, provider: str, model: str, usage,
+               budget: int, finish: str) -> None:
     prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
     completion_tokens = getattr(usage, "completion_tokens", 0) or 0
     if provider == "meta":
@@ -126,4 +136,4 @@ def _log_usage(ledger: CostLedger, provider: str, model: str, usage) -> None:
                           "completion_tokens": completion_tokens})
     else:
         usd = 0.0
-    ledger.add(provider, model, usd, "chat_json")
+    ledger.add(provider, model, usd, f"chat_json max={budget} finish={finish}")

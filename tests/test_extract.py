@@ -177,6 +177,7 @@ def test_extract_items_wires_chat_json(monkeypatch, transcript_3_turns, tmp_path
 
     def fake_chat_json(messages, **kwargs):
         seen["messages"] = messages
+        seen["kwargs"] = kwargs
         return CANNED
 
     monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
@@ -185,3 +186,47 @@ def test_extract_items_wires_chat_json(monkeypatch, transcript_3_turns, tmp_path
     items = extract_items(transcript_3_turns, ledger=ledger, settings=settings)
     assert [item.name_en for item in items] == ["tomato"]
     assert "[3]" in seen["messages"][-1]["content"]
+    assert seen["kwargs"]["reasoning_effort"] == "low"
+
+
+def transcript_14_turns():
+    return Transcript(
+        text="fourteen turns",
+        duration_ms=42000,
+        turns=[
+            Turn(id=i, start_ms=(i - 1) * 3000, end_ms=i * 3000,
+                 text=f"item{i} kilo eighteen")
+            for i in range(1, 15)
+        ],
+    )
+
+
+def test_extract_items_chunks_long_transcripts(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_chat_json(messages, **kwargs):
+        calls.append(messages[-1]["content"])
+        group = len(calls)
+        return {"items": [{
+            "name_spoken": f"item{group}",
+            "name_en": "other",
+            "variety": None,
+            "prices": [{"said": "kilo eighteen", "price": 18,
+                        "per_amount": 1, "unit": "kg"}],
+            "range_said": False,
+            "qty_said": None,
+            "qty": None,
+            "qty_unit": None,
+            "turn_ids": [(group - 1) * 6 + 1],
+            "quote": f"item{(group - 1) * 6 + 1} kilo eighteen",
+        }]}
+
+    monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
+    ledger = CostLedger(tmp_path / "c.db", 100.0)
+    settings = load_settings({"MODEL_API_KEY": "k"})
+    items = extract_items(transcript_14_turns(), ledger=ledger, settings=settings)
+    assert len(calls) == 3
+    assert "[1]" in calls[0] and "[6]" in calls[0] and "[7]" not in calls[0]
+    assert "[7]" in calls[1] and "[12]" in calls[1] and "[13]" not in calls[1]
+    assert "[13]" in calls[2] and "[14]" in calls[2]
+    assert [item.name_spoken for item in items] == ["item1", "item2", "item3"]

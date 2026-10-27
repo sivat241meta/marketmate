@@ -58,6 +58,20 @@ def test_two_items_same_turn_get_own_frames(monkeypatch, tmp_path):
     assert first[0] != second[0]
 
 
+def test_best_frame_uses_low_reasoning(monkeypatch, tmp_path):
+    seen = {}
+
+    def fake_chat_json(messages, **kwargs):
+        seen["kwargs"] = kwargs
+        return {"best_index": 0, "matches": True}
+
+    monkeypatch.setattr("app.pipeline.frames.chat_json", fake_chat_json)
+    ledger, settings = make_ctx(tmp_path)
+    pick_best_frame(make_item("tomato"), make_frames(tmp_path)[:3],
+                    ledger=ledger, settings=settings)
+    assert seen["kwargs"]["reasoning_effort"] == "low"
+
+
 def test_mismatch_returns_false(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "app.pipeline.frames.chat_json",

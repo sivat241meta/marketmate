@@ -121,7 +121,25 @@ def parse_extract_json(data: dict, transcript: Transcript) -> list[DraftItem]:
     return items
 
 
+_CHUNK_TURNS = 6
+
+
+def chunk_transcript(transcript: Transcript) -> list[Transcript]:
+    """Split into groups of at most 6 whole turns; a turn is never split."""
+    if not transcript.turns:
+        return [transcript]
+    return [
+        Transcript(text=transcript.text, duration_ms=transcript.duration_ms,
+                   turns=transcript.turns[index:index + _CHUNK_TURNS])
+        for index in range(0, len(transcript.turns), _CHUNK_TURNS)
+    ]
+
+
 def extract_items(transcript: Transcript, *, ledger, settings) -> list[DraftItem]:
-    """Run the Spark extraction prompt and parse the result."""
-    data = chat_json(build_extract_messages(transcript), ledger=ledger, settings=settings)
-    return parse_extract_json(data, transcript)
+    """One low-reasoning Spark call per turn group; items merged in order."""
+    items: list[DraftItem] = []
+    for chunk in chunk_transcript(transcript):
+        data = chat_json(build_extract_messages(chunk), ledger=ledger,
+                         settings=settings, reasoning_effort="low")
+        items.extend(parse_extract_json(data, transcript))
+    return items
