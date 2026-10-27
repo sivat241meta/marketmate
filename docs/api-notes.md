@@ -60,3 +60,29 @@ credits for the clip sources: `eval/clips/src_wikimedia/ATTRIBUTION.txt`
 Meta total ≈ **$0.0200** per probe run. Baseten is logged at $0 against the
 Meta cap. A full recording with ~30 picture checks will cost more; the Day-1
 gate (Task 11) must measure with real token counts before fixing batch sizes.
+
+## Day-3 gate (Task 11, 27 Oct): `run_clip.py` on synth1.mp4 + benchmark
+
+Run: status `review`, 7 draft items, Meta spend **$0.1253** (inside the
+$0.10–0.20 estimate).
+
+| clip | in key | found | exact | wrong+flagged | wrong+unflagged |
+|---|---|---|---|---|---|
+| synth1.mp4 | 7 | 6 | 5 | 1 | 0 |
+| TOTAL | 7 | 6 | 5 | 1 | 0 |
+
+expect_flags raised: QTY_MISSING×6, SOUND_ALIKE×2
+expect_flags missed: TWO_PRICES×1
+
+Reading the misses honestly:
+
+- Tomato counts as missed: the extractor returned variety in Tamil script
+  (`பெங்களூர்`) while the key says `bengaluru`. Same variety, different
+  script — matching stays script-sensitive; no new rule added.
+- Potato's correction (`30` then `35`) carries blocking CORRECTION_SAID plus
+  UNIT_MISSING on the unit-less `35` line, but not TWO_PRICES (the two lines
+  have different amounts). The wrong value is still caught before review, so
+  it scores wrong-but-flagged.
+- Carrot `15 per 0.25 kg` scores exact against key `15 per 250 g` by rate.
+- No price landed on the wrong item, so no "one item per sentence" recording
+  tip was added.
