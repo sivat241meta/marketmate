@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketMate — product flow</title>
+<style>
+  :root{--ink:#1d2433;--muted:#5b6475;--line:#d9dee8;--bg:#f6f7fb;--card:#fff;
+        --seller:#0f766e;--cust:#7c3aed;--meta:#1d4ed8;--modal:#b45309;--code:#374151;--warn:#b91c1c}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  main{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+  h1{margin:0 0 4px;font-size:28px} h2{margin:36px 0 12px;font-size:21px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+  .t-seller{background:var(--seller)} .t-cust{background:var(--cust)} .t-meta{background:var(--meta)}
+  .t-modal{background:var(--modal)} .t-code{background:var(--code)} .t-warn{background:var(--warn)}
+  /* big picture */
+  .map{display:grid;grid-template-columns:1fr auto 1.3fr auto 1fr;gap:10px;align-items:center}
+  .box{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px 14px}
+  .box h3{margin:0 0 6px;font-size:16px}
+  .box ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px}
+  .b-seller{border-color:var(--seller)} .b-cust{border-color:var(--cust)}
+  .b-modal{border-color:var(--modal)} .b-meta{border-color:var(--meta)}
+  .arrow{font-size:26px;color:var(--muted);text-align:center}
+  .stack{display:grid;gap:10px}
+  /* flows */
+  .flow{display:grid;gap:10px}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .num{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff}
+  .seller .num{background:var(--seller)} .cust .num{background:var(--cust)}
+  .step h4{margin:0 0 4px;font-size:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .io{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;font-size:14px}
+  .io div{background:var(--bg);border-radius:8px;padding:6px 10px}
+  .io b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .eg{font-size:14px;color:var(--muted);margin-top:4px}
+  .down{text-align:center;color:var(--muted);font-size:20px;line-height:1}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#eef1f7}
+  .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 14px;font-size:14px}
+  .no{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px 14px;font-size:14px}
+  .card-mock{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;max-width:360px}
+  .flag{color:var(--warn);font-weight:600}
+  @media (max-width:820px){.map{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.three,.io{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>MarketMate — how it works</h1>
+  <p class="sub">Film your stall and say your prices. Get a checked price list, a printed price board, a shop page and a POS file. Customers see today's checked prices.</p>
+  <div class="legend">
+    <span class="tag t-seller">Seller</span><span class="tag t-cust">Customer</span>
+    <span class="tag t-meta">Meta AI model</span><span class="tag t-modal">Modal (our server)</span>
+    <span class="tag t-code">Plain code (no AI)</span><span class="tag t-warn">Check / flag</span>
+  </div>
+
+  <h2>1. The big picture</h2>
+  <div class="map">
+    <div class="stack">
+      <div class="box b-seller"><h3>Seller's phone</h3><ul><li>Films stall + speaks prices</li><li>Fixes flagged values, approves</li><li>Prints board, publishes, exports</li></ul></div>
+      <div class="box b-cust"><h3>Customer's phone</h3><ul><li>Scans QR on price board</li><li>Searches, compares, plans budget</li><li>Calls / chats the seller</li></ul></div>
+    </div>
+    <div class="arrow">⇄</div>
+    <div class="box b-modal"><h3>MarketMate web app <span class="tag t-modal">Modal</span></h3>
+      <ul>
+        <li>Website pages (seller + customer)</li>
+        <li>ffmpeg: video → audio + frames</li>
+        <li>Checks that keep numbers honest</li>
+        <li>Database: shops, price lists, history</li>
+        <li>PDF, shop page, CSV, search, budget maths</li>
+        <li>Daily cost cap</li>
+      </ul>
+      <p class="eg">Free <code>*.modal.run</code> address — no domain to buy. Nothing is trained; we only call models.</p>
+    </div>
+    <div class="arrow">⇄</div>
+    <div class="box b-meta"><h3>Meta AI API</h3>
+      <ul>
+        <li><b>Voice Transcribe</b> — speech → text (Tamil + English mixed)</li>
+        <li><b>Muse Spark</b> — reads the text into items/prices, looks at frames, understands customer questions</li>
+        <li><b>SAM 3.1</b> — cuts each product out of the real video frame</li>
+      </ul>
+      <p class="eg">Key is in <code>.env</code> — verified working 27 Oct.</p>
+    </div>
+  </div>
+
+  <h2>2. Seller flow</h2>
+  <div class="flow seller">
+    <div class="step"><div class="num">1</div><div>
+      <h4>Create a shop <span class="tag t-code">code</span></h4>
+      Name, phone, area, language, currency. No password: the seller gets a private <b>edit link</b> and a public <b>shop page</b> link.
+    </div></div>
+    <div class="step"><div class="num">2</div><div>
+      <h4>Film the stall and talk <span class="tag t-seller">seller</span></h4>
+      <div class="eg">"Bengaluru thakkali, kilo pathinettu rupees. Vengayam kilo 25. Chinna vengayam 40, ippo 15 kilo irukku."</div>
+      <div class="io"><div><b>Feed</b>Video up to 3 min</div><div><b>Get</b>Saved on our server</div></div>
+    </div></div>
+    <div class="step"><div class="num">3</div><div>
+      <h4>Split the video <span class="tag t-modal">Modal · ffmpeg</span></h4>
+      <div class="io"><div><b>Feed</b>Video</div><div><b>Get</b>Audio file (WAV) + 2 pictures per second</div></div>
+    </div></div>
+    <div class="step"><div class="num">4</div><div>
+      <h4>Speech → text <span class="tag t-meta">Voice Transcribe</span></h4>
+      <div class="io"><div><b>Feed</b>Audio + list of produce names (helps spelling)</div><div><b>Get</b>Sentences with start/end times</div></div>
+    </div></div>
+    <div class="step"><div class="num">5</div><div>
+      <h4>Text → price list <span class="tag t-meta">Muse Spark</span></h4>
+      <div class="io"><div><b>Feed</b>Transcript</div><div><b>Get</b>Item, variety, price, unit, quantity — each with the exact quote it came from</div></div>
+    </div></div>
+    <div class="step"><div class="num">6</div><div>
+      <h4>Honesty checks <span class="tag t-warn">flags</span> <span class="tag t-code">code</span></h4>
+      Price must be in the quote · "18 or 80?" sound-alikes · unit missing/odd · big jump from yesterday · picture doesn't show the item. <b>Nothing is guessed — missing stays blank.</b>
+    </div></div>
+    <div class="step"><div class="num">7</div><div>
+      <h4>Find the photo <span class="tag t-meta">Muse Spark</span> <span class="tag t-meta">SAM 3.1</span></h4>
+      <div class="io"><div><b>Feed</b>Pictures from the moment the item was spoken</div><div><b>Get</b>Best picture + real cut-out of the tomatoes (not AI-drawn)</div></div>
+    </div></div>
+    <div class="step"><div class="num">8</div><div>
+      <h4>Review and approve <span class="tag t-seller">seller</span></h4>
+      <div class="three">
+        <div class="card-mock"><b>🍅 Bengaluru tomato</b><br>₹18 / kg · 40 kg<br><span class="eg">"kilo pathinettu rupees" ▶ 0:12</span><br>✓ checked</div>
+        <div class="card-mock"><b>🧅 Small onion</b><br>₹<span class="flag">40 or 14?</span> / kg<br><span class="eg">"chinna vengayam forty" ▶ 0:31</span><br><span class="flag">Tap to confirm</span></div>
+        <div class="card-mock"><b>🧅 White onion</b><br>₹25 / kg · qty <span class="flag">missing</span><br><span class="eg">"vengayam kilo 25" ▶ 0:20</span><br>Type quantity or skip</div>
+      </div>
+      <p class="eg">Stock value is calculated only from confirmed numbers: 40 kg × ₹18 = ₹720. Items with missing quantity are listed, not guessed.</p>
+    </div></div>
+    <div class="down">▼</div>
+    <div class="three">
+      <div class="box b-seller"><h3>🖨 Print price board</h3><ul><li>PDF, Tamil + English</li><li>Real photos, big prices</li><li>QR code → shop page</li></ul></div>
+      <div class="box b-seller"><h3>🌐 Publish today's prices</h3><ul><li>Shop page updates</li><li>"Set by seller · 10 min ago"</li><li>Unpublish / mark sold out</li></ul></div>
+      <div class="box b-seller"><h3>📤 Export to POS</h3><ul><li>Generic CSV</li><li>POS app import template</li></ul></div>
+    </div>
+    <div class="step" style="margin-top:10px"><div class="num">9</div><div>
+      <h4>Next morning: update by voice only <span class="tag t-meta">Voice Transcribe</span> <span class="tag t-meta">Muse Spark</span></h4>
+      <div class="eg">"Thakkali 22 today, vengayam sold out."</div>
+      Shows the changes → seller confirms → shop page and board update. No new video needed.
+    </div></div>
+  </div>
+
+  <h2>3. Customer flow</h2>
+  <div class="flow cust">
+    <div class="step"><div class="num">1</div><div>
+      <h4>Scan the QR or open the market page <span class="tag t-cust">customer</span></h4>
+      Shop page: today's prices, real photos from today's video, last-updated time, call / chat buttons.
+    </div></div>
+    <div class="step"><div class="num">2</div><div>
+      <h4>Search by typing or speaking <span class="tag t-meta">Voice Transcribe</span> <span class="tag t-meta">Muse Spark</span> <span class="tag t-code">code</span></h4>
+      <div class="io"><div><b>Feed</b>"Tomato under 25" / "shop with tomato, onion, potato"</div><div><b>Get</b>Muse Spark turns words into a search → code looks up published prices</div></div>
+    </div></div>
+    <div class="step"><div class="num">3</div><div>
+      <h4>Compare shops <span class="tag t-code">code</span></h4>
+      <table><tr><th>Shop</th><th>Tomato</th><th>Updated</th></tr>
+        <tr><td>Demo shop A</td><td>₹18/kg</td><td>10 min ago</td></tr>
+        <tr><td>Demo shop B</td><td>₹22/kg</td><td>30 min ago</td></tr>
+        <tr><td>Demo shop C</td><td>₹20/kg</td><td><span class="flag">Yesterday — may be old</span></td></tr></table>
+      <p class="eg">Demo shops are labelled as demo data.</p>
+    </div></div>
+    <div class="step"><div class="num">4</div><div>
+      <h4>Budget basket <span class="tag t-code">code</span> <span class="tag t-meta">Muse Spark</span></h4>
+      "I have ₹300: tomato 1 kg, onion 1 kg, potato 2 kg, chilli 100 g" → <b>code</b> does all the maths from published prices; Muse Spark only writes the friendly explanation.
+    </div></div>
+    <div class="step"><div class="num">5</div><div>
+      <h4>Contact the seller <span class="tag t-code">code</span></h4>
+      Call or chat link. No payments, orders or delivery in this version.
+    </div></div>
+  </div>
+
+  <h2>4. Where each Meta model is used</h2>
+  <table>
+    <tr><th>Model</th><th>Seller side</th><th>Customer side</th></tr>
+    <tr><td><b>Voice Transcribe</b></td><td>Stall video speech; next-day voice update</td><td>Voice search</td></tr>
+    <tr><td><b>Muse Spark</b></td><td>Speech → price list with quotes; checks the picture matches; (stretch) visible-condition hint for the seller only</td><td>Understands the question; writes budget explanation; translates item names</td></tr>
+    <tr><td><b>SAM 3.1</b></td><td>Cuts real product photos out of the video</td><td>Those photos appear on the shop page</td></tr>
+    <tr><td>Not used</td><td colspan="2">Muse Image (no AI-drawn produce or prices) · Muse Wonder (later: typing into old POS software)</td></tr>
+  </table>
+
+  <h2>5. Build days</h2>
+  <table>
+    <tr><th>Day</th><th>Work</th><th>Done when</th></tr>
+    <tr><td>Tue 27 Oct</td><td>API key ✓ · record 2 test clips with typed answer key</td><td>Clips ready</td></tr>
+    <tr><td>Wed 28</td><td><b>Gate test</b>: speech → price list → checks; one SAM cut-out · Agents 102 talk 9:30 PM</td><td>Real accuracy numbers</td></tr>
+    <tr><td>Thu 29</td><td>Processing pipeline + checks + tests</td><td>Video → draft list</td></tr>
+    <tr><td>Fri 30</td><td>Photo matching, cut-outs, review screen</td><td>Approve on phone</td></tr>
+    <tr><td>Sat 31</td><td>Stock value, PDF board, CSV/POS-app, shop page + QR</td><td>3 seller actions work</td></tr>
+    <tr><td>Sun 1 Nov</td><td>Voice update · customer search + compare</td><td>Find tomato across shops</td></tr>
+    <tr><td>Mon 2</td><td>Budget basket · go live on Modal · cost caps</td><td>Live link on a phone</td></tr>
+    <tr><td>Tue 3</td><td>Film real stalls (with consent) · demo shops · benchmark</td><td>Measured results table</td></tr>
+    <tr><td>Wed 4</td><td>Demo video, README · <b>submit by 9 PM IST</b></td><td>Submitted (deadline Thu 5 Nov 07:30 IST)</td></tr>
+  </table>
+
+  <h2>6. What we promise — and what we don't</h2>
+  <div class="three">
+    <div class="note"><b>We promise</b><br>Every price comes from the seller's own words, with proof. Nothing reaches customers until the seller approves it.</div>
+    <div class="no"><b>We don't do</b><br>Guess weight from video · grade freshness for customers · AI-drawn photos or prices · payments or delivery.</div>
+    <div class="note"><b>Privacy</b><br>Audio goes to Meta's API (cloud). Raw video is not published. Shop location is an area name, not GPS.</div>
+  </div>
+</main>
+</body>
+</html>

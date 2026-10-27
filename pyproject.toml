@@ -1,0 +1,39 @@
+[project]
+name = "marketmate"
+version = "0.1.0"
+description = "MarketMate: film a produce stall and speak prices, get a proof-checked price list, board, shop page and POS export."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "jinja2",
+  "python-multipart",
+  "httpx",
+  "openai",
+  "python-dotenv",
+  "pillow",
+  "qrcode",
+  "uvicorn",
+  "weasyprint",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "respx",
+  "pypdf",
+  "ruff",
+  "modal",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

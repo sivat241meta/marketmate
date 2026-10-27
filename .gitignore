@@ -1,0 +1,9 @@
+.env
+data/
+eval/clips/
+eval/out/
+.venv/
+__pycache__/
+*.egg-info/
+docs/ideas-ranking.html
+docs/product-flow.html
