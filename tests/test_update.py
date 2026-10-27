@@ -323,7 +323,7 @@ def test_voice_update_confirm_publishes_new_price(tmp_path, monkeypatch):
     assert "thakkali 22 today" in html
     assert "vengayam sold out" in html
     assert "review.js" in html
-    assert "opt-btn" in html or "flag-note" in html
+    assert "no quantity" not in html
     match = re.search(r"/e/\S+/update/(\d+)/confirm", html)
     assert match, "confirm page must link the confirm action"
     session_id = match.group(1)
@@ -375,3 +375,86 @@ def test_confirm_json_edits_price_and_enforces_flags(tmp_path, monkeypatch):
                            json={"items": [edited, sold_out], "confirmed": [0]})
     assert response.status_code in (302, 303)
     assert "₹23" in client.get(f"/s/{slug}").text
+
+
+def test_set_price_inherits_unit_from_current(tmp_path):
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop_id, _, _ = seed_shop(conn)
+        base = seed_version(conn, shop_id)
+        current = db.version_items(conn, base)
+    finally:
+        conn.close()
+    data = {"changes": [{
+        "name_en": "tomato", "action": "set_price",
+        "prices": [{"said": "22", "price": 22,
+                    "per_amount": None, "unit": None}],
+        "qty": None, "qty_unit": None, "turn_ids": [1],
+        "quote": "thakkali 22 today"}]}
+    transcript = Transcript(
+        text="thakkali 22 today", duration_ms=3000,
+        turns=[Turn(id=1, start_ms=0, end_ms=3000,
+                    text="thakkali 22 today")])
+    (change,) = parse_update_json(data, transcript, current)
+    assert change.price_lines[0].price == 22
+    assert change.price_lines[0].per_amount == Decimal(1)
+    assert change.price_lines[0].unit == "kg"
+    assert not [f for f in change.flags if f.code == "UNIT_MISSING"]
+    inherited = [f for f in change.flags if f.code == "UNIT_FROM_EARLIER"]
+    assert len(inherited) == 1
+    assert inherited[0].blocking is False
+    assert "current price" in inherited[0].message
+
+
+def test_voice_update_never_raises_qty_missing(tmp_path):
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop_id, _, _ = seed_shop(conn)
+        base = seed_version(conn, shop_id)
+        current = db.version_items(conn, base)
+    finally:
+        conn.close()
+    changes = parse_update_json(CANNED_UPDATE, update_transcript(), current)
+    assert changes
+    for change in changes:
+        assert not [f for f in change.flags if f.code == "QTY_MISSING"]
+
+
+def test_form_confirm_enforces_blocking_flags(tmp_path, monkeypatch):
+    canned_new_item = {"changes": [{
+        "name_en": "carrot", "action": "set_price",
+        "prices": [{"said": "kilo thirty", "price": 30,
+                    "per_amount": 1, "unit": "kg"}],
+        "qty": None, "qty_unit": None, "turn_ids": [1],
+        "quote": "carrot kilo thirty"}]}
+    settings = load_settings({"MODEL_API_KEY": "k",
+                              "DATA_DIR": str(tmp_path / "data")})
+
+    def fake_extract_audio(video, out_wav):
+        Path(out_wav).parent.mkdir(parents=True, exist_ok=True)
+        Path(out_wav).write_bytes(b"RIFF-fake-wav")
+        return Path(out_wav)
+
+    def fake_transcribe(wav, **kwargs):
+        return update_transcript()
+
+    def fake_chat_json(messages, **kwargs):
+        return canned_new_item
+
+    monkeypatch.setattr("app.web.seller.extract_audio", fake_extract_audio)
+    monkeypatch.setattr("app.web.seller.transcribe_wav", fake_transcribe)
+    monkeypatch.setattr("app.pipeline.update.chat_json", fake_chat_json)
+    client = TestClient(create_app(settings), follow_redirects=False)
+    location = create_shop(client)
+    token = location.rsplit("/e/", 1)[1]
+    approve_first_version(client, tmp_path / "data")
+    posted = client.post(
+        location + "/update",
+        files={"audio": ("update.webm", b"fake-opus", "audio/webm")})
+    assert posted.status_code == 200
+    session_id = re.search(r"/update/(\d+)/confirm", posted.text).group(1)
+    blocked = client.post(f"/e/{token}/update/{session_id}/confirm", data={})
+    assert blocked.status_code == 400
+    ok = client.post(f"/e/{token}/update/{session_id}/confirm",
+                     data={"confirmed": "0"})
+    assert ok.status_code in (302, 303)

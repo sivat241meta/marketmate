@@ -476,6 +476,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         and index not in confirmed):
                     raise HTTPException(
                         400, f"unconfirmed change on {change.name_en}")
+        else:
+            form = await request.form()
+            confirmed: set[int] = set()
+            for value in form.getlist("confirmed"):
+                try:
+                    confirmed.add(int(value))
+                except (TypeError, ValueError):
+                    continue
+            current = db.version_items(conn, base_version_id)
+            current_map = {item.name_en: item for item in current}
+            previous = {item.name_en: item.price_lines[0] for item in current
+                        if item.price_lines}
+            for index, change in enumerate(changes):
+                change.flags = flags_for_change(change, current_map, previous)
+                if (any(flag.blocking for flag in change.flags)
+                        and index not in confirmed):
+                    raise HTTPException(
+                        400, f"unconfirmed change on {change.name_en}")
         new_version_id = apply_changes(conn, shop["id"], base_version_id, changes)
         db.set_published(conn, new_version_id, True)
         db.set_session_status(conn, session_id, "approved",

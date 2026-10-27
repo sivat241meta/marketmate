@@ -54,7 +54,7 @@
     {% endif %}
   {% endfor %}
   {% if card.need_confirm %}
-  <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+  <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}" name="confirmed" value="{{ card.index }}"> I confirm</label>
   {% endif %}
   <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
 </section>

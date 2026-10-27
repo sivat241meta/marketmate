@@ -103,6 +103,20 @@ def _as_draft(change: Change) -> DraftItem:
 def flags_for_change(change: Change, current_map: dict[str, Item],
                      previous: dict[str, PriceLine]) -> list[Flag]:
     """Honesty flags for one change, reusing the video-flow checks."""
+    inherited = False
+    if change.action == "set_price":
+        current_item = current_map.get(change.name_en)
+        first = (current_item.price_lines[0]
+                 if current_item is not None and current_item.price_lines
+                 else None)
+        if (first is not None and first.per_amount is not None
+                and first.unit is not None):
+            for line in change.price_lines:
+                if (line.price is not None and line.per_amount is None
+                        and line.unit is None):
+                    line.per_amount = first.per_amount
+                    line.unit = first.unit
+                    inherited = True
     flags: list[Flag] = []
     if change.name_en not in current_map:
         flags.append(Flag(
@@ -116,6 +130,12 @@ def flags_for_change(change: Change, current_map: dict[str, Item],
     elif change.action in ("sold_out", "in_stock"):
         flags.extend(flag for flag in check_item(_as_draft(change), previous)
                      if flag.code == "CORRECTION_SAID")
+    flags = [flag for flag in flags if flag.code != "QTY_MISSING"]
+    if inherited:
+        flags.append(Flag(
+            field="unit", code="UNIT_FROM_EARLIER",
+            message="unit was taken from the current price",
+            blocking=False))
     return flags
 
 
