@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let recorder = null;
   let chunks = [];
+  const uploadUrl = startBtn.dataset.uploadUrl || window.location.pathname;
+  const recPrompt =
+    startBtn.dataset.recPrompt || "Recording… say the new prices, then tap Stop.";
 
   async function upload(blob) {
     const ext =
@@ -25,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     startBtn.disabled = true;
     stopBtn.disabled = true;
     try {
-      const response = await fetch(window.location.pathname, {
+      const response = await fetch(uploadUrl, {
         method: "POST",
         body: form,
       });
@@ -61,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
       recorder.start();
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      status.textContent = "Recording… say the new prices, then tap Stop.";
+      status.textContent = recPrompt;
     } catch (err) {
       status.textContent = "Microphone unavailable — upload a file instead.";
     }
