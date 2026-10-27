@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
 from app.models import Frame
+
+_TIME_RE = re.compile(r"time=(\d+):(\d+):([\d.]+)")
 
 
 class VideoTooLong(Exception):
@@ -14,6 +17,18 @@ def _run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run([*args], check=True, capture_output=True, text=True)
 
 
+def _duration_from_decode(video: Path) -> float:
+    result = subprocess.run(
+        ["ffmpeg", "-i", str(video), "-f", "null", "-"],
+        check=False, capture_output=True, text=True,
+    )
+    matches = _TIME_RE.findall(result.stderr or "")
+    if not matches:
+        raise ValueError(f"could not determine duration of {video}")
+    hours, minutes, seconds = matches[-1]
+    return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+
+
 def probe_duration_s(video: Path) -> float:
     result = _run(
         "ffprobe",
@@ -22,7 +37,10 @@ def probe_duration_s(video: Path) -> float:
         "-of", "default=noprint_wrappers=1:nokey=1",
         str(video),
     )
-    return float(result.stdout.strip())
+    text = result.stdout.strip()
+    if text == "N/A":
+        return _duration_from_decode(video)
+    return float(text)
 
 
 def check_length(video: Path, max_s: int) -> None:

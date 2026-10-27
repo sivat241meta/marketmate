@@ -10,6 +10,7 @@ from app.pipeline.media import (
     check_length,
     extract_audio,
     extract_frames,
+    probe_duration_s,
 )
 
 
@@ -70,3 +71,17 @@ def test_webm_input(tmp_path, video_webm):
 def test_too_long(video_mp4):
     with pytest.raises(VideoTooLong):
         check_length(video_mp4, 2)
+
+
+def test_probe_duration_webm_without_metadata(tmp_path):
+    out = tmp_path / "nodur.webm"
+    with open(out, "wb") as f:
+        subprocess.run(
+            ["ffmpeg", "-y",
+             "-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=2",
+             "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+             "-c:v", "libvpx-vp9", "-c:a", "libopus",
+             "-f", "webm", "pipe:1"],
+            check=True, stdout=f, stderr=subprocess.DEVNULL,
+        )
+    assert probe_duration_s(out) == pytest.approx(2.0, abs=0.1)
