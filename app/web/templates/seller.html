@@ -19,6 +19,16 @@
 {% else %}
 <p class="muted">No uploads yet.</p>
 {% endif %}
+{% if stock %}
+<h2>Stock value</h2>
+<p><strong>₹{{ stock.total }}</strong> in stock (version {{ stock.version_id }})</p>
+<p><a href="/e/{{ token }}/v/{{ stock.version_id }}/board.pdf">Price board (PDF)</a> ·
+<a href="/e/{{ token }}/v/{{ stock.version_id }}/export.csv">CSV</a> ·
+<a href="/e/{{ token }}/v/{{ stock.version_id }}/posapp.csv">POS-app CSV</a></p>
+{% if stock.left_out %}
+<p class="muted">Not counted: {{ stock.left_out | join(", ") }}</p>
+{% endif %}
+{% endif %}
 <h2>Versions</h2>
 {% if versions %}
 <ul>

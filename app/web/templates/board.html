@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<title>{{ shop["name"] }} — price board</title>
+<style>
+@font-face {
+  font-family: "Noto Sans Tamil";
+  src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Tamil";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
+}
+@page { size: A4; margin: 18mm 15mm; }
+body { font-family: "Noto Sans Tamil", sans-serif; color: #1a1a1a; }
+h1 { font-size: 28pt; margin: 0 0 2mm; }
+.shop-meta { color: #444; font-size: 11pt; margin: 0 0 6mm; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border-bottom: 1pt solid #999; padding: 3mm 2mm; text-align: left; }
+th { font-size: 10pt; color: #444; }
+.name-ta { font-size: 16pt; font-weight: bold; }
+.name-en { font-size: 11pt; color: #444; }
+.price { font-size: 22pt; font-weight: bold; white-space: nowrap; }
+.per { font-size: 11pt; color: #444; }
+.footer { margin-top: 8mm; font-size: 10pt; color: #444; }
+.footer img { width: 30mm; }
+</style>
+</head>
+<body>
+<h1>{{ shop["name"] }}</h1>
+<p class="shop-meta">{{ shop["area"] }} · {{ at }}</p>
+<table>
+<tr><th>Item</th><th>Price</th></tr>
+{% for row in rows %}
+<tr>
+  <td><div class="name-ta">{{ row.name_ta }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></td>
+  <td><span class="price">₹{{ row.price }}</span> <span class="per">per {{ row.per }}</span></td>
+</tr>
+{% endfor %}
+</table>
+<div class="footer">
+<img src="{{ qr_data_uri }}" alt="shop QR code">
+<p>Scan for the live price list · {{ shop_url }}</p>
+</div>
+</body>
+</html>

@@ -1,15 +1,24 @@
 import json
 import re
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
-from app.costs import CostLedger
+from app.costs import IST, CostLedger
+from app.outputs.csv_export import generic_csv, posapp_pos_csv
+from app.outputs.pdf import price_board_pdf
+from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.run import process_video_session, reprocess
 
@@ -111,11 +120,50 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         versions = conn.execute(
             "SELECT * FROM versions WHERE shop_id = ? ORDER BY id DESC", (shop["id"],)
         ).fetchall()
+        stock = None
+        if versions:
+            total, left_out = stock_value(
+                db.version_items(conn, versions[0]["id"]))
+            stock = {"total": total, "left_out": left_out,
+                     "version_id": versions[0]["id"]}
         return templates.TemplateResponse(
             request,
             "seller.html",
-            {"shop": shop, "sessions": sessions, "versions": versions, "notice": NOTICE},
+            {"shop": shop, "sessions": sessions, "versions": versions,
+             "notice": NOTICE, "stock": stock, "token": token},
         )
+
+    def _version_of_shop(conn, shop_id: int, version_id: int):
+        row = conn.execute(
+            "SELECT * FROM versions WHERE id = ? AND shop_id = ?",
+            (version_id, shop_id)).fetchone()
+        if row is None:
+            raise HTTPException(404, "unknown version")
+        return row
+
+    def _version_items(conn, token: str, version_id: int):
+        shop = _shop_or_404(conn, token)
+        _version_of_shop(conn, shop["id"], version_id)
+        return shop, db.version_items(conn, version_id)
+
+    @app.get("/e/{token}/v/{version_id}/board.pdf")
+    def version_board(token: str, version_id: int, conn: Conn):
+        shop, items = _version_items(conn, token, version_id)
+        pdf = price_board_pdf(
+            shop, items, datetime.now(IST),
+            f"{app.state.settings.public_base_url}/s/{shop['slug']}")
+        return Response(pdf, media_type="application/pdf")
+
+    @app.get("/e/{token}/v/{version_id}/export.csv")
+    def version_csv(token: str, version_id: int, conn: Conn):
+        _, items = _version_items(conn, token, version_id)
+        return Response(generic_csv(items, datetime.now(IST)),
+                        media_type="text/csv")
+
+    @app.get("/e/{token}/v/{version_id}/posapp.csv")
+    def version_posapp(token: str, version_id: int, conn: Conn):
+        _, items = _version_items(conn, token, version_id)
+        return Response(posapp_pos_csv(items), media_type="text/csv")
 
     @app.post("/e/{token}/upload")
     def upload(request: Request, token: str, video: UploadFile, conn: Conn):
