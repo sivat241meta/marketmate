@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Check prices{% endblock %}
+{% block content %}
+<h1>Check prices</h1>
+<p class="muted">Tap an option to use it, or fix the numbers. Approve when every card is right.</p>
+<form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve">
+{% for card in cards %}
+{% set item = card.item %}
+<section class="card" data-card="{{ card.index }}">
+  {% if card.photo_url %}<img class="photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
+  <h2><span lang="ta">{{ item.name_ta }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
+  {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
+  {% for line in item.price_lines %}
+  <div class="line">
+    <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
+    <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
+    <label>Unit <input data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" value="{{ line.unit or "" }}"></label>
+  </div>
+  {% endfor %}
+  <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
+  <blockquote class="quote">{{ item.proof.quote }}</blockquote>
+  {% if card.clip_url %}
+  <p><a href="{{ card.clip_url }}">▶ Play the seller saying it</a></p>
+  {% endif %}
+  {% for flag in item.flags %}
+    {% if flag.options %}
+    <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
+      <p>{{ flag.message }}</p>
+      {% for option in flag.options %}
+      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-value="{{ option }}">{{ option }}</button>
+      {% endfor %}
+      <label><input type="checkbox" data-item="{{ card.index }}" data-confirm="{{ flag.code }}"> I confirm</label>
+    </div>
+    {% elif flag.blocking %}
+    <p class="flag-blocking">{{ flag.message }}</p>
+    <label><input type="checkbox" data-item="{{ card.index }}" data-confirm="{{ flag.code }}"> I confirm</label>
+    {% else %}
+    <p class="flag-note">{{ flag.message }}</p>
+    {% endif %}
+  {% endfor %}
+  <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
+</section>
+{% endfor %}
+  <p class="form-error" id="approve-error" hidden></p>
+  <button class="btn" type="submit" id="approve-btn" disabled>Approve price list</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script src="/static/review.js"></script>
+{% endblock %}

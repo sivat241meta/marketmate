@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ shop["name"] }}{% endblock %}
+{% block content %}
+<h1>{{ shop["name"] }}</h1>
+<p class="muted">{{ shop["area"] }} · {{ shop["slug"] }}</p>
+<h2>Upload a clip</h2>
+<form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data">
+  <input type="file" name="video" accept="video/*" capture="environment" required>
+  <button class="btn" type="submit">Upload</button>
+</form>
+<p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+<h2>Sessions</h2>
+{% if sessions %}
+<ul>
+{% for s in sessions %}
+  <li><a href="/e/{{ token }}/s/{{ s["id"] }}">Session {{ s["id"] }}</a> — {{ s["status"] }}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="muted">No uploads yet.</p>
+{% endif %}
+<h2>Versions</h2>
+{% if versions %}
+<ul>
+{% for v in versions %}
+  <li>Version {{ v["id"] }}{% if v["published"] %} (published){% endif %}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p class="muted">No approved price lists yet.</p>
+{% endif %}
+{% endblock %}

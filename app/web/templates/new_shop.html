@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}New shop{% endblock %}
+{% block content %}
+<h1>New shop</h1>
+<form method="post" action="/new">
+  <label>Shop name <input name="name" required></label>
+  <label>Phone <input name="phone" placeholder="+91..." required></label>
+  <label>Area <input name="area" required></label>
+  <label>Language
+    <select name="language">
+      <option value="ta">Tamil</option>
+      <option value="en">English</option>
+    </select>
+  </label>
+  <label>Currency
+    <select name="currency">
+      <option value="INR">INR</option>
+    </select>
+  </label>
+  <label>Shop type <input name="type" value="vegetable" required></label>
+  <button class="btn" type="submit">Create shop</button>
+</form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}MarketMate{% endblock %}
+{% block content %}
+<h1>MarketMate</h1>
+<div class="choice">
+  <h2>Seller</h2>
+  <p>Film your stall, check prices, print your board.</p>
+  <p><a class="btn" href="/new">Start as seller</a></p>
+</div>
+<div class="choice">
+  <h2>Find prices</h2>
+  <p>Customer? Enter a shop name to see today's prices.</p>
+  <form method="post" action="/find">
+    <input name="slug" placeholder="shop-name" required>
+    <button class="btn" type="submit">Find</button>
+  </form>
+</div>
+<div class="choice">
+  <h2>Try it</h2>
+  <p>Judges: create a demo shop and run a clip end to end.</p>
+  <p><a class="btn" href="/new">Try the demo</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Session {{ session["id"] }}{% endblock %}
+{% block content %}
+<h1>Session {{ session["id"] }}</h1>
+<p>Status: <strong>{{ session["status"] }}</strong></p>
+{% if session["message"] %}<p>{{ session["message"] }}</p>{% endif %}
+{% if session["status"] == "failed" %}
+<form method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
+  <button class="btn" type="submit">Try again</button>
+</form>
+{% else %}
+<meta http-equiv="refresh" content="3">
+<p class="muted">Working on it… this page refreshes every 3 s.</p>
+{% endif %}
+{% endblock %}
