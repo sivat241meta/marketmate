@@ -11,6 +11,9 @@
 {% elif session["status"] == "approved" %}
 <p>Approved ✓ — the price list is saved.</p>
 <p><a class="btn" href="/e/{{ token }}">Back to shop</a></p>
+{% elif session["kind"] == "voice_update" %}
+<p>These changes are waiting on the confirm page. If you closed it, record the update again.</p>
+<p><a class="btn" href="/e/{{ token }}/update">Update prices by voice</a></p>
 {% else %}
 <meta http-equiv="refresh" content="3">
 <p class="muted">Working on it… this page refreshes every 3 s.</p>

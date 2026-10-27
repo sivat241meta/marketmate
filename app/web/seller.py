@@ -1,6 +1,7 @@
 import json
 import re
 import sqlite3
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -15,12 +16,23 @@ from fastapi.responses import (
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
-from app.costs import IST, CostLedger
+from app.costs import IST, CostCapExceeded, CostLedger
+from app.meta.spark import SparkError
+from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
 from app.outputs.pdf import price_board_pdf
 from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
+from app.pipeline.media import extract_audio
+from app.pipeline.names import CANONICAL_NAMES, PRODUCE_KEYWORDS
 from app.pipeline.run import process_video_session, reprocess
+from app.pipeline.update import (
+    apply_changes,
+    change_from_dict,
+    change_to_dict,
+    flags_for_change,
+    parse_update,
+)
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
@@ -63,6 +75,45 @@ def _photo_url(photo: str | None) -> str | None:
     if not photo:
         return None
     return "/m/" + Path(photo).name
+
+
+def _draft_from_client(raw: dict):
+    """Parse one review-form item, filling fields the form never edits."""
+    defaults = {
+        "name_spoken": "",
+        "name_ta": "",
+        "variety": None,
+        "qty": None,
+        "qty_unit": None,
+        "range_said": False,
+        "flags": [],
+        "photo": None,
+        "condition_hint": None,
+        "confirmed": False,
+        "proof": {
+            "quote": "",
+            "turn_ids": [],
+            "start_ms": 0,
+            "end_ms": 0,
+            "frame": None,
+            "audio_clip": None,
+        },
+    }
+    merged = dict(defaults, **raw)
+    merged["proof"] = dict(defaults["proof"], **(raw.get("proof") or {}))
+    return db._draft_from_json(json.dumps(merged))
+
+
+def _update_path(data_dir: Path, session_id: int) -> Path:
+    return data_dir / "sessions" / str(session_id) / "update.json"
+
+
+_ACTION_LABELS = {
+    "set_price": "New price",
+    "sold_out": "Sold out",
+    "in_stock": "Back in stock",
+    "set_qty": "New quantity",
+}
 
 
 def _relative_time(when, now) -> str:
@@ -195,7 +246,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
         context = {"shop": shop, "session": session, "token": token}
-        if session["status"] == "review":
+        if session["status"] == "review" and session["kind"] == "video":
             items = db.load_drafts(conn, session_id)
             cards = []
             for index, item in enumerate(items):
@@ -246,31 +297,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         raw_items = body.get("items", [])
         confirmed = set(body.get("confirmed", []))
         previous = db.last_prices(conn, shop["id"])
-        defaults = {
-            "name_spoken": "",
-            "name_ta": "",
-            "variety": None,
-            "qty": None,
-            "qty_unit": None,
-            "range_said": False,
-            "flags": [],
-            "photo": None,
-            "condition_hint": None,
-            "confirmed": False,
-            "proof": {
-                "quote": "",
-                "turn_ids": [],
-                "start_ms": 0,
-                "end_ms": 0,
-                "frame": None,
-                "audio_clip": None,
-            },
-        }
         items = []
         for index, raw in enumerate(raw_items):
-            merged = dict(defaults, **raw)
-            merged["proof"] = dict(defaults["proof"], **(raw.get("proof") or {}))
-            item = db._draft_from_json(json.dumps(merged))
+            item = _draft_from_client(raw)
             item.flags = check_item(item, previous)
             item.confirmed = index in confirmed
             items.append(item)
@@ -294,6 +323,164 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except ValueError as exc:
             raise HTTPException(400, str(exc))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
+
+    def _update_cards(token: str, changes, current_map: dict) -> list[dict]:
+        cards = []
+        for index, change in enumerate(changes):
+            current = current_map.get(change.name_en)
+            if current is not None and current.price_lines:
+                summary = ", ".join(
+                    f"₹{line.price} per {line.per_amount} {line.unit}"
+                    for line in current.price_lines)
+            else:
+                summary = ""
+            cards.append({
+                "index": index,
+                "name_en": change.name_en,
+                "name_ta": CANONICAL_NAMES.get(change.name_en, change.name_en),
+                "action": change.action,
+                "action_label": _ACTION_LABELS.get(change.action, change.action),
+                "lines": change.price_lines,
+                "qty": change.qty,
+                "quote": change.proof.quote,
+                "flags": change.flags,
+                "photo_url": _photo_url(current.photo) if current else None,
+                "current_summary": summary,
+                "need_confirm": any(
+                    flag.blocking and not flag.options for flag in change.flags),
+                "proof_json": json.dumps({
+                    "quote": change.proof.quote,
+                    "turn_ids": change.proof.turn_ids,
+                    "start_ms": change.proof.start_ms,
+                    "end_ms": change.proof.end_ms,
+                    "frame": change.proof.frame,
+                    "audio_clip": change.proof.audio_clip,
+                }),
+            })
+        return cards
+
+    @app.get("/e/{token}/update")
+    def update_page(request: Request, token: str, conn: Conn):
+        shop = _shop_or_404(conn, token)
+        version_id = db.latest_version(conn, shop["id"])
+        items = db.version_items(conn, version_id) if version_id else []
+        return templates.TemplateResponse(request, "update.html", {
+            "shop": shop, "token": token, "mode": "record", "items": items,
+            "notice": NOTICE, "error": None})
+
+    @app.post("/e/{token}/update")
+    async def update_post(request: Request, token: str):
+        # Own connection: the sync request dependency may live on another thread.
+        conn = db.connect(data_dir)
+        try:
+            return await _update_post_impl(request, token, conn)
+        finally:
+            conn.close()
+
+    async def _update_post_impl(request: Request, token: str, conn):
+        shop = _shop_or_404(conn, token)
+        base_version_id = db.latest_version(conn, shop["id"])
+        if base_version_id is None:
+            raise HTTPException(400, "approve a price list first, then update it")
+        form = await request.form()
+        upload = form.get("audio") or form.get("file") or form.get("video")
+        if upload is None or not hasattr(upload, "file"):
+            raise HTTPException(422, "an audio recording is required")
+        session_id = db.create_session(conn, shop["id"], "voice_update")
+        session_dir = data_dir / "sessions" / str(session_id)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        uploads = data_dir / "uploads"
+        uploads.mkdir(parents=True, exist_ok=True)
+        safe_name = Path(getattr(upload, "filename", "") or "update.webm").name
+        saved = uploads / f"{session_id}_{safe_name}"
+        saved.write_bytes(await upload.read())
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        try:
+            wav = extract_audio(saved, session_dir / "audio.wav")
+            transcript = transcribe_wav(
+                wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
+                settings=app.state.settings)
+            current = db.version_items(conn, base_version_id)
+            changes = parse_update(transcript, current,
+                                   ledger=ledger, settings=app.state.settings)
+        except (TranscribeError, SparkError, CostCapExceeded,
+                subprocess.CalledProcessError, OSError) as exc:
+            db.set_session_status(conn, session_id, "failed", str(exc))
+            items = db.version_items(conn, base_version_id)
+            return templates.TemplateResponse(request, "update.html", {
+                "shop": shop, "token": token, "mode": "record", "items": items,
+                "notice": NOTICE, "error": str(exc) or "the update failed"})
+        finally:
+            saved.unlink(missing_ok=True)
+        _update_path(data_dir, session_id).write_text(json.dumps({
+            "base_version_id": base_version_id,
+            "changes": [change_to_dict(change) for change in changes]}))
+        db.set_session_status(conn, session_id, "review",
+                              f"{len(changes)} changes heard")
+        current_map = {item.name_en: item for item in current}
+        return templates.TemplateResponse(request, "update.html", {
+            "shop": shop, "token": token, "mode": "confirm",
+            "session_id": session_id,
+            "cards": _update_cards(token, changes, current_map),
+            "transcript": transcript.text})
+
+    @app.post("/e/{token}/update/{session_id}/confirm")
+    async def update_confirm(request: Request, token: str, session_id: int):
+        # Own connection: the sync request dependency may live on another thread.
+        conn = db.connect(data_dir)
+        try:
+            return await _update_confirm_impl(request, token, session_id, conn)
+        finally:
+            conn.close()
+
+    async def _update_confirm_impl(request: Request, token: str, session_id: int,
+                                   conn):
+        shop = _shop_or_404(conn, token)
+        session = _session_of_shop(conn, shop["id"], session_id)
+        if session["kind"] != "voice_update":
+            raise HTTPException(400, "not a voice update session")
+        if session["status"] == "approved":
+            return RedirectResponse(f"/e/{token}", status_code=303)
+        if session["status"] != "review":
+            raise HTTPException(400, "this update is not ready to confirm")
+        stored_path = _update_path(data_dir, session_id)
+        if not stored_path.is_file():
+            raise HTTPException(400, "no pending update; record again")
+        stored = json.loads(stored_path.read_text())
+        base_version_id = stored["base_version_id"]
+        changes = [change_from_dict(raw) for raw in stored["changes"]]
+        if request.headers.get("content-type", "").startswith("application/json"):
+            body = await request.json()
+            raw_items = body.get("items", [])
+            confirmed = set(body.get("confirmed", []))
+            if len(raw_items) != len(changes):
+                raise HTTPException(400, "confirm form is out of date; record again")
+            current = db.version_items(conn, base_version_id)
+            current_map = {item.name_en: item for item in current}
+            previous = {item.name_en: item.price_lines[0] for item in current
+                        if item.price_lines}
+            for index, (change, raw) in enumerate(zip(changes, raw_items)):
+                draft = _draft_from_client(raw)
+                if change.action == "set_price":
+                    change.price_lines = list(draft.price_lines)
+                    change.qty = draft.qty
+                    if draft.qty_unit is not None:
+                        change.qty_unit = draft.qty_unit
+                elif change.action == "set_qty" and draft.qty is not None:
+                    change.qty = draft.qty
+                    if draft.qty_unit is not None:
+                        change.qty_unit = draft.qty_unit
+                change.flags = flags_for_change(change, current_map, previous)
+                if (any(flag.blocking for flag in change.flags)
+                        and index not in confirmed):
+                    raise HTTPException(
+                        400, f"unconfirmed change on {change.name_en}")
+        new_version_id = apply_changes(conn, shop["id"], base_version_id, changes)
+        db.set_published(conn, new_version_id, True)
+        db.set_session_status(conn, session_id, "approved",
+                              f"{len(changes)} changes published")
+        return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/v/{version_id}/publish")
     def publish_version(token: str, version_id: int, conn: Conn):
