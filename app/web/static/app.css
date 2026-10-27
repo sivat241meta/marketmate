@@ -70,6 +70,34 @@ input[type="checkbox"] { width: auto; }
   border-radius: 8px;
   padding: 8px 10px;
 }
+.opt-btn.chosen {
+  background: #1b5e20;
+  color: #fff;
+}
+.opt-btn.chosen::before {
+  content: "✓ ";
+}
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+  margin: 8px 0;
+}
+.line-remove {
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  background: #fff;
+  color: #b3261e;
+  border: 1px solid #b3261e;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.card-confirm {
+  display: block;
+  font-size: 1.05rem;
+  margin: 12px 0;
+}
 .flag-note {
   color: #666;
   font-size: 0.85rem;

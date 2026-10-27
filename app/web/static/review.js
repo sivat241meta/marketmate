@@ -1,6 +1,8 @@
 "use strict";
-/* Review cards: one-tap option buttons fill the first price input of the
-   card; approve posts the edited cards as JSON. */
+/* Review cards: tapping an option fills the first price input and marks the
+   flag resolved (chosen button gets a check). On TWO_PRICES the other
+   duplicate lines are removed from the card, so approval keeps one line.
+   Approve posts the edited cards as JSON. */
 
 function cardInputs(form, index) {
   return Array.from(
@@ -35,10 +37,11 @@ function collectCards(form) {
     }
   });
   const confirmed = [];
-  const items = Object.keys(byItem).sort().map((key, position) => {
+  const order = (a, b) => Number(a) - Number(b);
+  const items = Object.keys(byItem).sort(order).map((key, position) => {
     const entry = byItem[key];
-    const lines = Object.keys(entry.lines).sort().map((line) => entry.lines[line]);
-    const box = form.querySelector(`[data-confirm][data-item="${key}"]`);
+    const lines = Object.keys(entry.lines).sort(order).map((line) => entry.lines[line]);
+    const box = form.querySelector(`[data-card-confirm][data-item="${key}"]`);
     if (box && box.checked) {
       confirmed.push(position);
     }
@@ -65,13 +68,39 @@ function collectCards(form) {
   return { items, confirmed };
 }
 
+function lineKey(wrap) {
+  const amount = wrap.querySelector('[data-field="per_amount"]');
+  const unit = wrap.querySelector('[data-field="unit"]');
+  return `${amount ? amount.value : ""}||${unit ? unit.value : ""}`;
+}
+
+function keepChosenLine(card) {
+  if (!card) {
+    return;
+  }
+  const wraps = Array.from(card.querySelectorAll(".line"));
+  if (wraps.length < 2) {
+    return;
+  }
+  const keep = lineKey(wraps[0]);
+  wraps.slice(1).forEach((wrap) => {
+    if (lineKey(wrap) === keep) {
+      wrap.remove();
+    }
+  });
+}
+
 function updateApprove(form) {
   const button = form.querySelector("#approve-btn");
   const error = form.querySelector("#approve-error");
   let unresolved = 0;
-  form.querySelectorAll(".flag-options, .flag-blocking").forEach((flag) => {
-    const box = flag.querySelector("[data-confirm]");
-    if (box && !box.checked) {
+  form.querySelectorAll(".flag-options").forEach((group) => {
+    if (!group.querySelector(".opt-btn.chosen")) {
+      unresolved += 1;
+    }
+  });
+  form.querySelectorAll("[data-card-confirm]").forEach((box) => {
+    if (!box.checked) {
       unresolved += 1;
     }
   });
@@ -91,10 +120,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   form.querySelectorAll(".opt-btn").forEach((button) => {
     button.addEventListener("click", () => {
+      const group = button.closest(".flag-options");
+      group.querySelectorAll(".opt-btn").forEach((other) => {
+        other.classList.remove("chosen");
+      });
+      button.classList.add("chosen");
       const input = form.querySelector(
         `[data-item="${button.dataset.item}"][data-field="price"]`);
       if (input) {
         input.value = button.dataset.value;
+      }
+      if (group.dataset.flag === "TWO_PRICES") {
+        keepChosenLine(button.closest(".card"));
+      }
+      updateApprove(form);
+    });
+  });
+  form.querySelectorAll(".line-remove").forEach((button) => {
+    button.addEventListener("click", () => {
+      const wrap = button.closest(".line");
+      if (wrap) {
+        wrap.remove();
       }
       updateApprove(form);
     });

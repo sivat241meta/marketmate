@@ -37,7 +37,38 @@ def canned_dict():
     return json.loads(db._draft_to_json(canned_item()))
 
 
-def make_client(tmp_path, monkeypatch):
+def potato_item():
+    return DraftItem(
+        name_spoken="urulaikizhangu",
+        name_ta="உருளைக்கிழங்கு",
+        name_en="potato",
+        variety=None,
+        price_lines=[
+            PriceLine(Decimal(30), Decimal(1), "kg", "kilo thirty"),
+            PriceLine(Decimal(35), Decimal(1), "kg", "thirty five"),
+        ],
+        qty=None,
+        qty_unit=None,
+        proof=Proof(
+            quote="urulaikizhangu kilo thirty rupees இல்ல இல்ல thirty five rupees",
+            turn_ids=[1],
+            start_ms=0,
+            end_ms=1000,
+        ),
+        flags=[
+            Flag(
+                field="price",
+                code="TWO_PRICES",
+                message="two prices heard: 30 or 35?",
+                options=["30", "35"],
+            ),
+            Flag(field="price", code="CORRECTION_SAID",
+                 message="seller corrected themselves"),
+        ],
+    )
+
+
+def make_client(tmp_path, monkeypatch, seed=None):
     settings = load_settings({"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")})
     app = create_app(settings)
 
@@ -45,7 +76,7 @@ def make_client(tmp_path, monkeypatch):
         fn(*args)
 
     def fake_process(conn, session_id, video, *, settings, ledger):
-        db.save_drafts(conn, session_id, [canned_item()])
+        db.save_drafts(conn, session_id, [seed or canned_item()])
         db.set_session_status(conn, session_id, "review", "1 item needs review")
 
     monkeypatch.setattr("app.web.seller.jobs.submit", fake_submit)
@@ -145,5 +176,48 @@ def test_approve_blocked_then_resolved(tmp_path, monkeypatch):
         shops = conn.execute("SELECT id FROM shops").fetchall()
         assert len(shops) == 1
         assert db.latest_version(conn, shops[0]["id"]) is not None
+    finally:
+        conn.close()
+
+
+def test_review_card_choice_controls(tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch, seed=potato_item())
+    location = create_shop(client)
+    session_url = client.post(
+        location + "/upload", files={"video": ("clip.mp4", b"fakevideo", "video/mp4")}
+    ).headers["location"]
+    html = client.get(session_url).text
+    assert 'data-flag="TWO_PRICES"' in html
+    assert "<select" in html
+    for unit in ["kg", "g", "piece", "dozen", "bunch", "packet"]:
+        assert f">{unit}</option>" in html
+    assert "line-remove" in html
+    assert "data-confirm=" not in html
+    assert html.count("data-card-confirm") == 1
+
+
+def test_approve_after_choosing_35_keeps_one_line(tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch, seed=potato_item())
+    location = create_shop(client)
+    session_url = client.post(
+        location + "/upload", files={"video": ("clip.mp4", b"fakevideo", "video/mp4")}
+    ).headers["location"]
+    chosen = json.loads(db._draft_to_json(potato_item()))
+    chosen["price_lines"] = [chosen["price_lines"][1]]
+    assert Decimal(chosen["price_lines"][0]["price"]) == 35
+    response = client.post(
+        session_url + "/approve", json={"items": [chosen], "confirmed": [0]})
+    assert response.status_code in (302, 303)
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop_id = conn.execute("SELECT id FROM shops").fetchone()["id"]
+        version_id = db.latest_version(conn, shop_id)
+        assert version_id is not None
+        stored = db.version_items(conn, version_id)
+        assert len(stored) == 1
+        lines = stored[0].price_lines
+        assert len(lines) == 1
+        assert (lines[0].price, lines[0].per_amount, lines[0].unit) == (
+            Decimal(35), Decimal(1), "kg")
     finally:
         conn.close()

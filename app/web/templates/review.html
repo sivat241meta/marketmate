@@ -10,11 +10,20 @@
   {% if card.photo_url %}<img class="photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
   <h2><span lang="ta">{{ item.name_ta }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
   {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
+  {% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
   {% for line in item.price_lines %}
   <div class="line">
     <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
     <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
-    <label>Unit <input data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" value="{{ line.unit or "" }}"></label>
+    <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
+      {% for u in units %}
+      <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
+      {% endfor %}
+      {% if line.unit and line.unit not in units %}
+      <option value="{{ line.unit }}" selected>{{ line.unit }}</option>
+      {% endif %}
+    </select></label>
+    <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="Remove this price line">✕</button>
   </div>
   {% endfor %}
   <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
@@ -27,17 +36,24 @@
     <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
       <p>{{ flag.message }}</p>
       {% for option in flag.options %}
-      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-value="{{ option }}">{{ option }}</button>
+      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-value="{{ option }}">{{ option }}</button>
       {% endfor %}
-      <label><input type="checkbox" data-item="{{ card.index }}" data-confirm="{{ flag.code }}"> I confirm</label>
     </div>
     {% elif flag.blocking %}
     <p class="flag-blocking">{{ flag.message }}</p>
-    <label><input type="checkbox" data-item="{{ card.index }}" data-confirm="{{ flag.code }}"> I confirm</label>
     {% else %}
     <p class="flag-note">{{ flag.message }}</p>
     {% endif %}
   {% endfor %}
+  {% set ns = namespace(need_confirm=false) %}
+  {% for flag in item.flags %}
+    {% if flag.blocking and not flag.options %}
+      {% set ns.need_confirm = true %}
+    {% endif %}
+  {% endfor %}
+  {% if ns.need_confirm %}
+  <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+  {% endif %}
   <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
 </section>
 {% endfor %}
