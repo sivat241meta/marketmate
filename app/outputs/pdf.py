@@ -20,9 +20,31 @@ def _plain(value) -> str:
     return format(value.normalize(), "f")
 
 
+_PHOTO_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}
+
+
+def _photo_data_uri(path) -> str | None:
+    """Embed the SAM cut-out thumbnail; None when the item has no photo."""
+    if not path:
+        return None
+    file = Path(path)
+    if not file.is_file():
+        return None
+    mime = _PHOTO_MIME.get(file.suffix.lower(), "image/jpeg")
+    return f"data:{mime};base64," + base64.b64encode(file.read_bytes()).decode()
+
+
 def _rows(items: list[Item]) -> list[dict]:
     rows = []
     for item in items:
+        photo = _photo_data_uri(item.photo)
+        if item.sold_out:
+            rows.append({
+                "name_ta": item.name_ta, "name_en": item.name_en,
+                "variety": item.variety, "photo": photo, "sold_out": True,
+                "price": "", "per": "",
+            })
+            continue
         for line in item.price_lines:
             if line.price is None:
                 continue
@@ -31,6 +53,8 @@ def _rows(items: list[Item]) -> list[dict]:
                 "name_ta": item.name_ta,
                 "name_en": item.name_en,
                 "variety": item.variety,
+                "photo": photo,
+                "sold_out": False,
                 "price": _plain(line.price),
                 "per": f"{amount} {line.unit or ''}".strip(),
             })

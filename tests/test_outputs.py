@@ -28,13 +28,21 @@ def pl(price, per_amount, unit, said=""):
 
 
 def item(name_en="tomato", name_ta="தக்காளி", variety=None, qty=None,
-         qty_unit=None, lines=()):
+         qty_unit=None, lines=(), photo=None, sold_out=False):
     return Item(
         id=1, version_id=1, name_ta=name_ta, name_en=name_en, variety=variety,
         qty=Decimal(qty) if qty is not None else None, qty_unit=qty_unit,
-        photo=None, sold_out=False, price_lines=list(lines),
+        photo=photo, sold_out=sold_out, price_lines=list(lines),
         proof=Proof(quote="", turn_ids=[], start_ms=0, end_ms=0),
     )
+
+
+def photo_jpeg(tmp_path, name="photo.jpg"):
+    from PIL import Image
+
+    path = tmp_path / name
+    Image.new("RGB", (24, 24), "red").save(path, "JPEG")
+    return str(path)
 
 
 def demo_shop_row():
@@ -123,6 +131,54 @@ def test_pdf_plain_price_figures():
         "http://127.0.0.1:8000/s/demo-stall",
     )
     assert "₹60" in pypdf_text(pdf)
+
+
+def page_images(pdf: bytes) -> list:
+    from pypdf import PdfReader
+
+    return list(PdfReader(io.BytesIO(pdf)).pages[0].images)
+
+
+def test_board_embeds_photo_thumbnail(tmp_path):
+    goods = [item(lines=[pl(18, 1, "kg")], photo=photo_jpeg(tmp_path))]
+    pdf = price_board_pdf(
+        demo_shop_row(), goods,
+        datetime(2026, 10, 28, 9, 0, tzinfo=IST),
+        "http://127.0.0.1:8000/s/demo-stall",
+    )
+    assert len(page_images(pdf)) == 2
+    plain = price_board_pdf(
+        demo_shop_row(), [item(lines=[pl(18, 1, "kg")])],
+        datetime(2026, 10, 28, 9, 0, tzinfo=IST),
+        "http://127.0.0.1:8000/s/demo-stall",
+    )
+    assert len(page_images(plain)) == 1
+
+
+def test_board_header_shows_phone():
+    pdf = price_board_pdf(
+        demo_shop_row(), [item(lines=[pl(18, 1, "kg")])],
+        datetime(2026, 10, 28, 9, 0, tzinfo=IST),
+        "http://127.0.0.1:8000/s/demo-stall",
+    )
+    assert "+914400000000" in pypdf_text(pdf)
+
+
+def test_board_sold_out_hides_price():
+    pdf = price_board_pdf(
+        demo_shop_row(),
+        [item(lines=[pl(18, 1, "kg")], sold_out=True)],
+        datetime(2026, 10, 28, 9, 0, tzinfo=IST),
+        "http://127.0.0.1:8000/s/demo-stall",
+    )
+    text = pypdf_text(pdf)
+    assert "Sold out" in text
+    assert "₹18" not in text
+
+
+def test_value_skips_sold_out():
+    goods = [item(qty=40, qty_unit="kg", lines=[pl(18, 1, "kg")], sold_out=True)]
+    assert stock_value(goods) == (0, [])
 
 
 def seed_version(tmp_path):

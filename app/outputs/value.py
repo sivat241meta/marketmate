@@ -12,6 +12,8 @@ def stock_value(items: list[Item]) -> tuple[Decimal, list[str]]:
     total = Decimal(0)
     left_out: list[str] = []
     for item in items:
+        if item.sold_out:
+            continue
         if item.qty is None or item.qty_unit is None:
             left_out.append(item.name_en)
             continue

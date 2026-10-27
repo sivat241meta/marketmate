@@ -22,21 +22,24 @@ th, td { border-bottom: 1pt solid #999; padding: 3mm 2mm; text-align: left; }
 th { font-size: 10pt; color: #444; }
 .name-ta { font-size: 16pt; font-weight: bold; }
 .name-en { font-size: 11pt; color: #444; }
+.thumb { width: 20mm; height: 20mm; margin-right: 3mm; vertical-align: middle; }
+.item-cell { display: inline-block; vertical-align: middle; }
 .price { font-size: 22pt; font-weight: bold; white-space: nowrap; }
 .per { font-size: 11pt; color: #444; }
+.soldout { font-size: 16pt; font-weight: bold; color: #888; }
 .footer { margin-top: 8mm; font-size: 10pt; color: #444; }
 .footer img { width: 30mm; }
 </style>
 </head>
 <body>
 <h1>{{ shop["name"] }}</h1>
-<p class="shop-meta">{{ shop["area"] }} · {{ at }}</p>
+<p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }} · {{ at }}</p>
 <table>
 <tr><th>Item</th><th>Price</th></tr>
 {% for row in rows %}
 <tr>
-  <td><div class="name-ta">{{ row.name_ta }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></td>
-  <td><span class="price">₹{{ row.price }}</span> <span class="per">per {{ row.per }}</span></td>
+  <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-ta">{{ row.name_ta }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
+  <td>{% if row.sold_out %}<span class="soldout">Sold out</span>{% else %}<span class="price">₹{{ row.price }}</span> <span class="per">per {{ row.per }}</span>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
