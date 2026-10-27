@@ -500,7 +500,9 @@ Answer key format:
   |---|---|---|
   | `NOT_HEARD` | A price/qty value is not among `find_numbers(quote)` | yes |
   | `SOUND_ALIKE` | The value was said in English (kind `"english"`) and is in the pairs; options `["18","80"]` | yes |
-  | `UNIT_MISSING` | A price is present but its unit is None | yes |
+  | `CORRECTION_SAID` | The quote holds a correction marker (`illa illa`, `illai`, `sorry`, `no no`, `wait`, `correction`, `இல்ல`, `இல்லை`) | yes |
+  | `UNCLEAR_NUMBER` | The word before a currency word (`rupai`, `rupees`, `rupee`, `rs`, `₹`, `ரூபாய்`, `ரூபா`) is not a number or unit; the message names that word | yes |
+  | `UNIT_MISSING` | A price is present but its unit is None; a sibling line's unit is offered as the option (e.g. `"per 1 kg"`) | yes |
   | `UNIT_ODD` | `name_en in WEIGHT_ITEMS` and the unit is `piece` | yes |
   | `JUMP` | `abs(rate-prev)/prev > 0.5`; message shows the previous price | yes |
   | `RANGE` | `range_said` | yes |
