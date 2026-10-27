@@ -97,7 +97,8 @@ Task 21 is stretch.
 - Never commit `.env` (commit `.env.example` only).
 - Git identity: `sivat241meta` / `348483894+sivat241meta@users.noreply.github.com`.
 - Remote: `github.com/sivat241meta/marketmate`, **private until Task 20**, then public.
-  **After every task's commit, run `git push`.** Never force-push.
+  Muse Code commits but does **not** push: git network access is blocked in its sandbox. The
+  reviewer pushes after approving each task. Never force-push.
 - Every commit message written by Muse Code ends with the trailer line
   `Built-with: Muse Code`, so the history shows the build tool.
 
