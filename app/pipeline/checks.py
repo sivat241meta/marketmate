@@ -19,9 +19,9 @@ for _teen, _tens in SOUND_ALIKE_PAIRS.items():
 WEIGHT_ITEMS: set[str] = {
     "tomato", "onion", "small onion", "potato", "carrot", "beans", "cabbage",
     "cauliflower", "brinjal", "okra", "drumstick", "pumpkin", "bottle gourd",
-    "bitter gourd", "snake gourd", "ridge gourd", "cucumber", "mango", "papaya",
-    "guava", "grapes", "apple", "lemon", "green chilli", "ginger", "garlic",
-    "coriander", "radish", "beetroot", "peas", "capsicum", "spinach",
+    "bitter gourd", "snake gourd", "ridge gourd", "cucumber", "grapes",
+    "green chilli", "ginger", "garlic", "coriander", "radish", "beetroot",
+    "peas", "capsicum", "spinach",
 }
 
 TAMIL_FIFTY_WORDS = frozenset({
@@ -486,7 +486,8 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
         if line.unit == "piece" and item.name_en in WEIGHT_ITEMS:
             flags.append(Flag(
                 field="unit", code="UNIT_ODD",
-                message=f"{item.name_en} is usually sold by weight, not per piece"))
+                message="usually sold by weight - is per piece right?",
+                blocking=False))
         if line.unit is not None and line.unit not in CANONICAL_UNITS:
             flags.append(Flag(field="unit", code="UNIT_CHECK",
                               message="please check the unit",

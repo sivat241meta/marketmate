@@ -16,8 +16,9 @@ _SYSTEM_PROMPT = (
     "copied word for word from the quote; "
     "list every price said for one item in spoken order; "
     "a spoken range sets range_said true and price null; "
-    "name_en is the lower-case English name and must be a key of the "
-    'canonical list, or "other"; '
+    "name_en is the lower-case English name, from the canonical list "
+    "when it matches, otherwise the plain English name of the item; "
+    '"other" only when the item truly cannot be named; '
     "unit and qty_unit use only the canonical set: kg, g, l, ml, piece, "
     "dozen, bunch, packet; "
     "name_local is the same item's name in the shop language's script; "
@@ -122,7 +123,11 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
     """Build DraftItems from model JSON; unknown turns fall back to quote search."""
     items: list[DraftItem] = []
     for raw in data.get("items") or []:
-        name_en = raw.get("name_en") or "other"
+        raw_name = raw.get("name_en") or "other"
+        if isinstance(raw_name, str):
+            name_en = raw_name.strip().lower() or "other"
+        else:
+            name_en = "other"
         name_spoken = raw.get("name_spoken") or ""
         price_lines = [
             PriceLine(

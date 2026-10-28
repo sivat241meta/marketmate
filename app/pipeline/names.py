@@ -61,6 +61,9 @@ _ITEMS: tuple[tuple[str, str, str], ...] = (
     ("mushroom", "காளான்", "kaalaan"),
     ("corn", "சோளம்", "sozham"),
     ("peas", "பட்டாணி", "pattaani"),
+    ("banana stem", "வாழைத்தண்டு", "vazhaithandu"),
+    ("banana flower", "வாழைப்பூ", "vazhaipoo"),
+    ("sweet lime", "சாத்துக்குடி", "saathukudi"),
 )
 
 CANONICAL_NAMES: dict[str, str] = {name_en: name_ta for name_en, name_ta, _ in _ITEMS}
