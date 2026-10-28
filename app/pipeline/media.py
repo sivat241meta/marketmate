@@ -50,6 +50,16 @@ def check_length(video: Path, max_s: int) -> None:
         raise VideoTooLong(f"video is longer than {max_s}s")
 
 
+def has_video_stream(path: Path) -> bool:
+    """True when ffprobe finds at least one video stream in the file."""
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v",
+         "-show_entries", "stream=index", "-of", "csv=p=0", str(path)],
+        check=False, capture_output=True, text=True,
+    )
+    return bool((result.stdout or "").strip())
+
+
 def extract_audio(video: Path, out_wav: Path) -> Path:
     _run(
         "ffmpeg",

@@ -115,8 +115,44 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   });
+  document.querySelectorAll("[data-wa-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = btn.getAttribute("data-wa-text") || "";
+      const done = btn.getAttribute("data-msg-copied") || "Copied";
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (err) {
+        const area = document.createElement("textarea");
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        try {
+          ok = document.execCommand("copy");
+        } catch (err2) {
+          ok = false;
+        }
+        area.remove();
+      }
+      if (ok) {
+        const label = btn.textContent;
+        btn.textContent = done;
+        window.setTimeout(() => { btn.textContent = label; }, 1500);
+      }
+    });
+  });
 });
 </script>
+{% if _is_seller %}
+<script>
+try {
+  localStorage.setItem("mm_seller_token", "{{ token }}");
+  localStorage.setItem("mm_seller_name", {{ shop["name"]|tojson }});
+  localStorage.setItem("mm_seller_lang", "{{ shop["language"] }}");
+} catch (err) { /* private mode: share-into-app needs the shop link open */ }
+</script>
+{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -25,6 +25,12 @@
 {% elif session["status"] == "approved" %}
 <h1>{{ t('sess.title', id=session["id"]) }}</h1>
 <p>{{ t('sess.approved_text') }}</p>
+{% if wa_url %}
+<div class="hero-cta">
+  <a class="pill dark" href="{{ wa_url }}">{{ ui.icon("whatsapp") }}{{ t('wa.send_prices') }}</a>
+  <button class="pill ghost" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>
+</div>
+{% endif %}
 <p><a class="btn" href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>
 {% elif session["kind"] == "voice_update" and session["status"] == "review" %}
 <h1>{{ t('sess.title', id=session["id"]) }}</h1>

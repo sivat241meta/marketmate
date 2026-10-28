@@ -19,6 +19,7 @@ from app.pipeline.media import (
     cut_audio_clip,
     extract_audio,
     extract_frames,
+    has_video_stream,
 )
 from app.pipeline.names import keywords_for
 from app.pipeline.photos import make_photo
@@ -207,10 +208,13 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     row = conn.execute("SELECT kind FROM sessions WHERE id = ?",
                        (session_id,)).fetchone()
     is_live = (row["kind"] == "live") if row else use_live_frames
-    if not is_live:
+    # Voice note (or any audio-only file): no frames, so no photo step and
+    # no photo flags; transcription, extraction, clips and checks continue.
+    audio_only = not is_live and not (all_frames or [])
+    if not is_live and not audio_only:
         db.set_stage(conn, session_id, "photos")
     for index, item in enumerate(items):
-        if not is_live:
+        if not is_live and not audio_only:
             db.set_stage(conn, session_id, "photos",
                          detail=f"item {index + 1} of {len(items)}")
         if use_live_frames:
@@ -223,6 +227,13 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 item.proof.audio_clip = str(clip)
                 continue
             matched.append(True)
+        elif audio_only:
+            matched.append(True)
+            clip = cut_audio_clip(wav_path, item.proof.start_ms,
+                                  item.proof.end_ms,
+                                  clip_dir / f"item_{index}.m4a")
+            item.proof.audio_clip = str(clip)
+            continue
         else:
             start_ms, end_ms = item_window(item, transcript.turns)
             frame, matches = pick_best_frame(
@@ -270,7 +281,10 @@ def process_video_session(conn, session_id: int, video: Path, *,
         _progress(conn, session_id, "Extracting audio and frames...")
         db.set_stage(conn, session_id, "audio")
         wav = extract_audio(video, session_dir / "audio.wav")
-        frames = extract_frames(video, session_dir / "frames")
+        if has_video_stream(video):
+            frames = extract_frames(video, session_dir / "frames")
+        else:
+            frames = []
         _progress(conn, session_id, "Transcribing...")
         db.set_stage(conn, session_id, "listening")
         language = spoken_language(conn, session_id)

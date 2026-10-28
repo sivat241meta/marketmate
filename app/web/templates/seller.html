@@ -56,8 +56,8 @@
   <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('sh.say_prices') }}</a></p>
   <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <p>
-      <label class="pill ghost" for="clip">{{ ui.icon("camera") }}<span data-upload-name>{{ t('sh.choose_video') }}</span>
-        <input id="clip" class="file-hidden" type="file" name="video" accept="video/*" capture="environment" required>
+      <label class="pill ghost" for="clip">{{ ui.icon("camera") }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+        <input id="clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" capture="environment" required>
       </label>
     </p>
     <p class="field">
@@ -70,6 +70,7 @@
     </p>
     <p class="help">{{ t('speak.help') }}</p>
     <p class="help">{{ t('dash.upload_help') }}</p>
+    <p class="help">{{ t('wa.voice_hint') }}</p>
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
     <div class="upload-progress" data-upload-progress hidden>
@@ -113,6 +114,12 @@
   <h2>{{ t('dash.todays_list') }}</h2>
   {% if versions %}<a href="/e/{{ token }}/update">{{ t('dash.edit') }}</a>{% endif %}
 </div>
+{% if wa_url %}
+<div class="hero-cta">
+  <a class="pill dark" href="{{ wa_url }}">{{ ui.icon("whatsapp") }}{{ t('wa.send_prices') }}</a>
+  <button class="pill ghost" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>
+</div>
+{% endif %}
 {% if items %}
 {% for item in items %}
 <div class="list-row">

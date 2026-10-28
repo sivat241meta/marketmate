@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('share.title') }}{% endblock %}
+{% block content %}
+<p class="kick">{{ t('share.heading') }}</p>
+<p class="muted" data-share-loading>{{ t('share.loading') }}</p>
+
+<section class="card cta-card" data-share-ready hidden>
+  <h2 data-share-question data-msg-use="{{ t('share.use_note', shop='{shop}') }}"></h2>
+  <p class="muted" data-share-file></p>
+  <p class="field">
+    <label for="share-speak">{{ t('speak.label') }}</label>
+    <select id="share-speak" name="speak_lang" data-share-speak>
+      {% for lang in languages %}
+      <option value="{{ lang.code }}">{{ lang.native_name }}</option>
+      {% endfor %}
+    </select>
+  </p>
+  <p class="help">{{ t('speak.help') }}</p>
+  <p><button class="pill dark big" type="button" data-share-upload data-msg-uploading="{{ t('share.uploading') }}">{{ ui.icon("mic") }}{{ t('share.upload') }}</button></p>
+  <p class="form-error" data-share-error hidden data-msg-failed="{{ t('share.failed') }}"></p>
+  <p class="notice">{{ t('notice.voice') }}</p>
+</section>
+
+<section class="card" data-share-no-token hidden>
+  <p>{{ t('share.no_token') }}</p>
+</section>
+
+<section class="card" data-share-no-file hidden>
+  <h2>{{ t('share.no_file_title') }}</h2>
+  <p class="muted">{{ t('share.no_file') }}</p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const loading = document.querySelector("[data-share-loading]");
+  const ready = document.querySelector("[data-share-ready]");
+  const noToken = document.querySelector("[data-share-no-token]");
+  const noFile = document.querySelector("[data-share-no-file]");
+  const question = document.querySelector("[data-share-question]");
+  const fileLine = document.querySelector("[data-share-file]");
+  const speak = document.querySelector("[data-share-speak]");
+  const uploadBtn = document.querySelector("[data-share-upload]");
+  const errorLine = document.querySelector("[data-share-error]");
+
+  function show(el) {
+    [ready, noToken, noFile].forEach((node) => {
+      if (node) {
+        node.hidden = node !== el;
+      }
+    });
+    if (loading) {
+      loading.hidden = true;
+    }
+  }
+
+  let token = null;
+  let shopName = "";
+  try {
+    token = window.localStorage.getItem("mm_seller_token") || null;
+    shopName = window.localStorage.getItem("mm_seller_name") || "";
+    const savedLang = window.localStorage.getItem("mm_seller_lang") || "";
+    if (speak && /^[a-z]{2,3}(-[a-z]+)?$/i.test(savedLang)) {
+      const opt = speak.querySelector('option[value="' + savedLang.toLowerCase() + '"]');
+      if (opt) {
+        speak.value = opt.value;
+      }
+    }
+  } catch (err) {
+    token = null;
+  }
+
+  let file = null;
+  try {
+    const cache = await caches.open("mm-share");
+    const hit = await cache.match("shared-file");
+    if (hit) {
+      const blob = await hit.blob();
+      let name = "voice-note";
+      try {
+        name = decodeURIComponent(hit.headers.get("X-File-Name") || name);
+      } catch (err2) {
+        /* keep the default name */
+      }
+      file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+    }
+  } catch (err) {
+    file = null;
+  }
+
+  if (!file) {
+    show(noFile);
+    return;
+  }
+  if (!token) {
+    show(noToken);
+    return;
+  }
+  if (question) {
+    const tmpl = question.getAttribute("data-msg-use") || "";
+    question.textContent = tmpl.replace("{shop}", shopName || "?");
+  }
+  if (fileLine) {
+    const kb = file.size >= 1024 * 1024
+      ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+      : Math.max(1, Math.round(file.size / 1024)) + " KB";
+    fileLine.textContent = file.name + " · " + kb;
+  }
+  show(ready);
+
+  if (uploadBtn) {
+    uploadBtn.addEventListener("click", async () => {
+      uploadBtn.disabled = true;
+      if (errorLine) {
+        errorLine.hidden = true;
+      }
+      const label = uploadBtn.textContent;
+      const busy = uploadBtn.getAttribute("data-msg-uploading");
+      if (busy) {
+        uploadBtn.textContent = busy;
+      }
+      const data = new FormData();
+      data.append("video", file, file.name);
+      if (speak && speak.value) {
+        data.append("speak_lang", speak.value);
+      }
+      let response = null;
+      try {
+        response = await fetch("/e/" + encodeURIComponent(token) + "/upload", {
+          method: "POST",
+          body: data,
+        });
+      } catch (err) {
+        response = null;
+      }
+      if (response && (response.redirected || response.ok) && response.url) {
+        try {
+          const cache = await caches.open("mm-share");
+          await cache.delete("shared-file");
+        } catch (err) {
+          /* the next share overwrites the stale file */
+        }
+        window.location.assign(response.url);
+        return;
+      }
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = label;
+      if (errorLine) {
+        errorLine.textContent = errorLine.getAttribute("data-msg-failed") || "Upload failed — try again.";
+        errorLine.hidden = false;
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

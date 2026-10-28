@@ -1,5 +1,6 @@
 import html as html_lib
 import json
+import os
 import re
 import sqlite3
 import subprocess
@@ -7,6 +8,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import quote as url_quote
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (
@@ -391,6 +393,99 @@ def _too_big_message(size_bytes: int, limit_bytes: int) -> str:
             f"Please choose a file under {_mb(limit_bytes)} MB.")
 
 
+PRICE_MESSAGE_MAX_ITEMS = 60
+PRICE_MESSAGE_MAX_CHARS = 3500
+
+
+def _fmt_amount(value) -> str:
+    try:
+        return format(Decimal(str(value)).normalize(), "f")
+    except (ArithmeticError, ValueError):
+        return str(value)
+
+
+def build_price_message(conn, shop, lang, base_url: str | None = None) -> str:
+    """Plain-text price list for WhatsApp from the latest PUBLISHED version.
+
+    Only seller-confirmed prices are shared: drafts and newer unpublished
+    versions never appear, and items without a price are left out. Sold-out
+    items are named once at the end. Returns "" when nothing is published.
+    """
+    t = t_for(lang)
+    if base_url is None:
+        base_url = os.environ.get("PUBLIC_BASE_URL",
+                                  "http://127.0.0.1:8000")
+    base_url = str(base_url).rstrip("/") or "http://127.0.0.1:8000"
+    version_id = db.latest_version(conn, shop["id"], published_only=True)
+    if version_id is None:
+        return ""
+    when = db.version_time(conn, version_id)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    day = when.astimezone(IST).strftime("%d %b %Y")
+    currency = shop["currency"] or "INR"
+    first = f"{shop['name']} · {t('wa.today_prices')} · {day}"
+    lines: list[str] = []
+    sold_names: list[str] = []
+    for item in db.version_items(conn, version_id):
+        local = (item.name_local or "").strip() or item.name_en
+        if item.sold_out:
+            sold_names.append(local)
+            continue
+        priced = [line for line in item.price_lines
+                  if line.price is not None]
+        if not priced:
+            continue
+        head = f"{local} ({item.name_en}"
+        if (item.variety or "").strip():
+            head += f", {item.variety.strip()}"
+        head += ")"
+        bits = []
+        for line in priced:
+            money = format_money(line.price, currency)
+            if line.unit and line.per_amount not in (None, Decimal(1)):
+                bits.append(f"{money}/{_fmt_amount(line.per_amount)}"
+                            f" {line.unit}")
+            elif line.unit:
+                bits.append(f"{money}/{line.unit}")
+            else:
+                bits.append(money)
+        lines.append(f"{head} {', '.join(bits)}")
+    shown = lines[:PRICE_MESSAGE_MAX_ITEMS]
+    hidden = len(lines) - len(shown)
+    order_line = t("wa.order_here", url=f"{base_url}/s/{shop['slug']}")
+
+    def _assemble() -> str:
+        parts = [first, *shown]
+        if hidden:
+            parts.append(t("wa.more", n=hidden))
+        if sold_names:
+            parts.append(t("wa.sold_out_list",
+                           items=", ".join(sold_names)))
+        parts.append(order_line)
+        return "\n".join(parts)
+
+    text = _assemble()
+    while len(text) > PRICE_MESSAGE_MAX_CHARS and shown:
+        shown = shown[:-1]
+        hidden += 1
+        text = _assemble()
+    while len(text) > PRICE_MESSAGE_MAX_CHARS and sold_names:
+        sold_names = sold_names[:-1]
+        hidden += 1
+        text = _assemble()
+    return text
+
+
+def _price_share(conn, shop, lang: str,
+                 base_url: str) -> tuple[str | None, str | None]:
+    """(wa.me URL, text) for today's prices, or (None, None) unpublished."""
+    text = build_price_message(conn, shop, lang, base_url=base_url)
+    if not text:
+        return None, None
+    return "https://wa.me/?text=" + url_quote(text), text
+
+
 def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     data_dir = Path(settings.data_dir)
 
@@ -529,12 +624,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             entry["margin_chip"] = margin_chip
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         home = _home_extras(conn, shop, ui_lang)
+        wa_url, wa_text = _price_share(
+            conn, shop, ui_lang, app.state.settings.public_base_url)
         return templates.TemplateResponse(
             request,
             "seller.html",
             {"shop": shop, "sessions": sessions, "versions": versions,
              "notice": _voice_notice(ui_lang), "stock": stock, "token": token,
              "items": items, "live": live, "live_count": live_count,
+             "wa_url": wa_url, "wa_text": wa_text,
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
              "bills": bills, "shop_lang": shop["language"],
@@ -819,6 +917,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                    "progress": progress, "shop_lang": shop["language"],
                    "friendly": friendly, "ui_lang": ui_lang,
                    "stopped_note": STOPPED_MESSAGE if stopped else None}
+        if session["status"] == "approved":
+            wa_url, wa_text = _price_share(
+                conn, shop, ui_lang, app.state.settings.public_base_url)
+            context["wa_url"] = wa_url
+            context["wa_text"] = wa_text
         if session["status"] == "review" and session["kind"] in (
                 "video", "live", "board"):
             items = db.load_drafts(conn, session_id)
@@ -1337,8 +1440,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         summary_min = format_money(min_price, currency) if min_price else ""
         summary_max = format_money(max_price, currency) if max_price else ""
         digits = re.sub(r"\D", "", shop["phone"] or "")
+        shop_link = f"{app.state.settings.public_base_url}/s/{shop['slug']}"
+        share_text = f"{shop['name']}\n{shop_link}"
+        share_url = "https://wa.me/?text=" + url_quote(share_text)
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
+            "share_url": share_url,
             "lang": language, "shop_lang": shop_lang,
             "shop_native": shop_native, "t": get_strings(language),
             "prices_time": prices_time, "hero_photo": hero_photo,

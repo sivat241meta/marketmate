@@ -268,6 +268,16 @@ def create_app(settings: Settings) -> FastAPI:
                     {"src": "/static/icons/icon-512.png",
                      "sizes": "512x512", "type": "image/png"},
                 ],
+                "share_target": {
+                    "action": "/share",
+                    "method": "POST",
+                    "enctype": "multipart/form-data",
+                    "files": [{
+                        "name": "media",
+                        "accept": ["audio/*", "video/*", ".opus", ".ogg",
+                                   ".m4a", ".mp4"],
+                    }],
+                },
             },
             media_type="application/manifest+json",
         )
@@ -287,6 +297,15 @@ def create_app(settings: Settings) -> FastAPI:
 
         return templates.TemplateResponse(
             request, "home.html", {"ui_lang": get_ui_lang(request)})
+
+    @app.get("/share")
+    def share_page(request: Request):
+        from app.languages import LANGUAGES
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "share.html",
+            {"languages": LANGUAGES, "ui_lang": get_ui_lang(request)})
 
     @app.post("/find")
     def find_prices(slug: str = Form(...)):

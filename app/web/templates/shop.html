@@ -16,6 +16,7 @@
       <a class="pill dark big btn-primary" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.get_quote }} {{ ui.icon("mic") }}</a>
       <a class="pill ghost big" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
       <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
+      <a class="pill ghost big" href="{{ share_url }}">{{ ui.icon("share") }}{{ t('wa.share_list') }}</a>
     </div>
   </div>
   {% if hero_photo %}

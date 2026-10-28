@@ -66,10 +66,36 @@ function cacheFirst(request) {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
+  const url = new URL(request.url);
+  if (request.method === "POST" && url.origin === self.location.origin && url.pathname === "/share") {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open("mm-share");
+        try {
+          const form = await request.formData();
+          const file = form.get("media");
+          if (file) {
+            await cache.put(
+              "shared-file",
+              new Response(file, {
+                headers: {
+                  "Content-Type": file.type || "application/octet-stream",
+                  "X-File-Name": encodeURIComponent(file.name || "shared"),
+                },
+              }),
+            );
+          }
+        } catch (err) {
+          /* fall through to the share page empty state */
+        }
+        return Response.redirect("/share?got=1", 303);
+      })(),
+    );
+    return;
+  }
   if (request.method !== "GET") {
     return;
   }
-  const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
     return;
   }
