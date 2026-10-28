@@ -14,7 +14,7 @@ _ENGLISH: dict[str, str] = {
     "whatsapp": "WhatsApp",
     "sold_out": "Sold out",
     "no_prices": "No prices published yet.",
-    "quote_subtitle": "Prices from {shop}'s list, set {rel}",
+    "quote_subtitle": "Prices from this shop's list, set {rel}",
     "check_quantity": "check quantity",
     "per": "per",
     "update_quote": "Update quote",

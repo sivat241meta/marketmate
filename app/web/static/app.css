@@ -301,13 +301,25 @@ img { max-width: 100%; }
 .stepper li.is-done { color: var(--green); border-color: var(--green); }
 .stepper li.is-now { color: var(--ink); border-color: var(--saffron); }
 
+.icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  vertical-align: -0.2em;
+}
+.mic-btn .icon { width: 28px; height: 28px; }
+.empty-state .icon { width: 40px; height: 40px; }
+
 .sticky-bar {
   position: sticky;
   bottom: 0;
-  padding: var(--space-3) 0 var(--space-4);
-  background: linear-gradient(transparent, var(--cream) 35%);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--cream);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 24px rgba(28, 25, 23, 0.12);
 }
 .sticky-bar .btn { width: 100%; }
+.content:has(.sticky-bar) { padding-bottom: 140px; }
 
 .empty-state {
   text-align: center;

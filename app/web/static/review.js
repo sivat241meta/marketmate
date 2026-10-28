@@ -2,11 +2,16 @@
 /* Review cards: tapping an option fills the first price input and marks the
    flag resolved (chosen button gets a check). On TWO_PRICES the other
    duplicate lines are removed from the card, so approval keeps one line.
-   Approve posts the edited cards as JSON. */
+   Approve posts the edited cards as JSON.
+   Option buttons carry data-target-field (never data-field) so input queries
+   below only ever match real inputs and selects. */
+
+let approveAttempted = false;
 
 function cardInputs(form, index) {
-  return Array.from(
-    form.querySelectorAll(`[data-item="${index}"][data-field]`));
+  return Array.from(form.querySelectorAll(
+    `input[data-item="${index}"][data-field],` +
+    ` select[data-item="${index}"][data-field]`));
 }
 
 function collectCards(form) {
@@ -23,7 +28,7 @@ function collectCards(form) {
     };
   });
   const byItem = {};
-  form.querySelectorAll("[data-item][data-field]").forEach((input) => {
+  form.querySelectorAll("input[data-item][data-field], select[data-item][data-field]").forEach((input) => {
     const item = input.dataset.item;
     byItem[item] = byItem[item] || { lines: {}, qty: null };
     if (input.dataset.field === "qty") {
@@ -41,7 +46,7 @@ function collectCards(form) {
   const items = Object.keys(byItem).sort(order).map((key, position) => {
     const entry = byItem[key];
     const lines = Object.keys(entry.lines).sort(order).map((line) => entry.lines[line]);
-    const box = form.querySelector(`[data-card-confirm][data-item="${key}"]`);
+    const box = form.querySelector(`input[data-card-confirm][data-item="${key}"]`);
     if (box && box.checked) {
       confirmed.push(position);
     }
@@ -69,8 +74,9 @@ function collectCards(form) {
 }
 
 function lineKey(wrap) {
-  const amount = wrap.querySelector('[data-field="per_amount"]');
-  const unit = wrap.querySelector('[data-field="unit"]');
+  const amount = wrap.querySelector('input[data-field="per_amount"]');
+  const unit = wrap.querySelector(
+    'select[data-field="unit"], input[data-field="unit"]');
   return `${amount ? amount.value : ""}||${unit ? unit.value : ""}`;
 }
 
@@ -101,7 +107,9 @@ function cardEdited(card) {
     return true;
   }
   const fields = card.querySelectorAll(
-    '[data-field="price"], [data-field="per_amount"], [data-field="unit"]');
+    'input[data-field="price"], select[data-field="price"],' +
+    ' input[data-field="per_amount"], select[data-field="per_amount"],' +
+    ' input[data-field="unit"], select[data-field="unit"]');
   for (const input of fields) {
     const original = input.dataset.original ?? "";
     if ((input.value ?? "") !== original) {
@@ -177,15 +185,16 @@ function cardNeeds(card) {
   return needs;
 }
 
-function updateCounts(form, unresolved) {
+function needText(need) {
+  if (need === 1) {
+    return "1 item still needs your choice or a tick";
+  }
+  return `${need} items still need your choice or a tick`;
+}
+
+function updateCounts(form, need) {
   const cards = form.querySelectorAll(".card");
   const total = cards.length;
-  let need = 0;
-  cards.forEach((card) => {
-    if (cardNeeds(card)) {
-      need += 1;
-    }
-  });
   const ok = total - need;
   const counts = document.querySelector("[data-review-counts]");
   if (counts) {
@@ -200,35 +209,30 @@ function updateCounts(form, unresolved) {
   const sticky = form.querySelector("[data-approve-count]");
   if (sticky) {
     sticky.textContent =
-      unresolved === 0
+      need === 0
         ? "All cards look right — ready to approve."
-        : `${unresolved} still need${unresolved === 1 ? "s" : ""} a decision.`;
+        : `${needText(need)}.`;
   }
 }
 
 function updateApprove(form) {
   const button = form.querySelector("#approve-btn");
   const error = form.querySelector("#approve-error");
-  let unresolved = 0;
-  form.querySelectorAll(".flag-options").forEach((group) => {
-    if (!group.querySelector(".opt-btn.chosen")) {
-      unresolved += 1;
+  let need = 0;
+  form.querySelectorAll(".card").forEach((card) => {
+    if (cardNeeds(card)) {
+      need += 1;
     }
   });
-  form.querySelectorAll("[data-card-confirm]").forEach((box) => {
-    if (!box.checked && !isHiddenBox(box)) {
-      unresolved += 1;
-    }
-  });
-  button.disabled = unresolved > 0;
-  updateCounts(form, unresolved);
+  button.disabled = need > 0;
+  updateCounts(form, need);
   if (error) {
     if (error.dataset.serverMessage === "true") {
       return;
     }
-    error.hidden = unresolved === 0;
-    if (unresolved > 0) {
-      error.textContent = `${unresolved} flag(s) still need a choice or a confirm tick.`;
+    error.hidden = !approveAttempted || need === 0;
+    if (!error.hidden) {
+      error.textContent = `${needText(need)}.`;
     }
   }
 }
@@ -293,11 +297,13 @@ document.addEventListener("DOMContentLoaded", () => {
         other.classList.remove("chosen");
       });
       button.classList.add("chosen");
-      const field = button.dataset.field || "price";
+      const field = button.dataset.targetField || "price";
       const input = form.querySelector(
-        `[data-item="${button.dataset.item}"][data-field="${field}"]`);
+        `input[data-item="${button.dataset.item}"][data-field="${field}"],` +
+        ` select[data-item="${button.dataset.item}"][data-field="${field}"]`);
       if (input) {
         input.value = button.dataset.value;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
       }
       if (group.dataset.flag === "TWO_PRICES") {
         keepChosenLine(button.closest(".card"));
@@ -338,6 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    approveAttempted = true;
+    updateApprove(form);
     const response = await fetch(form.dataset.approveUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

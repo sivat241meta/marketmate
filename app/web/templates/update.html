@@ -60,7 +60,7 @@
         <div class="alert alert-warn">{{ flag.message }}</div>
         <div class="choice">
           {% for option in flag.options %}
-          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}₹{{ option }}{% else %}{{ option }}{% endif %}</button>
+          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% else %}{{ option }}{% endif %}</button>
           {% endfor %}
         </div>
       </div>
@@ -124,7 +124,7 @@
     <span class="list-sub">sold out</span>
     {% else %}
     {% for line in item.price_lines %}
-    <span class="list-sub">₹{{ line.price }} per {{ line.per_amount }} {{ line.unit }}</span>
+    <span class="list-sub">{{ line.price | money(shop["currency"]) }} per {{ line.per_amount }} {{ line.unit }}</span>
     {% endfor %}
     {% endif %}
   </div>

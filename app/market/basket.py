@@ -130,6 +130,50 @@ def plan_basket(wants: list[Want], listings: list[Listing],
     return plans
 
 
+def best_partial_shop(wants: list[Want],
+                      listings: list[Listing]) -> BasketPlan | None:
+    """Best shop that has some (not all) wants: most wants covered wins,
+    ties go to the cheapest covered total, then the shop name. Returns None
+    when no shop covers any want. Uncovered wants land in ``missing``."""
+    if not wants:
+        return None
+    fresh = [row for row in listings if not row.stale]
+    by_slug: dict[str, tuple[str, list[Listing]]] = {}
+    for row in fresh:
+        by_slug.setdefault(row.slug, (row.shop_name, []))[1].append(row)
+    best: tuple[tuple, Decimal, str, str, list[BasketLine], list[str]] | None = None
+    for slug, (shop_name, rows) in by_slug.items():
+        shop_lines: list[BasketLine] = []
+        missing: list[str] = []
+        for want in wants:
+            amount, unit, assumed = _want_amount(want)
+            cheapest: tuple[Decimal, Listing] | None = None
+            for row in rows:
+                if row.name_en != want.name_en:
+                    continue
+                cost = _line_cost(amount, unit, row)
+                if cost is None:
+                    continue
+                if cheapest is None or cost < cheapest[0]:
+                    cheapest = (cost, row)
+            if cheapest is None:
+                missing.append(want.name_en)
+            else:
+                cost, row = cheapest
+                shop_lines.append(BasketLine(want, row, cost, assumed))
+        if not shop_lines:
+            continue
+        shop_total = sum((line.cost for line in shop_lines), Decimal(0))
+        key = (-len(shop_lines), shop_total, shop_name, slug)
+        if best is None or key < best[0]:
+            best = (key, shop_total, shop_name, slug, shop_lines, missing)
+    if best is None:
+        return None
+    _, shop_total, shop_name, _, shop_lines, missing = best
+    return BasketPlan(kind="partial_shop", shop=shop_name, lines=shop_lines,
+                      total=shop_total, missing=missing)
+
+
 def _fmt_money(value: Decimal) -> str:
     if value == 0:
         return "0"

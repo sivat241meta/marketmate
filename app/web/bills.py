@@ -39,9 +39,11 @@ from app.market.quote import (
 from app.meta.spark import SparkError
 from app.meta.transcribe import transcribe_wav
 from app.outputs.bill_pdf import bill_pdf
+from app.outputs.money import format_money
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.pipeline.run import friendly_error_message
+from app.pipeline.units import convert
 
 MAX_BILL_PHOTO_BYTES = 10 * 1024 * 1024
 
@@ -181,9 +183,18 @@ def top_items(conn, shop_id: int, *, now: datetime | None = None,
                 amount = Decimal(str(line["line_total"]))
             except (InvalidOperation, ValueError):
                 continue
+            line_unit = str(line.get("unit") or "").strip() or None
             entry = totals.setdefault(
-                name, {"qty": Decimal(0), "amount": Decimal("0.00")})
-            entry["qty"] += qty
+                name, {"qty": Decimal(0), "unit": line_unit,
+                       "amount": Decimal("0.00")})
+            if entry["unit"] is None:
+                entry["unit"] = line_unit
+            adding = qty
+            if (line_unit and entry["unit"] and line_unit != entry["unit"]):
+                converted = convert(qty, line_unit, entry["unit"])
+                if converted is not None:
+                    adding = converted
+            entry["qty"] += adding
             entry["amount"] += amount
     ranked = sorted(totals.items(),
                     key=lambda kv: (kv[1]["amount"], kv[1]["qty"]),
@@ -200,11 +211,21 @@ def top_items(conn, shop_id: int, *, now: datetime | None = None,
             "name_en": name,
             "display": name[:1].upper() + name[1:] if name else name,
             "qty": format(entry["qty"].normalize(), "f"),
+            "unit": _qty_unit_display(entry["unit"], entry["qty"]),
             "amount": format(entry["amount"].quantize(
                 Decimal("0.01"), rounding=ROUND_HALF_UP).normalize(), "f"),
             "width": width,
         })
     return out
+
+
+def _qty_unit_display(unit: str | None, qty: Decimal) -> str:
+    """Unit shown after a top-item quantity: "kg", "pcs", "dozen"."""
+    if not unit:
+        return ""
+    if unit == "piece":
+        return "pc" if qty == 1 else "pcs"
+    return unit
 
 
 def _fmt_money(value) -> str:
@@ -317,6 +338,9 @@ def _price_items(conn, shop_id: int) -> list[dict]:
     version_id = db.latest_version(conn, shop_id, published_only=True)
     if version_id is None:
         return []
+    shop = conn.execute("SELECT currency FROM shops WHERE id = ?",
+                        (shop_id,)).fetchone()
+    currency = (shop["currency"] if shop else None) or "INR"
     items = []
     for index, item in enumerate(db.version_items(conn, version_id)):
         first = item.price_lines[0] if item.price_lines else None
@@ -324,7 +348,9 @@ def _price_items(conn, shop_id: int) -> list[dict]:
             summary = "Sold out"
         elif first is not None and first.price is not None:
             amount = first.per_amount if first.per_amount is not None else ""
-            summary = f"Rs.{_fmt_money(first.price)} per {amount} {first.unit or ''}".strip()
+            summary = (
+                f"{format_money(first.price, currency)}"
+                f" per {amount} {first.unit or ''}").strip()
         else:
             summary = "No price yet"
         items.append({
@@ -458,9 +484,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
-    def _currency(shop) -> str:
-        return "Rs." if (shop["currency"] or "INR") != "INR" else "₹"
-
     def _filtered(conn, shop_id: int, range_key: str, status_key: str,
                   now: datetime) -> list:
         today = now.astimezone(IST).date()
@@ -509,11 +532,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "pill_text": text,
                     "pill_kind": kind,
                 })
-            symbol = _currency(shop)
             return templates.TemplateResponse(request, "bills.html", {
                 "shop": shop, "token": token, "range": range_key,
                 "status": status_key, "rows": items,
-                "symbol": symbol,
                 "bills_today": tiles["bills_today"],
                 "sales_today": _fmt_money(tiles["sales_today"]),
                 "quotes_waiting": tiles["quotes_waiting"],
@@ -542,7 +563,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "pill_text": text, "pill_kind": kind,
             "created_label": created_label, "phone": phone or "",
             "label": _customer_label(bill), "error": error,
-            "symbol": _currency(shop),
             "price_items": _price_items(conn, shop["id"]),
             "whatsapp_url": _whatsapp_link(
                 phone, _bill_text(shop, bill["id"], raw_lines,

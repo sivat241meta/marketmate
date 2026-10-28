@@ -31,26 +31,36 @@
 {% endif %}
 
 {% if basket %}
-<section aria-label="Budget basket">
-  <h2>Budget basket{% if basket.budget %} — ₹{{ basket.budget }}{% endif %}</h2>
+<section aria-label="Basket">
+  {% if basket.budget %}
+  <h2>Budget basket — {{ basket.budget | money("INR") }}</h2>
+  {% else %}
+  <h2>Your basket</h2>
+  {% endif %}
   <p>{{ basket.explanation }}</p>
   {% for plan in basket.plans %}
   <div class="basket">
     {% if plan.kind == "split" %}
     <div class="basket-title">Cheapest split</div>
+    {% elif plan.kind == "partial_shop" %}
+    <div class="basket-title">{{ plan.shop }} (partial)</div>
     {% else %}
     <div class="basket-title">{{ plan.shop }} alone</div>
     {% endif %}
-    <div class="basket-total">₹{{ plan.total }}</div>
+    <div class="basket-total">{{ plan.total | money(plan.currency) }}</div>
     {% if plan.lines %}
     <ul class="basket-lines">
       {% for line in plan.lines %}
-      <li>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — ₹{{ line.cost }}</li>
+      <li>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</li>
       {% endfor %}
     </ul>
     {% endif %}
     {% if plan.missing %}
+    {% if plan.kind == "partial_shop" %}
+    <p>missing: {{ plan.missing | join(", ") }}</p>
+    {% else %}
     <p>No fresh prices for: {{ plan.missing | join(", ") }}</p>
+    {% endif %}
     {% endif %}
   </div>
   {% endfor %}
@@ -67,7 +77,7 @@
   {% for row in group.rows %}
   <div class="shop-row">
     <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %}<span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a></span>
-    <b>₹{{ row.price }} <small class="muted">/ {{ row.per }}{% if row.rate %} (₹{{ row.rate }}/{{ row.rate_unit }}){% endif %}</small></b>
+    <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
   </div>
   <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>
   {% endfor %}

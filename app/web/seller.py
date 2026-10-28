@@ -28,8 +28,10 @@ from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
+from app.outputs.money import format_money
 from app.outputs.pdf import price_board_pdf
 from app.outputs.qr import qr_png
+from app.outputs.time import format_relative
 from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
@@ -48,10 +50,7 @@ from app.pipeline.update import (
     parse_update,
 )
 from app.web.i18n import get_strings
-from app.web.photos import (
-    process_photo_session,
-    read_photo_meta,
-)
+from app.web.photos import read_photo_meta, run_photo_job
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
@@ -86,6 +85,16 @@ def _run_session_job(settings, session_id: int, video: str) -> None:
     try:
         ledger = CostLedger(Path(settings.data_dir) / "costs.db", settings.daily_budget_usd)
         process_video_session(conn, session_id, Path(video), settings=settings, ledger=ledger)
+    finally:
+        conn.close()
+
+
+def _retry_video_job(settings, session_id: int) -> None:
+    """Background video retry: opens its own connection, never the request's."""
+    conn = db.connect(Path(settings.data_dir))
+    try:
+        ledger = CostLedger(Path(settings.data_dir) / "costs.db", settings.daily_budget_usd)
+        reprocess(conn, session_id, settings=settings, ledger=ledger)
     finally:
         conn.close()
 
@@ -135,19 +144,6 @@ _ACTION_LABELS = {
 }
 
 
-def _relative_time(when, now) -> str:
-    seconds = max(0, int((now - when).total_seconds()))
-    if seconds < 60:
-        return "just now"
-    minutes = seconds // 60
-    if minutes < 60:
-        return f"{minutes} minutes ago"
-    hours = minutes // 60
-    if hours < 24:
-        return f"{hours} hours ago"
-    return f"{hours // 24} days ago"
-
-
 def _highlight_quote(quote: str) -> str:
     """Escape the proof quote and wrap heard numbers in <mark>."""
     parts = re.split(r"(\s+)", quote or "")
@@ -168,14 +164,15 @@ def _needs_decision(item) -> bool:
     return any(flag.options or flag.blocking for flag in item.flags)
 
 
-def _price_summary(item) -> str:
+def _price_summary(item, currency: str = "INR") -> str:
     for line in item.price_lines:
         if line.price is not None:
+            price = format_money(line.price, currency)
             if line.per_amount is not None and line.unit:
-                return f"₹{line.price} / {line.per_amount} {line.unit}"
+                return f"{price} / {line.per_amount} {line.unit}"
             if line.unit:
-                return f"₹{line.price} / {line.unit}"
-            return f"₹{line.price}"
+                return f"{price} / {line.unit}"
+            return price
     return "no price yet"
 
 
@@ -411,7 +408,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "proof_json": json.dumps(proof),
                         "needs_decision": _needs_decision(item),
                         "quote_html": _highlight_quote(item.proof.quote),
-                        "price_summary": _price_summary(item),
+                        "price_summary": _price_summary(
+                            item, shop["currency"] or "INR"),
                     }
                 )
             cards.sort(key=lambda c: (not c["needs_decision"], c["index"]))
@@ -482,31 +480,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             meta = read_photo_meta(data_dir, session_id)
             if not meta.get("image"):
                 raise HTTPException(400, "this photo is gone; scan it again")
-            process_photo_session(
-                conn, session_id, Path(meta["image"]),
-                settings=app.state.settings,
-                ledger=CostLedger(data_dir / "costs.db",
-                                  app.state.settings.daily_budget_usd))
+            db.set_session_status(conn, session_id, "processing",
+                                  "Trying again...")
+            jobs.submit(run_photo_job, settings, session_id,
+                        str(meta["image"]))
             return RedirectResponse(f"/e/{token}/s/{session_id}",
                                     status_code=303)
-        try:
-            reprocess(
-                conn,
-                session_id,
-                settings=app.state.settings,
-                ledger=CostLedger(data_dir / "costs.db", app.state.settings.daily_budget_usd),
-            )
-        except ValueError as exc:
-            raise HTTPException(400, str(exc))
+        if session["status"] not in ("failed", "review"):
+            raise HTTPException(
+                400, "reprocess is only for failed or review sessions")
+        db.set_session_status(conn, session_id, "processing", "Trying again...")
+        jobs.submit(_retry_video_job, settings, session_id)
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
-    def _update_cards(token: str, changes, current_map: dict) -> list[dict]:
+    def _update_cards(token: str, changes, current_map: dict,
+                      currency: str = "INR") -> list[dict]:
         cards = []
         for index, change in enumerate(changes):
             current = current_map.get(change.name_en)
             if current is not None and current.price_lines:
                 summary = ", ".join(
-                    f"₹{line.price} per {line.per_amount} {line.unit}"
+                    f"{format_money(line.price, currency)}"
+                    f" per {line.per_amount} {line.unit}"
                     for line in current.price_lines)
             else:
                 summary = ""
@@ -621,7 +616,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "confirm",
             "session_id": session_id,
-            "cards": _update_cards(token, changes, current_map),
+            "cards": _update_cards(token, changes, current_map,
+                                   shop["currency"] or "INR"),
             "shop_lang": shop["language"],
             "transcript": transcript.text})
 
@@ -761,8 +757,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                "per": f"{line.per_amount} {line.unit}"}
                               for line in item.price_lines],
                 })
-            rel = _relative_time(db.version_time(conn, version_id),
-                                 datetime.now(UTC))
+            rel = format_relative(db.version_time(conn, version_id),
+                                    datetime.now(UTC))
         digits = re.sub(r"\D", "", shop["phone"] or "")
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,

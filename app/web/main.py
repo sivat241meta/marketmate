@@ -17,10 +17,12 @@ from app import db, storage
 from app.config import Settings, load_settings
 from app.costs import CostCapExceeded, CostLedger
 from app.limits import RateLimiter
-from app.market.basket import explain_basket, plan_basket
+from app.market.basket import best_partial_shop, explain_basket, plan_basket
 from app.market.search import find_listings, parse_query
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
+from app.outputs.money import format_money
+from app.outputs.time import format_relative
 from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
@@ -28,19 +30,6 @@ from app.web import bills as bills_routes
 from app.web import photos as photo_routes
 from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
-
-
-def _relative_time(when, now) -> str:
-    seconds = max(0, int((now - when).total_seconds()))
-    if seconds < 60:
-        return "just now"
-    minutes = seconds // 60
-    if minutes < 60:
-        return f"{minutes} minutes ago"
-    hours = minutes // 60
-    if hours < 24:
-        return f"{hours} hours ago"
-    return f"{hours // 24} days ago"
 
 
 def _fmt_rate(value: Decimal) -> str:
@@ -94,6 +83,7 @@ def create_app(settings: Settings) -> FastAPI:
         startup_conn.close()
     templates = Jinja2Templates(directory=str(here / "templates"))
     templates.env.globals["static_url"] = build_static_url(here / "static")
+    templates.env.filters["money"] = format_money
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)
@@ -123,7 +113,8 @@ def create_app(settings: Settings) -> FastAPI:
                 "per": f"{found.line.per_amount} {found.line.unit}",
                 "rate": _fmt_rate(found.rate) if found.rate is not None else "",
                 "rate_unit": found.rate_unit or "",
-                "rel": _relative_time(found.updated_at, now),
+                "currency": found.currency,
+                "rel": format_relative(found.updated_at, now),
                 "stale": found.stale,
                 "lowest": False,
             })
@@ -156,10 +147,10 @@ def create_app(settings: Settings) -> FastAPI:
             elif want.amount is not None:
                 label += f" · {format(want.amount.normalize(), 'f')}"
             if want.max_rate is not None:
-                label += f" under ₹{format(want.max_rate.normalize(), 'f')}"
+                label += f" under {format_money(want.max_rate, 'INR')}"
             chips.append(label)
         if query.budget is not None:
-            chips.append(f"Budget ₹{format(query.budget.normalize(), 'f')}")
+            chips.append(f"Budget {format_money(query.budget, 'INR')}")
         if query.area:
             chips.append(query.area)
         return chips
@@ -183,11 +174,14 @@ def create_app(settings: Settings) -> FastAPI:
                     "shop": line.listing.shop_name,
                     "slug": line.listing.slug,
                     "cost": _fmt_rate(line.cost),
+                    "currency": line.listing.currency,
                 })
+            plan_currency = (lines[0]["currency"] if lines else "INR")
             plan_dicts.append({
                 "kind": plan.kind,
                 "shop": plan.shop,
                 "total": _fmt_rate(plan.total),
+                "currency": plan_currency,
                 "lines": lines,
                 "missing": list(plan.missing),
             })
@@ -198,9 +192,16 @@ def create_app(settings: Settings) -> FastAPI:
         }
 
     def _build_basket(query, listings, ledger):
-        if query.budget is None or not query.wants:
+        if not query.wants:
+            return None
+        has_qty = any(want.amount is not None for want in query.wants)
+        if query.budget is None and not has_qty:
             return None
         plans = plan_basket(query.wants, listings, query.budget)
+        if not any(plan.kind == "single_shop" for plan in plans):
+            partial = best_partial_shop(query.wants, listings)
+            if partial is not None:
+                plans = [*plans, partial]
         explanation = explain_basket(plans, query.budget, ledger=ledger,
                                      settings=app.state.settings)
         return _basket_dict(plans, query.budget, explanation)

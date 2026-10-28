@@ -8,6 +8,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 from app.models import Item
+from app.outputs.money import format_money
 from app.outputs.qr import qr_png
 
 _FONTS_URI = (Path(__file__).resolve().parent.parent
@@ -68,6 +69,7 @@ def price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
+    env.filters["money"] = format_money
     template = env.get_template("board.html")
     qr_data_uri = ("data:image/png;base64,"
                    + base64.b64encode(qr_png(shop_url)).decode())

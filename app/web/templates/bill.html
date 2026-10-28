@@ -34,8 +34,8 @@
     <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
     <span class="muted">{{ line.unit }}</span>
   </div>
-  <p>{{ symbol }}{{ line.unit_price }} <small class="muted">per {{ line.per_amount }} {{ line.unit }}</small></p>
-  <p><strong>{{ symbol }}{{ line.line_total }}</strong></p>
+  <p>{{ line.unit_price | money(shop["currency"]) }} <small class="muted">per {{ line.per_amount }} {{ line.unit }}</small></p>
+  <p><strong>{{ line.line_total | money(shop["currency"]) }}</strong></p>
   {% elif line.status == "sold_out" %}
   <p>{{ ui.pill("Sold out", "soldout") }}</p>
   <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
@@ -66,7 +66,7 @@
 {% endfor %}
 
 <section class="card">
-  <h2>Total {{ symbol }}{{ total }}</h2>
+  <h2>Total {{ total | money(shop["currency"]) }}</h2>
 </section>
 
 <section class="card">

@@ -364,6 +364,9 @@ def _retry_client(tmp_path, monkeypatch):
         return out
 
     monkeypatch.setattr("app.pipeline.run.cut_audio_clip", fake_clip)
+    # Retry now schedules a background job; run it inline for the end-to-end
+    # assertion below.
+    monkeypatch.setattr("app.web.seller.jobs.submit", lambda fn, *a: fn(*a))
     return TestClient(app, follow_redirects=False)
 
 

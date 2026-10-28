@@ -68,6 +68,7 @@ class Listing:
     rate_unit: str | None
     updated_at: datetime
     stale: bool
+    currency: str = "INR"
 
 
 _SYSTEM_PROMPT = (
@@ -216,6 +217,7 @@ def find_listings(conn: sqlite3.Connection, query: Query,
                     name_en=item.name_en, variety=item.variety, line=line,
                     rate=computed[0] if computed else None,
                     rate_unit=computed[1] if computed else None,
-                    updated_at=updated_at, stale=stale))
+                    updated_at=updated_at, stale=stale,
+                    currency=shop["currency"] or "INR"))
     listings.sort(key=lambda row: (row.stale, row.rate is None, row.rate))
     return listings

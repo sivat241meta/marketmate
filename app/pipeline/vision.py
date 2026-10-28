@@ -171,7 +171,11 @@ def dedupe_boxes(boxes: list[Box]) -> list[Box]:
 
 def reconcile(count_spark: int | None, count_sam: int | None
               ) -> tuple[int | None, tuple[int, int] | None, bool]:
-    """Merge the two counters: agree within 20%, else a range to check."""
+    """Merge the two counters: agree within 20%, else a range to check.
+
+    When one counter sees nothing and the other sees items (e.g. hidden
+    under something), the estimate is the non-zero count, still flagged.
+    """
     if count_spark is None and count_sam is None:
         return (None, None, False)
     if count_spark is None:
@@ -181,6 +185,8 @@ def reconcile(count_spark: int | None, count_sam: int | None
     larger = max(count_spark, count_sam)
     if larger == 0:
         return (0, None, False)
+    if min(count_spark, count_sam) == 0:
+        return (larger, None, True)
     if abs(count_spark - count_sam) <= 0.2 * larger:
         return (round((count_spark + count_sam) / 2), None, False)
     return (None, (min(count_spark, count_sam), max(count_spark, count_sam)), True)

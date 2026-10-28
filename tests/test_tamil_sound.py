@@ -154,4 +154,4 @@ def test_review_template_option_targets_per_field():
     template = Path("app/web/templates/review.html").read_text(encoding="utf-8")
     assert 'data-field="per_amount"' in template or "{{ flag.field }}" in template
     js = Path("app/web/static/review.js").read_text(encoding="utf-8")
-    assert "dataset.field" in js
+    assert "dataset.targetField" in js

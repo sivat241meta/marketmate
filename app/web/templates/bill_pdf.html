@@ -44,13 +44,13 @@ td { padding: 1.2mm 0; vertical-align: top; border-bottom: 0.4pt dotted #d6cfbd;
 <tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
 {% for row in rows %}
 <tr>
-  <td><div class="name">{{ row.name_local or row.name_en }}</div><div class="sub">{{ row.name_en }}{% if row.unit_price %} · ₹{{ row.unit_price }} per {{ row.per_amount }} {{ row.unit }}{% endif %}</div></td>
+  <td><div class="name">{{ row.name_local or row.name_en }}</div><div class="sub">{{ row.name_en }}{% if row.unit_price %} · {{ row.unit_price | money(shop["currency"]) }} per {{ row.per_amount }} {{ row.unit }}{% endif %}</div></td>
   <td class="qty">{{ row.qty }} {{ row.unit }}</td>
-  <td class="amount">{% if row.line_total %}₹{{ row.line_total }}{% else %}—{% endif %}</td>
+  <td class="amount">{% if row.line_total %}{{ row.line_total | money(shop["currency"]) }}{% else %}—{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
-<div class="total"><span>Total</span><span>₹{{ total }}</span></div>
+<div class="total"><span>Total</span><span>{{ total | money(shop["currency"]) }}</span></div>
 <p class="thanks">Thank you, come again!</p>
 <p class="note">Prices from {{ shop["name"] }}'s list.</p>
 </body>

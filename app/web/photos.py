@@ -25,6 +25,7 @@ from app.costs import (
 )
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.market.search import SYNONYMS
+from app.outputs.time import format_relative
 from app.pipeline.names import CANONICAL_NAMES
 from app.pipeline.run import friendly_error_message
 from app.pipeline.vision import PhotoReport, analyse_photo
@@ -120,16 +121,7 @@ def _relative_time(value: str | None, now: datetime) -> str:
         return ""
     if when.tzinfo is None:
         when = when.replace(tzinfo=UTC)
-    seconds = max(0, int((now - when).total_seconds()))
-    if seconds < 60:
-        return "just now"
-    minutes = seconds // 60
-    if minutes < 60:
-        return f"{minutes} minutes ago"
-    hours = minutes // 60
-    if hours < 24:
-        return f"{hours} hours ago"
-    return f"{hours // 24} days ago"
+    return format_relative(when, now)
 
 
 def _canonical(name: str | None) -> str:
@@ -168,6 +160,9 @@ def _default_qty(suggestion: dict, products: list[dict]) -> int | None:
             return count
         span = product.get("count_range") or []
         if (len(span) == 2 and all(isinstance(v, int) for v in span)):
+            spark = product.get("count_spark")
+            if isinstance(spark, int) and spark >= 0:
+                return spark
             return round((span[0] + span[1]) / 2)
     return None
 
@@ -270,6 +265,8 @@ def _result_context(report: dict) -> dict:
             count_text = ""
         elif needs_check and span:
             count_text = (f"Between {span[0]} and {span[1]} - please check")
+        elif needs_check and isinstance(count, int):
+            count_text = (f"About {count} - some may be hidden, please check")
         elif isinstance(count, int):
             count_text = f"About {count} visible"
         else:
@@ -279,7 +276,11 @@ def _result_context(report: dict) -> dict:
             if isinstance(count, int):
                 default_qty = count
             elif span and len(span) == 2:
-                default_qty = round((span[0] + span[1]) / 2)
+                spark = raw.get("count_spark")
+                if isinstance(spark, int):
+                    default_qty = spark
+                else:
+                    default_qty = round((span[0] + span[1]) / 2)
         products.append({
             "index": index,
             "colour": index % BOX_COLOURS,

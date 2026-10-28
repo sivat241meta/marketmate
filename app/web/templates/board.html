@@ -42,7 +42,7 @@ td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
 {% for row in rows %}
 <tr>
   <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-local">{{ row.name_local }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
-  <td>{% if row.sold_out %}<span class="soldout">Sold out</span>{% else %}<span class="price">₹{{ row.price }}</span> <span class="per">per {{ row.per }}</span>{% endif %}</td>
+  <td>{% if row.sold_out %}<span class="soldout">Sold out</span>{% else %}<span class="price">{{ row.price | money(shop["currency"]) }}</span> <span class="per">per {{ row.per }}</span>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>

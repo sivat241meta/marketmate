@@ -51,7 +51,7 @@
 <div class="tiles tiles-four">
   {{ ui.tile("mic", "Update by voice", "/e/" ~ token ~ "/update") }}
   {{ ui.tile("photo", "Scan stock photo", "/e/" ~ token ~ "/photos") }}
-  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span><span class="tile-sub">₹{{ bills.sales_today }} today · {{ bills.quotes_waiting }} waiting</span></a>
+  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span><span class="tile-sub">{{ bills.sales_today | money(shop["currency"]) }} today · {{ bills.quotes_waiting }} waiting</span></a>
   {% if versions %}
   {{ ui.tile("printer", "Print board", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
   {{ ui.tile("download", "Export CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
@@ -65,7 +65,7 @@
 
 {% if stock %}
 <section class="card">
-  <p><strong>₹{{ stock.total }}</strong> in stock (version {{ stock.version_id }})</p>
+  <p><strong>{{ stock.total | money(shop["currency"]) }}</strong> in stock (version {{ stock.version_id }})</p>
   {% if stock.left_out %}<p class="muted">Not counted: {{ stock.left_out | join(", ") }}</p>{% endif %}
 </section>
 {% endif %}
@@ -84,7 +84,7 @@
     {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
     {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
   </div>
-  <div class="list-price">{% for line in item.lines %}<span>₹{{ line.price }}</span><small>per {{ line.per }}</small>{% endfor %}</div>
+  <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>per {{ line.per }}</small>{% endfor %}</div>
   <div class="list-action">
     <form class="inline-form" method="post" action="/e/{{ token }}/item/{{ item.id }}/soldout">
       <button class="btn btn-small btn-secondary" type="submit">{% if item.sold_out %}Back in stock{% else %}Sold out{% endif %}</button>

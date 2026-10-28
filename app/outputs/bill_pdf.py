@@ -6,6 +6,8 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
+from app.outputs.money import format_money
+
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
@@ -28,6 +30,7 @@ def bill_pdf(shop: sqlite3.Row | dict, bill_id: int, lines: list[dict],
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
+    env.filters["money"] = format_money
     template = env.get_template("bill_pdf.html")
     rows = []
     for line in lines:

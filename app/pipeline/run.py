@@ -175,7 +175,9 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     """Retry a failed (or review) session from its cached transcript."""
     row = conn.execute("SELECT status FROM sessions WHERE id = ?",
                        (session_id,)).fetchone()
-    if row is None or row["status"] not in ("failed", "review"):
+    # "processing" is allowed so the retry route can flip the session to the
+    # stepper immediately and let the background job do the re-run.
+    if row is None or row["status"] not in ("failed", "review", "processing"):
         raise ValueError("reprocess is only for failed or review sessions")
     session_dir = _session_dir(settings, session_id)
     transcript_path = session_dir / "transcript.json"

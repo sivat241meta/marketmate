@@ -32,6 +32,7 @@ from app.market.quote import build_quote, wanted_from_photo, wanted_from_text
 from app.meta.spark import SparkError
 from app.meta.transcribe import transcribe_wav
 from app.outputs.quote_pdf import quote_pdf
+from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.pipeline.run import friendly_error_message
@@ -89,19 +90,6 @@ def _session_of_shop(conn, shop_id: int, session_id: int):
     if row["kind"] not in ("quote_voice", "quote_photo"):
         raise HTTPException(404, "unknown quote request")
     return row
-
-
-def _relative_time(when, now) -> str:
-    seconds = max(0, int((now - when).total_seconds()))
-    if seconds < 60:
-        return "just now"
-    minutes = seconds // 60
-    if minutes < 60:
-        return f"{minutes} minutes ago"
-    hours = minutes // 60
-    if hours < 24:
-        return f"{hours} hours ago"
-    return f"{hours // 24} days ago"
 
 
 def _fmt_money(value) -> str:
@@ -287,8 +275,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         rel = ""
         published_id = db.latest_version(conn, shop["id"], published_only=True)
         if published_id is not None:
-            rel = _relative_time(db.version_time(conn, published_id),
-                                 datetime.now(UTC))
+            rel = format_relative(db.version_time(conn, published_id),
+                                  datetime.now(UTC))
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
         return templates.TemplateResponse(request, "quote.html", {
             "shop": shop, "token": row["token"], "lines": lines,
@@ -537,8 +525,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         rel = ""
         published_id = db.latest_version(conn, shop["id"], published_only=True)
         if published_id is not None:
-            rel = _relative_time(db.version_time(conn, published_id),
-                                 datetime.now(UTC))
+            rel = format_relative(db.version_time(conn, published_id),
+                                  datetime.now(UTC))
         prices_note = f"Prices from {shop['name']}'s list, set {rel}" if rel else (
             f"Prices from {shop['name']}'s list")
         pdf = quote_pdf(shop, raw_lines if isinstance(raw_lines, list) else [],

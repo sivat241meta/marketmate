@@ -22,8 +22,8 @@
     <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
     <span class="muted">{{ line.unit }}</span>
   </div>
-  <p>₹{{ line.unit_price }} <small class="muted">{{ t.per }} {{ line.per_amount }} {{ line.per_unit }}</small></p>
-  <p><strong>₹{{ line.line_total }}</strong></p>
+  <p>{{ line.unit_price | money(shop["currency"]) }} <small class="muted">{{ t.per }} {{ line.per_amount }} {{ line.per_unit }}</small></p>
+  <p><strong>{{ line.line_total | money(shop["currency"]) }}</strong></p>
   {% elif line.status == "sold_out" %}
   <p>{{ ui.pill(t.sold_out, "soldout") }}</p>
   <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
@@ -47,7 +47,7 @@
 </form>
 
 <section class="card">
-  <h2>{{ t.total }} ₹{{ total }}</h2>
+  <h2>{{ t.total }} {{ total | money(shop["currency"]) }}</h2>
   <p class="muted">{{ priced_count }} {{ t.priced }}{% if unpriced_count %}, {{ unpriced_count }} {{ t.not_priced }}{% endif %}</p>
 </section>
 

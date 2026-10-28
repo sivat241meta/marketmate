@@ -42,11 +42,11 @@ td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: top; }
 <tr>
   <td><div class="name-ta">{{ row.name_local or row.name_en }}</div><div class="name-en">{{ row.name_en }}{% if row.status == "not_on_list" %} — not on this shop's list{% elif row.status == "sold_out" %} — Sold out{% endif %}{% if row.note %} · {{ row.note }}{% endif %}</div></td>
   <td class="qty">{{ row.qty }} {{ row.unit }}</td>
-  <td>{% if row.unit_price %}₹{{ row.unit_price }} <span class="muted">per {{ row.per_amount }} {{ row.per_unit }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
-  <td>{% if row.line_total %}₹{{ row.line_total }}{% else %}<span class="muted">not priced</span>{% endif %}</td>
+  <td>{% if row.unit_price %}{{ row.unit_price | money(shop["currency"]) }} <span class="muted">per {{ row.per_amount }} {{ row.per_unit }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+  <td>{% if row.line_total %}{{ row.line_total | money(shop["currency"]) }}{% else %}<span class="muted">not priced</span>{% endif %}</td>
 </tr>
 {% endfor %}
-<tr class="total-row"><td colspan="3">Total</td><td>₹{{ total }}</td></tr>
+<tr class="total-row"><td colspan="3">Total</td><td>{{ total | money(shop["currency"]) }}</td></tr>
 </table>
 <div class="footer">
 <p>{{ prices_note }}. Items not on the list are not priced. Counts from photos are estimates — please check.</p>

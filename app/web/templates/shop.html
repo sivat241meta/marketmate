@@ -38,7 +38,7 @@
       {% if row.name_en != row.name_local %}<small>{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</small>{% elif row.variety %}<small>({{ row.variety }})</small>{% endif %}
       {% if not row.sold_out %}
       {% for line in row.lines %}
-      <div class="product-price">₹{{ line.price }} <small>/ {{ line.per }}</small></div>
+      <div class="product-price">{{ line.price | money(shop["currency"]) }} <small>/ {{ line.per }}</small></div>
       {% endfor %}
       {% endif %}
     </div>

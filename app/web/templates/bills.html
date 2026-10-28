@@ -22,9 +22,9 @@
 
 <div class="stat-grid">
   <div class="stat"><span class="stat-num">{{ bills_today }}</span><span class="stat-label">Bills today</span></div>
-  <div class="stat"><span class="stat-num">{{ symbol }}{{ sales_today }}</span><span class="stat-label">Sales today</span></div>
+  <div class="stat"><span class="stat-num">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">Sales today</span></div>
   <div class="stat"><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">Quotes waiting</span></div>
-  <div class="stat"><span class="stat-num">{{ symbol }}{{ average_bill }}</span><span class="stat-label">Average bill</span></div>
+  <div class="stat"><span class="stat-num">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">Average bill</span></div>
 </div>
 
 <p>{{ ui.button("New bill", href="/e/" ~ token ~ "/bills/new", kind="primary", icon_name="receipt") }}</p>
@@ -43,7 +43,7 @@
     <span class="list-name">{{ row.label }}</span>
     <span class="list-sub">{{ row.time }} · {{ row.count }} item{% if row.count != 1 %}s{% endif %}</span>
   </span>
-  <span class="bill-total">{{ symbol }}{{ row.total }}</span>
+  <span class="bill-total">{{ row.total | money(shop["currency"]) }}</span>
   {{ ui.pill(row.pill_text, row.pill_kind) }}
 </a>
 {% endfor %}
@@ -55,8 +55,8 @@
 {% if top %}
 {% for entry in top %}
 <div class="top-row">
-  <div class="row-main"><strong>{{ entry.display }}</strong> <span class="muted">{{ entry.qty }} sold</span></div>
-  <div class="list-price">{{ symbol }}{{ entry.amount }}</div>
+  <div class="row-main"><strong>{{ entry.display }}</strong> <span class="muted">{{ entry.qty }}{% if entry.unit %} {{ entry.unit }}{% endif %} sold</span></div>
+  <div class="list-price">{{ entry.amount | money(shop["currency"]) }}</div>
   <progress class="progress" value="{{ entry.width }}" max="100" aria-label="{{ entry.display }} share of sales">{{ entry.width }}%</progress>
 </div>
 {% endfor %}

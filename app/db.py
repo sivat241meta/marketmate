@@ -120,7 +120,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     """Open the app database, creating the schema on first use."""
     data_dir = Path(data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(data_dir / "marketmate.db")
+    # Each request gets its own connection and uses it sequentially, so this is safe.
+    conn = sqlite3.connect(data_dir / "marketmate.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
@@ -430,9 +431,13 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
             })
     if needs:
         first = needs[0]
+        count_text = (
+            "1 item still needs your choice or a tick"
+            if len(needs) == 1
+            else f"{len(needs)} items still need your choice or a tick")
         raise ApprovalError(
-            f"Please check {first['name']}: {first['messages'][0]}."
-            " Play the clip, then tick I confirm.",
+            f"{count_text}. Please check {first['name']}:"
+            f" {first['messages'][0]}. Play the clip, then tick I confirm.",
             needs_confirm=needs,
         )
     for item in items:
