@@ -22,6 +22,7 @@
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if price_changed %}<div class="alert alert-warn">{{ t('bill.price_changed') }}</div>{% endif %}
+{% if not_understood %}<div class="alert alert-warn">Not understood: {{ not_understood }} – add it from the list</div>{% endif %}
 {% if order_actions %}
 <section class="card" aria-label="{{ t('bill.order_status') }}">
   <h2>{{ t('bill.order_status') }}</h2>
@@ -93,6 +94,8 @@
           <span class="line-name">{{ line.display }}</span>
           {% if line.status == "sold_out" %}
           <span class="line-note">{{ ui.pill(t('bill.sold_out'), "soldout") }}</span>
+          {% elif line.status == "choose" %}
+          <span class="line-note">{{ ui.pill("Which one?", "check") }} <span class="muted">{{ line.note }}</span></span>
           {% else %}
           <span class="line-note muted">{{ t('bill.not_on_list') }}{% if line.note %} — {{ line.note }}{% endif %}</span>
           {% endif %}

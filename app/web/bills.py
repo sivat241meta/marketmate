@@ -386,6 +386,16 @@ def _row_price_changed(row) -> bool:
         return False
 
 
+def row_not_understood(row) -> str | None:
+    """Unheard leftover words stored with a live bill/quote, if any."""
+    try:
+        value = row["not_understood"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    text = str(value or "").strip()
+    return text or None
+
+
 def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
     """Big order-status buttons: (status value, label, button kind)."""
     t = t_for(lang)
@@ -777,6 +787,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "ready_wa_url": ready_wa_url,
             "price_changed": _row_price_changed(bill),
             "made_by": _row_created_by(bill),
+            "not_understood": row_not_understood(bill),
         }, status_code=status_code)
 
     @app.get("/e/{token}/bills")

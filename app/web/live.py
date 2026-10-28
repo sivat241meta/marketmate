@@ -24,7 +24,11 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
 from app.limits import RATE_LIMIT_MESSAGE
-from app.market.order_parse import leftover_needs_spark, parse_order
+from app.market.order_parse import (
+    item_like_leftovers,
+    leftover_needs_spark,
+    parse_order,
+)
 from app.market.quote import build_quote, wanted_from_text
 from app.meta.realtime import RealtimeASR, RealtimeError
 from app.meta.spark import SparkError
@@ -56,6 +60,10 @@ START_MESSAGE = (
 )
 NO_ITEMS_MESSAGE = "We could not hear any items. Please try again."
 NO_PRICES_MESSAGE = "No price list yet. Record today's prices first."
+STOPPED_MESSAGE = "Stopped at 5 minutes – check what we heard"
+
+# Monotonic clock seam: tests patch app.web.live.monotonic with a fake clock.
+monotonic = time.monotonic
 
 
 class IncrementalRunner:
@@ -227,11 +235,13 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
         return
 
     turns_lines: dict[int, list] = {}
+    turn_texts: dict[int, str] = {}
+    spark_tasks: set[asyncio.Task] = set()
     send_lock = asyncio.Lock()
     stop_requested = asyncio.Event()
     meta_done = asyncio.Event()
     timed_out = False
-    start_time = time.monotonic()
+    start_time = monotonic()
     audio_bytes = 0
 
     async def send_json(obj: dict) -> None:
@@ -295,11 +305,14 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
                             str(text), price_items, language)
                     except Exception:  # noqa: BLE001 - one bad turn
                         local, leftover = [], [str(text)]
+                    turn_texts[turn_id] = str(text)
                     turns_lines[turn_id] = list(local)
                     await _send_lines()
                     if leftover and leftover_needs_spark(leftover):
-                        asyncio.create_task(
+                        task = asyncio.create_task(
                             _spark_for_turn(turn_id, str(text), list(local)))
+                        spark_tasks.add(task)
+                        task.add_done_callback(spark_tasks.discard)
                 elif name.lower() == "error":
                     raise RealtimeError(str(
                         event.get("message") or "live transcription failed"))
@@ -320,7 +333,7 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
     meta_failed = False
     try:
         while True:
-            if time.monotonic() - start_time > max_seconds:
+            if monotonic() - start_time > max_seconds:
                 timed_out = True
                 stop_requested.set()
                 try:
@@ -376,6 +389,11 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
                     await asyncio.wait_for(meta_done.wait(), timeout=12)
                 except TimeoutError:
                     pass
+                if spark_tasks:
+                    _done, pending = await asyncio.wait(
+                        set(spark_tasks), timeout=15)
+                    for task in pending:
+                        task.cancel()
                 break
     finally:
         with contextlib.suppress(Exception):
@@ -399,6 +417,30 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
             pass
         return
     wanted = _overall()
+    full_text = " ".join(turn_texts[i] for i in sorted(turn_texts)
+                         if turn_texts[i].strip())
+    full_leftover: list[str] = []
+    if full_text.strip():
+        try:
+            full_local, full_leftover = parse_order(
+                full_text, price_items, language)
+        except Exception:  # noqa: BLE001 - keep the per-turn lines
+            wanted = _overall()
+        else:
+            merged = list(full_local)
+            seen = {str(w.name_en or "").strip().lower() for w in merged}
+            for turn_id in sorted(turns_lines):
+                for extra in turns_lines[turn_id]:
+                    if extra.source == "local":
+                        continue
+                    key = str(extra.name_en or "").strip().lower()
+                    if key and key not in seen:
+                        seen.add(key)
+                        merged.append(extra)
+            wanted = merged
+    note_words = item_like_leftovers(
+        full_leftover, [w.name_en for w in wanted])
+    not_understood = " ".join(note_words) or None
     if not wanted:
         try:
             await send_json({"type": "error", "message": NO_ITEMS_MESSAGE})
@@ -420,11 +462,13 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
             if is_bill:
                 token = db.create_quote(
                     conn, shop_id=shop_id, quote=quote, source="seller",
-                    kind="bill", status="billed", created_by=created_by)
+                    kind="bill", status="billed", created_by=created_by,
+                    not_understood=not_understood)
                 row = db.get_quote_by_token(conn, token)
                 url = f"/e/{bill_token}/bills/{row['id']}"
                 return ({"type": "done", "bill_url": url}, None)
-            token = db.create_quote(conn, shop_id=shop_id, quote=quote)
+            token = db.create_quote(conn, shop_id=shop_id, quote=quote,
+                                    not_understood=not_understood)
             return ({"type": "done", "quote_url": f"/q/{token}"}, None)
         finally:
             conn.close()
@@ -631,7 +675,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         stop_requested = asyncio.Event()
         meta_done = asyncio.Event()
         timed_out = False
-        start_time = time.monotonic()
+        start_time = monotonic()
 
         async def send_json(obj: dict) -> None:
             async with send_lock:
@@ -777,19 +821,22 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         try:
             while True:
-                if time.monotonic() - start_time > MAX_LIVE_SECONDS:
+                if monotonic() - start_time > MAX_LIVE_SECONDS:
                     timed_out = True
                     stop_requested.set()
                     try:
-                        await send_json({"type": "error", "message": TIMEOUT_MESSAGE})
+                        await send_json({"type": "timeout",
+                                         "message": STOPPED_MESSAGE})
                     except (WebSocketDisconnect, RuntimeError):
                         pass
-                    conn = db.connect(data_dir)
                     try:
-                        db.set_session_status(conn, session_id, "failed",
-                                              TIMEOUT_MESSAGE)
-                    finally:
-                        conn.close()
+                        await realtime.end()
+                    except RealtimeError:
+                        pass
+                    try:
+                        await asyncio.wait_for(meta_done.wait(), timeout=12)
+                    except TimeoutError:
+                        pass
                     break
                 if meta_task.done() and not stop_requested.is_set():
                     exc = meta_task.exception()
@@ -897,7 +944,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                          Exception):
                     await meta_task
 
-        if timed_out or meta_failed:
+        if meta_failed:
             try:
                 await websocket.close()
             except (WebSocketDisconnect, RuntimeError):
@@ -945,6 +992,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         try:
             await asyncio.to_thread(_finalize)
+            if timed_out:
+                conn = db.connect(data_dir)
+                try:
+                    db.set_session_status(conn, session_id, "review",
+                                          STOPPED_MESSAGE)
+                finally:
+                    conn.close()
         except CostCapExceeded:
             try:
                 await send_json({"type": "error",
@@ -978,9 +1032,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 pass
             return
 
+        done_payload: dict = {
+            "type": "done", "review_url": f"/e/{token}/s/{session_id}"}
+        if timed_out:
+            done_payload["message"] = STOPPED_MESSAGE
         try:
-            await send_json({"type": "done",
-                             "review_url": f"/e/{token}/s/{session_id}"})
+            await send_json(done_payload)
         except (WebSocketDisconnect, RuntimeError):
             pass
         try:

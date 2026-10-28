@@ -38,6 +38,7 @@ class WantedLine:
     unit: str | None
     source: str
     amount: Decimal | None = None
+    options: list[str] | None = None
 
 
 @dataclass
@@ -314,6 +315,25 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
             by_name[key] = item
     lines: list[QuoteLine] = []
     for item in wanted:
+        if item.options and len(item.options) >= 2:
+            candidates = sorted(
+                {opt for opt in item.options
+                 if _canonical(opt) in by_name},
+                key=str.lower)
+            if len(candidates) >= 2:
+                displays = ", ".join(
+                    opt[:1].upper() + opt[1:] for opt in candidates)
+                lines.append(QuoteLine(
+                    name_en=item.name_en, name_local="",
+                    qty=item.qty if item.qty is not None else Decimal(1),
+                    unit=item.unit, unit_price=None, per_amount=None,
+                    line_total=None, status="choose",
+                    note=f"Which one: {displays}?"))
+                continue
+            if len(candidates) == 1:
+                item = WantedLine(
+                    name_en=candidates[0], qty=item.qty, unit=item.unit,
+                    source=item.source, amount=item.amount)
         want_key = _canonical(item.name_en)
         shop_item = by_name.get(want_key)
         if shop_item is None:

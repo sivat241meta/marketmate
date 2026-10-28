@@ -285,7 +285,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
                               ("client_id", "TEXT"),
                               ("priced_version_id", "INTEGER"),
                               ("price_changed", "INTEGER"),
-                              ("created_by", "TEXT")):
+                              ("created_by", "TEXT"),
+                              ("not_understood", "TEXT")):
         if name not in quote_columns:
             conn.execute(f"ALTER TABLE quotes ADD COLUMN {name} {column_type}")
     shop_columns = {row[1] for row in conn.execute("PRAGMA table_info(shops)")}
@@ -864,7 +865,8 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
                  created_by: str | None = None,
                  client_id: str | None = None,
                  priced_version_id: int | None = None,
-                 price_changed: bool = False) -> str:
+                 price_changed: bool = False,
+                 not_understood: str | None = None) -> str:
     """Store a priced quote; returns its unguessable public token."""
     if source not in _QUOTE_SOURCES:
         raise ValueError(f"unknown quote source: {source}")
@@ -884,13 +886,14 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
     conn.execute(
         "INSERT INTO quotes (shop_id, token, source, kind, status, lines_json,"
         " total, total_exact, customer_note, created_at, updated_at,"
-        " created_by, client_id, priced_version_id, price_changed)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " created_by, client_id, priced_version_id, price_changed,"
+        " not_understood)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (shop_id, token, source, kind, status,
          json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
          total, total_exact, customer_note, now, now,
          created_by, client_id, priced_version_id,
-         int(bool(price_changed))),
+         int(bool(price_changed)), not_understood),
     )
     conn.commit()
     return token

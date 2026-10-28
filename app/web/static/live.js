@@ -12,11 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const micBtn = root.querySelector("[data-live-mic]");
   const hint = root.querySelector("[data-live-hint]");
   const badge = root.querySelector("[data-live-badge]");
+  const readyEl = root.querySelector("[data-live-ready]");
   const timerEl = root.querySelector("[data-live-timer]");
   const lastEl = root.querySelector("[data-live-last]");
   const partialEl = root.querySelector("[data-live-partial]");
   const errorBox = root.querySelector("[data-live-error]");
   const finishBox = root.querySelector("[data-live-finish]");
+  const elapsedEl = root.querySelector("[data-live-elapsed]");
   const offlineBox = root.querySelector("[data-live-offline]");
   const cardsBox = root.querySelector("[data-live-cards]");
   const emptyNote = root.querySelector("[data-live-empty]");
@@ -46,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let sessionId = null;
   let timerId = null;
   let startedAt = 0;
+  let finishTimerId = null;
+  let finishStartedAt = 0;
   const cards = new Map();
 
   function showError(message) {
@@ -205,9 +209,33 @@ document.addEventListener("DOMContentLoaded", () => {
     micBtn.classList.toggle("is-recording", on);
     micBtn.setAttribute("aria-label", on ? "Stop live prices" : "Start live prices");
     badge.hidden = !on;
+    timerEl.hidden = !on;
+    if (readyEl) {
+      readyEl.hidden = on;
+    }
     hint.textContent = on
       ? "Listening… say each item and its price, then tap to stop."
       : "Tap to start. Point at your stall and say each price.";
+  }
+
+  function showFinishing() {
+    badge.hidden = true;
+    timerEl.hidden = true;
+    stopTimer();
+    finishBox.hidden = false;
+    hint.textContent = "Finishing – checking every price…";
+    if (elapsedEl) {
+      finishStartedAt = Date.now();
+      elapsedEl.hidden = false;
+      elapsedEl.textContent = "0 s";
+      if (finishTimerId) {
+        window.clearInterval(finishTimerId);
+      }
+      finishTimerId = window.setInterval(() => {
+        const secs = Math.max(0, Math.floor((Date.now() - finishStartedAt) / 1000));
+        elapsedEl.textContent = secs + " s";
+      }, 500);
+    }
   }
 
   async function startAudio(wsSocket, mediaStream) {
@@ -253,8 +281,18 @@ document.addEventListener("DOMContentLoaded", () => {
       grabFrame(data.turn_id, "end");
     } else if (data.type === "items") {
       renderCards(data.items || []);
+    } else if (data.type === "timeout") {
+      if (!stopping) {
+        stopping = true;
+        micBtn.disabled = true;
+        showFinishing();
+      }
     } else if (data.type === "done") {
       stopTimer();
+      if (finishTimerId) {
+        window.clearInterval(finishTimerId);
+        finishTimerId = null;
+      }
       cleanupMedia();
       window.location.href = data.review_url;
     } else if (data.type === "error") {
@@ -325,8 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ws.send(JSON.stringify({ type: "stop" }));
       }
     } catch (err) { /* ignore */ }
-    finishBox.hidden = false;
-    hint.textContent = "Finishing… checking every price.";
+    showFinishing();
     window.setTimeout(() => {
       if (stopping) {
         cleanupMedia();

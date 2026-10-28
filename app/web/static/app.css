@@ -1253,6 +1253,16 @@ svg.boxes text.box-badge {
   padding: 4px 12px;
   font-variant-numeric: tabular-nums;
 }
+.live-ready {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(28, 25, 23, 0.72);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border-radius: 99px;
+  padding: 4px 12px;
+}
 .live-captions {
   position: absolute;
   left: 0;

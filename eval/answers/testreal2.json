@@ -1,0 +1,78 @@
+{
+ "clip": "testreal2.mp4",
+ "note": "Real Tamil speech by the owner in a kitchen/fridge (54 s, phone video). All prices confirmed by the owner on 28 Oct.",
+ "items": [
+  {
+   "name_en": "beetroot",
+   "variety": null,
+   "price": 37,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "tomato",
+   "variety": null,
+   "price": 18,
+   "per_amount": 500,
+   "unit": "g",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "banana stem",
+   "variety": null,
+   "price": 30,
+   "per_amount": 1,
+   "unit": "piece",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "pomegranate",
+   "variety": null,
+   "price": 87,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "sweet lime",
+   "variety": null,
+   "price": 36,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "apple",
+   "variety": null,
+   "price": 100,
+   "per_amount": 5,
+   "unit": "piece",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  }
+ ]
+}

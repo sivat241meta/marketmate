@@ -17,6 +17,7 @@
 {% block content %}
 <header class="review-head">
   <h1>{{ t('review.title') }}</h1>
+  {% if stopped_note %}<div class="alert alert-warn">{{ stopped_note }}</div>{% endif %}
   <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
   <progress class="progress" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>
   <form class="inline-form" method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">

@@ -28,6 +28,20 @@ _DIGIT_SOURCES = (
 _DIGIT_TABLE = str.maketrans(
     _DIGIT_SOURCES, "0123456789" * (len(_DIGIT_SOURCES) // 10))
 
+# Tamil spelling variants in speech transcripts: ண/ன/ந, ள/ல/ழ and ற/ர
+# sound alike, so realtime may write என்பத்தேழு for எண்பத்தேழு (87).
+# Number-word lookup compares on this folded form; stored text is untouched.
+_TAMIL_FOLD_TABLE = str.maketrans({
+    "ண": "ந", "ன": "ந",
+    "ள": "ல", "ழ": "ல",
+    "ற": "ர",
+})
+
+
+def fold_tamil(word: str) -> str:
+    """Fold confusable Tamil consonants for number-word comparison only."""
+    return word.translate(_TAMIL_FOLD_TABLE)
+
 
 def normalise_digits(text: str, decimal_comma: bool = False) -> str:
     """Map Indic/Arabic/Thai digits to ASCII and resolve separators.
@@ -303,6 +317,22 @@ _ROMAN_TENS = {w: v for w, v in _TAMIL_ALL.items() if w.isascii() and v in _TENS
 _ROMAN_ONES = {w: v for w, v in _TAMIL_ALL.items() if w.isascii() and 1 <= v <= 9}
 _MUNCH_KEYS = sorted(_TAMIL_ALL, key=len, reverse=True)
 
+# Folded Tamil-script keys for spelling variants. Exact keys always win;
+# a folded key shared by two values is ambiguous and stays unmatched.
+_TAMIL_FOLDED: dict[str, int] = {}
+_FOLDED_AMBIGUOUS: set[str] = set()
+for _key, _value in _TAMIL_ALL.items():
+    if _key.isascii():
+        continue
+    _folded = fold_tamil(_key)
+    if _folded in _TAMIL_FOLDED and _TAMIL_FOLDED[_folded] != _value:
+        _FOLDED_AMBIGUOUS.add(_folded)
+    else:
+        _TAMIL_FOLDED.setdefault(_folded, _value)
+for _bad in _FOLDED_AMBIGUOUS:
+    _TAMIL_FOLDED.pop(_bad, None)
+_FOLDED_MUNCH_KEYS = sorted(_TAMIL_FOLDED, key=len, reverse=True)
+
 _WORD_SPLIT_RE = re.compile(r"[^\s]+")
 _STRIP_CHARS = ".,;:!?\"'()[]{}₹।॥"
 _CURRENCY_STRIP_CHARS = ".,;:!?\"'()[]{}"
@@ -419,6 +449,10 @@ def _single_value(word: str) -> tuple[int | Decimal, str] | None:
         return (_ENGLISH_TENS[word], "english")
     if word in _TAMIL_ALL:
         return (_TAMIL_ALL[word], "tamil")
+    if not word.isascii():
+        folded = fold_tamil(word)
+        if folded in _TAMIL_FOLDED:
+            return (_TAMIL_FOLDED[folded], "tamil")
     hindi = _hindi_single(word)
     if hindi is not None:
         return (hindi, "hindi")
@@ -547,6 +581,7 @@ def parse_number(token: str, decimal_comma: bool = False) -> Decimal | None:
 def _segment_tamil(run: str) -> list[tuple[str, int, int]]:
     """Split a spaceless Tamil run into (word, value, offset), skipping noise."""
     out: list[tuple[str, int, int]] = []
+    folded_run = fold_tamil(run)
     i = 0
     while i < len(run):
         hit = None
@@ -554,11 +589,21 @@ def _segment_tamil(run: str) -> list[tuple[str, int, int]]:
             if run.startswith(key, i):
                 hit = key
                 break
-        if hit is None:
+        if hit is not None:
+            out.append((hit, _TAMIL_ALL[hit], i))
+            i += len(hit)
+            continue
+        folded_hit = None
+        for key in _FOLDED_MUNCH_KEYS:
+            if folded_run.startswith(key, i):
+                folded_hit = key
+                break
+        if folded_hit is None:
             i += 1
             continue
-        out.append((hit, _TAMIL_ALL[hit], i))
-        i += len(hit)
+        out.append((run[i:i + len(folded_hit)],
+                    _TAMIL_FOLDED[folded_hit], i))
+        i += len(folded_hit)
     return out
 
 

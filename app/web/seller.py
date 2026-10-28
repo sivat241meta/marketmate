@@ -614,9 +614,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return RedirectResponse(f"/e/{token}/purchases/{session_id}",
                                     status_code=303)
         progress, friendly = _translated_progress(session, ui_lang)
+        from app.web.live import STOPPED_MESSAGE
+
+        stopped = (session["message"] == STOPPED_MESSAGE
+                   if session["message"] else False)
         context = {"shop": shop, "session": session, "token": token,
                    "progress": progress, "shop_lang": shop["language"],
-                   "friendly": friendly, "ui_lang": ui_lang}
+                   "friendly": friendly, "ui_lang": ui_lang,
+                   "stopped_note": STOPPED_MESSAGE if stopped else None}
         if session["status"] == "review" and session["kind"] in (
                 "video", "live", "board"):
             items = db.load_drafts(conn, session_id)

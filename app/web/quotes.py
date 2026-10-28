@@ -283,10 +283,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 if row["status"] in db.ORDER_STEPS else False,
                 "current": row["status"] == key,
             })
+        from app.web.bills import row_not_understood
+
         return templates.TemplateResponse(request, "quote.html", {
             "shop": shop, "token": row["token"], "lines": lines,
             "total": _fmt_money(row["total"]),
             "priced_count": priced_count, "unpriced_count": unpriced_count,
+            "not_understood": row_not_understood(row),
             "rel": rel, "error": error, "lang": language, "t": strings,
             "shop_lang": shop["language"] or "en",
             "ui_lang": language if language in ("ta", "hi", "en") else "en",

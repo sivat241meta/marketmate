@@ -21,8 +21,9 @@
       <div class="live-preview">
         <video class="live-video" data-live-video playsinline muted autoplay aria-label="{{ t('live.camera_preview') }}"></video>
         <div class="live-topbar">
+          <span class="live-ready" data-live-ready>{{ t('live.ready') }}</span>
           <span class="live-live" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>{{ t('live.live') }}</span>
-          <span class="live-timer" data-live-timer>0:00</span>
+          <span class="live-timer" data-live-timer hidden>0:00</span>
         </div>
         <div class="live-captions" aria-live="polite">
           <p class="live-last" data-live-last></p>
@@ -37,7 +38,8 @@
       <p class="muted" data-needs-internet-hint hidden>needs internet</p>
       <div class="alert alert-warn" data-live-error hidden></div>
       <div class="live-finish" data-live-finish hidden>
-        <p><strong>{{ t('live.finishing') }}</strong></p>
+        <p><strong>{{ t('live.finishing_live') }}</strong></p>
+        <p class="muted" data-live-elapsed hidden></p>
         <ol class="vstepper">
           <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">{{ t('stage.live.listening') }}</span></span></li>
           <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">{{ t('stage.live.items') }}</span></span></li>

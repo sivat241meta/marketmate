@@ -11,13 +11,18 @@ import re
 from decimal import Decimal
 
 from app.market.quote import WantedLine
-from app.pipeline.names import EN_TO_ROMAN, SYNONYMS
+from app.pipeline.names import (
+    CANONICAL_NAMES,
+    EN_TO_ROMAN,
+    SYNONYMS,
+)
 from app.pipeline.numbers import CURRENCY_WORDS, parse_number
 from app.pipeline.units import normalize_unit
 
 __all__ = [
     "FILLER_WORDS",
     "FRACTIONS",
+    "item_like_leftovers",
     "leftover_needs_spark",
     "parse_order",
 ]
@@ -125,56 +130,116 @@ def _shop_unit(item) -> str | None:
     return None
 
 
-def _build_aliases(price_list_items) -> dict[str, int]:
-    """Normalized alias -> price-list index. Ambiguous aliases are dropped."""
-    candidates: dict[str, list[int]] = {}
+def _plural_variants(key: str):
+    """A normalized alias plus its English singular/plural twin."""
+    yield key
+    if key.isascii():
+        if not key.endswith("s"):
+            yield key + "s"
+        elif len(key) > 2:
+            yield key[:-1]
 
-    def add(alias: str | None, idx: int) -> None:
+
+def _build_canonical_index() -> dict[str, set[str]]:
+    """Normalized alias -> canonical name_en set, from names.py only.
+
+    Every canonical item contributes its full English, local-script and
+    romanised names plus the last word of each multi-word name (so a
+    generic வெங்காயம் maps to both onion and small onion). SYNONYMS map
+    to their canonical name.
+    """
+    index: dict[str, set[str]] = {}
+
+    def add(alias: str | None, canon: str) -> None:
         if not alias:
             return
         key = _norm(alias)
         if not key:
             return
-        candidates.setdefault(key, []).append(idx)
-        if key.isascii():
-            if not key.endswith("s"):
-                candidates.setdefault(key + "s", []).append(idx)
-            elif len(key) > 2:
-                candidates.setdefault(key[:-1], []).append(idx)
+        for variant in _plural_variants(key):
+            index.setdefault(variant, set()).add(canon)
 
-    for idx, item in enumerate(price_list_items):
-        en = str(_field(item, "name_en") or "")
-        local = str(_field(item, "name_local") or "")
-        add(en, idx)
-        if local and _norm(local) != _norm(en):
-            add(local, idx)
-        roman = EN_TO_ROMAN.get(en.strip().lower())
+    for canon, local in CANONICAL_NAMES.items():
+        add(canon, canon)
+        add(local, canon)
+        roman = EN_TO_ROMAN.get(canon.strip().lower())
         if roman:
-            add(roman, idx)
+            add(roman, canon)
             bits = roman.split()
             if len(bits) > 1:
-                add(bits[-1], idx)
-        for name in (en, local):
+                add(bits[-1], canon)
+        for name in (canon, local):
             bits = name.split()
             if len(bits) > 1:
-                add(bits[-1], idx)
+                add(bits[-1], canon)
     for syn, canon in SYNONYMS.items():
-        key = _norm(canon)
-        for idx, item in enumerate(price_list_items):
-            en = str(_field(item, "name_en") or "")
-            if _norm(en) == key:
-                add(syn, idx)
-    resolved: dict[str, int] = {}
-    for alias, indices in candidates.items():
-        unique = sorted(set(indices))
-        if len(unique) == 1:
-            resolved[alias] = unique[0]
-            continue
-        names = {_norm(str(_field(price_list_items[i], "name_en") or ""))
-                 for i in unique}
-        if len(names) == 1:
-            resolved[alias] = unique[0]
-    return resolved
+        if canon in CANONICAL_NAMES:
+            add(syn, canon)
+    return index
+
+
+_CANONICAL_INDEX = _build_canonical_index()
+
+
+def _shop_canon(item) -> str:
+    """An item's canonical name_en (synonym-aware, normalized)."""
+    key = _norm(str(_field(item, "name_en") or ""))
+    return SYNONYMS.get(key, key)
+
+
+def _shop_exact(items) -> dict[str, int]:
+    """Normalized full shop name (English or local) -> item index."""
+    exact: dict[str, int] = {}
+    for idx, item in enumerate(items):
+        for name in (str(_field(item, "name_en") or ""),
+                     str(_field(item, "name_local") or "")):
+            key = _norm(name)
+            if not key:
+                continue
+            for variant in _plural_variants(key):
+                exact.setdefault(variant, idx)
+    return exact
+
+
+def _lookup(key: str, exact: dict[str, int], items
+            ) -> tuple[str, object]:
+    """Match one normalized phrase: ("item", idx), ("choose", [idx]) or None.
+
+    The phrase maps through the canonical names to name_en first; only
+    then is the shop item found. A generic word shared by several shop
+    items picks the item whose name_en is the generic canonical name
+    (வெங்காயம் -> "onion"); with no exact one the caller asks "which
+    one?" instead of dropping the line.
+    """
+    idxs: list[int] = []
+    if key in exact:
+        idxs.append(exact[key])
+    for canon in _CANONICAL_INDEX.get(key, ()):
+        for idx, item in enumerate(items):
+            if _shop_canon(item) == canon and idx not in idxs:
+                idxs.append(idx)
+    if not idxs:
+        return ("none", None)
+    if len(idxs) == 1:
+        return ("item", idxs[0])
+    names = {_norm(str(_field(items[i], "name_en") or "")) for i in idxs}
+    if len(names) == 1:
+        return ("item", idxs[0])
+    lasts = {_shop_canon(items[i]).split()[-1] for i in idxs}
+    if len(lasts) == 1:
+        shared = next(iter(lasts))
+        if shared in CANONICAL_NAMES:
+            for idx in idxs:
+                if _shop_canon(items[idx]) == shared:
+                    return ("item", idx)
+    unique: list[int] = []
+    seen: set[str] = set()
+    for idx in sorted(idxs):
+        name = _norm(str(_field(items[idx], "name_en") or ""))
+        if name not in seen:
+            seen.add(name)
+            unique.append(idx)
+    return ("choose", unique)
 
 
 def _tokenize(text: str) -> tuple[list[str], list[int], list[str]]:
@@ -261,6 +326,37 @@ def leftover_needs_spark(leftover_words: list[str]) -> bool:
     return False
 
 
+def item_like_leftovers(leftover_words: list[str],
+                        wanted_names=()) -> list[str]:
+    """Leftover words that look like an item, for the "Not understood" note.
+
+    Drops filler words, numbers, units, currency words and anything
+    already on the bill, so only genuinely unheard words are shown.
+    """
+    covered: set[str] = set()
+    for name in wanted_names or ():
+        for bit in str(name or "").lower().split():
+            covered.add(bit)
+            if bit.endswith("s") and len(bit) > 2:
+                covered.add(bit[:-1])
+            else:
+                covered.add(bit + "s")
+    out: list[str] = []
+    for word in leftover_words:
+        norm = _norm(word)
+        if not norm or norm in FILLER_WORDS or norm in covered:
+            continue
+        if parse_number(word) is not None:
+            continue
+        unit, _ = normalize_unit(word)
+        if unit is not None:
+            continue
+        if _is_currency(norm):
+            continue
+        out.append(word)
+    return out
+
+
 def parse_order(text: str, price_list_items, language: str | None = "en",
                 ) -> tuple[list[WantedLine], list[str]]:
     """Parse an order into wanted lines plus leftover original words."""
@@ -272,9 +368,9 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
         decimal_comma = bool(get_language(language or "en").decimal_comma)
     except (KeyError, ImportError, AttributeError):
         decimal_comma = False
-    aliases = _build_aliases(items)
+    exact = _shop_exact(items)
     tokens, to_orig, display = _tokenize(text or "")
-    occurrences: list[tuple[int, int, int]] = []
+    occurrences: list[tuple[int, int, str, object]] = []
     pos = 0
     while pos < len(tokens):
         hit = None
@@ -282,31 +378,38 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             if pos + width > len(tokens):
                 continue
             phrase = " ".join(tokens[pos:pos + width])
-            key = _norm(phrase)
-            if key in aliases:
-                hit = (width, aliases[key])
+            kind, payload = _lookup(_norm(phrase), exact, items)
+            if kind != "none":
+                hit = (width, kind, payload)
                 break
             words = phrase.split()
             stripped = strip_suffix(words[-1])
             if stripped != words[-1]:
                 alt = " ".join([*words[:-1], stripped])
-                key2 = _norm(alt)
-                if key2 in aliases:
-                    hit = (width, aliases[key2])
+                kind, payload = _lookup(_norm(alt), exact, items)
+                if kind != "none":
+                    hit = (width, kind, payload)
                     break
         if hit is None:
             pos += 1
         else:
-            width, idx = hit
-            occurrences.append((pos, pos + width, idx))
+            width, kind, payload = hit
+            occurrences.append((pos, pos + width, kind, payload))
             pos += width
     consumed: set[int] = {i for i, tok in enumerate(tokens)
                           if tok in FILLER_WORDS}
     lines: list[WantedLine] = []
     prev_end = 0
-    for start, stop, idx in occurrences:
-        item = items[idx]
-        name_en = str(_field(item, "name_en") or "")
+    for start, stop, kind, payload in occurrences:
+        options: list[str] | None = None
+        if kind == "choose":
+            idxs = [i for i in payload if isinstance(i, int)]  # type: ignore[union-attr]
+            item = items[idxs[0]]
+            name_en = " ".join(tokens[start:stop])
+            options = [str(_field(items[i], "name_en") or "") for i in idxs]
+        else:
+            item = items[payload]  # type: ignore[index]
+            name_en = str(_field(item, "name_en") or "")
         found = _find_number(tokens, prev_end, start, decimal_comma)
         currencies = [k for k in range(prev_end, start)
                       if _is_currency(tokens[k])]
@@ -321,7 +424,7 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             if amount > 0:
                 lines.append(WantedLine(name_en=name_en, qty=None,
                                         unit=None, source="local",
-                                        amount=amount))
+                                        amount=amount, options=options))
             prev_end = stop
             continue
         if found is not None:
@@ -346,7 +449,8 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
                 consumed.add(k)
             if qty > 0:
                 lines.append(WantedLine(name_en=name_en, qty=qty,
-                                        unit=unit, source="local"))
+                                        unit=unit, source="local",
+                                        options=options))
             prev_end = stop
             continue
         unit_idx = None
@@ -361,14 +465,15 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
                 consumed.add(k)
             consumed.add(unit_idx)  # type: ignore[arg-type]
             lines.append(WantedLine(name_en=name_en, qty=Decimal(1) * factor,
-                                    unit=canonical, source="local"))
+                                    unit=canonical, source="local",
+                                    options=options))
             prev_end = stop
             continue
         for k in range(start, stop):
             consumed.add(k)
         qty, unit = _default_for_single(item)
         lines.append(WantedLine(name_en=name_en, qty=qty, unit=unit,
-                                source="local"))
+                                source="local", options=options))
         prev_end = stop
     leftover: list[str] = []
     for orig_idx, word in enumerate(display):

@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from app.languages import by_api_name, currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
-from app.pipeline.numbers import find_numbers, parse_number
+from app.pipeline.numbers import find_numbers, fold_tamil, parse_number
 from app.pipeline.units import CANONICAL_UNITS, normalise_unit, rate
 
 SOUND_ALIKE_PAIRS = {13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90}
@@ -266,10 +266,15 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
                          decimal_comma=_decimal_comma_for(language))
     heard_values = {value for value, _ in heard}
     quote_tokens = [t for t in _raw_tokens(quote) if t]
-    has_fifty = _has_word(quote_tokens, TAMIL_FIFTY_WORDS)
-    has_eighty = _has_word(quote_tokens, TAMIL_EIGHTY_WORDS)
-    has_half = _has_word(quote_tokens, TAMIL_HALF_WORDS)
-    has_six = _has_word(quote_tokens, TAMIL_SIX_WORDS)
+    folded_tokens = [fold_tamil(t) for t in quote_tokens]
+    has_fifty = _has_word(folded_tokens,
+                          frozenset(fold_tamil(w) for w in TAMIL_FIFTY_WORDS))
+    has_eighty = _has_word(folded_tokens,
+                           frozenset(fold_tamil(w) for w in TAMIL_EIGHTY_WORDS))
+    has_half = _has_word(folded_tokens,
+                         frozenset(fold_tamil(w) for w in TAMIL_HALF_WORDS))
+    has_six = _has_word(folded_tokens,
+                        frozenset(fold_tamil(w) for w in TAMIL_SIX_WORDS))
     has_sixty = _has_exact_word(quote_tokens, HINDI_SIXTY_WORDS.union(
         BENGALI_SIXTY_WORDS))
     has_seven = _has_exact_word(quote_tokens, HINDI_SEVEN_WORDS.union(
