@@ -29,6 +29,7 @@ from app.costs import (
 )
 from app.languages import get_language, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
+from app.market.order_parse import wanted_local_first
 from app.market.quote import (
     WantedLine,
     build_quote,
@@ -287,15 +288,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             prices_time = when.astimezone(IST).strftime("%H:%M")
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
         steps = []
+        status = row["status"]
+        # Paid orders finished the whole flow; show every step done with
+        # Collected current. Older accepted rows stuck at "billed" read as
+        # "new" (sent, waiting for packing).
+        if status == "paid":
+            effective = "collected"
+        elif status == "billed":
+            effective = "new"
+        else:
+            effective = status
         for key in db.ORDER_STEPS:
             steps.append({
                 "key": key,
                 "label": strings[f"order.step_{key}"],
-                "done": (db.ORDER_STEPS.index(row["status"])
+                "done": (db.ORDER_STEPS.index(effective)
                          >= db.ORDER_STEPS.index(key))
-                if row["status"] in db.ORDER_STEPS else False,
-                "current": row["status"] == key,
+                if effective in db.ORDER_STEPS else False,
+                "current": effective == key,
             })
+        display_status = effective
         from app.web.bills import row_not_understood
 
         return templates.TemplateResponse(request, "quote.html", {
@@ -313,7 +325,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 shop=shop["name"], rel=rel),
             "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
                                            quote_url, language),
-            "order_status": row["status"],
+            "order_status": display_status,
             "order_steps": steps})
 
     def _lang_suffix(language: str) -> str:
@@ -363,21 +375,30 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                   lang=language, status=400)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        price_items = (db.version_items(conn, version_id)
+                       if version_id is not None else [])
         try:
-            wanted = wanted_from_text(text, ledger=ledger,
-                                      settings=app.state.settings)
+            wanted, not_understood = wanted_local_first(
+                text, price_items, shop["language"] or "ta",
+                ledger=ledger, settings=app.state.settings)
         except (SparkError, CostCapExceeded) as exc:
             message = (BUDGET_EXHAUSTED_MESSAGE
                        if isinstance(exc, CostCapExceeded) else str(exc))
             return _start_context(
                 request, shop, message, lang=language,
                 status=503 if isinstance(exc, CostCapExceeded) else 502)
+        except Exception:  # noqa: BLE001 - typed parse failure is a form error
+            return _start_context(request, shop,
+                                  "We could not understand that list.",
+                                  lang=language, status=400)
         if not wanted:
             return _start_context(request, shop,
                                   "We could not understand that list.",
                                   lang=language, status=400)
         quote = build_quote(conn, shop["id"], wanted)
-        token = db.create_quote(conn, shop_id=shop["id"], quote=quote)
+        token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
+                                not_understood=not_understood)
         return RedirectResponse(f"/q/{token}{_lang_suffix(language)}",
                                 status_code=303)
 
@@ -438,8 +459,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     return JSONResponse(
                         {"error": f"unit on {label} is too long"},
                         status_code=400)
+            variety = entry.get("variety") or None
+            if variety is not None:
+                variety = str(variety).strip() or None
+                if variety is not None and len(variety) > 40:
+                    return JSONResponse(
+                        {"error": f"variety on {label} is too long"},
+                        status_code=400)
             wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
-                                     source="cart"))
+                                     source="cart", variety=variety))
         if not wanted:
             return JSONResponse({"error": "empty cart"}, status_code=400)
         quote = build_quote(conn, shop["id"], wanted)

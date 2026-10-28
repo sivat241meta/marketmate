@@ -71,8 +71,13 @@ def build_update_messages(transcript: Transcript, current: list[Item]) -> list[d
         if item.sold_out:
             stock.append(f"- {item.name_en} ({item.name_local}): sold out")
             continue
-        lines = ", ".join(f"₹{line.price} per {line.per_amount} {line.unit}"
-                          for line in item.price_lines)
+        bits = []
+        for line in item.price_lines:
+            per = (f"{line.per_amount} {line.unit}"
+                   if line.per_amount is not None and line.unit
+                   else (line.unit or ""))
+            bits.append(f"₹{line.price} per {per}".rstrip())
+        lines = ", ".join(bits)
         stock.append(f"- {item.name_en} ({item.name_local}): {lines or 'no price'}")
     lines = "\n".join(f"[{turn.id}] {turn.text}" for turn in transcript.turns)
     canonical = ", ".join(sorted(CANONICAL_NAMES))

@@ -120,8 +120,18 @@ def shop_bias(code: str | None) -> tuple[str, ...]:
 
 
 def all_currencies() -> list[str]:
-    """Distinct registry currencies, sorted for the shop form."""
-    return sorted({lang.default_currency for lang in LANGUAGES})
+    """Distinct registry currencies, INR first for the shop form."""
+    rest = sorted({lang.default_currency for lang in LANGUAGES} - {"INR"})
+    return ["INR", *rest] if "INR" in {lang.default_currency for lang in LANGUAGES} else rest
+
+
+def shop_form_languages() -> list:
+    """Languages for the new-shop form: Indian first, then the rest."""
+    first = ["ta", "hi", "bn", "te", "kn", "mr", "en"]
+    by_code = {lang.code: lang for lang in LANGUAGES}
+    ordered = [by_code[code] for code in first if code in by_code]
+    ordered += [lang for lang in LANGUAGES if lang.code not in set(first)]
+    return ordered
 
 
 def currency_words_for(code: str) -> tuple[str, ...]:

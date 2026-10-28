@@ -488,6 +488,7 @@ _ENGLISH: dict[str, str] = {
     "bill.remove": "Remove {display}",
     "bill.no_items": "No items on this bill yet. Add one below.",
     "bill.accept_quote": "Accept quote",
+    "bill.accept_order": "Accept order",
     "bill.collect": "Collect payment",
     "bill.scan_upi": "Scan with any UPI app",
     "bill.add_upi": "Add your UPI ID in Settings to collect UPI payments with a QR.",
@@ -816,6 +817,9 @@ _ENGLISH: dict[str, str] = {
     "home.lost_p1": "Your seller link is the only way back into your shop. There are no passwords and no SMS codes, so MarketMate cannot send you the link.",
     "home.lost_p2": "You can only find it again in the WhatsApp message you sent to yourself from your dashboard or Settings (\"Send my link to my WhatsApp\"), or on the printed \"Keep this safe\" card. Keep one of them safe.",
     "bill.scan_shop": "Scan for the shop page",
+    # --- prices-live success (Task 56) ---
+    "prices_live.title": "Your prices are live",
+    "prices_live.subtitle": "Customers can see today's list now.",
 }
 
 
@@ -1291,6 +1295,7 @@ _TAMIL: dict[str, str] = {
     "bill.remove": "{display} நீக்கு",
     "bill.no_items": "இந்த பில்லில் எதுவும் இல்லை. கீழே சேருங்க.",
     "bill.accept_quote": "கணக்கை ஏற்றுக்கொள்",
+    "bill.accept_order": "ஆர்டரை ஏற்றுக்கொள்",
     "bill.collect": "பணம் வாங்கு",
     "bill.scan_upi": "ஏதாவது UPIயில் ஸ்கேன் செய்",
     "bill.add_upi": "UPI QRக்கு செட்டிங்கில் UPI ID சேருங்க.",
@@ -1618,6 +1623,9 @@ _TAMIL: dict[str, str] = {
     "home.lost_p1": "உங்கள் விற்பனை லிங்க்தான் கடைக்கு திரும்ப ஒரே வழி. கடவுச்சொல், SMS இல்லை, அதனால் MarketMate லிங்க் அனுப்ப முடியாது.",
     "home.lost_p2": "டாஷ்போர்டு அல்லது செட்டிங்கில் (\"Send my link to my WhatsApp\") நீங்களே அனுப்பிய வாட்ஸ்அப் செய்தியில், அல்லது அச்சிட்ட \"Keep this safe\" அட்டையில் மட்டுமே அதை மீண்டும் காணலாம். ஒன்றை பத்திரமாக வையுங்கள்.",
     "bill.scan_shop": "கடை பக்கத்துக்கு ஸ்கேன் செய்யுங்கள்",
+    # --- prices-live success (Task 56) ---
+    "prices_live.title": "உங்கள் விலைகள் நேரலையில் உள்ளன",
+    "prices_live.subtitle": "வாடிக்கையாளர்கள் இன்றைய பட்டியலை இப்போது பார்க்கலாம்.",
 }
 
 
@@ -2093,6 +2101,7 @@ _HINDI: dict[str, str] = {
     "bill.remove": "{display} हटाइए",
     "bill.no_items": "इस बिल में कुछ नहीं। नीचे जोड़िए।",
     "bill.accept_quote": "अनुमान मानिए",
+    "bill.accept_order": "ऑर्डर मानिए",
     "bill.collect": "पैसे लीजिए",
     "bill.scan_upi": "किसी UPI से स्कैन करिए",
     "bill.add_upi": "UPI QR के लिए सेटिंग में UPI ID जोड़िए।",
@@ -2420,6 +2429,9 @@ _HINDI: dict[str, str] = {
     "home.lost_p1": "आपका विक्रेता लिंक ही दुकान में वापस जाने का एकमात्र रास्ता है। कोई पासवर्ड या SMS कोड नहीं है, इसलिए MarketMate आपको लिंक नहीं भेज सकता।",
     "home.lost_p2": "आप इसे सिर्फ उस WhatsApp संदेश में पा सकते हैं जो आपने डैशबोर्ड या सेटिंग्स (\"Send my link to my WhatsApp\") से खुद को भेजा था, या छपे हुए \"Keep this safe\" कार्ड पर। इनमें से एक संभालकर रखें।",
     "bill.scan_shop": "दुकान पेज के लिए स्कैन करें",
+    # --- prices-live success (Task 56) ---
+    "prices_live.title": "आपके भाव लाइव हैं",
+    "prices_live.subtitle": "ग्राहक आज की सूची अब देख सकते हैं।",
 }
 
 

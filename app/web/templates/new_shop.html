@@ -24,7 +24,7 @@
     <label for="shop-language">Language</label>
     <select id="shop-language" name="language">
       {% for lang in languages %}
-      <option value="{{ lang.code }}">{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
+      <option value="{{ lang.code }}"{% if lang.code == default_lang %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
       {% endfor %}
     </select>
     <span class="help">The language you speak your prices in.</span>
@@ -33,7 +33,7 @@
     <label for="shop-currency">Currency</label>
     <select id="shop-currency" name="currency">
       {% for currency in currencies %}
-      <option value="{{ currency }}"{% if currency == "INR" %} selected{% endif %}>{{ currency }}</option>
+      <option value="{{ currency }}"{% if currency == selected_currency %} selected{% endif %}>{{ currency }}</option>
       {% endfor %}
     </select>
   </div>

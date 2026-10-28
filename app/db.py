@@ -799,7 +799,19 @@ def insert_version_item(conn, version_id: int, name_local: str, name_en: str,
 
     Shared copy helper: approve() reuses the same logic as
     app.pipeline.update.apply_changes instead of duplicating it.
+    A missing per_amount with a unit is stored as 1, never None.
     """
+    fixed = []
+    for line in lines:
+        per = line.per_amount
+        if per is None and line.unit:
+            try:
+                fixed.append(PriceLine(line.price, Decimal(1), line.unit, line.said))
+            except Exception:  # noqa: BLE001 - keep the line as-is on odd types
+                fixed.append(line)
+        else:
+            fixed.append(line)
+    lines = fixed
     cursor = conn.execute(
         "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
         " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -996,10 +1008,13 @@ _QUOTE_KINDS = {"quote", "bill"}
 _QUOTE_STATUSES = {"new", "packing", "ready", "collected", "billed", "paid",
                    "cancelled"}
 
-# Order status for customer quotes: new -> packing -> ready -> collected,
-# or cancelled from any open state. Bills keep billed/paid.
+# Order status for customer orders: new -> packing -> ready -> collected,
+# or cancelled from any open state. Accepted orders are kind=bill but keep
+# the same flow; "billed" behaves like "new" for customer rows so older
+# accepted orders can still move to packing. Walk-in bills keep billed/paid.
 ORDER_TRANSITIONS = {
     "new": {"packing", "cancelled"},
+    "billed": {"packing", "cancelled"},
     "packing": {"ready", "cancelled"},
     "ready": {"collected", "cancelled"},
     "collected": set(),
@@ -1080,16 +1095,25 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
 
 
 def set_order_status(conn, quote_id: int, new_status: str) -> None:
-    """Move a customer quote through new -> packing -> ready -> collected.
+    """Move a customer order through new -> packing -> ready -> collected.
 
-    Raises ValueError for unknown quotes, non-quote rows, unknown
+    Accepted orders (kind=bill, source=customer) keep the same flow;
+    walk-in bills never have an order status.
+
+    Raises ValueError for unknown orders, walk-in bills, unknown
     statuses and skipped or backwards transitions.
     """
     row = get_quote_by_id(conn, quote_id)
     if row is None:
         raise ValueError("unknown order")
-    if row["kind"] != "quote":
-        raise ValueError("only customer quotes have an order status")
+    try:
+        source = row["source"]
+    except (KeyError, IndexError, TypeError):
+        source = None
+    if row["kind"] == "bill" and source != "customer":
+        raise ValueError("only customer orders have an order status")
+    if row["kind"] not in ("quote", "bill"):
+        raise ValueError("only customer orders have an order status")
     if new_status not in ORDER_TRANSITIONS:
         raise ValueError("unknown order status")
     current = row["status"]
@@ -1396,7 +1420,13 @@ def remove_bill_line(conn, bill_id: int, index: int):
 
 
 def accept_quote_as_bill(conn, bill_id: int) -> None:
-    """Convert a customer quote waiting into a bill with one tap."""
+    """Accept a customer order: billable at once, packing flow preserved.
+
+    Customer rows become kind=bill so payment works, but keep their order
+    identity: a "new" order moves straight to "packing", otherwise the
+    current order status is kept. The seller bill page shows Order #N with
+    both the Packing → Ready → Collected buttons and the payment buttons.
+    """
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
@@ -1406,9 +1436,15 @@ def accept_quote_as_bill(conn, bill_id: int) -> None:
         exact_raw = None
     base = exact_raw if exact_raw not in (None, "") else row["total"]
     total, total_exact = _store_totals(conn, row["shop_id"], "bill", base)
-    conn.execute("UPDATE quotes SET kind = 'bill', status = 'billed',"
+    try:
+        current = row["status"]
+    except (KeyError, IndexError, TypeError):
+        current = "new"
+    if current == "new":
+        current = "packing"
+    conn.execute("UPDATE quotes SET kind = 'bill', status = ?,"
                  " total = ?, total_exact = ?, updated_at = ? WHERE id = ?",
-                 (total, total_exact, _now(), row["id"]))
+                 (current, total, total_exact, _now(), row["id"]))
     conn.commit()
 
 

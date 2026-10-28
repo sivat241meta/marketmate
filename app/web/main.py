@@ -125,13 +125,18 @@ def create_app(settings: Settings) -> FastAPI:
         for found in listings:
             name = (f"{found.name_en} ({found.variety})"
                     if found.variety else found.name_en)
+            per = (
+                f"{found.line.per_amount} {found.line.unit}"
+                if found.line.per_amount is not None and found.line.unit
+                else (found.line.unit or "")
+            )
             rows.append({
                 "shop_name": found.shop_name,
                 "slug": found.slug,
                 "is_demo": found.is_demo,
                 "name": name,
                 "price": str(found.line.price),
-                "per": f"{found.line.per_amount} {found.line.unit}",
+                "per": per,
                 "rate": _fmt_rate(found.rate) if found.rate is not None else "",
                 "rate_unit": found.rate_unit or "",
                 "currency": found.currency,

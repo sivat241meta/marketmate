@@ -78,7 +78,7 @@
       <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
     {% set ns = namespace(need_confirm=false) %}
     {% for flag in item.flags %}
       {% if flag.blocking %}
@@ -163,7 +163,7 @@
       <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
     <div data-confirm-wrap hidden>
       <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
       <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>

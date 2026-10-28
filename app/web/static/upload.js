@@ -107,8 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (submitBtn) {
         submitBtn.disabled = true;
       }
-      const data = new FormData();
-      data.append(input.name, file, file.name);
+      const data = new FormData(form);
+      data.set(input.name, file, file.name);
       xhr = new XMLHttpRequest();
       xhr.open("POST", form.action);
       xhr.upload.addEventListener("progress", (progressEvent) => {

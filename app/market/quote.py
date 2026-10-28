@@ -112,7 +112,11 @@ def _option_matches(option: str, by_name: dict, shop_items) -> bool:
 
 def _match_shop_item(shop_items, by_name: dict, want_name: str,
                      want_variety: str | None):
-    """Shop item for a wanted name, preferring the wanted variety."""
+    """Shop item for a wanted (name, variety).
+
+    A requested variety matches exactly; an unknown variety is None (the
+    caller renders "not on this list"), never a different variety.
+    """
     base, from_name = _split_display(want_name)
     variety = want_variety or from_name
     if variety:
@@ -122,6 +126,7 @@ def _match_shop_item(shop_items, by_name: dict, want_name: str,
                 continue
             if (item.variety or "").strip().lower() == want:
                 return item
+        return None
     return by_name.get(_canonical(base))
 
 

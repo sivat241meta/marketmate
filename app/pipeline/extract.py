@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from app.languages import currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine, Proof, Transcript
-from app.pipeline.names import CANONICAL_NAMES, resolve_name
+from app.pipeline.names import CANONICAL_NAMES, VARIETY_ALIASES, resolve_name
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
@@ -204,6 +204,57 @@ def _local_name(raw: dict, name_en: str, name_spoken: str,
     return name_spoken
 
 
+def _alias_in_text(text: str) -> tuple[str, str] | None:
+    """First (name_en, variety) whose alias key appears in lower text.
+
+    Longest keys win so "ujala krishnagiri" beats bare "ujala".
+    """
+    lowered = f" {text.lower()} " if text else " "
+    stripped = lowered.strip()
+    best: tuple[str, str] | None = None
+    best_len = -1
+    for alias, pair in VARIETY_ALIASES.items():
+        key = alias.lower()
+        if not key or len(key) <= best_len:
+            continue
+        if " " in key:
+            found = key in stripped
+        else:
+            found = (
+                f" {key} " in lowered
+                or stripped == key
+                or (not key.isascii() and key in text))
+        if found:
+            best, best_len = pair, len(key)
+    return best
+
+
+def _banana_varieties_in_order(text: str) -> list[str]:
+    """Distinct banana varieties in spoken order for a dual-variety line."""
+    lowered = (text or "").lower()
+    hits: list[tuple[int, str]] = []
+    for alias, (base, variety) in VARIETY_ALIASES.items():
+        if base != "banana":
+            continue
+        key = alias.lower()
+        idx = lowered.find(key)
+        if idx >= 0 and " " not in key and key.isascii():
+            # Latin keys need word bounds; Tamil script matches as substring.
+            before = lowered[idx - 1] if idx > 0 else " "
+            after = (lowered[idx + len(key)]
+                     if idx + len(key) < len(lowered) else " ")
+            if before.isalnum() or after.isalnum():
+                continue
+        if idx >= 0:
+            hits.append((idx, variety))
+    hits.sort(key=lambda h: h[0])
+    ordered: list[str] = []
+    for _, variety in hits:
+        if variety not in ordered:
+            ordered.append(variety)
+    return ordered
+
+
 def parse_extract_json(data: dict, transcript: Transcript, *,
                        language: str = "ta") -> list[DraftItem]:
     """Build DraftItems from model JSON; unknown turns fall back to quote search."""
@@ -216,12 +267,31 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             raw_name = "other"
         name_spoken = raw.get("name_spoken") or ""
         quote_early = raw.get("quote") or ""
+        raw_local = raw.get("name_local") or ""
         raw_variety = raw.get("variety")
         if not isinstance(raw_variety, str):
             raw_variety = None
         extra = f"{name_spoken} {quote_early}".strip() or None
         name_en, variety = resolve_name(raw_name, raw_variety,
                                         extra_text=extra)
+        if name_en == "other":
+            for fallback in (name_spoken, raw_local):
+                text = (fallback or "").strip()
+                if not text:
+                    continue
+                cand_en, cand_var = resolve_name(
+                    text.lower(), raw_variety, extra_text=extra)
+                if cand_en != "other":
+                    name_en, variety = cand_en, cand_var
+                    break
+        if name_en == "other" and extra:
+            hit = _alias_in_text(extra)
+            if hit is not None:
+                name_en, variety = hit
+        if name_en == "banana" and extra:
+            found = _banana_varieties_in_order(extra)
+            if len(found) >= 2:
+                variety = " / ".join(found)
         price_lines = [
             PriceLine(
                 price=_decimal_or_none(line.get("price")),

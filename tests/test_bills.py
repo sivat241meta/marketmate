@@ -390,7 +390,7 @@ def test_accept_quote_converts_kind_status(tmp_path):
         quote_id = db.get_quote_by_token(conn, quote_token)["id"]
     finally:
         conn.close()
-    assert "Accept quote" in client.get(f"/e/{token}/bills/{quote_id}").text
+    assert "Accept order" in client.get(f"/e/{token}/bills/{quote_id}").text
     response = client.post(f"/e/{token}/bills/{quote_id}/accept")
     assert response.status_code in (302, 303)
     conn = db.connect(tmp_path / "data")
@@ -398,10 +398,13 @@ def test_accept_quote_converts_kind_status(tmp_path):
         row = conn.execute("SELECT * FROM quotes WHERE id = ?",
                            (quote_id,)).fetchone()
         assert row["kind"] == "bill"
-        assert row["status"] == "billed"
+        assert row["status"] == "packing"
     finally:
         conn.close()
-    assert "Paid by cash" in client.get(f"/e/{token}/bills/{quote_id}").text
+    html = client.get(f"/e/{token}/bills/{quote_id}").text
+    assert "Paid by cash" in html
+    assert "Order #" in html
+    assert "order-status" in html
 
 
 def test_mark_paid(tmp_path):

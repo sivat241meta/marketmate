@@ -26,7 +26,13 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
-from app.languages import LANGUAGES, all_currencies, get_language, shop_bias
+from app.languages import (
+    LANGUAGES,
+    all_currencies,
+    get_language,
+    shop_bias,
+    shop_form_languages,
+)
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
@@ -144,8 +150,14 @@ def _photo_url(photo: str | None) -> str | None:
     return "/m/" + Path(photo).name
 
 
-def _draft_from_client(raw: dict):
-    """Parse one review-form item, filling fields the form never edits."""
+def _draft_from_client(raw: dict, stored=None):
+    """Parse one review-form item.
+
+    Seller-editable fields (names, price lines, qty) come from the client.
+    Everything the form never edits — photo, proof, name_spoken, variety,
+    qty_unit, range_said, condition_hint — comes from the STORED draft so a
+    client-sent null or a smuggled path can never wipe or forge them.
+    """
     defaults = {
         "name_spoken": "",
         "name_local": "",
@@ -169,7 +181,30 @@ def _draft_from_client(raw: dict):
     }
     merged = dict(defaults, **raw)
     merged["proof"] = dict(defaults["proof"], **(raw.get("proof") or {}))
-    return db._draft_from_json(json.dumps(merged))
+    item = db._draft_from_json(json.dumps(merged))
+    if stored is None:
+        return item
+    # Stored truth wins for everything the form does not edit. Never trust
+    # a client-sent photo or clip path.
+    item.name_spoken = stored.name_spoken
+    if not (item.name_local or "").strip():
+        item.name_local = stored.name_local
+    if not (item.name_en or "").strip():
+        item.name_en = stored.name_en
+    item.variety = stored.variety
+    item.qty_unit = stored.qty_unit
+    item.range_said = stored.range_said
+    item.photo = stored.photo
+    item.proof = stored.proof
+    item.condition_hint = stored.condition_hint
+    # Keep the heard "said" text per line; the client only edits numbers.
+    for pos, line in enumerate(item.price_lines):
+        if pos < len(stored.price_lines) and not (line.said or "").strip():
+            line.said = stored.price_lines[pos].said
+        # Missing per with a unit means 1 (never "per None kg").
+        if line.per_amount is None and line.unit:
+            line.per_amount = Decimal(1)
+    return item
 
 
 def _board_flags(item):
@@ -255,6 +290,17 @@ def _board_only(item) -> bool:
     blocking = [flag for flag in item.flags if flag.blocking]
     return bool(blocking) and all(
         flag.code == "BOARD_CONFIRM" for flag in blocking)
+
+
+def _per_text(per_amount, unit) -> str:
+    """Display text for a price line's per-amount; never 'None'."""
+    if per_amount is not None and unit:
+        return f"{per_amount} {unit}"
+    if unit:
+        return str(unit)
+    if per_amount is not None:
+        return str(per_amount)
+    return ""
 
 
 def _price_summary(item, currency: str = "INR", lang: str = "en") -> str:
@@ -514,12 +560,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/new")
     def new_shop(request: Request):
+        visitor = get_ui_lang(request, None)
+        default_lang = visitor if visitor in ("ta", "hi") else "en"
+        try:
+            default_currency = get_language(default_lang).default_currency
+        except KeyError:
+            default_currency = "INR"
         return templates.TemplateResponse(request, "new_shop.html", {
-            "languages": LANGUAGES,
+            "languages": shop_form_languages(),
             "currencies": all_currencies(),
             "default_currency": {lang.code: lang.default_currency
                                  for lang in LANGUAGES},
-            "ui_lang": "en",
+            "default_lang": default_lang,
+            "selected_currency": default_currency,
+            "ui_lang": visitor if visitor in ("ta", "hi", "en") else "en",
         })
 
     @app.post("/new")
@@ -530,7 +584,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         phone: str = Form(...),
         area: str = Form(...),
         language: str = Form(...),
-        currency: str = Form(...),
+        currency: str = Form(""),
         type: str = Form(...),
     ):
         if not name.strip() or not area.strip() or not type.strip():
@@ -539,6 +593,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raise HTTPException(422, "phone must be 7-15 digits, optional leading +")
         if language not in _LANGUAGES:
             raise HTTPException(422, "unknown language")
+        if not (currency or "").strip():
+            try:
+                currency = get_language(language).default_currency
+            except KeyError:
+                currency = "INR"
         if currency not in _CURRENCIES:
             raise HTTPException(422, "unknown currency")
         _, _, token = db.create_shop(
@@ -587,7 +646,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "sold_out": item.sold_out,
                     "stock_line": stock_line,
                     "lines": [{"price": str(line.price),
-                               "per": f"{line.per_amount} {line.unit}"}
+                               "per": _per_text(line.per_amount, line.unit)}
                               for line in item.price_lines],
                 })
         live = False
@@ -1042,9 +1101,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             saved_drafts = []
         items = []
         for index, raw in enumerate(raw_items):
-            item = _draft_from_client(raw)
-            if index < len(saved_drafts) and saved_drafts[index].variety:
-                item.variety = saved_drafts[index].variety
+            stored = saved_drafts[index] if index < len(saved_drafts) else None
+            item = _draft_from_client(raw, stored)
             if item.proof.source == "board_photo":
                 kept = [
                     flag for flag in check_item(
@@ -1063,7 +1121,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             item.confirmed = index in confirmed
             items.append(item)
         try:
-            db.approve(conn, session_id, items, carried_ids=carried_ids)
+            version_id = db.approve(conn, session_id, items,
+                                    carried_ids=carried_ids)
         except db.ApprovalError as exc:
             if exc.needs_confirm:
                 return JSONResponse(
@@ -1072,7 +1131,30 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                              "needs_confirm": exc.needs_confirm},
                 )
             raise HTTPException(400, str(exc))
-        return RedirectResponse(f"/e/{token}", status_code=303)
+        db.set_published(conn, version_id, True)
+        return RedirectResponse(f"/e/{token}/s/{session_id}/live",
+                                status_code=303)
+
+    @app.get("/e/{token}/s/{session_id}/live")
+    def prices_live(request: Request, token: str, session_id: int, conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        _session_of_shop(conn, shop["id"], session_id)
+        ui_lang = get_ui_lang(request, shop)
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        if version_id is None:
+            return RedirectResponse(f"/e/{token}", status_code=303)
+        wa_url, _wa_text = _price_share(
+            conn, shop, ui_lang, app.state.settings.public_base_url)
+        shop_path = f"/s/{shop['slug']}"
+        return templates.TemplateResponse(request, "prices_live.html", {
+            "shop": shop, "token": token, "session_id": session_id,
+            "version_id": version_id, "wa_url": wa_url,
+            "shop_path": shop_path,
+            "shop_url": f"{app.state.settings.public_base_url}{shop_path}",
+            "qr_url": f"{shop_path}/qr.png",
+            "ui_lang": ui_lang})
 
     @app.post("/e/{token}/s/{session_id}/retry")
     def retry_session(request: Request, token: str, session_id: int,
@@ -1429,7 +1511,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "per_amount": (str(per_amount)
                                    if per_amount is not None else ""),
                     "lines": [{"price": str(line.price),
-                               "per": f"{line.per_amount} {line.unit}"}
+                               "per": _per_text(line.per_amount, line.unit)}
                               for line in item.price_lines],
                 })
             when = db.version_time(conn, version_id)

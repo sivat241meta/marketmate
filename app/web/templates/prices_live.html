@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('prices_live.title') }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block content %}
+<p class="kick">{{ t('prices_live.title') }}</p>
+<h1 class="big">{{ t('prices_live.title') }}</h1>
+<p class="lead">{{ t('prices_live.subtitle') }}</p>
+{% if wa_url %}
+<div class="hero-cta">
+  <a class="pill dark big" href="{{ wa_url }}">{{ ui.icon("whatsapp") }}{{ t('wa.send_prices') }}</a>
+</div>
+{% endif %}
+<section class="card">
+  <h2>{{ shop["name"] }}</h2>
+  <p><span class="shop-link">{{ shop_url }}</span></p>
+  <p><img src="{{ qr_url }}" alt="QR" width="160" height="160"></p>
+  <p><a class="pill ghost" href="{{ shop_path }}">{{ t('wa.share_list') }}</a></p>
+</section>
+<div class="hero-cta">
+  <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.icon("printer") }}{{ t('dash.tile_print_board') }}</a>
+  <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('dash.tile_print_tags') }}</a>
+</div>
+<p class="back-link"><a href="/e/{{ token }}">{{ t('error.back_home') }}</a></p>
+{% endblock %}

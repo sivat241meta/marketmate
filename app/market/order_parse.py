@@ -27,6 +27,7 @@ __all__ = [
     "item_like_leftovers",
     "leftover_needs_spark",
     "parse_order",
+    "wanted_local_first",
 ]
 
 FILLER_EN = frozenset({
@@ -731,3 +732,60 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
         if any(i not in consumed for i in owned):
             leftover.append(word)
     return (lines, leftover)
+
+
+def _resolve_spark_line(line, full_text: str):
+    """Resolve a Spark-returned name through variety aliases."""
+    from app.pipeline.names import resolve_name
+
+    try:
+        name_en, variety = resolve_name(
+            line.name_en, line.variety, extra_text=full_text)
+    except Exception:  # noqa: BLE001 - keep the Spark name on failure
+        return line
+    if (name_en, variety) == (line.name_en, line.variety):
+        return line
+    return WantedLine(
+        name_en=name_en, qty=line.qty, unit=line.unit,
+        source=line.source, amount=line.amount,
+        options=line.options, variety=variety)
+
+
+def wanted_local_first(text: str, price_list_items, language: str | None,
+                       *, ledger, settings):
+    """Typed-order lines: free local parse first, Spark only for leftovers.
+
+    Mirrors live billing: parse_order handles everything on the price list;
+    Spark runs only when item-like leftovers remain, and only names not
+    already found locally are kept (resolved through variety aliases).
+    Returns (wanted, not_understood).
+    """
+    from app.market.quote import wanted_from_text
+
+    items = list(price_list_items or [])
+    try:
+        local, leftover = parse_order(text or "", items, language or "en")
+    except Exception:  # noqa: BLE001 - one bad parse falls back to Spark
+        local, leftover = [], [text or ""]
+    seen = {(str(w.name_en or "").strip().lower(),
+             str(w.variety or "").strip().lower()) for w in local}
+    if not leftover or not leftover_needs_spark(leftover):
+        note = item_like_leftovers(leftover, [w.name_en for w in local])
+        return (local, " ".join(note) or None)
+    try:
+        spark = wanted_from_text(text or "", ledger=ledger, settings=settings)
+    except Exception:
+        if not local:
+            raise
+        note = item_like_leftovers(leftover, [w.name_en for w in local])
+        return (local, " ".join(note) or None)
+    merged = list(local)
+    for raw in spark or []:
+        line = _resolve_spark_line(raw, text or "")
+        key = (str(line.name_en or "").strip().lower(),
+               str(line.variety or "").strip().lower())
+        if key[0] and key not in seen:
+            seen.add(key)
+            merged.append(line)
+    note = item_like_leftovers(leftover, [w.name_en for w in merged])
+    return (merged, " ".join(note) or None)

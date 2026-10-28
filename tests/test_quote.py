@@ -440,8 +440,9 @@ def test_quote_page_renders_lines_total_and_whatsapp(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
-        f"/s/{slug}/quote", data={"items": "tomato banana coconut"}).headers[
-            "location"]
+        f"/s/{slug}/quote",
+        data={"items": "2 kg tomato, 1 dozen banana, 3 coconut, dragonfruit"},
+    ).headers["location"]
     html = client.get(location).text
     assert "₹36" in html and "₹60" in html and "₹45" in html
     assert "₹141" in html
@@ -465,7 +466,7 @@ def test_quote_lines_post_recomputes_server_side(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
-        f"/s/{slug}/quote", data={"items": "tomato"}).headers["location"]
+        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut"}).headers["location"]
     token = location.split("/q/")[1]
     response = client.post(
         f"/q/{token}/lines",
@@ -488,7 +489,7 @@ def test_quote_pdf_renders(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
-        f"/s/{slug}/quote", data={"items": "tomato"}).headers["location"]
+        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut"}).headers["location"]
     pdf = client.get(location + "/pdf")
     assert pdf.status_code == 200
     assert pdf.headers["content-type"] == "application/pdf"

@@ -37,7 +37,7 @@
 
 <div class="grid-products" data-shop-grid>
 {% for row in rows %}
-  <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ row.name_local) | lower }}">
+  <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
     <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
     <div class="bd">
       <span class="kk">{% if row.variety %}{{ row.variety }} · {% endif %}{{ t('shop.kicker_fallback', unit=row.unit) }}</span>
@@ -68,7 +68,7 @@
 
 <div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
   <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
-  <button type="button" class="pill gold" data-cart-submit>{{ t('shop.view_order') }}</button>
+  <button type="button" class="pill gold" data-cart-submit data-cart-view>{{ t('shop.view_order') }}</button>
 </div>
 <div class="alert alert-warn" data-cart-error hidden></div>
 <div class="rcpt desk-only" data-cart-summary hidden>
@@ -76,6 +76,18 @@
   <div data-cart-lines></div>
   <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
   <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
+</div>
+<div class="sheet-wrap" data-cart-sheet hidden>
+  <div class="sheet-backdrop" data-cart-sheet-close></div>
+  <div class="sheet" role="dialog" aria-label="{{ t('shop.cart_title') }}">
+    <div class="grab" aria-hidden="true"></div>
+    <p class="kick">{{ t('shop.cart_title') }}</p>
+    <div data-cart-sheet-lines></div>
+    <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-sheet-total></b></div>
+    <div class="alert alert-warn" data-cart-sheet-error hidden></div>
+    <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
+    <p><button type="button" class="pill ghost" data-cart-sheet-close aria-label="×">×</button></p>
+  </div>
 </div>
 {% else %}
 <section class="card empty-shop">
@@ -97,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const search = document.querySelector("[data-shop-search]");
   const bar = document.querySelector("[data-cart-bar]");
   const summary = document.querySelector("[data-cart-summary]");
+  const sheet = document.querySelector("[data-cart-sheet]");
   const cart = new Map();
   const fmt = (n) => "₹" + (Math.round(n * 100) / 100).toString().replace(/\.0+$/, "").replace(/(\.\d)0$/, "$1");
 
@@ -109,6 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const per = parseFloat(card.dataset.per || "1") || 1;
     return price / per;
   }
+  function cartKey(name, variety) {
+    return name + "||" + (variety || "");
+  }
   function refresh() {
     let count = 0, total = 0;
     const lines = [];
@@ -116,7 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
       count += 1;
       const line = entry.rate * entry.qty;
       total += line;
-      lines.push(`<div class="rl"><div><b>${entry.local}</b><small>${entry.qty} ${entry.unit} · ${fmt(line)} (${fmt(entry.price)} / ${entry.per} ${entry.unit})</small></div><b>${fmt(line)}</b></div>`);
+      const vlabel = entry.variety ? " (" + entry.variety + ")" : "";
+      lines.push(`<div class="rl"><div><b>${entry.local}${vlabel}</b><small>${entry.qty} ${entry.unit} · ${fmt(line)} (${fmt(entry.price)} / ${entry.per} ${entry.unit})</small></div><b>${fmt(line)}</b></div>`);
     });
     const one = bar.getAttribute("data-one") || "1 item · {total}";
     const many = bar.getAttribute("data-many") || "{n} items · {total}";
@@ -128,9 +145,32 @@ document.addEventListener("DOMContentLoaded", () => {
     summary.hidden = count === 0;
     summary.querySelector("[data-cart-lines]").innerHTML = lines.join("");
     summary.querySelector("[data-cart-total]").textContent = fmt(total);
+    if (sheet) {
+      sheet.querySelector("[data-cart-sheet-lines]").innerHTML = lines.join("");
+      sheet.querySelector("[data-cart-sheet-total]").textContent = fmt(total);
+      if (count === 0) {
+        sheet.hidden = true;
+      }
+    }
+  }
+  function openSummary() {
+    if (!cart.size) return;
+    refresh();
+    const wide = window.matchMedia && window.matchMedia("(min-width: 900px)").matches;
+    if (wide) {
+      if (summary.scrollIntoView) {
+        summary.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    if (sheet) {
+      sheet.hidden = false;
+    }
   }
   grid.querySelectorAll("[data-card]").forEach((card) => {
     const name = card.dataset.nameEn;
+    const variety = card.dataset.variety || "";
+    const key = cartKey(name, variety);
     if (!name || card.classList.contains("out")) return;
     const add = card.querySelector("[data-add]");
     const step = card.querySelector("[data-step]");
@@ -139,34 +179,34 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", () => {
         card.querySelectorAll("[data-sizes] .sz").forEach((b) => b.classList.remove("on"));
         btn.classList.add("on");
-        if (cart.has(name)) {
-          cart.get(name).qty = cardQty(card);
+        if (cart.has(key)) {
+          cart.get(key).qty = cardQty(card);
           qtyEl.textContent = cardQty(card);
           refresh();
         }
       });
     });
     add.addEventListener("click", () => {
-      cart.set(name, { qty: cardQty(card), unit: card.dataset.unit, rate: cardRate(card),
+      cart.set(key, { qty: cardQty(card), unit: card.dataset.unit, rate: cardRate(card),
         price: parseFloat(card.dataset.price || "0") || 0,
         per: parseFloat(card.dataset.per || "1") || 1,
-        local: card.querySelector(".tname").textContent, name });
+        local: card.querySelector(".tname").textContent, name, variety });
       qtyEl.textContent = cardQty(card);
       add.hidden = true;
       step.hidden = false;
       refresh();
     });
     card.querySelector("[data-inc]").addEventListener("click", () => {
-      const entry = cart.get(name);
+      const entry = cart.get(key);
       entry.qty = Math.round((entry.qty + cardQty(card)) * 100) / 100;
       qtyEl.textContent = entry.qty;
       refresh();
     });
     card.querySelector("[data-dec]").addEventListener("click", () => {
-      const entry = cart.get(name);
+      const entry = cart.get(key);
       entry.qty = Math.round((entry.qty - cardQty(card)) * 100) / 100;
       if (entry.qty <= 0) {
-        cart.delete(name);
+        cart.delete(key);
         add.hidden = false;
         step.hidden = true;
       } else {
@@ -175,14 +215,37 @@ document.addEventListener("DOMContentLoaded", () => {
       refresh();
     });
   });
+  document.querySelectorAll("[data-cart-sheet-close]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (sheet) {
+        sheet.hidden = true;
+      }
+    });
+  });
   document.querySelectorAll("[data-cart-submit]").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      if (btn.hasAttribute("data-cart-view")) {
+        openSummary();
+        return;
+      }
       const lines = [];
-      cart.forEach((entry) => lines.push({ name_en: entry.name, qty: entry.qty, unit: entry.unit }));
+      cart.forEach((entry) => lines.push({ name_en: entry.name, variety: entry.variety || "", qty: entry.qty, unit: entry.unit }));
       if (!lines.length) return;
       const errBox = document.querySelector("[data-cart-error]");
+      const sheetErr = sheet ? sheet.querySelector("[data-cart-sheet-error]") : null;
       if (errBox) errBox.hidden = true;
+      if (sheetErr) sheetErr.hidden = true;
       btn.disabled = true;
+      function showError(message) {
+        if (errBox) {
+          errBox.textContent = message;
+          errBox.hidden = false;
+        }
+        if (sheetErr) {
+          sheetErr.textContent = message;
+          sheetErr.hidden = false;
+        }
+      }
       try {
         const resp = await fetch(window.location.pathname + "/quote", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -193,16 +256,10 @@ document.addEventListener("DOMContentLoaded", () => {
           window.location.href = data.url;
           return;
         }
-        if (errBox) {
-          errBox.textContent = (data && data.error) || "Something went wrong — try again.";
-          errBox.hidden = false;
-        }
+        showError((data && data.error) || "Something went wrong — try again.");
         btn.disabled = false;
       } catch (err) {
-        if (errBox) {
-          errBox.textContent = "Something went wrong — try again.";
-          errBox.hidden = false;
-        }
+        showError("Something went wrong — try again.");
         btn.disabled = false;
       }
     });

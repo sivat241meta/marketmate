@@ -31,6 +31,7 @@ from app.costs import (
 )
 from app.languages import shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
+from app.market.order_parse import wanted_local_first
 from app.market.quote import (
     WantedLine,
     build_quote,
@@ -342,7 +343,11 @@ def _row_phone(row) -> str | None:
 
 
 def _customer_label(row, lang: str = "en") -> str:
-    if row["kind"] == "quote":
+    try:
+        source = row["source"]
+    except (KeyError, IndexError, TypeError):
+        source = None
+    if row["kind"] == "quote" or source == "customer":
         label = t_for(lang)("bills.order_num", id=row["id"])
         phone = _row_phone(row)
         return f"{label} · {phone}" if phone else label
@@ -416,7 +421,7 @@ def row_not_understood(row) -> str | None:
 def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
     """Big order-status buttons: (status value, label, button kind)."""
     t = t_for(lang)
-    if status == "new":
+    if status in ("new", "billed"):
         return [("packing", t("bill.start_packing"), "primary"),
                 ("cancelled", t("bill.cancel_order"), "ghost")]
     if status == "packing":
@@ -794,12 +799,19 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         pay_modes = (("cash", t("bill.paid_cash")), ("upi", t("bill.paid_upi"))
                      ) if is_inr else (("cash", t("bill.paid_cash")),
                                        ("card", t("bill.paid_card")))
+        try:
+            bill_source = bill["source"]
+        except (KeyError, IndexError, TypeError):
+            bill_source = None
+        is_customer_bill = (bill["kind"] == "bill"
+                            and bill_source == "customer")
         is_open_quote = (bill["kind"] == "quote"
                          and bill["status"] in ("new", "packing", "ready"))
         order_actions = (_order_actions(bill["status"], ui_lang)
-                         if bill["kind"] == "quote" else [])
+                         if bill["kind"] == "quote" or is_customer_bill else [])
         ready_wa_url = None
-        if bill["kind"] == "quote" and bill["status"] == "ready":
+        if bill["status"] == "ready" and (
+                bill["kind"] == "quote" or is_customer_bill):
             ready_wa_url = _whatsapp_link(
                 phone, order_ready_whatsapp_text(shop, str(rounded)))
         return templates.TemplateResponse(request, "bill.html", {
@@ -816,7 +828,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 phone, _bill_text(shop, bill["id"], raw_lines,
                                   str(rounded), ui_lang)),
             "is_quote": is_open_quote,
-            "is_billed": bill["kind"] == "bill" and bill["status"] == "billed",
+            "is_billed": (bill["kind"] == "bill" and (
+                bill["status"] == "billed" or (
+                    is_customer_bill
+                    and bill["status"] in ("packing", "ready")))),
             "is_paid": bill["status"] == "paid",
             "is_inr": is_inr, "upi_id": upi_id, "upi_url": upi_url,
             "upi_qr": upi_qr, "pay_modes": pay_modes,
@@ -1012,21 +1027,29 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def _type_bill(request, shop, token, text, conn, made_by="owner"):
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        price_items = (db.version_items(conn, version_id)
+                       if version_id is not None else [])
         try:
-            wanted = wanted_from_text(text, ledger=ledger,
-                                      settings=app.state.settings)
+            wanted, not_understood = wanted_local_first(
+                text, price_items, shop["language"] or "ta",
+                ledger=ledger, settings=app.state.settings)
         except CostCapExceeded:
             return _new_error(request, shop, token, conn,
                               BUDGET_EXHAUSTED_MESSAGE, 503)
         except SparkError as exc:
             return _new_error(request, shop, token, conn, str(exc), 502)
+        except Exception:  # noqa: BLE001 - typed parse failure is a form error
+            return _new_error(request, shop, token, conn,
+                              "We could not understand that list.")
         if not wanted:
             return _new_error(request, shop, token, conn,
                               "We could not understand that list.")
         quote = build_quote(conn, shop["id"], wanted)
         quote_token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                       source="seller", kind="bill",
-                                      status="billed", created_by=made_by)
+                                      status="billed", created_by=made_by,
+                                      not_understood=not_understood)
         bill_id = db.get_quote_by_token(conn, quote_token)["id"]
         return RedirectResponse(f"/e/{token}/bills/{bill_id}", status_code=303)
 

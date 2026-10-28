@@ -117,6 +117,26 @@ function isHiddenBox(box) {
   return box.closest("[hidden]") !== null;
 }
 
+function isConfirmBox(target) {
+  if (!target) {
+    return false;
+  }
+  if (typeof target.matches === "function") {
+    try {
+      if (target.matches("[data-card-confirm]")) {
+        return true;
+      }
+    } catch (e) {
+      // fall through to dataset check
+    }
+  }
+  return !!(target.dataset && ("cardConfirm" in target.dataset));
+}
+
+function isSelfConfirmFlag(code) {
+  return code === "SOUND_ALIKE" || code === "TWO_PRICES";
+}
+
 function cardEdited(card) {
   const initial = Number(card.dataset.initialLines || 0);
   const current = card.querySelectorAll(".line").length;
@@ -126,7 +146,8 @@ function cardEdited(card) {
   const fields = card.querySelectorAll(
     'input[data-field="price"], select[data-field="price"],' +
     ' input[data-field="per_amount"], select[data-field="per_amount"],' +
-    ' input[data-field="unit"], select[data-field="unit"]');
+    ' input[data-field="unit"], select[data-field="unit"],' +
+    ' input[data-field="qty"], select[data-field="qty"]');
   for (const input of fields) {
     const original = input.dataset.original ?? "";
     if ((input.value ?? "") !== original) {
@@ -337,19 +358,43 @@ document.addEventListener("DOMContentLoaded", () => {
         ` select[data-item="${button.dataset.item}"][data-field="${field}"]`);
       if (input) {
         input.value = button.dataset.value;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+        // Choosing an offered option is the confirmation, not a manual
+        // edit: align the baseline so the edit note stays hidden.
+        input.dataset.original = button.dataset.value;
       }
       if (group.dataset.flag === "TWO_PRICES") {
         keepChosenLine(button.closest(".card"));
       }
       const card = button.closest(".card");
       if (card) {
-        const box = card.querySelector("[data-card-confirm]");
-        if (box && isHiddenBox(box)) {
-          // Board-price tap doubles as the tick; the box stays hidden.
-          box.checked = true;
+        if (group.dataset.flag === "TWO_PRICES") {
+          // Trimming duplicate lines is part of the choice, not an edit.
+          card.dataset.initialLines = String(
+            card.querySelectorAll(".line").length);
         }
-        syncCardConfirm(card);
+        const box = card.querySelector("[data-card-confirm]");
+        const code = group.dataset.flag;
+        const hiddenTap = box && isHiddenBox(box);
+        if (box && (isSelfConfirmFlag(code) || hiddenTap)) {
+          const allResolved = Array.from(
+            card.querySelectorAll(".flag-options")).every(
+            (other) => other.querySelector(".opt-btn.chosen"));
+          if (allResolved && !cardEdited(card)) {
+            // SOUND_ALIKE / TWO_PRICES choice (or a hidden board-price
+            // tap) doubles as the tick; the box stays as-is otherwise.
+            box.checked = true;
+            hideConfirmIfClean(card);
+            updateApprove(form);
+            return;
+          }
+        }
+        if (input) {
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        } else {
+          syncCardConfirm(card);
+          updateApprove(form);
+        }
+        return;
       }
       updateApprove(form);
     });
@@ -368,6 +413,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
   form.addEventListener("input", (event) => {
+    if (isConfirmBox(event.target)) {
+      updateApprove(form);
+      return;
+    }
     const card = event.target ? event.target.closest(".card") : null;
     if (card) {
       syncCardConfirm(card);
@@ -375,6 +424,10 @@ document.addEventListener("DOMContentLoaded", () => {
     updateApprove(form);
   });
   form.addEventListener("change", (event) => {
+    if (isConfirmBox(event.target)) {
+      updateApprove(form);
+      return;
+    }
     const card = event.target ? event.target.closest(".card") : null;
     if (card) {
       syncCardConfirm(card);

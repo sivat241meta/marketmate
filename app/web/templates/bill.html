@@ -8,7 +8,7 @@
 {% if is_paid %}
 <h1 class="big">{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</h1>
 {% elif is_quote %}
-<h1 class="big">{{ t('bill.heading', id=bill["id"]) }} · <em>{{ total }}</em></h1>
+<h1 class="big">{{ t('bill.heading', id=bill["id"]) }} · <em>{{ total | money(shop["currency"]) }}</em></h1>
 {% else %}
 <h1 class="big">{{ t('bill.to_collect', total=total | money(shop["currency"])) }}</h1>
 {% endif %}
@@ -129,7 +129,7 @@
   <aside class="bill-actions" aria-label="Bill actions">
     {% if is_quote %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/accept">
-      <button class="pill cta big" type="submit">{{ ui.icon("check") }}{{ t('bill.accept_quote') }}</button>
+      <button class="pill cta big" type="submit">{{ ui.icon("check") }}{% if bill["source"] == "customer" %}{{ t('bill.accept_order') }}{% else %}{{ t('bill.accept_quote') }}{% endif %}</button>
     </form>
     {% elif is_billed %}
     <section aria-label="{{ t('bill.collect') }}">
