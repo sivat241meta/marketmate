@@ -6,11 +6,12 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from app import db
 from app.config import load_settings
 from app.costs import CostCapExceeded, CostLedger
-from app.limits import RateLimiter
+from app.limits import RateLimiter, client_ip
 from app.market.search import Query, Want, find_listings
 from app.models import DraftItem, Flag, PriceLine, Proof
 from app.pipeline.run import process_video_session
@@ -135,6 +136,50 @@ def test_sixth_upload_from_one_ip_returns_429(tmp_path, monkeypatch):
     assert denied.status_code == 429
     assert "text/html" in denied.headers["content-type"]
     assert "Too many uploads" in denied.text
+
+
+# --- Proxy-aware client IP (task 19) ---
+
+def make_request(headers=None, host="9.9.9.9"):
+    raw = [(k.lower().encode("latin-1"), v.encode("latin-1"))
+           for k, v in (headers or {}).items()]
+    scope = {"type": "http", "method": "POST", "headers": raw,
+             "client": (host, 5000) if host is not None else None}
+    return Request(scope)
+
+
+def test_client_ip_prefers_first_forwarded_address():
+    request = make_request({"x-forwarded-for": "1.2.3.4, 10.0.0.1"})
+    assert client_ip(request) == "1.2.3.4"
+
+
+def test_client_ip_falls_back_to_client_host():
+    assert client_ip(make_request()) == "9.9.9.9"
+
+
+def test_client_ip_blank_header_falls_back_to_client_host():
+    assert client_ip(make_request({"x-forwarded-for": "   "})) == "9.9.9.9"
+
+
+def test_client_ip_unknown_without_header_or_client():
+    assert client_ip(make_request(host=None)) == "unknown"
+
+
+def test_uploads_with_different_forwarded_ips_limited_separately(
+        tmp_path, monkeypatch):
+    client = make_client(tmp_path, monkeypatch)
+    seller_url = create_shop(client)
+
+    def upload_as(ip):
+        return client.post(
+            seller_url + "/upload",
+            files={"video": ("clip.mp4", b"fakevideo", "video/mp4")},
+            headers={"x-forwarded-for": ip})
+
+    for _ in range(5):
+        assert upload_as("1.1.1.1").status_code in (302, 303)
+    assert upload_as("1.1.1.1").status_code == 429
+    assert upload_as("2.2.2.2").status_code in (302, 303)
 
 
 # --- Judge try-it mode ---

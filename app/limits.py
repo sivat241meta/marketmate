@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections import deque
 from datetime import UTC, datetime
 
+from starlette.requests import Request
+
 RATE_LIMIT_MESSAGE = (
     "Too many uploads in the last hour — please wait a while and try again."
 )
@@ -43,3 +45,15 @@ class RateLimiter:
         bucket.append(now_ts)
         self._all.append(now_ts)
         return True
+
+
+def client_ip(request: Request) -> str:
+    """Best-effort client IP, proxy-aware via X-Forwarded-For."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        first = forwarded.split(",")[0].strip()
+        if first:
+            return first
+    if request.client:
+        return request.client.host
+    return "unknown"

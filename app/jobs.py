@@ -10,9 +10,18 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 
+from app import storage
+
 _EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="marketmate")
 
 
 def submit(fn: Callable, *args) -> None:
     """Run ``fn(*args)`` in the background pool. ``fn`` opens its own connection."""
-    _EXECUTOR.submit(fn, *args)
+
+    def _run() -> None:
+        try:
+            fn(*args)
+        finally:
+            storage.commit()
+
+    _EXECUTOR.submit(_run)

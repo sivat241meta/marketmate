@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-from app import db
+from app import db, storage
 from app.config import Settings, load_settings
 from app.costs import CostCapExceeded, CostLedger
 from app.limits import RateLimiter
@@ -49,6 +49,14 @@ def create_app(settings: Settings) -> FastAPI:
     app.state.settings = settings
     app.state.limiter = RateLimiter(settings.uploads_per_ip_hour,
                                     settings.uploads_per_hour)
+
+    @app.middleware("http")
+    async def _commit_volume_after_writes(request: Request, call_next):
+        response = await call_next(request)
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            storage.commit()
+        return response
+
     here = Path(__file__).parent
     data_dir = Path(settings.data_dir)
     startup_conn = db.connect(data_dir)

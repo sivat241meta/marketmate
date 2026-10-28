@@ -22,7 +22,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
-from app.limits import RATE_LIMIT_MESSAGE
+from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
@@ -248,8 +248,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         shop = _shop_or_404(conn, token)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
         limiter = request.app.state.limiter
-        client_ip = request.client.host if request.client else "unknown"
-        if not limiter.allow(client_ip, datetime.now(UTC)):
+        ip = client_ip(request)
+        if not limiter.allow(ip, datetime.now(UTC)):
             return templates.TemplateResponse(
                 request, "error.html",
                 {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
