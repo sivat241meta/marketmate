@@ -7,7 +7,7 @@ import secrets
 import shutil
 import sqlite3
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
@@ -152,7 +152,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             area TEXT NOT NULL, language TEXT NOT NULL, currency TEXT NOT NULL,
             type TEXT NOT NULL, edit_token_hash TEXT NOT NULL,
             is_demo INTEGER NOT NULL DEFAULT 0, is_judge INTEGER NOT NULL DEFAULT 0,
-            listed INTEGER NOT NULL DEFAULT 0, expires_at TEXT, created_at TEXT NOT NULL
+            listed INTEGER NOT NULL DEFAULT 0, expires_at TEXT, created_at TEXT NOT NULL,
+            upi_id TEXT, upi_payee TEXT, round_bills INTEGER
         );
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,7 +196,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             kind TEXT NOT NULL, status TEXT NOT NULL,
             lines_json TEXT NOT NULL, total TEXT NOT NULL,
             customer_note TEXT, created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL, customer_phone TEXT,
+            payment_mode TEXT, paid_at TEXT, total_exact TEXT,
+            bill_token TEXT
         );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
@@ -212,6 +215,20 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     quote_columns = {row[1] for row in conn.execute("PRAGMA table_info(quotes)")}
     if "customer_phone" not in quote_columns:
         conn.execute("ALTER TABLE quotes ADD COLUMN customer_phone TEXT")
+    for name, column_type in (("payment_mode", "TEXT"),
+                              ("paid_at", "TEXT"),
+                              ("total_exact", "TEXT"),
+                              ("bill_token", "TEXT")):
+        if name not in quote_columns:
+            conn.execute(f"ALTER TABLE quotes ADD COLUMN {name} {column_type}")
+    shop_columns = {row[1] for row in conn.execute("PRAGMA table_info(shops)")}
+    for name, column_type in (("upi_id", "TEXT"), ("upi_payee", "TEXT"),
+                              ("round_bills", "INTEGER")):
+        if name not in shop_columns:
+            conn.execute(f"ALTER TABLE shops ADD COLUMN {name} {column_type}")
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_bill_token"
+        " ON quotes(bill_token) WHERE bill_token IS NOT NULL")
     conn.commit()
     return conn
 
@@ -232,15 +249,149 @@ def create_shop(conn, *, name: str, phone: str, area: str, language: str,
         slug = f"{_slugify(name)}-{n}"
         n += 1
     expires_at = (_now_plus_days(7) if is_judge else None)
+    round_default = 1 if (currency or "").upper() == "INR" else 0
     cursor = conn.execute(
         "INSERT INTO shops (slug, name, phone, area, language, currency, type,"
-        " edit_token_hash, is_demo, is_judge, listed, expires_at, created_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " edit_token_hash, is_demo, is_judge, listed, expires_at, created_at,"
+        " upi_id, upi_payee, round_bills)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)",
         (slug, name, phone, area, language, currency, shop_type, digest,
-         int(is_demo), int(is_judge), int(listed), expires_at, _now()),
+         int(is_demo), int(is_judge), int(listed), expires_at, _now(),
+         round_default),
     )
     conn.commit()
     return (cursor.lastrowid, slug, token)
+
+
+def round_bill_total(exact: Decimal | str) -> tuple[Decimal, Decimal]:
+    """Round an exact bill total to the nearest rupee (half up).
+
+    Returns (rounded, round_off) where round_off = rounded - exact, both
+    quantized to 2 decimals. E.g. 219.60 -> (220.00, 0.40).
+    """
+    value = exact if isinstance(exact, Decimal) else Decimal(str(exact))
+    rounded = value.quantize(Decimal(1), rounding=ROUND_HALF_UP).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP)
+    off = (rounded - value).quantize(Decimal("0.01"),
+                                     rounding=ROUND_HALF_UP)
+    return rounded, off
+
+
+def shop_rounding_enabled(shop) -> bool:
+    """True when bill totals for this shop round to the nearest rupee.
+
+    Rounding applies to INR shops only. The round_bills flag defaults on
+    for INR (NULL from old DBs counts as on).
+    """
+    try:
+        currency = (shop["currency"] or "INR").upper()
+    except (KeyError, IndexError, TypeError):
+        currency = "INR"
+    if currency != "INR":
+        return False
+    try:
+        flag = shop["round_bills"]
+    except (KeyError, IndexError, TypeError):
+        return True
+    if flag is None:
+        return True
+    return bool(flag)
+
+
+def shop_upi_id(shop) -> str | None:
+    try:
+        value = shop["upi_id"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    text = str(value or "").strip()
+    return text or None
+
+
+def shop_upi_payee(shop) -> str:
+    """UPI payee name: the configured name, defaulting to the shop name."""
+    try:
+        payee = str(shop["upi_payee"] or "").strip()
+    except (KeyError, IndexError, TypeError):
+        payee = ""
+    if payee:
+        return payee
+    try:
+        return str(shop["name"] or "").strip()
+    except (KeyError, IndexError, TypeError):
+        return ""
+
+
+def bill_display_totals(shop, row) -> dict:
+    """Exact, rounded and round-off totals for a bill row.
+
+    exact comes from total_exact (falling back to total for old rows);
+    rounded applies shop rounding. All values are Decimals quantized
+    to 2 decimals.
+    """
+    try:
+        stored_total = row["total"]
+    except (KeyError, IndexError, TypeError):
+        stored_total = "0.00"
+    try:
+        stored_exact = row["total_exact"]
+    except (KeyError, IndexError, TypeError):
+        stored_exact = None
+    try:
+        exact = Decimal(str(stored_exact)) if stored_exact not in (
+            None, "") else Decimal(str(stored_total))
+    except (InvalidOperation, ValueError):
+        exact = Decimal("0.00")
+    exact = exact.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if shop_rounding_enabled(shop):
+        rounded, off = round_bill_total(exact)
+        return {"exact": exact, "rounded": rounded, "off": off,
+                "enabled": True}
+    return {"exact": exact, "rounded": exact,
+            "off": Decimal("0.00"), "enabled": False}
+
+
+def ensure_bill_token(conn, bill_id: int) -> str:
+    """Return the bill's public token, minting an unguessable one on first use."""
+    row = conn.execute("SELECT id, bill_token FROM quotes WHERE id = ?",
+                       (bill_id,)).fetchone()
+    if row is None:
+        raise ValueError("unknown bill")
+    try:
+        existing = row["bill_token"]
+    except (KeyError, IndexError, TypeError):
+        existing = None
+    if existing:
+        return str(existing)
+    for _ in range(5):
+        token = secrets.token_urlsafe(12)
+        if conn.execute("SELECT 1 FROM quotes WHERE bill_token = ?",
+                        (token,)).fetchone() is None:
+            break
+    else:
+        raise ValueError("could not mint a unique bill token")
+    conn.execute("UPDATE quotes SET bill_token = ?, updated_at = ? WHERE id = ?",
+                 (token, _now(), row["id"]))
+    conn.commit()
+    return token
+
+
+def get_quote_by_bill_token(conn, bill_token: str):
+    return conn.execute("SELECT * FROM quotes WHERE bill_token = ?",
+                        (bill_token,)).fetchone()
+
+
+def update_shop_settings(conn, shop_id: int, *, name: str, area: str,
+                         phone: str, language: str, currency: str,
+                         shop_type: str, upi_id: str | None,
+                         upi_payee: str | None, round_bills: bool) -> None:
+    """Update editable shop settings. The slug is never changed."""
+    conn.execute(
+        "UPDATE shops SET name = ?, area = ?, phone = ?, language = ?,"
+        " currency = ?, type = ?, upi_id = ?, upi_payee = ?, round_bills = ?"
+        " WHERE id = ?",
+        (name, area, phone, language, currency, shop_type,
+         upi_id, upi_payee, int(bool(round_bills)), shop_id))
+    conn.commit()
 
 
 def _now_plus_days(days: int) -> str:
@@ -604,6 +755,22 @@ def _quote_line_to_dict(line) -> dict:
     }
 
 
+def _store_totals(conn, shop_id: int, kind: str,
+                  exact_total) -> tuple[str, str]:
+    """(total, total_exact) strings to store; bills round when enabled."""
+    exact = exact_total if isinstance(exact_total, Decimal) else Decimal(
+        str(exact_total))
+    exact = exact.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if kind != "bill":
+        return str(exact), str(exact)
+    shop = conn.execute("SELECT * FROM shops WHERE id = ?",
+                        (shop_id,)).fetchone()
+    if shop is not None and shop_rounding_enabled(shop):
+        rounded, _ = round_bill_total(exact)
+        return str(rounded), str(exact)
+    return str(exact), str(exact)
+
+
 def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
                  kind: str = "quote", status: str = "new",
                  customer_note: str | None = None) -> str:
@@ -622,13 +789,14 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
     else:
         raise ValueError("could not mint a unique quote token")
     now = _now()
+    total, total_exact = _store_totals(conn, shop_id, kind, quote.total)
     conn.execute(
         "INSERT INTO quotes (shop_id, token, source, kind, status, lines_json,"
-        " total, customer_note, created_at, updated_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " total, total_exact, customer_note, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (shop_id, token, source, kind, status,
          json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
-         str(quote.total), customer_note, now, now),
+         total, total_exact, customer_note, now, now),
     )
     conn.commit()
     return token
@@ -681,11 +849,13 @@ def update_quote_lines(conn, token: str, lines: list[dict]):
         wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
                                  source="edit"))
     quote = build_quote(conn, row["shop_id"], wanted)
+    total, total_exact = _store_totals(conn, row["shop_id"], row["kind"],
+                                       quote.total)
     conn.execute(
-        "UPDATE quotes SET lines_json = ?, total = ?, updated_at = ?"
-        " WHERE token = ?",
+        "UPDATE quotes SET lines_json = ?, total = ?, total_exact = ?,"
+        " updated_at = ? WHERE token = ?",
         (json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
-         str(quote.total), _now(), token),
+         total, total_exact, _now(), token),
     )
     conn.commit()
     return quote
@@ -757,11 +927,13 @@ def rebuild_bill(conn, bill_id: int, wanted) -> object:
     if row is None:
         raise ValueError("unknown bill")
     quote = build_quote(conn, row["shop_id"], list(wanted))
+    total, total_exact = _store_totals(conn, row["shop_id"], "bill",
+                                       quote.total)
     conn.execute(
-        "UPDATE quotes SET lines_json = ?, total = ?, updated_at = ?"
-        " WHERE id = ?",
+        "UPDATE quotes SET lines_json = ?, total = ?, total_exact = ?,"
+        " updated_at = ? WHERE id = ?",
         (json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
-         str(quote.total), _now(), row["id"]),
+         total, total_exact, _now(), row["id"]),
     )
     conn.commit()
     return quote
@@ -836,22 +1008,36 @@ def accept_quote_as_bill(conn, bill_id: int) -> None:
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
+    try:
+        exact_raw = row["total_exact"]
+    except (KeyError, IndexError, TypeError):
+        exact_raw = None
+    base = exact_raw if exact_raw not in (None, "") else row["total"]
+    total, total_exact = _store_totals(conn, row["shop_id"], "bill", base)
     conn.execute("UPDATE quotes SET kind = 'bill', status = 'billed',"
-                 " updated_at = ? WHERE id = ?",
-                 (_now(), row["id"]))
+                 " total = ?, total_exact = ?, updated_at = ? WHERE id = ?",
+                 (total, total_exact, _now(), row["id"]))
     conn.commit()
 
 
-def mark_bill_paid(conn, bill_id: int) -> None:
-    """Mark a bill paid; only bills can be paid."""
+_PAYMENT_MODES = {"cash", "upi", "card"}
+
+
+def mark_bill_paid(conn, bill_id: int,
+                   payment_mode: str | None = "cash") -> None:
+    """Mark a bill paid; only bills can be paid. Stores mode and paid_at."""
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
     if row["kind"] != "bill":
         raise ValueError("only bills can be marked paid; accept it first")
-    conn.execute("UPDATE quotes SET status = 'paid', updated_at = ?"
-                 " WHERE id = ?",
-                 (_now(), row["id"]))
+    mode = (payment_mode or "cash").strip().lower()
+    if mode not in _PAYMENT_MODES:
+        raise ValueError("unknown payment mode")
+    now = _now()
+    conn.execute("UPDATE quotes SET status = 'paid', payment_mode = ?,"
+                 " paid_at = ?, updated_at = ? WHERE id = ?",
+                 (mode, now, now, row["id"]))
     conn.commit()
 
 

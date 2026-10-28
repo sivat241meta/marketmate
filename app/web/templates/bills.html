@@ -9,7 +9,7 @@
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
 {% endblock %}
 {% block content %}
@@ -28,6 +28,12 @@
   <div class="stat"><span class="stat-icon">{{ ui.icon("tag") }}</span><span class="stat-num money">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">Sales today</span><span class="stat-caption">total billed</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.icon("share") }}</span><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">Quotes waiting</span><span class="stat-caption">from customers</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.icon("check") }}</span><span class="stat-num money">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">Average bill</span><span class="stat-caption">per bill today</span></div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span class="stat-num money">{{ sales_cash | money(shop["currency"]) }}</span><span class="stat-label">Cash</span><span class="stat-caption">paid today</span></div>
+  <div class="stat"><span class="stat-num money">{{ sales_upi | money(shop["currency"]) }}</span><span class="stat-label">UPI</span><span class="stat-caption">paid today</span></div>
+  <div class="stat"><span class="stat-num money">{{ sales_card | money(shop["currency"]) }}</span><span class="stat-label">Card</span><span class="stat-caption">paid today</span></div>
 </div>
 
 <p>{{ ui.button("New bill", href="/e/" ~ token ~ "/bills/new", kind="primary", icon_name="receipt") }}</p>
@@ -50,6 +56,7 @@
   <span class="bill-right">
     <span class="bill-total money">{{ row.total | money(shop["currency"]) }}</span>
     {{ ui.pill(row.pill_text, row.pill_kind) }}
+    {% if row.mode %}{{ ui.pill(row.mode, "info") }}{% endif %}
   </span>
 </a>
 {% endfor %}

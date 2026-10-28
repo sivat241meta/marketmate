@@ -1336,3 +1336,46 @@ button.chip {
   margin: var(--space-3) auto 0;
 }
 .keypad-actions .btn { flex: 1; }
+
+/* ---- Task 37: settings, payments, public bill ---- */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  min-height: var(--tap);
+}
+.toggle-row input[type="checkbox"] {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.qr-wrap svg {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.pay-amount {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 0 0 var(--space-2);
+}
+.pay-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+.give-back { font-size: 1.1rem; }
+.give-back strong { font-size: 1.9rem; }
+.receipt-round {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: 0.95rem;
+}
+.keypad-keys.is-mini button { min-height: 52px; font-size: 1.2rem; }

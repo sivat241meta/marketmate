@@ -346,7 +346,7 @@ def test_bill_page_edits_recompute_and_add_remove(tmp_path):
     shop_id, _, token = seed_published(tmp_path)
     bill_id = _seed_bill_id(tmp_path, shop_id)
     html = client.get(f"/e/{token}/bills/{bill_id}").text
-    assert "Mark paid" in html
+    assert "Paid by cash" in html and "Paid by UPI" in html
     assert "WhatsApp" in html
     assert "Print" in html or "PDF" in html
     assert "style=" not in html
@@ -398,7 +398,7 @@ def test_accept_quote_converts_kind_status(tmp_path):
         assert row["status"] == "billed"
     finally:
         conn.close()
-    assert "Mark paid" in client.get(f"/e/{token}/bills/{quote_id}").text
+    assert "Paid by cash" in client.get(f"/e/{token}/bills/{quote_id}").text
 
 
 def test_mark_paid(tmp_path):

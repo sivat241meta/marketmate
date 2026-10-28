@@ -15,6 +15,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote as url_quote
+from urllib.parse import urlencode as url_encode
 
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse, Response
@@ -46,6 +47,42 @@ from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 
 MAX_BILL_PHOTO_BYTES = 10 * 1024 * 1024
+
+# Re-exported for templates/tests; the canonical math lives in app.db.
+round_bill_total = db.round_bill_total
+
+
+def build_upi_url(upi_id: str, payee: str, amount: Decimal | str,
+                  bill_id: int, shop_name: str) -> str:
+    """UPI collect URL for the exact bill amount, URL-encoded.
+
+    amount is formatted with 2 decimals; callers pass the rounded total
+    when rounding is on.
+    """
+    value = amount if isinstance(amount, Decimal) else Decimal(str(amount))
+    value = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    params = url_encode({
+        "pa": (upi_id or "").strip(),
+        "pn": (payee or shop_name or "").strip(),
+        "am": format(value, "f"),
+        "cu": "INR",
+        "tn": f"Bill {bill_id}, {shop_name}",
+    }, quote_via=url_quote)
+    return f"upi://pay?{params}"
+
+
+def _row_mode(row) -> str | None:
+    try:
+        value = row["payment_mode"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    text = str(value or "").strip().lower()
+    return text or None
+
+
+def _mode_label(mode: str | None) -> str:
+    return {"cash": "Cash", "upi": "UPI", "card": "Card"}.get(
+        (mode or "").lower(), "")
 
 
 def bill_meta_path(data_dir: Path, session_id: int) -> Path:
@@ -117,15 +154,21 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
     """Today's tiles: bill count, sales, quotes waiting, average bill.
 
     Bills today counts kind=bill rows with status billed/paid created
-    today (IST). Sales today sums their totals. Quotes waiting counts
-    customer quotes with status new (all time). Average is sales / bills.
+    today (IST). Sales today sums their rounded display totals. Quotes
+    waiting counts customer quotes with status new (all time). Average
+    is sales / bills. Cash/UPI/Card split paid bills today by mode.
     """
     moment = now if now is not None else datetime.now(UTC)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     today = moment.astimezone(IST).date()
+    shop = conn.execute("SELECT * FROM shops WHERE id = ?",
+                        (shop_id,)).fetchone()
     bills_today = 0
     sales = Decimal("0.00")
+    cash = Decimal("0.00")
+    upi = Decimal("0.00")
+    card = Decimal("0.00")
     waiting = 0
     for row in db.list_quotes(conn, shop_id):
         if (row["source"] == "customer" and row["kind"] == "quote"
@@ -135,18 +178,35 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
                 and _ist_date(row["created_at"]) == today):
             bills_today += 1
             try:
-                sales += Decimal(str(row["total"]))
+                if shop is None:
+                    amount = Decimal(str(row["total"]))
+                else:
+                    amount = db.bill_display_totals(shop, row)["rounded"]
             except (InvalidOperation, ValueError):
                 continue
-    if sales == 0:
-        sales = Decimal("0.00")
-    else:
-        sales = sales.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            sales += amount
+            if row["status"] == "paid":
+                mode = _row_mode(row)
+                if mode == "cash":
+                    cash += amount
+                elif mode == "upi":
+                    upi += amount
+                elif mode == "card":
+                    card += amount
+    def _q(value: Decimal) -> Decimal:
+        if value == 0:
+            return Decimal("0.00")
+        return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    sales = _q(sales)
+    cash = _q(cash)
+    upi = _q(upi)
+    card = _q(card)
     average = (sales / bills_today).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP) if bills_today else Decimal(
             "0.00")
     return {"bills_today": bills_today, "sales_today": sales,
-            "quotes_waiting": waiting, "average_bill": average}
+            "quotes_waiting": waiting, "average_bill": average,
+            "sales_cash": cash, "sales_upi": upi, "sales_card": card}
 
 
 def top_items(conn, shop_id: int, *, now: datetime | None = None,
@@ -549,21 +609,30 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 names = [_display(str(entry.get("name_en", "")))
                          for entry in raw
                          if isinstance(entry, dict) and entry.get("name_en")]
+                try:
+                    display_total = db.bill_display_totals(
+                        shop, row)["rounded"]
+                except (InvalidOperation, ValueError):
+                    display_total = row["total"]
                 items.append({
                     "id": row["id"],
                     "label": _customer_label(row),
                     "time": _row_time(row, now=now),
                     "count": count,
                     "names": names,
-                    "total": _fmt_money(row["total"]),
+                    "total": _fmt_money(display_total),
                     "pill_text": text,
                     "pill_kind": kind,
+                    "mode": _mode_label(_row_mode(row)),
                 })
             return templates.TemplateResponse(request, "bills.html", {
                 "shop": shop, "token": token, "range": range_key,
                 "status": status_key, "rows": items,
                 "bills_today": tiles["bills_today"],
                 "sales_today": _fmt_money(tiles["sales_today"]),
+                "sales_cash": _fmt_money(tiles["sales_cash"]),
+                "sales_upi": _fmt_money(tiles["sales_upi"]),
+                "sales_card": _fmt_money(tiles["sales_card"]),
                 "quotes_waiting": tiles["quotes_waiting"],
                 "average_bill": _fmt_money(tiles["average_bill"]),
                 "top": top_items(conn, shop["id"], now=now),
@@ -571,7 +640,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
 
-    def _bill_context(request, shop, token, bill, conn, error=None):
+    def _bill_context(request, shop, token, bill, conn, error=None,
+                      status_code=200):
+        from app.outputs.qr import qr_svg
+
         try:
             raw_lines = json.loads(bill["lines_json"] or "[]")
         except ValueError:
@@ -585,20 +657,53 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         created_label = when.astimezone(IST).strftime(
             "%d %b %Y, %H:%M") if when else ""
         phone = _row_phone(bill)
+        totals = db.bill_display_totals(shop, bill)
+        exact = totals["exact"]
+        rounded = totals["rounded"]
+        off = totals["off"]
+        show_round = bool(totals["enabled"] and off != 0)
+        currency = (shop["currency"] or "INR").upper()
+        is_inr = currency == "INR"
+        upi_id = db.shop_upi_id(shop)
+        upi_url = None
+        upi_qr = None
+        if is_inr and upi_id and bill["kind"] == "bill":
+            upi_url = build_upi_url(upi_id, db.shop_upi_payee(shop),
+                                    rounded, bill["id"], shop["name"])
+            upi_qr = qr_svg(upi_url)
+        bill_token = db.ensure_bill_token(conn, bill["id"])
+        public_url = (
+            f"{request.app.state.settings.public_base_url}/b/{bill_token}")
+        mode = _row_mode(bill)
+        try:
+            paid_at = bill["paid_at"]
+        except (KeyError, IndexError, TypeError):
+            paid_at = None
+        pay_modes = (("cash", "Paid by cash"), ("upi", "Paid by UPI")
+                     ) if is_inr else (("cash", "Paid by cash"),
+                                       ("card", "Paid by card"))
         return templates.TemplateResponse(request, "bill.html", {
             "shop": shop, "token": token, "bill": bill, "lines": lines,
-            "total": _fmt_money(bill["total"]),
+            "total": _fmt_money(rounded),
+            "total_exact": _fmt_money(exact),
+            "round_off": f"{off:+.2f}" if show_round else "",
+            "show_round": show_round,
             "pill_text": text, "pill_kind": kind,
             "created_label": created_label, "phone": phone or "",
             "label": _customer_label(bill), "error": error,
             "price_items": _price_items(conn, shop["id"]),
             "whatsapp_url": _whatsapp_link(
                 phone, _bill_text(shop, bill["id"], raw_lines,
-                                  bill["total"])),
+                                  str(rounded))),
             "is_quote": bill["kind"] == "quote" and bill["status"] == "new",
             "is_billed": bill["kind"] == "bill" and bill["status"] == "billed",
             "is_paid": bill["status"] == "paid",
-        })
+            "is_inr": is_inr, "upi_id": upi_id, "upi_url": upi_url,
+            "upi_qr": upi_qr, "pay_modes": pay_modes,
+            "mode_label": _mode_label(mode), "paid_at": paid_at or "",
+            "bill_token": bill_token, "public_url": public_url,
+            "public_qr": qr_svg(public_url),
+        }, status_code=status_code)
 
     @app.get("/e/{token}/bills")
     def bills_list(request: Request, token: str, conn: Conn,
@@ -931,16 +1036,32 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     @app.post("/e/{token}/bills/{bill_id}/paid")
-    def bill_paid_post(request: Request, token: str, bill_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
-        bill = _bill_of_shop(conn, shop["id"], bill_id)
+    async def bill_paid_post(request: Request, token: str, bill_id: int):
+        conn = db.connect(data_dir)
         try:
-            db.mark_bill_paid(conn, bill["id"])
-        except ValueError as exc:
-            fresh = _bill_of_shop(conn, shop["id"], bill_id)
-            return _bill_context(request, shop, token, fresh, conn,
-                                 error=str(exc))
-        return RedirectResponse(f"/e/{token}/bills/{bill_id}", status_code=303)
+            shop = _shop_or_404(conn, token)
+            bill = _bill_of_shop(conn, shop["id"], bill_id)
+            form = await request.form()
+            mode = str(form.get("mode") or "cash").strip().lower() or "cash"
+            currency = (shop["currency"] or "INR").upper()
+            allowed = ({"cash", "upi"} if currency == "INR"
+                       else {"cash", "card"})
+            if mode not in allowed:
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(request, shop, token, fresh, conn,
+                                     error="that payment mode is not available"
+                                     " for this shop",
+                                     status_code=400)
+            try:
+                db.mark_bill_paid(conn, bill["id"], mode)
+            except ValueError as exc:
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(request, shop, token, fresh, conn,
+                                     error=str(exc))
+            return RedirectResponse(f"/e/{token}/bills/{bill_id}",
+                                    status_code=303)
+        finally:
+            conn.close()
 
     @app.post("/e/{token}/bills/{bill_id}/accept")
     def bill_accept_post(request: Request, token: str, bill_id: int,
@@ -966,7 +1087,43 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         when = _parse_moment(bill["created_at"])
         created_label = when.astimezone(IST).strftime(
             "%d %b %Y, %H:%M") if when else ""
+        totals = db.bill_display_totals(shop, bill)
         pdf = bill_pdf(shop, bill["id"],
                        raw_lines if isinstance(raw_lines, list) else [],
-                       bill["total"], created_label, _row_phone(bill))
+                       str(totals["rounded"]), created_label,
+                       _row_phone(bill))
         return Response(pdf, media_type="application/pdf")
+
+    @app.get("/b/{bill_token}")
+    def public_bill_page(request: Request, bill_token: str, conn: Conn):
+        bill = db.get_quote_by_bill_token(conn, bill_token)
+        if bill is None:
+            raise HTTPException(404, "unknown bill")
+        shop = conn.execute("SELECT * FROM shops WHERE id = ?",
+                            (bill["shop_id"],)).fetchone()
+        if shop is None:
+            raise HTTPException(404, "unknown bill")
+        try:
+            raw_lines = json.loads(bill["lines_json"] or "[]")
+        except ValueError:
+            raw_lines = []
+        if not isinstance(raw_lines, list):
+            raw_lines = []
+        lines, _ = _bill_lines(raw_lines, None)
+        totals = db.bill_display_totals(shop, bill)
+        when = _parse_moment(bill["created_at"])
+        created_label = when.astimezone(IST).strftime(
+            "%d %b %Y, %H:%M") if when else ""
+        text, kind = _status_pill(bill)
+        return templates.TemplateResponse(request, "bill_public.html", {
+            "shop": shop, "bill": bill, "lines": lines,
+            "total": _fmt_money(totals["rounded"]),
+            "total_exact": _fmt_money(totals["exact"]),
+            "round_off": (f"{totals['off']:+.2f}"
+                          if totals["enabled"] and totals["off"] != 0
+                          else ""),
+            "show_round": bool(totals["enabled"] and totals["off"] != 0),
+            "pill_text": text, "pill_kind": kind,
+            "created_label": created_label,
+            "mode_label": _mode_label(_row_mode(bill)),
+        })

@@ -31,6 +31,7 @@ from app.web import live as live_routes
 from app.web import photos as photo_routes
 from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
+from app.web import settings as settings_routes
 
 
 def _fmt_rate(value: Decimal) -> str:
@@ -91,6 +92,7 @@ def create_app(settings: Settings) -> FastAPI:
     quote_routes.register(app, settings, templates)
     bills_routes.register(app, settings, templates)
     live_routes.register(app, settings, templates)
+    settings_routes.register(app, settings, templates)
 
     def get_conn():
         conn = db.connect(data_dir)

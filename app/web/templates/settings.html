@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Settings — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+</nav>
+{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Settings</h1>
+  <p class="muted">{{ shop["name"] }} · your shop, your way</p>
+</header>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<section class="card">
+  <h2>Shop profile</h2>
+  <form method="post" action="/e/{{ token }}/settings">
+    <div class="field">
+      <label for="set-name">Shop name</label>
+      <input id="set-name" name="name" value="{{ shop["name"] }}" required autocomplete="organization">
+    </div>
+    <div class="field">
+      <label for="set-area">Area</label>
+      <input id="set-area" name="area" value="{{ shop["area"] }}" required autocomplete="address-level2">
+    </div>
+    <div class="field">
+      <label for="set-phone">Phone / WhatsApp</label>
+      <input id="set-phone" name="phone" value="{{ shop["phone"] }}" required inputmode="tel">
+      <span class="help">7–15 digits, optional leading +.</span>
+    </div>
+    <div class="field">
+      <label for="set-language">Language</label>
+      <select id="set-language" name="language">
+        {% for lang in languages %}
+        <option value="{{ lang.code }}"{% if lang.code == shop["language"] %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
+        {% endfor %}
+      </select>
+      <span class="help">The language you speak your prices in.</span>
+    </div>
+    <div class="field">
+      <label for="set-currency">Currency</label>
+      <select id="set-currency" name="currency">
+        {% for currency in currencies %}
+        <option value="{{ currency }}"{% if currency == shop["currency"] %} selected{% endif %}>{{ currency }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="set-type">Shop type</label>
+      <input id="set-type" name="type" value="{{ shop["type"] }}" required>
+    </div>
+    <div class="field">
+      <label for="set-upi">UPI ID</label>
+      <input id="set-upi" name="upi_id" value="{{ shop["upi_id"] or "" }}" placeholder="name@bank" inputmode="email" autocomplete="off">
+      <span class="help">Optional. Needed for UPI QR payments.</span>
+    </div>
+    <div class="field">
+      <label for="set-payee">UPI payee name</label>
+      <input id="set-payee" name="upi_payee" value="{{ shop["upi_payee"] or "" }}" placeholder="{{ shop["name"] }}">
+      <span class="help">Shown in the customer's UPI app. Defaults to shop name.</span>
+    </div>
+    <div class="field">
+      <label class="toggle-row" for="set-round">
+        <input id="set-round" type="checkbox" name="round_bills"{% if rounding_on %} checked{% endif %}>
+        <span>Round bills to the nearest rupee</span>
+      </label>
+      <span class="help">Bill totals round to whole rupees; the round-off shows on the bill.</span>
+    </div>
+    <button class="btn btn-primary btn-big" type="submit">Save settings</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Your seller link</h2>
+  <p class="muted">Open your dashboard, bills and prices from any device.</p>
+  <div class="qr-wrap">{{ seller_qr | safe }}</div>
+  <p><span class="shop-link">{{ seller_url }}</span></p>
+  <p><button class="btn btn-small" type="button" id="copy-seller" data-link="{{ seller_url }}">Copy</button></p>
+  <div class="alert alert-warn">Keep this link private: anyone with this link can change your prices.</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("copy-seller");
+  if (!btn) { return; }
+  btn.addEventListener("click", async () => {
+    const url = btn.dataset.link;
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = "Copied";
+    } catch (err) {
+      window.prompt("Copy your seller link:", url);
+    }
+  });
+});
+</script>
+{% endblock %}

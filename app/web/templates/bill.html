@@ -9,7 +9,7 @@
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
 {% endblock %}
 {% block content %}
@@ -25,7 +25,7 @@
     <div class="receipt-head">
       <p class="receipt-shop">{{ shop["name"] }}</p>
       <p class="receipt-meta">Bill #{{ bill["id"] }} · {{ created_label }}</p>
-      <p class="receipt-meta">{{ label }} {{ ui.pill(pill_text, pill_kind) }}</p>
+      <p class="receipt-meta">{{ label }} {{ ui.pill(pill_text, pill_kind) }}{% if mode_label %} {{ ui.pill(mode_label, "info") }}{% endif %}</p>
     </div>
     {% if lines %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/lines" data-receipt>
@@ -83,6 +83,9 @@
         <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
       </div>
       {% endfor %}
+      {% if show_round %}
+      <div class="receipt-round muted"><span>Round off {{ round_off }}</span><span>{{ total_exact | money(shop["currency"]) }} exact</span></div>
+      {% endif %}
       <div class="receipt-total">
         <span class="muted">{{ lines | length }} item{% if lines | length != 1 %}s{% endif %}</span>
         <span class="money" data-total>{{ total | money(shop["currency"]) }}</span>
@@ -106,11 +109,64 @@
       <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("check") }}Accept quote</button>
     </form>
     {% elif is_billed %}
-    <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid">
-      <button class="btn btn-green btn-big" type="submit">{{ ui.icon("check") }}Mark paid</button>
-    </form>
+    <section class="card" aria-label="Collect payment">
+      <h2>Collect payment</h2>
+      {% if is_inr and upi_qr %}
+      <p class="pay-amount money">{{ total | money(shop["currency"]) }}</p>
+      <div class="qr-wrap" data-upi-url="{{ upi_url }}">{{ upi_qr | safe }}</div>
+      <p class="muted">Scan with any UPI app</p>
+      {% elif is_inr %}
+      <p class="muted">Add your UPI ID in <a href="/e/{{ token }}/settings">Settings</a> to collect UPI payments with a QR.</p>
+      {% endif %}
+      <div class="pay-buttons">
+        {% for value, label in pay_modes %}
+        <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid" class="inline-form">
+          <input type="hidden" name="mode" value="{{ value }}">
+          <button class="btn btn-green" type="submit">{{ ui.icon("check") }}{{ label }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      <details class="card" open>
+        <summary>Cash helper</summary>
+        <div data-cash data-total="{{ total }}">
+          <div class="field">
+            <label for="cash-gave">Customer gave</label>
+            <input id="cash-gave" type="number" min="0" step="any" value="{{ total }}" data-cash-gave inputmode="decimal">
+          </div>
+          <nav class="chips" aria-label="Cash tendered">
+            <button class="chip" type="button" data-cash-chip="50">₹50</button>
+            <button class="chip" type="button" data-cash-chip="100">₹100</button>
+            <button class="chip" type="button" data-cash-chip="200">₹200</button>
+            <button class="chip" type="button" data-cash-chip="500">₹500</button>
+            <button class="chip" type="button" data-cash-chip="exact">exact</button>
+          </nav>
+          <div class="keypad-keys is-mini" data-cash-keys>
+            <button type="button" data-key="1">1</button>
+            <button type="button" data-key="2">2</button>
+            <button type="button" data-key="3">3</button>
+            <button type="button" data-key="4">4</button>
+            <button type="button" data-key="5">5</button>
+            <button type="button" data-key="6">6</button>
+            <button type="button" data-key="7">7</button>
+            <button type="button" data-key="8">8</button>
+            <button type="button" data-key="9">9</button>
+            <button type="button" data-key="clear">C</button>
+            <button type="button" data-key="0">0</button>
+            <button type="button" data-key="back">⌫</button>
+          </div>
+          <p class="give-back">Give back <strong class="money" data-cash-back>₹0</strong></p>
+        </div>
+      </details>
+    </section>
     {% elif is_paid %}
-    <p class="paid-state">{{ ui.icon("check") }}Paid</p>
+    <p class="paid-state">{{ ui.icon("check") }}Paid{% if mode_label %} by {{ mode_label }}{% endif %}</p>
+    {% endif %}
+    {% if not is_quote %}
+    <section class="card" aria-label="Public bill link">
+      <h2>Customer can scan to get the bill</h2>
+      <div class="qr-wrap">{{ public_qr | safe }}</div>
+      <p><span class="shop-link">{{ public_url }}</span></p>
+    </section>
     {% endif %}
     <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}Share on WhatsApp</a>
     <a class="btn btn-secondary" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}Print / PDF</a>
@@ -153,9 +209,12 @@
 {% if is_billed %}
 <div class="sticky-bar bill-bar">
   <span class="sticky-total money" data-total>{{ total | money(shop["currency"]) }}</span>
+  {% for value, label in pay_modes %}
   <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid">
-    <button class="btn btn-green btn-big" type="submit">Mark paid</button>
+    <input type="hidden" name="mode" value="{{ value }}">
+    <button class="btn btn-green" type="submit">{{ label }}</button>
   </form>
+  {% endfor %}
 </div>
 {% endif %}
 <div class="keypad-sheet" data-keypad hidden>
@@ -185,4 +244,49 @@
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('tap-chips.js') if static_url is defined else '/static/tap-chips.js' }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-cash]").forEach((box) => {
+    const total = parseFloat(box.getAttribute("data-total") || "0") || 0;
+    const input = box.querySelector("[data-cash-gave]");
+    const back = box.querySelector("[data-cash-back]");
+    if (!input || !back) { return; }
+    function fmt(value) {
+      const rounded = Math.round(value * 100) / 100;
+      return "₹" + rounded.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+    }
+    function refresh() {
+      const gave = parseFloat(input.value || "0") || 0;
+      const due = Math.max(0, gave - total);
+      back.textContent = fmt(due);
+    }
+    input.addEventListener("input", refresh);
+    box.querySelectorAll("[data-cash-chip]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const kind = chip.getAttribute("data-cash-chip");
+        if (kind === "exact") {
+          input.value = String(Math.round(total * 100) / 100);
+        } else {
+          input.value = kind;
+        }
+        refresh();
+      });
+    });
+    const keys = box.querySelector("[data-cash-keys]");
+    if (keys) {
+      keys.querySelectorAll("[data-key]").forEach((key) => {
+        key.addEventListener("click", () => {
+          const k = key.getAttribute("data-key");
+          const current = input.value || "";
+          if (k === "clear") { input.value = ""; }
+          else if (k === "back") { input.value = current.slice(0, -1); }
+          else { input.value = (current === "0" ? "" : current) + k; }
+          refresh();
+        });
+      });
+    }
+    refresh();
+  });
+});
+</script>
 {% endblock %}

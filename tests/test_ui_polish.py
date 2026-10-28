@@ -150,7 +150,7 @@ def test_bill_page_receipt_and_actions(tmp_path):
     assert "bill-actions" in html or "action-panel" in html
     assert "receipt-total" in html or "bill-total-row" in html
     assert f"Bill #{bill_id}" in html or f"Bill {bill_id}" in html
-    assert "Mark paid" in html
+    assert "Paid by cash" in html
 
 
 def test_bill_page_posts_same_fields(tmp_path):
