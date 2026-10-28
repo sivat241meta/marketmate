@@ -18,9 +18,25 @@
         <canvas data-live-canvas hidden></canvas>
       </div>
       <div class="live-controls">
+        <p class="field live-speak" data-live-speak-wrap>
+          <label for="live-speak">{{ t('speak.label') }}</label>
+          <select id="live-speak" name="speak_lang" data-live-speak>
+            {% for lang in languages %}
+            <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+            {% endfor %}
+          </select>
+        </p>
         <button class="stopb live-mic" type="button" data-live-mic aria-label="{{ t('live.start_aria') }}"><span data-live-mic-icon>{{ ui.icon("mic") }}</span><span class="stopb-sq" data-live-stop-icon hidden aria-hidden="true"></span></button>
         <p class="stopb-label" data-live-stop-label hidden>{{ t('live.tap_stop') }}</p>
         <p class="muted live-hint" data-live-hint>{{ t('live.tap_start') }}</p>
+      </div>
+      <div class="notice need live-script" data-live-script hidden>
+        <span data-live-script-text></span>
+        <select name="speak_lang" data-live-script-speak aria-label="{{ t('speak.label') }}">
+          {% for lang in languages %}
+          <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+          {% endfor %}
+        </select>
       </div>
       <p class="muted" data-needs-internet-hint hidden>{{ t('notice.needs_internet') }}</p>
       <div class="alert alert-warn" data-live-error hidden></div>

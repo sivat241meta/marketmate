@@ -270,6 +270,12 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {column_type}")
     if "base_version_id" not in existing:
         conn.execute("ALTER TABLE sessions ADD COLUMN base_version_id INTEGER")
+    if "speak_lang" not in existing:
+        conn.execute("ALTER TABLE sessions ADD COLUMN speak_lang TEXT")
+    if "lang_retries" not in existing:
+        conn.execute(
+            "ALTER TABLE sessions ADD COLUMN lang_retries INTEGER"
+            " NOT NULL DEFAULT 0")
     item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
     if "name_ta" in item_columns and "name_local" not in item_columns:
         conn.execute("ALTER TABLE items RENAME COLUMN name_ta TO name_local")
@@ -667,6 +673,52 @@ def load_drafts(conn, session_id: int) -> list[DraftItem]:
 
 
 _MERGE_KINDS = {"video", "live", "board"}
+
+
+def session_speak_lang(conn, session_id: int) -> str | None:
+    """Spoken-language code the seller picked, else None (use the shop)."""
+    try:
+        row = conn.execute("SELECT speak_lang FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+    return _row_get(row, "speak_lang")
+
+
+def set_session_speak_lang(conn, session_id: int, code: str | None) -> None:
+    conn.execute("UPDATE sessions SET speak_lang = ? WHERE id = ?",
+                 (code, session_id))
+    conn.commit()
+
+
+def session_lang_retries(conn, session_id: int) -> int:
+    """Voice re-runs used by the language guard (old rows count as 0)."""
+    try:
+        row = conn.execute("SELECT lang_retries FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    except sqlite3.OperationalError:
+        return 0
+    if row is None:
+        return 0
+    try:
+        value = row["lang_retries"]
+    except (KeyError, IndexError, TypeError):
+        return 0
+    return int(value) if value is not None else 0
+
+
+def bump_session_lang_retries(conn, session_id: int) -> int:
+    """Count one more guard re-run; returns the new total."""
+    total = session_lang_retries(conn, session_id) + 1
+    try:
+        conn.execute("UPDATE sessions SET lang_retries = ? WHERE id = ?",
+                     (total, session_id))
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+    return total
 
 
 def session_base_version(conn, session_id: int) -> int | None:

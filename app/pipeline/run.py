@@ -6,7 +6,7 @@ from pathlib import Path
 
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
-from app.languages import shop_bias
+from app.languages import get_language, language_bias, shop_bias
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
@@ -22,6 +22,11 @@ from app.pipeline.media import (
 )
 from app.pipeline.names import keywords_for
 from app.pipeline.photos import make_photo
+from app.pipeline.scripts import script_mismatch
+
+#: At most this many guard re-transcriptions per session; then the last
+#: transcript continues through the normal review flags.
+MAX_LANG_RERUNS = 2
 
 
 def friendly_error_message(exc: BaseException, media: str = "video") -> str:
@@ -57,6 +62,45 @@ def _shop_language(conn, session_id: int) -> str:
         " WHERE sessions.id = ?",
         (session_id,)).fetchone()
     return row["language"] if row and row["language"] else "ta"
+
+
+def spoken_language(conn, session_id: int) -> str:
+    """Language the seller speaks: the picked speak_lang, else the shop."""
+    speak = db.session_speak_lang(conn, session_id)
+    if speak:
+        try:
+            get_language(speak)
+        except KeyError:
+            pass
+        else:
+            return speak
+    return _shop_language(conn, session_id)
+
+
+def _speak_bias(conn, session_id: int) -> tuple[str, ...]:
+    """Voice languageBias for a session: speak_lang, else the shop as today."""
+    speak = db.session_speak_lang(conn, session_id)
+    if speak:
+        try:
+            return tuple(language_bias(speak))
+        except KeyError:
+            pass
+    return shop_bias(_shop_language(conn, session_id))
+
+
+def _stop_for_language(conn, session_id: int, script: str,
+                       language_code: str) -> None:
+    """Park a session in language_check; no Spark call has been made."""
+    try:
+        lang_name = get_language(language_code).api_name
+    except KeyError:
+        lang_name = "English"
+    heard = f"{script} letters" if script != "other" else "an unfamiliar script"
+    db.set_stage(conn, session_id, "language_check", detail=script)
+    db.set_session_status(
+        conn, session_id, "processing",
+        f"We heard {heard}, but this video was set to {lang_name}. "
+        "Pick the language you spoke.")
 
 
 def _transcript_to_json(transcript: Transcript) -> dict:
@@ -229,10 +273,11 @@ def process_video_session(conn, session_id: int, video: Path, *,
         frames = extract_frames(video, session_dir / "frames")
         _progress(conn, session_id, "Transcribing...")
         db.set_stage(conn, session_id, "listening")
-        language = _shop_language(conn, session_id)
+        language = spoken_language(conn, session_id)
+        bias = _speak_bias(conn, session_id)
         transcript = transcribe_wav(wav, keywords=keywords_for(language),
                                     ledger=ledger, settings=settings,
-                                    languages=shop_bias(language))
+                                    languages=bias)
         (session_dir / "transcript.json").write_text(
             json.dumps(_transcript_to_json(transcript)))
         if not transcript.turns:
@@ -241,10 +286,78 @@ def process_video_session(conn, session_id: int, video: Path, *,
             db.ensure_session_base(conn, session_id)
             db.set_session_status(conn, session_id, "review", "No prices heard")
         else:
+            bad_script = script_mismatch(transcript.text, bias)
+            if bad_script is not None:
+                _stop_for_language(conn, session_id, bad_script, language)
+                video.unlink(missing_ok=True)
+                return
             _progress(conn, session_id, "Extracting items...")
             _finish_session(conn, session_id, transcript, frames, wav, session_dir,
                             settings=settings, ledger=ledger, language=language)
         video.unlink(missing_ok=True)
+    except CostCapExceeded:
+        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
+    except Exception as exc:  # noqa: BLE001 - every failure becomes a status
+        db.set_session_status(conn, session_id, "failed",
+                              friendly_error_message(exc))
+
+
+def apply_spoken_language(conn, session_id: int, new_lang: str, *,
+                            settings, ledger: CostLedger) -> None:
+    """Apply the seller's language choice from the language_check page.
+
+    Re-runs transcription on the saved audio.wav with the new bias, unless
+    the saved transcript already matches (the seller really spoke that
+    language) or the session already used its re-runs: then it continues
+    with the last transcript and the normal review flags handle the rest.
+    Never raises.
+    """
+    try:
+        get_language(new_lang)
+    except KeyError:
+        db.set_session_status(conn, session_id, "failed",
+                              "Unknown language. Please try again.")
+        return
+    try:
+        row = conn.execute("SELECT stage FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+        if row is None or row["stage"] != "language_check":
+            # A second tap racing the first job: nothing left to do.
+            return
+        session_dir = _session_dir(settings, session_id)
+        transcript_path = session_dir / "transcript.json"
+        wav = session_dir / "audio.wav"
+        transcript = _transcript_from_json(json.loads(transcript_path.read_text()))
+        bias = tuple(language_bias(new_lang))
+        retries = db.session_lang_retries(conn, session_id)
+        if (script_mismatch(transcript.text, bias) is None
+                or retries >= MAX_LANG_RERUNS):
+            # Already the right script, or out of re-runs: continue as-is.
+            db.set_session_speak_lang(conn, session_id, new_lang)
+        else:
+            _progress(conn, session_id, "Transcribing...")
+            db.set_stage(conn, session_id, "listening")
+            transcript = transcribe_wav(
+                wav, keywords=keywords_for(new_lang), ledger=ledger,
+                settings=settings, languages=bias)
+            (session_dir / "transcript.json").write_text(
+                json.dumps(_transcript_to_json(transcript)))
+            db.set_session_speak_lang(conn, session_id, new_lang)
+            db.bump_session_lang_retries(conn, session_id)
+            bad_script = script_mismatch(transcript.text, bias)
+            if transcript.turns and bad_script is not None:
+                _stop_for_language(conn, session_id, bad_script, new_lang)
+                return
+        if not transcript.turns:
+            db.save_drafts(conn, session_id, [])
+            db.set_stage(conn, session_id, "ready")
+            db.ensure_session_base(conn, session_id)
+            db.set_session_status(conn, session_id, "review", "No prices heard")
+        else:
+            _progress(conn, session_id, "Extracting items...")
+            frames = _load_frames(session_dir / "frames")
+            _finish_session(conn, session_id, transcript, frames, wav, session_dir,
+                            settings=settings, ledger=ledger, language=new_lang)
     except CostCapExceeded:
         db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
@@ -284,7 +397,7 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     db.set_session_status(conn, session_id, "processing", "Trying again...")
     try:
         wav = session_dir / "audio.wav"
-        language = _shop_language(conn, session_id)
+        language = spoken_language(conn, session_id)
         if row["kind"] == "live":
             frames_by_turn = _load_live_frames(session_dir / "frames")
             process_turns(conn, session_id, transcript.turns, frames_by_turn, wav,

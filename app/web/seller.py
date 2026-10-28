@@ -39,9 +39,11 @@ from app.pipeline.media import extract_audio
 from app.pipeline.names import CANONICAL_NAMES, keywords_for
 from app.pipeline.numbers import parse_number
 from app.pipeline.run import (
+    apply_spoken_language,
     friendly_error_message,
     process_video_session,
     reprocess,
+    spoken_language,
 )
 from app.pipeline.update import (
     apply_changes,
@@ -115,6 +117,17 @@ def _retry_video_job(settings, session_id: int) -> None:
     try:
         ledger = CostLedger(Path(settings.data_dir) / "costs.db", settings.daily_budget_usd)
         reprocess(conn, session_id, settings=settings, ledger=ledger)
+    finally:
+        conn.close()
+
+
+def _retry_language_job(settings, session_id: int, speak_lang: str) -> None:
+    """Background guard re-run: opens its own connection, never the request's."""
+    conn = db.connect(Path(settings.data_dir))
+    try:
+        ledger = CostLedger(Path(settings.data_dir) / "costs.db", settings.daily_budget_usd)
+        apply_spoken_language(conn, session_id, speak_lang,
+                              settings=settings, ledger=ledger)
     finally:
         conn.close()
 
@@ -525,6 +538,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
              "bills": bills, "shop_lang": shop["language"],
+             "languages": LANGUAGES,
              "spent_today": spent, "ui_lang": ui_lang,
              "is_staff": is_staff, "helper_name": helper_name,
              "seller_url": seller_url,
@@ -618,7 +632,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/upload")
-    def upload(request: Request, token: str, video: UploadFile, conn: Conn):
+    def upload(request: Request, token: str, video: UploadFile, conn: Conn,
+               speak_lang: str = Form("")):
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -655,6 +670,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                  "token": token, "ui_lang": ui_lang},
                 status_code=413)
         session_id = db.create_session(conn, shop["id"], "video")
+        if speak_lang in _LANGUAGES:
+            db.set_session_speak_lang(conn, session_id, speak_lang)
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         safe_name = Path(video.filename or "clip.mp4").name
@@ -735,6 +752,46 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         jobs.submit(run_board_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
+    def _language_check_page(request, conn, token, shop, session,
+                             ui_lang):
+        """Task 53: ask which language was spoken after a script mismatch."""
+        t = t_for(ui_lang)
+        try:
+            saved = json.loads((data_dir / "sessions" / str(session["id"])
+                                / "transcript.json").read_text())
+            quote = str(saved.get("text", ""))[:120]
+        except (OSError, ValueError):
+            quote = ""
+        script = session["stage_detail"] or "other"
+        try:
+            set_name = get_language(
+                spoken_language(conn, session["id"])).native_name
+        except KeyError:
+            set_name = "English"
+        if script == "other":
+            heard = t("langcheck.heard_other", language=set_name)
+        else:
+            heard = t("langcheck.heard", script=script, language=set_name)
+        order = [shop["language"], "ta", "hi", "kn", "te", "ml", "bn", "en"]
+        chips = []
+        seen = set()
+        for code in order:
+            if code in seen:
+                continue
+            try:
+                lang = get_language(code)
+            except KeyError:
+                continue
+            seen.add(code)
+            chips.append({"code": code, "native": lang.native_name})
+        rest = [{"code": lang.code, "native": lang.native_name}
+                for lang in LANGUAGES if lang.code not in seen]
+        return templates.TemplateResponse(request, "language_check.html", {
+            "shop": shop, "session": session, "token": token,
+            "ui_lang": ui_lang, "shop_lang": shop["language"],
+            "heard": heard, "quote": quote, "chips": chips, "rest": rest,
+        })
+
     @app.get("/e/{token}/s/{session_id}")
     def session_page(request: Request, token: str, session_id: int, conn: Conn):
         shop, denied = _owner_page(request, conn, token)
@@ -742,6 +799,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return denied
         session = _session_of_shop(conn, shop["id"], session_id)
         ui_lang = get_ui_lang(request, shop)
+        if session["stage"] == "language_check":
+            return _language_check_page(request, conn, token, shop,
+                                        session, ui_lang)
         if session["kind"] == "photo" and session["status"] == "review":
             meta = read_photo_meta(data_dir, session_id)
             if meta.get("check_id") is not None:
@@ -879,16 +939,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if item.proof.source == "board_photo":
                 kept = [
                     flag for flag in check_item(
-                        item, previous, language=shop["language"],
+                        item, previous,
+                        language=spoken_language(conn, session_id),
                         ledger=ledger, settings=app.state.settings)
                     if flag.code not in ("NOT_HEARD", "NO_PRICE",
                                           "UNIT_MISSING", "NUMBER_CHECK",
                                           "UNCLEAR_NUMBER")]
                 item.flags = kept + _board_flags(item)
             else:
-                item.flags = check_item(item, previous, language=shop["language"],
-                                        ledger=ledger,
-                                        settings=app.state.settings)
+                item.flags = check_item(
+                    item, previous,
+                    language=spoken_language(conn, session_id),
+                    ledger=ledger, settings=app.state.settings)
             item.confirmed = index in confirmed
             items.append(item)
         try:
@@ -937,6 +999,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 400, "reprocess is only for failed or review sessions")
         db.set_session_status(conn, session_id, "processing", "Trying again...")
         jobs.submit(_retry_video_job, settings, session_id)
+        return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
+
+    @app.post("/e/{token}/s/{session_id}/language")
+    def choose_language(request: Request, token: str, session_id: int,
+                        conn: Conn, speak_lang: str = Form(...)):
+        """Task 53: seller's spoken-language answer; re-runs transcription."""
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        session = _session_of_shop(conn, shop["id"], session_id)
+        if session["stage"] != "language_check":
+            return RedirectResponse(f"/e/{token}/s/{session_id}",
+                                    status_code=303)
+        if speak_lang not in _LANGUAGES:
+            raise HTTPException(422, "unknown language")
+        db.set_session_status(conn, session_id, "processing",
+                              "Trying your language...")
+        jobs.submit(_retry_language_job, settings, session_id, speak_lang)
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
     def _update_cards(token: str, changes, current_map: dict,

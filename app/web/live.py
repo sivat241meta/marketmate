@@ -23,6 +23,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
+from app.languages import LANGUAGES, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE
 from app.market.order_parse import (
     item_like_leftovers,
@@ -37,6 +38,8 @@ from app.pipeline.checks import check_item
 from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.photos import make_photo  # noqa: F401 - monkeypatch seam
 from app.pipeline.run import live_frame_for_item, process_turns
+from app.pipeline.scripts import count_letters, dominant_script, expected_scripts
+from app.web.i18n import get_ui_lang, t_for
 
 MAX_LIVE_SECONDS = 5 * 60
 MAX_QUOTE_LIVE_SECONDS = 60
@@ -54,6 +57,7 @@ QUOTE_TIMEOUT_MESSAGE = (
 LOST_MESSAGE = (
     "We lost the live connection. Please try again, or upload a video instead."
 )
+_LANG_CODES = {lang.code for lang in LANGUAGES}
 START_MESSAGE = (
     "Something went wrong starting live mode. "
     "Please try again, or upload a video instead."
@@ -529,6 +533,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "notice": t_for(ui_lang)("notice.voice"),
             "shop_lang": shop_lang,
             "shop_native": shop_native,
+            "languages": LANGUAGES,
             "max_upload_bytes": app.state.settings.max_upload_bytes,
             "ui_lang": ui_lang,
         })
@@ -641,11 +646,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return
 
         language = shop.get("language") or "ta"
+        picked = start_data.get("speak_lang")
+        speak_picked = isinstance(picked, str) and picked in _LANG_CODES
+        if speak_picked:
+            language = picked
         conn = db.connect(data_dir)
         try:
             session_id = db.create_session(conn, shop["id"], "live")
             db.set_session_status(conn, session_id, "processing",
                                   "Listening live...")
+            if speak_picked:
+                db.set_session_speak_lang(conn, session_id, language)
             previous = db.last_prices(conn, shop["id"])
         finally:
             conn.close()
@@ -688,6 +699,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         async def send_json(obj: dict) -> None:
             async with send_lock:
                 await websocket.send_text(json.dumps(obj))
+
+        live_ui_lang = get_ui_lang(websocket, shop)
+        # Script guard: two captioned turns in a row in an unexpected
+        # script offer a language switch. Short captions stay out.
+        script_expected = expected_scripts(shop_bias(language))
+        script_streak = 0
+        script_warned = False
 
         realtime = RealtimeASR(settings=settings, ledger=ledger,
                                language=language)
@@ -767,7 +785,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         runner = IncrementalRunner(do_extract)
 
         async def meta_loop() -> None:
-            nonlocal timed_out
+            nonlocal timed_out, script_streak, script_warned
             try:
                 async for event in realtime.events():
                     if not isinstance(event, dict):
@@ -809,6 +827,25 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                          "start_ms": turn.start_ms,
                                          "end_ms": turn.end_ms})
                         await runner.notify()
+                        if count_letters(turn.text) >= 4:
+                            heard = dominant_script(turn.text)
+                            if heard not in script_expected:
+                                script_streak += 1
+                                if script_streak >= 2 and not script_warned:
+                                    script_warned = True
+                                    warn_t = t_for(live_ui_lang)
+                                    if heard == "other":
+                                        message = warn_t(
+                                            "live.script_warn_other")
+                                    else:
+                                        message = warn_t(
+                                            "live.script_warn", script=heard)
+                                    await send_json({"type": "script_warn",
+                                                     "script": heard,
+                                                     "message": message})
+                            else:
+                                script_streak = 0
+                                script_warned = False
                     elif kind.lower() == "error":
                         raise RealtimeError(str(
                             event.get("message") or "live transcription failed"))
@@ -931,6 +968,46 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         frame_counts[turn_no] = frame_counts.get(turn_no, 0) + 1
                     entry = frames_by_turn.setdefault(turn_no, {})
                     entry[at] = Frame(path=fpath, t_ms=audio_bytes // 48)
+                    continue
+                if mtype == "relang":
+                    code = data.get("speak_lang")
+                    if not isinstance(code, str) or code not in _LANG_CODES:
+                        continue
+                    if code == language:
+                        await send_json({"type": "relang_ok",
+                                         "language": code})
+                        continue
+                    fresh = RealtimeASR(settings=settings, ledger=ledger,
+                                        language=code)
+                    try:
+                        await fresh.start()
+                    except Exception:  # noqa: BLE001 - keep the old session
+                        with contextlib.suppress(Exception):
+                            await fresh.close()
+                        await send_json({"type": "relang_ok",
+                                         "language": language})
+                        continue
+                    stale, realtime = realtime, fresh
+                    if not meta_task.done():
+                        meta_task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError,
+                                                 RealtimeError, Exception):
+                            await meta_task
+                    with contextlib.suppress(Exception):
+                        await stale.close()
+                    meta_done.clear()
+                    meta_task = asyncio.create_task(meta_loop())
+                    language = code
+                    script_expected = expected_scripts(shop_bias(code))
+                    script_streak = 0
+                    script_warned = False
+                    switch_conn = db.connect(data_dir)
+                    try:
+                        db.set_session_speak_lang(switch_conn, session_id,
+                                                  code)
+                    finally:
+                        switch_conn.close()
+                    await send_json({"type": "relang_ok", "language": code})
                     continue
                 if mtype == "stop":
                     stop_requested.set()

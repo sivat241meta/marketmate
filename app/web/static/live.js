@@ -28,6 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const stopLabel = root.querySelector("[data-live-stop-label]");
   const fallback = root.querySelector("[data-live-fallback]");
   const mainCols = root.querySelector(".live-columns");
+  const speakSelect = root.querySelector("[data-live-speak]");
+  const scriptBox = root.querySelector("[data-live-script]");
+  const scriptText = root.querySelector("[data-live-script-text]");
+  const scriptSpeak = root.querySelector("[data-live-script-speak]");
 
   function showFallback() {
     if (fallback) {
@@ -240,6 +244,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setRecording(on) {
     recording = on;
+    if (speakSelect) {
+      speakSelect.disabled = on;
+    }
     micBtn.classList.toggle("is-recording", on);
     micBtn.setAttribute("aria-label", on ? "Stop live prices" : "Start live prices");
     badge.hidden = !on;
@@ -322,6 +329,25 @@ document.addEventListener("DOMContentLoaded", () => {
       grabFrame(data.turn_id, "end");
     } else if (data.type === "items") {
       renderCards(data.items || []);
+    } else if (data.type === "script_warn") {
+      if (scriptBox) {
+        if (scriptText) {
+          scriptText.textContent = data.message || "";
+        }
+        scriptBox.hidden = false;
+      }
+    } else if (data.type === "relang_ok") {
+      if (scriptBox) {
+        scriptBox.hidden = true;
+      }
+      if (data.language) {
+        if (speakSelect) {
+          speakSelect.value = data.language;
+        }
+        if (scriptSpeak) {
+          scriptSpeak.value = data.language;
+        }
+      }
     } else if (data.type === "timeout") {
       if (!stopping) {
         stopping = true;
@@ -347,6 +373,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function start() {
     clearError();
     offlineBox.hidden = true;
+    if (scriptBox) {
+      scriptBox.hidden = true;
+    }
     micBtn.disabled = true;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -371,7 +400,11 @@ document.addEventListener("DOMContentLoaded", () => {
     ws = socket;
     socket.binaryType = "arraybuffer";
     socket.onopen = () => {
-      socket.send(JSON.stringify({ type: "start", kind: "prices" }));
+      socket.send(JSON.stringify({
+        type: "start",
+        kind: "prices",
+        speak_lang: speakSelect ? speakSelect.value : "",
+      }));
       setRecording(true);
       micBtn.disabled = false;
     };
@@ -410,6 +443,23 @@ document.addEventListener("DOMContentLoaded", () => {
         cleanupMedia();
       }
     }, 20000);
+  }
+
+  if (scriptSpeak) {
+    scriptSpeak.addEventListener("change", () => {
+      if (speakSelect) {
+        speakSelect.value = scriptSpeak.value;
+      }
+      if (ws && ws.readyState === WebSocket.OPEN && recording && !stopping) {
+        ws.send(JSON.stringify({
+          type: "relang",
+          speak_lang: scriptSpeak.value,
+        }));
+      }
+      if (scriptBox) {
+        scriptBox.hidden = true;
+      }
+    });
   }
 
   micBtn.addEventListener("click", () => {

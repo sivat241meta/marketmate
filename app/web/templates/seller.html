@@ -60,6 +60,15 @@
         <input id="clip" class="file-hidden" type="file" name="video" accept="video/*" capture="environment" required>
       </label>
     </p>
+    <p class="field">
+      <label for="speak-lang">{{ t('speak.label') }}</label>
+      <select id="speak-lang" name="speak_lang">
+        {% for lang in languages %}
+        <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="help">{{ t('speak.help') }}</p>
     <p class="help">{{ t('dash.upload_help') }}</p>
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
