@@ -198,13 +198,59 @@ for _name_en, _name_ta, _roman in _ITEMS:
     _TAMIL_TO_CANON.setdefault(_name_ta, _name_en)
 
 
+def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
+    """Longest alias key found as whole word(s) in text, else None.
+
+    Keys match only with word bounds on both sides, so "krishnagiri"
+    is found inside "வரி krishnagiri வரி" but "pachai" never matches
+    inside "pachaivazhai". Tamil script compares the same way: market
+    speech separates words with spaces.
+    """
+    lowered = " ".join((text or "").lower().split())
+    if not lowered:
+        return None
+    best: tuple[str, str] | None = None
+    best_len = -1
+    for alias, pair in VARIETY_ALIASES.items():
+        key = alias.lower()
+        if not key or len(key) <= best_len:
+            continue
+        start = 0
+        found = False
+        while True:
+            idx = lowered.find(key, start)
+            if idx < 0:
+                break
+            before = lowered[idx - 1] if idx > 0 else " "
+            end = idx + len(key)
+            after = lowered[end] if end < len(lowered) else " "
+            if (not before.isalnum() and before != "_"
+                    and not after.isalnum() and after != "_"):
+                found = True
+                break
+            start = idx + 1
+        if found:
+            best, best_len = pair, len(key)
+    return best
+
+
 def _normalize_variety(variety: str | None) -> str | None:
     if variety is None:
         return None
     text = str(variety).strip().lower()
     if not text:
         return None
-    return _VARIETY_WORDS.get(text, text)
+    known = _VARIETY_WORDS.get(text)
+    if known is not None:
+        return known
+    if text.isascii():
+        return text
+    # Non-Latin variety: salvage a known word inside, else drop it, so
+    # Tamil is never stored as the English variety.
+    hit = _alias_hit_in_text(text)
+    if hit is not None:
+        return hit[1]
+    return None
 
 
 def _variety_in_text(base: str, text: str) -> str | None:
@@ -267,6 +313,21 @@ def resolve_name(spoken: str, variety: str | None = None,
         elif singular in _ROMAN_TO_CANON:
             base_name = _ROMAN_TO_CANON[singular]
     if base_name is None:
+        hit = _alias_hit_in_text(raw)
+        if hit is not None:
+            base, default = hit
+            said = _normalize_variety(variety)
+            if said:
+                return (base, said)
+            if base == "brinjal" and default == "ujala" and extra_text:
+                found = _variety_in_text(base, extra_text.lower())
+                if found and found != "ujala":
+                    return (base, found)
+            return (base, default)
+        if not raw.isascii():
+            # Unknown non-Latin name: "other" keeps Tamil out of name_en;
+            # the spoken word stays in name_local via the caller.
+            return ("other", _normalize_variety(variety))
         return (raw, _normalize_variety(variety))
     said = _normalize_variety(variety)
     if said:
@@ -358,8 +419,14 @@ def _title(word: str) -> str:
 
 
 def display_name_en(name_en: str | None, variety: str | None = None) -> str:
-    """English display name: "Banana (Poovan)", or plain "Banana"."""
-    base = _title((name_en or "").strip())
+    """English display name: "Banana (Poovan)", or plain "Banana".
+
+    Unknown items ("other") show nothing: customers never see "other".
+    """
+    base_raw = (name_en or "").strip()
+    if base_raw.lower() == "other":
+        return ""
+    base = _title(base_raw)
     text = str(variety or "").strip()
     if base and text:
         return f"{base} ({_title(text)})"

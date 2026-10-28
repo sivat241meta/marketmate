@@ -111,7 +111,7 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
         mode = {"cash": "Cash", "upi": "UPI", "card": "Card"}.get(
             mode_raw, "")
         if row["status"] != "paid":
-            mode = ""
+            mode = "unpaid"
         bill_row = bills_ws.max_row + 1
         bills_ws.cell(row=bill_row, column=1, value=row["id"])
         bills_ws.cell(row=bill_row, column=2, value=day)

@@ -86,7 +86,7 @@ td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
 <tr><th>{{ t('board.item') }}</th><th>{{ t('board.price') }}</th></tr>
 {% for row in rows %}
 <tr>
-  <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-local">{{ row.name_local }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
+  <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-local">{{ row.name_local }}</div>{% if row.name_en != "other" %}<div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div>{% endif %}</div></td>
   <td>{% if row.sold_out %}<span class="soldout">{{ t('board.sold_out') }}</span>{% else %}<span class="price">{{ row.price | money(shop["currency"]) }}</span> <span class="per">{{ t('board.per', per=row.per) }}</span>{% endif %}</td>
 </tr>
 {% endfor %}

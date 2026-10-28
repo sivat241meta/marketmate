@@ -85,7 +85,7 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
         except (KeyError, IndexError, TypeError):
             mode = ""
         if row["status"] != "paid":
-            mode = ""
+            mode = "unpaid"
         try:
             phone = str(row["customer_phone"] or "").strip()
         except (KeyError, IndexError, TypeError):

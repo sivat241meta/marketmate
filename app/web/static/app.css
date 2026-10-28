@@ -2368,7 +2368,11 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
   .live-mic.is-recording { animation: none; }
 }
 
-/* ---- Task 52: bottom bars sit fully above the seller bottom nav ----
+/* ---- Task 52/58: bottom nav fixed; bars sit fully above it ----
+   Task 52: bars stay a shared nav height + 8px above the nav.
+   Task 58: sticky left the nav mid-screen under short content, so it is
+   fixed to the viewport bottom with body padding so nothing hides
+   behind it.
    Phones only: on laptop the bnav is display:none so nothing changes. */
 @media (max-width: 899.98px) {
   body:has(.bnav) .float,
@@ -2379,5 +2383,14 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
   }
   body:has(.bnav) .content:has(.sticky-bar, .float) {
     padding-bottom: 230px;
+  }
+  .bnav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  body:has(.bnav) {
+    padding-bottom: var(--bnav-h);
   }
 }

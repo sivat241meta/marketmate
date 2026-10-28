@@ -41,7 +41,7 @@
     <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
     <div class="bd">
       <span class="kk">{% if row.variety %}{{ row.variety }} · {% endif %}{{ t('shop.kicker_fallback', unit=row.unit) }}</span>
-      <h3><span class="tname" lang="{{ shop_lang }}">{{ row.name_local }}</span>{% if row.name_en != row.name_local %}<small>{{ row.name_en }}</small>{% endif %}</h3>
+      <h3><span class="tname" lang="{{ shop_lang }}">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</h3>
       {% if not row.sold_out %}
       <div class="sizes" data-sizes>
         {% if row.unit == "kg" %}

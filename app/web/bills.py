@@ -297,9 +297,11 @@ def top_items(conn, shop_id: int, *, now: datetime | None = None,
             width = int((entry["amount"] / peak * 100).to_integral_value(
                 rounding=ROUND_HALF_UP))
             width = max(4, min(100, width))
+        display = "" if name.strip().lower() == "other" else (
+            name[:1].upper() + name[1:] if name else name)
         out.append({
             "name_en": name,
-            "display": name[:1].upper() + name[1:] if name else name,
+            "display": display,
             "qty": format(entry["qty"].normalize(), "f"),
             "unit": _qty_unit_display(entry["unit"], entry["qty"]),
             "amount": format(entry["amount"].quantize(
