@@ -177,11 +177,17 @@ def test_review_js_queries_inputs_only_and_dispatches_input(tmp_path):
 # --- 3. review counts count cards ---
 
 def test_review_js_counts_cards_everywhere():
+    # Task 45: the card-count wording lives in i18n and reaches review.js
+    # through translated data-msg-* attributes on the form.
     js = Path("app/web/static/review.js").read_text(encoding="utf-8")
-    assert "1 item still needs your choice or a tick" in js or \
-        "item still needs your choice or a tick" in js
-    assert "items still need your choice or a tick" in js
+    assert "msgNeedOne" in js and "msgNeedMany" in js
     assert "flag(s) still need" not in js
+    from app.web.i18n import t_for
+
+    assert (t_for("en")("review.need_one")
+            == "1 item still needs your choice or a tick")
+    assert (t_for("en")("review.need_many", n=2)
+            == "2 items still need your choice or a tick")
 
 
 def test_review_error_hidden_until_approve_pressed():

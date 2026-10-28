@@ -20,13 +20,20 @@
   <h1>{{ t('upd.confirm_title') }}</h1>
   <p class="muted">{{ t('upd.heard', transcript=transcript) }}</p>
 </header>
-<form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm">
+<form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm"
+      data-msg-ready="{{ t('review.ready') }}"
+      data-msg-need-one="{{ t('review.need_one') }}"
+      data-msg-need-many="{{ t('review.need_many', n='{n}') }}"
+      data-msg-counts="{{ t('review.counts', ok='{ok}', total='{total}', need='{need}') }}"
+      data-msg-counts-aria="{{ t('review.counts_aria', ok='{ok}', total='{total}') }}"
+      data-msg-play-confirm="{{ t('review.play_then_confirm') }}"
+      data-msg-approve-failed="{{ t('review.approve_failed') }}">
 {% for card in cards %}
 {% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}
 <section class="card review-card needs" data-card="{{ card.index }}">
   <div class="review-body">
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}
-    <h2><span lang="{{ shop_lang }}">{{ card.name_local }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
+    <h2><span class="name-local" lang="{{ shop_lang }}">{{ card.name_local }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
     <p><strong>{{ card.action_label }}</strong></p>
     {% if card.action == "set_price" %}
     {% for line in card.lines %}

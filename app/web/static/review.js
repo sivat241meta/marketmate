@@ -20,11 +20,19 @@ function collectCards(form) {
     proofs[node.dataset.item] = JSON.parse(node.textContent);
   });
   const names = {};
-  form.querySelectorAll(".card").forEach((card) => {
+  form.querySelectorAll(".card[data-card]").forEach((card) => {
     const head = card.querySelector("h2");
+    if (!head) {
+      return;
+    }
+    const local = head.querySelector(".name-local");
+    const en = head.querySelector(".name-en");
+    if (!local || !en) {
+      return;
+    }
     names[card.dataset.card] = {
-      local: head.querySelector(".name-local").textContent.trim(),
-      en: head.querySelector(".name-en").textContent.trim(),
+      local: local.textContent.trim(),
+      en: en.textContent.trim(),
     };
   });
   const byItem = {};
@@ -194,33 +202,41 @@ function cardNeeds(card) {
   return needs;
 }
 
-function needText(need) {
+function needText(form, need) {
   if (need === 1) {
-    return "1 item still needs your choice or a tick";
+    return form.dataset.msgNeedOne;
   }
-  return `${need} items still need your choice or a tick`;
+  return (form.dataset.msgNeedMany || "").replace("{n}", String(need));
+}
+
+function fillCounts(template, ok, total, need) {
+  return (template || "")
+    .replace("{ok}", String(ok))
+    .replace("{total}", String(total))
+    .replace("{need}", String(need));
 }
 
 function updateCounts(form, need) {
-  const cards = form.querySelectorAll(".card");
+  const cards = form.querySelectorAll(".card[data-card]");
   const total = cards.length;
   const ok = total - need;
   const counts = document.querySelector("[data-review-counts]");
   if (counts) {
-    counts.textContent = `${ok} of ${total} look right · ${need} need you`;
+    counts.textContent = fillCounts(form.dataset.msgCounts, ok, total, need);
   }
   const bar = document.querySelector("[data-review-bar]");
   if (bar) {
     bar.value = ok;
     bar.max = total;
-    bar.setAttribute("aria-label", `${ok} of ${total} prices look right`);
+    bar.setAttribute(
+      "aria-label", fillCounts(form.dataset.msgCountsAria, ok, total, need));
   }
   const sticky = form.querySelector("[data-approve-count]");
   if (sticky) {
     sticky.textContent =
       need === 0
-        ? "All cards look right — ready to approve."
-        : `${needText(need)}.`;
+        ? form.dataset.msgReady
+        : `${needText(form, need)}.`;
   }
 }
 
@@ -228,7 +244,7 @@ function updateApprove(form) {
   const button = form.querySelector("#approve-btn");
   const error = form.querySelector("#approve-error");
   let need = 0;
-  form.querySelectorAll(".card").forEach((card) => {
+  form.querySelectorAll(".card[data-card]").forEach((card) => {
     if (cardNeeds(card)) {
       need += 1;
     }
@@ -241,7 +257,7 @@ function updateApprove(form) {
     }
     error.hidden = !approveAttempted || need === 0;
     if (!error.hidden) {
-      error.textContent = `${needText(need)}.`;
+      error.textContent = `${needText(form, need)}.`;
     }
   }
 }
@@ -262,7 +278,8 @@ function revealNeedsConfirm(form, needs) {
     if (note) {
       note.hidden = false;
       if (need.messages && need.messages.length) {
-        note.textContent = `${need.messages.join(" ")} Play the clip, then tick I confirm.`;
+        note.textContent =
+          `${need.messages.join(" ")} ${form.dataset.msgPlayConfirm}`;
       }
     }
     if (box) {
@@ -291,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   });
-  form.querySelectorAll(".card").forEach((card) => {
+  form.querySelectorAll(".card[data-card]").forEach((card) => {
     card.dataset.initialLines = String(card.querySelectorAll(".line").length);
   });
   form.querySelectorAll("[data-card-toggle]").forEach((toggle) => {
@@ -327,6 +344,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const card = button.closest(".card");
       if (card) {
+        const box = card.querySelector("[data-card-confirm]");
+        if (box && isHiddenBox(box)) {
+          // Board-price tap doubles as the tick; the box stays hidden.
+          box.checked = true;
+        }
         syncCardConfirm(card);
       }
       updateApprove(form);
@@ -379,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error) {
         error.hidden = false;
         error.dataset.serverMessage = "true";
-        error.textContent = detail.detail || "Approve failed.";
+        error.textContent = detail.detail || form.dataset.msgApproveFailed;
       }
       updateApprove(form);
       if (error) {

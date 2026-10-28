@@ -230,6 +230,13 @@ def _needs_decision(item) -> bool:
     return any(flag.options or flag.blocking for flag in item.flags)
 
 
+def _board_only(item) -> bool:
+    """True when every blocking flag is a board-price tap confirm."""
+    blocking = [flag for flag in item.flags if flag.blocking]
+    return bool(blocking) and all(
+        flag.code == "BOARD_CONFIRM" for flag in blocking)
+
+
 def _price_summary(item, currency: str = "INR", lang: str = "en") -> str:
     for line in item.price_lines:
         if line.price is not None:
@@ -677,6 +684,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         ),
                         "proof_json": json.dumps(proof),
                         "needs_decision": _needs_decision(item),
+                        "board_only": _board_only(item),
                         "quote_html": _highlight_quote(item.proof.quote),
                         "price_summary": _price_summary(
                             item, shop["currency"] or "INR", ui_lang),

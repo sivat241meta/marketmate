@@ -256,7 +256,7 @@ img { max-width: 100%; }
 .btn[disabled] { background: #d6cfbd; color: #6b6459; box-shadow: none; cursor: default; }
 
 /* ---- Cards, tiles, rows ---- */
-.card {
+.card, .carried-box {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);

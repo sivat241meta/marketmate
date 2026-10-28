@@ -71,14 +71,15 @@ def build_upi_url(upi_id: str, payee: str, amount: Decimal | str,
     """
     value = amount if isinstance(amount, Decimal) else Decimal(str(amount))
     value = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # NPCI examples use a literal @ in pa; some UPI apps reject %40.
+    pa = url_quote((upi_id or "").strip(), safe="@")
     params = url_encode({
-        "pa": (upi_id or "").strip(),
         "pn": (payee or shop_name or "").strip(),
         "am": format(value, "f"),
         "cu": "INR",
         "tn": f"Bill {bill_id}, {shop_name}",
     }, quote_via=url_quote)
-    return f"upi://pay?{params}"
+    return f"upi://pay?pa={pa}&{params}"
 
 
 def _row_mode(row) -> str | None:

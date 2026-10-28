@@ -24,7 +24,14 @@
     <button class="btn btn-small btn-ghost" type="submit" title="{{ t('review.check_again_title') }}">{{ t('review.check_again') }}</button>
   </form>
 </header>
-<form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve">
+<form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve"
+      data-msg-ready="{{ t('review.ready') }}"
+      data-msg-need-one="{{ t('review.need_one') }}"
+      data-msg-need-many="{{ t('review.need_many', n='{n}') }}"
+      data-msg-counts="{{ t('review.counts', ok='{ok}', total='{total}', need='{need}') }}"
+      data-msg-counts-aria="{{ t('review.counts_aria', ok='{ok}', total='{total}') }}"
+      data-msg-play-confirm="{{ t('review.play_then_confirm') }}"
+      data-msg-approve-failed="{{ t('review.approve_failed') }}">
 {% for card in cards %}
 {% set item = card.item %}
 <section class="card review-card{% if card.needs_decision %} needs{% else %} is-collapsed{% endif %}" data-card="{{ card.index }}" data-needs="{{ '1' if card.needs_decision else '0' }}">
@@ -50,6 +57,9 @@
           <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% else %}{{ option }}{% endif %}</button>
           {% endfor %}
         </div>
+        {% if card.board_only and flag.code == "BOARD_CONFIRM" %}
+        <p class="muted" data-board-hint>{{ t('review.board_hint') }}</p>
+        {% endif %}
       </div>
       {% elif flag.blocking %}
       <div class="alert alert-warn flag-blocking">{{ t_flag(flag) }}</div>
@@ -58,7 +68,7 @@
       {% endif %}
     {% endfor %}
     {% if card.is_board and card.board_thumb_url %}
-    <img class="review-photo" src="{{ card.board_thumb_url }}" alt="Your price board">
+    <img class="review-photo" src="{{ card.board_thumb_url }}" alt="{{ t('review.board_photo_alt') }}">
     <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
     <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a></p>
@@ -86,7 +96,12 @@
         {% set ns.need_confirm = true %}
       {% endif %}
     {% endfor %}
-    {% if ns.need_confirm %}
+    {% if card.board_only %}
+    <div data-confirm-wrap hidden>
+      <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
+      <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>
+    </div>
+    {% elif ns.need_confirm %}
     <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
     <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>
     {% else %}
@@ -100,15 +115,15 @@
 </section>
 {% endfor %}
 {% if carried %}
-<section class="card" aria-label="Also on your list">
-  <h2>Also on your list (not in this session)</h2>
-  <p class="muted">These stay on your list. Untick to drop.</p>
-  <p><a href="#" data-carried-clear>Remove all of these</a></p>
+<section class="carried-box" aria-label="{{ t('review.carried_title') }}">
+  <h2>{{ t('review.carried_title') }}</h2>
+  <p class="muted">{{ t('review.carried_sub') }}</p>
+  <p><a href="#" data-carried-clear>{{ t('review.carried_clear') }}</a></p>
   {% for item in carried %}
   <label class="card-confirm">
     <input type="checkbox" data-carried data-id="{{ item.id }}" checked>
     {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% endif %}
-    <span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %} — {{ item.price_summary }}{% if item.sold_out %} (Sold out){% endif %}
+    <span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %} — {{ item.price_summary }}{% if item.sold_out %} ({{ t('review.sold_out') }}){% endif %}
   </label>
   {% endfor %}
 </section>
