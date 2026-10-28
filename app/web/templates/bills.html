@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Bills — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
+{% block content %}
+<h1>Bills</h1>
+<nav class="chips" aria-label="Date range">
+  <a class="chip{% if range == "today" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status={{ status }}">Today</a>
+  <a class="chip{% if range == "yesterday" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=yesterday&amp;status={{ status }}">Yesterday</a>
+  <a class="chip{% if range == "week" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=week&amp;status={{ status }}">Last 7 days</a>
+</nav>
+
+<div class="stat-grid">
+  <div class="stat"><span class="stat-num">{{ bills_today }}</span><span class="stat-label">Bills today</span></div>
+  <div class="stat"><span class="stat-num">{{ symbol }}{{ sales_today }}</span><span class="stat-label">Sales today</span></div>
+  <div class="stat"><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">Quotes waiting</span></div>
+  <div class="stat"><span class="stat-num">{{ symbol }}{{ average_bill }}</span><span class="stat-label">Average bill</span></div>
+</div>
+
+<p>{{ ui.button("New bill", href="/e/" ~ token ~ "/bills/new", kind="primary", icon_name="receipt") }}</p>
+
+<nav class="chips" aria-label="Filter bills">
+  <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">All</a>
+  <a class="chip{% if status == "waiting" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=waiting">Quotes waiting</a>
+  <a class="chip{% if status == "billed" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=billed">Billed</a>
+  <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">Paid</a>
+</nav>
+
+{% if rows %}
+{% for row in rows %}
+<a class="bill-row" href="/e/{{ token }}/bills/{{ row.id }}">
+  <span class="row-main">
+    <span class="list-name">{{ row.label }}</span>
+    <span class="list-sub">{{ row.time }} · {{ row.count }} item{% if row.count != 1 %}s{% endif %}</span>
+  </span>
+  <span class="bill-total">{{ symbol }}{{ row.total }}</span>
+  {{ ui.pill(row.pill_text, row.pill_kind) }}
+</a>
+{% endfor %}
+{% else %}
+{{ ui.empty_state("No bills here yet", "Bills you make today will show up here. Tap New bill to start one.", None, None, "receipt") }}
+{% endif %}
+
+<div class="section-head"><h2>Top items today</h2></div>
+{% if top %}
+{% for entry in top %}
+<div class="top-row">
+  <div class="row-main"><strong>{{ entry.display }}</strong> <span class="muted">{{ entry.qty }} sold</span></div>
+  <div class="list-price">{{ symbol }}{{ entry.amount }}</div>
+  <progress class="progress" value="{{ entry.width }}" max="100" aria-label="{{ entry.display }} share of sales">{{ entry.width }}%</progress>
+</div>
+{% endfor %}
+{% else %}
+<p class="muted">Nothing billed today yet. Your best sellers will show up here.</p>
+{% endif %}
+{% endblock %}

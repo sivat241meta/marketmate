@@ -13,7 +13,8 @@ from pathlib import Path
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
-_SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo"}
+_SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo",
+                  "bill_voice", "bill_photo"}
 
 STAGES: list[tuple[str, str]] = [
     ("uploaded", "Video received"),
@@ -80,9 +81,9 @@ def stages_for_kind(kind: str) -> list[str]:
         return list(VOICE_STAGES)
     if kind == "photo":
         return list(PHOTO_STAGES)
-    if kind == "quote_voice":
+    if kind in ("quote_voice", "bill_voice"):
         return list(QUOTE_VOICE_STAGES)
-    if kind == "quote_photo":
+    if kind in ("quote_photo", "bill_photo"):
         return list(QUOTE_PHOTO_STAGES)
     return [key for key, _ in STAGES]
 
@@ -91,7 +92,7 @@ def stage_label(kind: str, key: str) -> str:
     """Stepper label for a stage; photo sessions use their own wording."""
     if kind == "photo":
         return PHOTO_STAGE_LABELS.get(key, key)
-    if kind in ("quote_voice", "quote_photo"):
+    if kind in ("quote_voice", "quote_photo", "bill_voice", "bill_photo"):
         return QUOTE_STAGE_LABELS.get(key, key)
     return STAGE_LABELS.get(key, key)
 
@@ -100,7 +101,7 @@ def stage_friendly(kind: str, key: str) -> str:
     """One-line explanation under the active step, per session kind."""
     if kind == "photo":
         return PHOTO_STAGE_FRIENDLY.get(key, "")
-    if kind in ("quote_voice", "quote_photo"):
+    if kind in ("quote_voice", "quote_photo", "bill_voice", "bill_photo"):
         return QUOTE_STAGE_FRIENDLY.get(key, "")
     return STAGE_FRIENDLY.get(key, "")
 
@@ -185,6 +186,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     for name in ("stock_qty", "stock_unit", "stock_source"):
         if name not in item_columns:
             conn.execute(f"ALTER TABLE items ADD COLUMN {name} TEXT")
+    quote_columns = {row[1] for row in conn.execute("PRAGMA table_info(quotes)")}
+    if "customer_phone" not in quote_columns:
+        conn.execute("ALTER TABLE quotes ADD COLUMN customer_phone TEXT")
     conn.commit()
     return conn
 
@@ -663,6 +667,168 @@ def list_quotes(conn, shop_id: int, since=None) -> list[sqlite3.Row]:
         "SELECT * FROM quotes WHERE shop_id = ? AND created_at >= ?"
         " ORDER BY id DESC",
         (shop_id, marker)).fetchall()
+
+
+def get_quote_by_id(conn, quote_id: int) -> sqlite3.Row | None:
+    """Fetch one quote or bill by its integer id; None when unknown."""
+    try:
+        key = int(quote_id)
+    except (TypeError, ValueError):
+        return None
+    return conn.execute("SELECT * FROM quotes WHERE id = ?",
+                        (key,)).fetchone()
+
+
+def _wanted_from_raw(raw: dict, fallback: dict, index: int):
+    from app.market.quote import WantedLine
+
+    if not isinstance(raw, dict):
+        raise TypeError(f"line {index + 1} is not valid")
+    if not isinstance(fallback, dict):
+        fallback = {}
+    name = str(raw.get("name_en") or fallback.get("name_en") or "").strip()
+    if not name:
+        raise ValueError(f"line {index + 1} has no item name")
+    qty_raw = raw.get("qty", fallback.get("qty"))
+    try:
+        qty = Decimal(str(qty_raw).strip())
+    except (InvalidOperation, ValueError, AttributeError):
+        raise ValueError(f"quantity for {name} does not look right") from None
+    if qty.is_nan() or qty <= 0:
+        raise ValueError(f"quantity for {name} does not look right")
+    unit = raw.get("unit", fallback.get("unit"))
+    if unit is not None:
+        unit = str(unit).strip() or None
+    return WantedLine(name_en=name, qty=qty, unit=unit, source="edit")
+
+
+def rebuild_bill(conn, bill_id: int, wanted) -> object:
+    """Reprice a bill's wanted lines from the shop list; returns the Quote."""
+    from app.market.quote import build_quote
+
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    quote = build_quote(conn, row["shop_id"], list(wanted))
+    conn.execute(
+        "UPDATE quotes SET lines_json = ?, total = ?, updated_at = ?"
+        " WHERE id = ?",
+        (json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
+         str(quote.total), _now(), row["id"]),
+    )
+    conn.commit()
+    return quote
+
+
+def update_bill_lines(conn, bill_id: int, lines: list[dict]):
+    """Recompute a bill's quantities server side; client totals ignored."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    try:
+        original = json.loads(row["lines_json"] or "[]")
+    except ValueError:
+        original = []
+    if not isinstance(original, list):
+        original = []
+    if len(lines) != len(original):
+        raise ValueError("bill lines are out of date; reload and try again")
+    wanted = [_wanted_from_raw(raw, original[index], index)
+              for index, raw in enumerate(lines)]
+    return rebuild_bill(conn, row["id"], wanted)
+
+
+def add_bill_line(conn, bill_id: int, raw: dict):
+    """Append one line to a bill, repriced from the shop list."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    try:
+        original = json.loads(row["lines_json"] or "[]")
+    except ValueError:
+        original = []
+    if not isinstance(original, list):
+        original = []
+    wanted = [_wanted_from_raw(
+        {"name_en": line.get("name_en"), "qty": line.get("qty"),
+         "unit": line.get("unit")},
+        {}, index) for index, line in enumerate(original)
+        if isinstance(line, dict)]
+    wanted.append(_wanted_from_raw(raw, {}, len(wanted)))
+    return rebuild_bill(conn, row["id"], wanted)
+
+
+def remove_bill_line(conn, bill_id: int, index: int):
+    """Remove one line from a bill by index, repriced from the shop list."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    try:
+        original = json.loads(row["lines_json"] or "[]")
+    except ValueError:
+        original = []
+    if not isinstance(original, list):
+        original = []
+    try:
+        number = int(index)
+    except (TypeError, ValueError):
+        raise ValueError("that line does not exist") from None
+    if not 0 <= number < len(original):
+        raise ValueError("that line does not exist")
+    kept = [line for pos, line in enumerate(original) if pos != number]
+    wanted = [_wanted_from_raw(
+        {"name_en": line.get("name_en"), "qty": line.get("qty"),
+         "unit": line.get("unit")},
+        {}, pos) for pos, line in enumerate(kept)
+        if isinstance(line, dict)]
+    return rebuild_bill(conn, row["id"], wanted)
+
+
+def accept_quote_as_bill(conn, bill_id: int) -> None:
+    """Convert a customer quote waiting into a bill with one tap."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    conn.execute("UPDATE quotes SET kind = 'bill', status = 'billed',"
+                 " updated_at = ? WHERE id = ?",
+                 (_now(), row["id"]))
+    conn.commit()
+
+
+def mark_bill_paid(conn, bill_id: int) -> None:
+    """Mark a bill paid; only bills can be paid."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    if row["kind"] != "bill":
+        raise ValueError("only bills can be marked paid; accept it first")
+    conn.execute("UPDATE quotes SET status = 'paid', updated_at = ?"
+                 " WHERE id = ?",
+                 (_now(), row["id"]))
+    conn.commit()
+
+
+def set_bill_phone(conn, bill_id: int, phone: str | None) -> str | None:
+    """Store the bill's customer phone; blank clears it. Returns stored value."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    text = (phone or "").strip()
+    if not text:
+        conn.execute("UPDATE quotes SET customer_phone = NULL,"
+                     " updated_at = ? WHERE id = ?",
+                     (_now(), row["id"]))
+        conn.commit()
+        return None
+    digits = re.sub(r"\D", "", text)
+    if not 7 <= len(digits) <= 15:
+        raise ValueError("that phone number does not look right")
+    stored = text
+    conn.execute("UPDATE quotes SET customer_phone = ?, updated_at = ?"
+                 " WHERE id = ?",
+                 (stored, _now(), row["id"]))
+    conn.commit()
+    return stored
 
 
 def last_prices(conn, shop_id: int) -> dict[str, PriceLine]:

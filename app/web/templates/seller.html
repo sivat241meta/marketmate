@@ -7,7 +7,7 @@
   <a class="side-link is-active" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
   <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("receipt") }}<span>Bills</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
 </nav>
@@ -51,6 +51,7 @@
 <div class="tiles tiles-four">
   {{ ui.tile("mic", "Update by voice", "/e/" ~ token ~ "/update") }}
   {{ ui.tile("photo", "Scan stock photo", "/e/" ~ token ~ "/photos") }}
+  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span><span class="tile-sub">₹{{ bills.sales_today }} today · {{ bills.quotes_waiting }} waiting</span></a>
   {% if versions %}
   {{ ui.tile("printer", "Print board", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
   {{ ui.tile("download", "Export CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}

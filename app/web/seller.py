@@ -273,6 +273,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             live_count = sum(
                 len(item.price_lines)
                 for item in db.version_items(conn, published_id))
+        from app.web.bills import bills_tiles
+
+        bills = bills_tiles(conn, shop["id"])
         return templates.TemplateResponse(
             request,
             "seller.html",
@@ -280,7 +283,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "notice": NOTICE, "stock": stock, "token": token,
              "items": items, "live": live, "live_count": live_count,
              "shop_url": f"/s/{shop['slug']}",
-             "max_upload_bytes": app.state.settings.max_upload_bytes},
+             "max_upload_bytes": app.state.settings.max_upload_bytes,
+             "bills": bills},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):

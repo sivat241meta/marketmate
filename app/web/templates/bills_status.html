@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Making the bill — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
+{% block content %}
+{% if session["status"] == "failed" %}
+<h1>Something went wrong</h1>
+{{ ui.alert(session["message"], "warn") }}
+<ol class="vstepper">
+  {% for step in progress["steps"] %}
+  <li class="vstep is-{{ step["state"] }}">
+    <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
+    <span class="vmain"><span class="vlabel">{{ step["label"] }}</span></span>
+  </li>
+  {% endfor %}
+</ol>
+<p><a class="btn btn-primary btn-big" href="/e/{{ token }}/bills/new">Try again</a></p>
+<p><a href="/e/{{ token }}/bills">Back to bills</a></p>
+{% else %}
+<h1>Making the bill…</h1>
+<p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
+<ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/bills/new/{{ session["id"] }}/status" data-bills-base="/e/{{ token }}/bills/">
+  {% for step in progress["steps"] %}
+  <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
+    <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
+    <span class="vmain">
+      <span class="vlabel">{{ step["label"] }}</span>
+      {% if step["state"] == "active" %}
+      {% if progress["detail"] %}<span class="vdetail" data-detail>{{ progress["detail"] }}</span>{% endif %}
+      <span class="vfriendly" data-friendly>{{ friendly }}</span>
+      {% endif %}
+    </span>
+  </li>
+  {% endfor %}
+</ol>
+<p class="muted" data-elapsed>Elapsed: {{ progress["elapsed_s"] | round | int }} s</p>
+<noscript>
+<meta http-equiv="refresh" content="3">
+<p class="muted">Working on it… this page refreshes every 3 s.</p>
+</noscript>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if session["status"] not in ("failed", "review", "approved") %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const stepper = document.querySelector("[data-stepper]");
+  if (!stepper) {
+    return;
+  }
+  const url = stepper.dataset.statusUrl;
+  const base = stepper.dataset.billsBase;
+  async function poll() {
+    let data;
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        return;
+      }
+      data = await response.json();
+    } catch (err) {
+      return;
+    }
+    if (data.bill_id) {
+      window.location.href = base + data.bill_id;
+      return;
+    }
+    if (data.status === "failed" || data.status === "review" || data.status === "approved") {
+      window.location.reload();
+      return;
+    }
+    stepper.querySelectorAll("[data-step]").forEach((item) => {
+      const step = (data.steps || []).find((entry) => entry.key === item.dataset.step);
+      if (!step) {
+        return;
+      }
+      item.classList.remove("is-done", "is-active", "is-todo");
+      item.classList.add("is-" + step.state);
+    });
+  }
+  window.setInterval(poll, 1500);
+});
+</script>
+{% endif %}
+{% endblock %}

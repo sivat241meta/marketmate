@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Bill {{ bill["id"] }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
+{% block content %}
+<p><a href="/e/{{ token }}/bills">← All bills</a></p>
+<h1>Bill {{ bill["id"] }} {{ ui.pill(pill_text, pill_kind) }}</h1>
+<p class="muted">{{ created_label }} · {{ label }}</p>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/lines">
+{% for line in lines %}
+<section class="card">
+  <div class="product-head">
+    <h3>{{ line.display }}{% if line.name_local %} <span class="name-local" lang="ta">{{ line.name_local }}</span>{% endif %}</h3>
+  </div>
+  {% if line.status == "priced" or line.status == "needs_qty" %}
+  {% if line.status == "needs_qty" %}<p>{{ ui.pill("check quantity", "check") }} <span class="muted">{{ line.note }}</span></p>{% endif %}
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  <div class="stepper" data-stepper>
+    <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ line.display }}">−</button>
+    <input type="number" min="0" step="any" name="qty_{{ line.index }}" value="{{ line.qty }}" aria-label="Quantity for {{ line.display }}">
+    <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
+    <span class="muted">{{ line.unit }}</span>
+  </div>
+  <p>{{ symbol }}{{ line.unit_price }} <small class="muted">per {{ line.per_amount }} {{ line.unit }}</small></p>
+  <p><strong>{{ symbol }}{{ line.line_total }}</strong></p>
+  {% elif line.status == "sold_out" %}
+  <p>{{ ui.pill("Sold out", "soldout") }}</p>
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="qty_{{ line.index }}" value="{{ line.qty }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  {% else %}
+  <p class="muted">not on this shop's list{% if line.note %} — {{ line.note }}{% endif %}</p>
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="qty_{{ line.index }}" value="{{ line.qty }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  {% endif %}
+</section>
+{% endfor %}
+{% if lines %}
+<div class="sticky-bar">
+  <button class="btn btn-green btn-big" type="submit">Update bill</button>
+</div>
+{% else %}
+<p class="muted">No items on this bill yet. Add one below.</p>
+{% endif %}
+</form>
+
+{% for line in lines %}
+<form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/remove" class="inline-form">
+  <input type="hidden" name="index" value="{{ line.index }}">
+  <button class="btn btn-small btn-ghost" type="submit" aria-label="Remove {{ line.display }}">Remove {{ line.display }}</button>
+</form>
+{% endfor %}
+
+<section class="card">
+  <h2>Total {{ symbol }}{{ total }}</h2>
+</section>
+
+<section class="card">
+  <h2>Customer phone (optional)</h2>
+  <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/phone">
+    <div class="field">
+      <label for="customer-phone">WhatsApp number for the receipt</label>
+      <input id="customer-phone" type="tel" name="customer_phone" value="{{ phone }}" placeholder="+91 …">
+      <span class="help">Leave blank for a walk-in customer.</span>
+    </div>
+    <button class="btn btn-secondary" type="submit">Save phone</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Add an item</h2>
+  {% if price_items %}
+  <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/add">
+    <div class="field">
+      <label for="add-name">Item from today's list</label>
+      <select id="add-name" name="name_en">
+        {% for item in price_items %}
+        {% if not item.sold_out %}<option value="{{ item.name_en }}">{{ item.display }} — {{ item.summary }}</option>{% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="add-qty">Quantity</label>
+      <input id="add-qty" type="number" min="0" step="any" name="qty" value="1" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Add item</button>
+  </form>
+  {% else %}
+  <p class="muted">No price list yet.</p>
+  {% endif %}
+</section>
+
+<div class="contact-grid">
+  {% if is_quote %}
+  <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/accept">
+    <button class="btn btn-primary" type="submit">{{ ui.icon("check") }}Accept quote</button>
+  </form>
+  {% elif is_billed %}
+  <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid">
+    <button class="btn btn-green" type="submit">{{ ui.icon("check") }}Mark paid</button>
+  </form>
+  {% endif %}
+  <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}Share on WhatsApp</a>
+  <a class="btn btn-secondary" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}Print / PDF</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+{% endblock %}

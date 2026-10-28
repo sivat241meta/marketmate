@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}New bill — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
+{% block content %}
+<p><a href="/e/{{ token }}/bills">← All bills</a></p>
+<h1>New bill</h1>
+<p class="muted">{{ shop["name"] }} · prices from today's list</p>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<section class="card">
+  <h2>{{ ui.icon("tag") }} Tap items</h2>
+  <p class="muted">Fastest: tap + for each item. No AI, totals from your list.</p>
+  {% if price_items %}
+  <form method="post" action="/e/{{ token }}/bills/new">
+    {% for item in price_items %}
+    <div class="list-row">
+      <div class="list-main">
+        <span class="list-name">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span>
+        <span class="list-sub">{{ item.summary }}</span>
+        {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+      </div>
+      {% if not item.sold_out %}
+      <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
+      <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
+      <div class="stepper" data-stepper>
+        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ item.display }}">−</button>
+        <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="Quantity for {{ item.display }}">
+        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ item.display }}">+</button>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <div class="sticky-bar">
+      <button class="btn btn-primary btn-big" type="submit">Make bill</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="muted">No price list yet. Record today's prices first.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>{{ ui.icon("mic") }} Speak the order</h2>
+  <p class="muted">Say the order, e.g. “2 kilo tomato, 1 dozen banana”.</p>
+  <div class="record-actions">
+    <button class="mic-btn" type="button" id="rec-start" data-upload-url="/e/{{ token }}/bills/new" data-rec-prompt="Recording… say the order.">{{ ui.icon("mic") }}<span>Speak</span></button>
+    <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
+  </div>
+  <p class="muted" id="rec-status">Tap Speak and say the order.</p>
+  <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
+    <div class="field">
+      <label for="bill-audio">Or upload a recording</label>
+      <input id="bill-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload and bill</button>
+  </form>
+  <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+</section>
+
+<section class="card">
+  <h2>{{ ui.icon("receipt") }} Type it</h2>
+  <form method="post" action="/e/{{ token }}/bills/new">
+    <div class="field">
+      <label for="bill-items">What did the customer take?</label>
+      <input id="bill-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana" required>
+    </div>
+    <button class="btn btn-primary btn-big" type="submit">Make bill</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{ ui.icon("photo") }} Photo the basket</h2>
+  <p class="muted">A photo of the customer's basket. We count and price from your list.</p>
+  <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
+    <div class="field">
+      <label for="bill-photo">Choose a photo</label>
+      <input id="bill-photo" type="file" name="photo" accept="image/*" capture="environment" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload photo and bill</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
+<script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+{% endblock %}

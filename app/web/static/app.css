@@ -801,6 +801,60 @@ svg.boxes rect { fill: none; stroke-width: 3; }
 
 .seller-note svg { width: 14px; height: 14px; vertical-align: -2px; }
 
+/* ---- Task 28: seller bills ---- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-num { font-size: 1.5rem; font-weight: 800; color: var(--green); }
+.stat-label { color: var(--muted); font-size: 0.85rem; font-weight: 700; }
+
+.chips { margin-bottom: var(--space-3); }
+a.chip { color: var(--green); text-decoration: none; min-height: var(--tap); display: inline-flex; align-items: center; }
+.chip.is-active { background: var(--green); border-color: var(--green); color: #fff; }
+
+.bill-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  min-height: var(--tap);
+  text-decoration: none;
+  color: inherit;
+}
+.bill-total { font-weight: 800; white-space: nowrap; }
+
+.pill-quote { background: var(--saffron); color: var(--ink); }
+.pill-billed { background: transparent; color: var(--ok); border: 2px solid var(--ok); }
+.pill-paid { background: var(--ok); color: #fff; }
+
+.top-row {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.top-row .progress { margin-top: var(--space-2); }
+
+.tile-sub { font-size: 0.8rem; font-weight: 700; color: var(--green); }
+
 /* ---- Wide screens ---- */
 @media (min-width: 900px) {
   body.is-seller .shell {
@@ -828,6 +882,7 @@ svg.boxes rect { fill: none; stroke-width: 3; }
   .steps { grid-template-columns: repeat(3, 1fr); }
   .grid-products { grid-template-columns: repeat(4, 1fr); }
   .tiles-four { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
   .review-head, #review-form { max-width: 720px; margin-left: auto; margin-right: auto; }
   #review-form .sticky-bar { max-width: 720px; margin-left: auto; margin-right: auto; }
   .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
