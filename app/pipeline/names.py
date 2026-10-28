@@ -68,6 +68,31 @@ _ITEMS: tuple[tuple[str, str, str], ...] = (
 
 CANONICAL_NAMES: dict[str, str] = {name_en: name_ta for name_en, name_ta, _ in _ITEMS}
 
+EN_TO_ROMAN: dict[str, str] = {name_en: roman for name_en, _, roman in _ITEMS}
+
+SYNONYMS: dict[str, str] = {
+    "shallot": "small onion",
+    "shallots": "small onion",
+    "eggplant": "brinjal",
+    "bhindi": "okra",
+    "ladyfinger": "okra",
+    "lady finger": "okra",
+    "big onion": "onion",
+    "tomatoes": "tomato",
+    "onions": "onion",
+    "potatoes": "potato",
+    "carrots": "carrot",
+    "bananas": "banana",
+    "cucumber": "cucumber",
+    "bell pepper": "capsicum",
+    "cilantro": "coriander",
+    "green chilly": "green chilli",
+    "green chili": "green chilli",
+    "red chilly": "red chilli",
+    "red chili": "red chilli",
+    "cauli": "cauliflower",
+}
+
 PRODUCE_KEYWORDS: list[str] = sorted(
     {name_en for name_en, _, _ in _ITEMS}
     | {name_ta for _, name_ta, _ in _ITEMS}

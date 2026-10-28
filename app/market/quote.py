@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from app.market.search import SYNONYMS, parse_query
@@ -36,6 +36,7 @@ class WantedLine:
     qty: Decimal | None
     unit: str | None
     source: str
+    amount: Decimal | None = None
 
 
 @dataclass
@@ -214,6 +215,58 @@ def _line_total(unit_price: Decimal, qty: Decimal, unit: str,
         Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def _fmt_amt(value: Decimal) -> str:
+    return format(value.normalize(), "f")
+
+
+def _plural(noun: str, count: int) -> str:
+    if count == 1:
+        return noun
+    return {"bunch": "bunches"}.get(noun, noun + "s")
+
+
+def _amount_line(amount: Decimal, picked) -> tuple[Decimal, str, Decimal, str]:
+    """Quantity, unit, total and note for a "Rs N worth" order line."""
+    price, per_amount, per_unit = picked.price, picked.per_amount, picked.unit
+    base = amount * per_amount / price
+    if per_unit in ("kg", "g"):
+        grams = convert(base, per_unit, "g")
+        rounded = (grams / Decimal(10)).quantize(
+            Decimal(1), rounding=ROUND_HALF_UP) * Decimal(10)
+        if rounded <= 0:
+            rounded = Decimal(10)
+        qty = convert(rounded, "g", per_unit)
+        total = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return (qty, per_unit, total,
+                f"₹{_fmt_amt(amount)} worth (≈ {_fmt_amt(qty)} {per_unit})")
+    if per_unit in ("l", "ml"):
+        mls = convert(base, per_unit, "ml")
+        rounded = (mls / Decimal(10)).quantize(
+            Decimal(1), rounding=ROUND_HALF_UP) * Decimal(10)
+        if rounded <= 0:
+            rounded = Decimal(10)
+        qty = convert(rounded, "ml", per_unit)
+        total = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return (qty, per_unit, total,
+                f"₹{_fmt_amt(amount)} worth (≈ {_fmt_amt(qty)} {per_unit})")
+    if per_unit in ("piece", "dozen"):
+        pieces = convert(base, per_unit, "piece")
+        whole = int(pieces.to_integral_value(rounding=ROUND_FLOOR))
+        whole = max(1, whole)
+        qty = convert(Decimal(whole), "piece", per_unit)
+        total = _line_total(price, qty, per_unit, per_amount, per_unit)
+        note = (f"₹{_fmt_amt(amount)} worth (≈ {whole}"
+                f" {_plural('piece', whole)}")
+        return (qty, per_unit, total, note)
+    whole = int(base.to_integral_value(rounding=ROUND_FLOOR))
+    whole = max(1, whole)
+    qty = Decimal(whole)
+    total = _line_total(price, qty, per_unit, per_amount, per_unit)
+    note = (f"₹{_fmt_amt(amount)} worth (≈ {whole}"
+            f" {_plural(per_unit, whole)}")
+    return (qty, per_unit, total, note)
+
+
 def build_quote(conn: sqlite3.Connection, shop_id: int,
                 wanted: list[WantedLine]) -> Quote:
     """Price wanted lines from the shop's latest published version only."""
@@ -302,6 +355,14 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
                 continue
         else:
             picked = priced[0]
+        if item.amount is not None and item.amount > 0:
+            qty, unit, total, note = _amount_line(item.amount, picked)
+            lines.append(QuoteLine(
+                name_en=shop_item.name_en, name_local=shop_item.name_local,
+                qty=qty, unit=unit, unit_price=picked.price,
+                per_amount=picked.per_amount, line_total=total,
+                status="priced", note=note))
+            continue
         is_weight = _canonical(shop_item.name_en) in WEIGHT_ITEMS
         qty = item.qty
         unit = item.unit or picked.unit

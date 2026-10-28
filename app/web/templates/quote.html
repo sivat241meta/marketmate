@@ -24,6 +24,7 @@
         <div class="line-main">
           <span class="line-name">{{ line.display }}{% if line.name_local %} <span class="name-local" lang="{{ shop_lang }}">{{ line.name_local }}</span>{% endif %}</span>
           {% if line.status == "needs_qty" %}<span class="line-note">{{ ui.pill(t.check_quantity, "check") }} <span class="muted">{{ line.note }}</span></span>{% endif %}
+          {% if line.status == "priced" and line.note %}<span class="line-note muted">{{ line.note }}</span>{% endif %}
           <span class="line-rate money">{{ line.unit_price | money(shop["currency"]) }}<small class="muted"> {{ t.per }} {{ line.per_amount }} {{ line.per_unit }}</small></span>
           <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
           <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">

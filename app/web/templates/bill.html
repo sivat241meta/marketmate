@@ -36,15 +36,33 @@
           <div class="line-main">
             <span class="line-name">{{ line.display }}{% if line.name_local %} <span class="name-local" lang="ta">{{ line.name_local }}</span>{% endif %}</span>
             {% if line.status == "needs_qty" %}<span class="line-note">{{ ui.pill("check quantity", "check") }} <span class="muted">{{ line.note }}</span></span>{% endif %}
+            {% if line.status == "priced" and line.note %}<span class="line-note muted">{{ line.note }}</span>{% endif %}
             <span class="line-rate money">{{ line.unit_price | money(shop["currency"]) }}<small class="muted"> / {{ line.per_amount }} {{ line.unit }}</small></span>
             <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
             <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+            <input type="hidden" name="amount_{{ line.index }}" value="">
             <span class="stepper is-compact" data-stepper>
               <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ line.display }}">−</button>
               <input type="number" min="0" step="any" name="qty_{{ line.index }}" value="{{ line.qty }}" aria-label="Quantity for {{ line.display }}">
               <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
               <span class="muted">{{ line.unit }}</span>
             </span>
+            <span class="muted" data-amount-label hidden></span>
+            <div class="quick-chips" data-chips data-unit="{{ line.unit or '' }}">
+              {% if line.unit in ("kg", "g") %}
+              <button class="chip" type="button" data-chip="100g">100 g</button>
+              <button class="chip" type="button" data-chip="250g">250 g</button>
+              <button class="chip" type="button" data-chip="500g">½ kg</button>
+              <button class="chip" type="button" data-chip="1000g">1 kg</button>
+              <button class="chip" type="button" data-chip="2000g">2 kg</button>
+              <button class="chip" type="button" data-chip="keypad" aria-label="Type exact weight for {{ line.display }}">⌨ weight</button>
+              {% elif line.unit in ("piece", "dozen") %}
+              <button class="chip" type="button" data-chip="+1">+1</button>
+              <button class="chip" type="button" data-chip="+6">+6</button>
+              <button class="chip" type="button" data-chip="+12">+12</button>
+              {% endif %}
+              <button class="chip" type="button" data-chip="amount" aria-label="Enter rupee amount for {{ line.display }}">₹ amount</button>
+            </div>
           </div>
           <span class="line-amount money" data-amount>{{ line.line_total | money(shop["currency"]) }}</span>
         </div>
@@ -140,7 +158,31 @@
   </form>
 </div>
 {% endif %}
+<div class="keypad-sheet" data-keypad hidden>
+  <p class="keypad-display" data-keypad-display>0</p>
+  <div class="keypad-keys">
+    <button type="button" data-key="1">1</button>
+    <button type="button" data-key="2">2</button>
+    <button type="button" data-key="3">3</button>
+    <button type="button" data-key="4">4</button>
+    <button type="button" data-key="5">5</button>
+    <button type="button" data-key="6">6</button>
+    <button type="button" data-key="7">7</button>
+    <button type="button" data-key="8">8</button>
+    <button type="button" data-key="9">9</button>
+    <button type="button" data-key="clear">C</button>
+    <button type="button" data-key="0">0</button>
+    <button type="button" data-key="dot">.</button>
+    <button type="button" data-key="back">⌫</button>
+  </div>
+  <div class="keypad-actions">
+    <button class="chip" type="button" data-keypad-unit hidden>g</button>
+    <button class="btn btn-secondary" type="button" data-keypad-cancel>Cancel</button>
+    <button class="btn btn-primary" type="button" data-keypad-ok>OK</button>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+<script src="{{ static_url('tap-chips.js') if static_url is defined else '/static/tap-chips.js' }}"></script>
 {% endblock %}

@@ -724,6 +724,18 @@ def _wanted_from_raw(raw: dict, fallback: dict, index: int):
     name = str(raw.get("name_en") or fallback.get("name_en") or "").strip()
     if not name:
         raise ValueError(f"line {index + 1} has no item name")
+    amount_raw = raw.get("amount", fallback.get("amount"))
+    amount_text = str(amount_raw or "").strip() if amount_raw is not None else ""
+    if amount_text:
+        try:
+            amount = Decimal(amount_text)
+        except (InvalidOperation, ValueError, AttributeError):
+            raise ValueError(
+                f"amount for {name} does not look right") from None
+        if amount.is_nan() or amount <= 0:
+            raise ValueError(f"amount for {name} does not look right")
+        return WantedLine(name_en=name, qty=None, unit=None, source="edit",
+                          amount=amount)
     qty_raw = raw.get("qty", fallback.get("qty"))
     try:
         qty = Decimal(str(qty_raw).strip())

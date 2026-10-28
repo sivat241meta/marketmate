@@ -10,33 +10,10 @@ from decimal import Decimal, InvalidOperation
 from app import db
 from app.meta.spark import chat_json
 from app.models import PriceLine
-from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.names import CANONICAL_NAMES, SYNONYMS
 from app.pipeline.units import normalize_unit, rate
 
 STALE_AFTER_HOURS = 24
-
-SYNONYMS: dict[str, str] = {
-    "shallot": "small onion",
-    "shallots": "small onion",
-    "eggplant": "brinjal",
-    "bhindi": "okra",
-    "ladyfinger": "okra",
-    "lady finger": "okra",
-    "big onion": "onion",
-    "tomatoes": "tomato",
-    "onions": "onion",
-    "potatoes": "potato",
-    "carrots": "carrot",
-    "bananas": "banana",
-    "cucumber": "cucumber",
-    "bell pepper": "capsicum",
-    "cilantro": "coriander",
-    "green chilly": "green chilli",
-    "green chili": "green chilli",
-    "red chilly": "red chilli",
-    "red chili": "red chilli",
-    "cauli": "cauliflower",
-}
 
 
 @dataclass

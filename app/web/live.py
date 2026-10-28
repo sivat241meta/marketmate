@@ -1,4 +1,9 @@
-"""Live price capture: WebSocket relay browser -> Meta realtime (Task 35)."""
+"""Live price capture: WebSocket relay browser -> Meta realtime (Task 35).
+
+Task 36 adds live order billing (seller, kind "bill") and live customer
+quotes (public, kind "quote") on the same relay pattern. No camera: the
+browser streams mic PCM only, and bill/quote lines appear per turn.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +24,10 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
 from app.limits import RATE_LIMIT_MESSAGE
+from app.market.order_parse import leftover_needs_spark, parse_order
+from app.market.quote import build_quote, wanted_from_text
 from app.meta.realtime import RealtimeASR, RealtimeError
+from app.meta.spark import SparkError
 from app.models import Frame, Transcript, Turn
 from app.pipeline.checks import check_item
 from app.pipeline.extract import extract_items
@@ -27,12 +35,17 @@ from app.pipeline.photos import make_photo  # noqa: F401 - monkeypatch seam
 from app.pipeline.run import live_frame_for_item, process_turns
 
 MAX_LIVE_SECONDS = 5 * 60
+MAX_QUOTE_LIVE_SECONDS = 60
 MAX_FRAME_BYTES = 400 * 1024
 MAX_FRAMES_PER_TURN = 2
 
 TIMEOUT_MESSAGE = (
     "We stopped listening after 5 minutes. "
     "Please start again with a shorter recording."
+)
+QUOTE_TIMEOUT_MESSAGE = (
+    "We stopped listening after 60 seconds. "
+    "Please start again with a shorter list."
 )
 LOST_MESSAGE = (
     "We lost the live connection. Please try again, or upload a video instead."
@@ -41,6 +54,8 @@ START_MESSAGE = (
     "Something went wrong starting live mode. "
     "Please try again, or upload a video instead."
 )
+NO_ITEMS_MESSAGE = "We could not hear any items. Please try again."
+NO_PRICES_MESSAGE = "No price list yet. Record today's prices first."
 
 
 class IncrementalRunner:
@@ -128,6 +143,309 @@ def _meta_int(data: dict, keys, default: int) -> int:
             except (TypeError, ValueError):
                 continue
     return default
+
+
+def _display(name: str) -> str:
+    return name[:1].upper() + name[1:] if name else name
+
+
+def _order_line_dict(line) -> dict:
+    return {
+        "name_en": line.name_en,
+        "display": _display(line.name_en or ""),
+        "name_local": line.name_local or "",
+        "qty": str(line.qty),
+        "unit": line.unit or "",
+        "unit_price": str(line.unit_price) if line.unit_price is not None else None,
+        "per_amount": str(line.per_amount) if line.per_amount is not None else None,
+        "line_total": str(line.line_total) if line.line_total is not None else None,
+        "status": line.status,
+        "note": line.note or "",
+    }
+
+
+def _overall_wanted(turns_lines: dict[int, list]) -> list:
+    wanted = []
+    for turn_id in sorted(turns_lines):
+        wanted.extend(turns_lines[turn_id])
+    return wanted
+
+
+def _price_items_for(data_dir: Path, shop_id: int) -> list:
+    conn = db.connect(data_dir)
+    try:
+        version_id = db.latest_version(conn, shop_id, published_only=True)
+        if version_id is None:
+            return []
+        return list(db.version_items(conn, version_id))
+    finally:
+        conn.close()
+
+
+def _build_order_payload(data_dir: Path, shop_id: int, wanted: list,
+                         event: str) -> dict:
+    conn = db.connect(data_dir)
+    try:
+        quote = build_quote(conn, shop_id, list(wanted))
+    finally:
+        conn.close()
+    return {
+        "type": event,
+        "lines": [_order_line_dict(line) for line in quote.lines],
+        "total": str(quote.total),
+    }
+
+
+async def _run_order_live(websocket: WebSocket, shop: dict,
+                          bill_token: str | None, kind: str,
+                          settings, data_dir: Path) -> None:
+    """Relay mic audio to Meta realtime; parse each turn into order lines."""
+    is_bill = kind == "bill"
+    max_seconds = MAX_LIVE_SECONDS if is_bill else MAX_QUOTE_LIVE_SECONDS
+    timeout_msg = TIMEOUT_MESSAGE if is_bill else QUOTE_TIMEOUT_MESSAGE
+    lines_event = "bill_lines" if is_bill else "quote_lines"
+    language = shop.get("language") or "ta"
+    shop_id = shop["id"]
+    ledger = CostLedger(data_dir / "costs.db", settings.daily_budget_usd)
+    price_items = _price_items_for(data_dir, shop_id)
+
+    await websocket.send_text(json.dumps({"type": "ready"}))
+    realtime = RealtimeASR(settings=settings, ledger=ledger,
+                           language=language)
+    try:
+        await realtime.start()
+    except CostCapExceeded:
+        await websocket.send_text(json.dumps(
+            {"type": "error", "message": BUDGET_EXHAUSTED_MESSAGE}))
+        await websocket.close()
+        return
+    except (RealtimeError, Exception):  # noqa: BLE001 - never leak internals
+        await websocket.send_text(json.dumps(
+            {"type": "error", "message": LOST_MESSAGE}))
+        await websocket.close()
+        return
+
+    turns_lines: dict[int, list] = {}
+    send_lock = asyncio.Lock()
+    stop_requested = asyncio.Event()
+    meta_done = asyncio.Event()
+    timed_out = False
+    start_time = time.monotonic()
+    audio_bytes = 0
+
+    async def send_json(obj: dict) -> None:
+        async with send_lock:
+            await websocket.send_text(json.dumps(obj))
+
+    def _overall():
+        return _overall_wanted(turns_lines)
+
+    async def _send_lines() -> None:
+        try:
+            payload = await asyncio.to_thread(
+                _build_order_payload, data_dir, shop_id, _overall(),
+                lines_event)
+        except Exception:  # noqa: BLE001 - skip one live update
+            return
+        try:
+            await send_json(payload)
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+
+    async def _spark_for_turn(turn_id: int, text: str, local: list) -> None:
+        def _run():
+            return wanted_from_text(text, ledger=ledger, settings=settings)
+
+        try:
+            wanted = await asyncio.to_thread(_run)
+        except (CostCapExceeded, SparkError, Exception):  # noqa: BLE001
+            return
+        if not wanted:
+            return
+        local_names = {str(w.name_en or "").strip().lower() for w in local}
+        spark_names = {str(w.name_en or "").strip().lower() for w in wanted}
+        if not (spark_names - local_names):
+            return
+        turns_lines[turn_id] = list(wanted)
+        await _send_lines()
+
+    async def meta_loop() -> None:
+        try:
+            async for event in realtime.events():
+                if not isinstance(event, dict):
+                    continue
+                name = str(event.get("type") or event.get("event") or "")
+                if name == "speechStart":
+                    continue
+                if name == "transcript":
+                    text = event.get("transcript", event.get("text", ""))
+                    if isinstance(text, str) and text.strip():
+                        await send_json({"type": "partial", "text": text})
+                elif name == "speechEnd":
+                    continue
+                elif name == "speechComplete":
+                    meta_id = _meta_turn_id(event)
+                    text = event.get("transcript", event.get("text", "")) or ""
+                    turn_id = meta_id + 1
+                    await send_json({"type": "turn", "turn_id": turn_id,
+                                     "text": str(text)})
+                    try:
+                        local, leftover = parse_order(
+                            str(text), price_items, language)
+                    except Exception:  # noqa: BLE001 - one bad turn
+                        local, leftover = [], [str(text)]
+                    turns_lines[turn_id] = list(local)
+                    await _send_lines()
+                    if leftover and leftover_needs_spark(leftover):
+                        asyncio.create_task(
+                            _spark_for_turn(turn_id, str(text), list(local)))
+                elif name.lower() == "error":
+                    raise RealtimeError(str(
+                        event.get("message") or "live transcription failed"))
+                elif isinstance(event.get("transcript"), str):
+                    await send_json({"type": "partial",
+                                     "text": event["transcript"]})
+        except RealtimeError:
+            if not stop_requested.is_set() and not timed_out:
+                try:
+                    await send_json({"type": "error", "message": LOST_MESSAGE})
+                except (WebSocketDisconnect, RuntimeError):
+                    pass
+            raise
+        finally:
+            meta_done.set()
+
+    meta_task = asyncio.create_task(meta_loop())
+    meta_failed = False
+    try:
+        while True:
+            if time.monotonic() - start_time > max_seconds:
+                timed_out = True
+                stop_requested.set()
+                try:
+                    await send_json({"type": "error", "message": timeout_msg})
+                except (WebSocketDisconnect, RuntimeError):
+                    pass
+                break
+            if meta_task.done() and not stop_requested.is_set():
+                exc = meta_task.exception()
+                if exc is not None:
+                    meta_failed = True
+                    break
+            try:
+                message = await asyncio.wait_for(websocket.receive(),
+                                                 timeout=1.0)
+            except TimeoutError:
+                continue
+            if message.get("type") == "websocket.disconnect":
+                stop_requested.set()
+                break
+            if message.get("bytes") is not None:
+                chunk = bytes(message["bytes"] or b"")
+                if not chunk:
+                    continue
+                audio_bytes += len(chunk)
+                try:
+                    await realtime.send_audio(chunk)
+                except RealtimeError:
+                    meta_failed = True
+                    try:
+                        await send_json({"type": "error",
+                                         "message": LOST_MESSAGE})
+                    except (WebSocketDisconnect, RuntimeError):
+                        pass
+                    break
+                continue
+            text = message.get("text")
+            if text is None:
+                continue
+            try:
+                data = json.loads(text)
+            except ValueError:
+                continue
+            if not isinstance(data, dict):
+                continue
+            if data.get("type") in ("stop", "done"):
+                stop_requested.set()
+                try:
+                    await realtime.end()
+                except RealtimeError:
+                    pass
+                try:
+                    await asyncio.wait_for(meta_done.wait(), timeout=12)
+                except TimeoutError:
+                    pass
+                break
+    finally:
+        with contextlib.suppress(Exception):
+            await realtime.close()
+        if not meta_task.done():
+            meta_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, RealtimeError,
+                                     Exception):
+                await meta_task
+
+    if timed_out or meta_failed:
+        try:
+            await websocket.close()
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        return
+    if not stop_requested.is_set():
+        try:
+            await websocket.close()
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        return
+    wanted = _overall()
+    if not wanted:
+        try:
+            await send_json({"type": "error", "message": NO_ITEMS_MESSAGE})
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        try:
+            await websocket.close()
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+        return
+
+    def _finalize():
+        conn = db.connect(data_dir)
+        try:
+            version_id = db.latest_version(conn, shop_id, published_only=True)
+            if version_id is None:
+                return (None, NO_PRICES_MESSAGE)
+            quote = build_quote(conn, shop_id, list(wanted))
+            if is_bill:
+                token = db.create_quote(
+                    conn, shop_id=shop_id, quote=quote, source="seller",
+                    kind="bill", status="billed")
+                row = db.get_quote_by_token(conn, token)
+                url = f"/e/{bill_token}/bills/{row['id']}"
+                return ({"type": "done", "bill_url": url}, None)
+            token = db.create_quote(conn, shop_id=shop_id, quote=quote)
+            return ({"type": "done", "quote_url": f"/q/{token}"}, None)
+        finally:
+            conn.close()
+
+    try:
+        payload, error = await asyncio.to_thread(_finalize)
+    except Exception:  # noqa: BLE001 - final failure becomes an error
+        payload, error = None, LOST_MESSAGE
+    if error is not None:
+        try:
+            await send_json({"type": "error", "message": error})
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+    elif payload is not None:
+        try:
+            await send_json(payload)
+        except (WebSocketDisconnect, RuntimeError):
+            pass
+    try:
+        await websocket.close()
+    except (WebSocketDisconnect, RuntimeError):
+        pass
 
 
 def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
@@ -235,10 +553,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return
         if (not isinstance(start_data, dict)
                 or start_data.get("type") != "start"
-                or start_data.get("kind") != "prices"):
+                or start_data.get("kind") not in ("prices", "bill")):
             await websocket.send_text(json.dumps(
                 {"type": "error", "message": START_MESSAGE}))
             await websocket.close()
+            return
+        if start_data.get("kind") == "bill":
+            await _run_order_live(websocket, shop, token, "bill", settings,
+                                 data_dir)
             return
 
         language = shop.get("language") or "ta"
@@ -640,3 +962,60 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             await websocket.close()
         except (WebSocketDisconnect, RuntimeError):
             pass
+
+    @app.websocket("/s/{slug}/quote/ws")
+    async def quote_ws(websocket: WebSocket, slug: str):
+        tmp_conn = db.connect(data_dir)
+        try:
+            db.purge_expired(tmp_conn, data_dir, datetime.now(UTC))
+            shop_row = db.shop_by_slug(tmp_conn, slug)
+            shop = dict(shop_row) if shop_row else None
+        finally:
+            tmp_conn.close()
+        if shop is None:
+            await websocket.close(code=4404)
+            return
+        await websocket.accept()
+        limiter = app.state.limiter
+        if not limiter.allow(_ws_ip(websocket), datetime.now(UTC)):
+            await websocket.send_text(json.dumps(
+                {"type": "error", "message": RATE_LIMIT_MESSAGE}))
+            await websocket.close()
+            return
+        ledger = CostLedger(data_dir / "costs.db", settings.daily_budget_usd)
+        try:
+            ledger.check()
+        except CostCapExceeded:
+            await websocket.send_text(json.dumps(
+                {"type": "error", "message": BUDGET_EXHAUSTED_MESSAGE}))
+            await websocket.close()
+            return
+        try:
+            first = await asyncio.wait_for(websocket.receive(), timeout=15)
+        except TimeoutError:
+            await websocket.close()
+            return
+        if first.get("type") == "websocket.disconnect":
+            return
+        text = first.get("text")
+        if text is None:
+            await websocket.send_text(json.dumps(
+                {"type": "error", "message": START_MESSAGE}))
+            await websocket.close()
+            return
+        try:
+            start_data = json.loads(text)
+        except ValueError:
+            await websocket.send_text(json.dumps(
+                {"type": "error", "message": START_MESSAGE}))
+            await websocket.close()
+            return
+        if (not isinstance(start_data, dict)
+                or start_data.get("type") != "start"
+                or start_data.get("kind") != "quote"):
+            await websocket.send_text(json.dumps(
+                {"type": "error", "message": START_MESSAGE}))
+            await websocket.close()
+            return
+        await _run_order_live(websocket, shop, None, "quote", settings,
+                             data_dir)

@@ -746,15 +746,31 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def _tap_bill(request, shop, token, form, conn):
         indices: list[int] = []
         for key in form:
-            if key.startswith("qty_"):
-                try:
-                    indices.append(int(key[len("qty_"):]))
-                except ValueError:
-                    continue
+            for prefix in ("qty_", "amount_"):
+                if key.startswith(prefix):
+                    try:
+                        indices.append(int(key[len(prefix):]))
+                    except ValueError:
+                        continue
         wanted: list[WantedLine] = []
         for index in sorted(set(indices)):
             name = str(form.get(f"name_en_{index}") or "").strip()
             if not name:
+                continue
+            raw_amount = str(form.get(f"amount_{index}") or "").strip()
+            if raw_amount:
+                try:
+                    amount = Decimal(raw_amount)
+                except InvalidOperation:
+                    return _new_error(
+                        request, shop, token, conn,
+                        f"Amount for {name} does not look right.")
+                if amount.is_nan() or amount <= 0:
+                    return _new_error(
+                        request, shop, token, conn,
+                        f"Amount for {name} does not look right.")
+                wanted.append(WantedLine(name_en=name, qty=None, unit=None,
+                                         source="tap", amount=amount))
                 continue
             raw_qty = str(form.get(f"qty_{index}") or "").strip()
             if raw_qty == "":
@@ -842,6 +858,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                         fallback.get("name_en", "")),
                     "qty": form.get(f"qty_{index}", fallback.get("qty", "1")),
                     "unit": form.get(f"unit_{index}", fallback.get("unit")),
+                    "amount": form.get(f"amount_{index}", ""),
                 })
             try:
                 db.update_bill_lines(conn, bill["id"], updates)

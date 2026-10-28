@@ -1280,3 +1280,59 @@ svg.boxes text.box-badge {
 @media (prefers-reduced-motion: reduce) {
   .live-mic.is-recording { animation: none; }
 }
+
+/* ---- Task 36: quick chips and keypad sheet ---- */
+.quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+button.chip {
+  min-height: var(--tap);
+  cursor: pointer;
+  font: inherit;
+  color: var(--green);
+}
+.keypad-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--card);
+  border-top: 2px solid var(--green);
+  padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 24px rgba(28, 25, 23, 0.16);
+}
+.keypad-display {
+  font-size: 2rem;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 var(--space-3);
+}
+.keypad-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  max-width: 420px;
+  margin: 0 auto;
+}
+.keypad-keys button {
+  min-height: 60px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  border-radius: var(--radius-btn);
+  border: 2px solid var(--line);
+  background: var(--cream);
+  color: var(--ink);
+  cursor: pointer;
+}
+.keypad-actions {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 420px;
+  margin: var(--space-3) auto 0;
+}
+.keypad-actions .btn { flex: 1; }

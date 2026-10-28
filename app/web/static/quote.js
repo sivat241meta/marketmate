@@ -32,12 +32,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return { input, rate, per };
   }
 
+  function lineAmount(line) {
+    const field = line.querySelector('input[name^="amount_"]');
+    if (!field) {
+      return null;
+    }
+    const value = parseFloat(field.value || "0") || 0;
+    return value > 0 ? value : null;
+  }
+
   function refreshReceipt(scope) {
     const lines = Array.from(scope.querySelectorAll("[data-line]"));
     let total = 0;
     lines.forEach((line) => {
-      const parsed = lineNumbers(line);
+      const fixed = lineAmount(line);
       const amountEl = line.querySelector("[data-amount]");
+      if (fixed !== null) {
+        total += fixed;
+        if (amountEl) {
+          amountEl.textContent = formatAmount(
+            fixed, prefixOf(amountEl.textContent));
+        }
+        return;
+      }
+      const parsed = lineNumbers(line);
       if (!parsed) {
         return;
       }
@@ -64,6 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let count = 0;
     let total = 0;
     form.querySelectorAll("[data-line]").forEach((line) => {
+      const fixed = lineAmount(line);
+      if (fixed !== null) {
+        count += 1;
+        total += fixed;
+        return;
+      }
       const parsed = lineNumbers(line);
       if (!parsed) {
         return;
