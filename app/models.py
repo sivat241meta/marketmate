@@ -85,6 +85,9 @@ class Item:
     sold_out: bool
     price_lines: list[PriceLine]
     proof: Proof
+    stock_qty: Decimal | None = None
+    stock_unit: str | None = None
+    stock_source: str | None = None
 
 
 @dataclass

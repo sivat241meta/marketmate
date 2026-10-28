@@ -734,6 +734,73 @@ progress.progress::-moz-progress-bar { background: var(--green); border-radius: 
 .upload-progress .progress { height: 12px; }
 .upload-meta { color: var(--muted); font-size: 0.9rem; margin: var(--space-1) 0 var(--space-2); }
 
+/* ---- Task 26: photo checks ---- */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  min-height: var(--tap);
+  text-decoration: none;
+  color: inherit;
+}
+.check-row .chips { margin-bottom: 0; }
+
+.photo-frame {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.photo-frame img { display: block; width: 100%; height: auto; }
+.photo-frame svg.boxes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.photo-frame.is-hiding-boxes svg.boxes { display: none; }
+svg.boxes rect { fill: none; stroke-width: 3; }
+.box-c0 { stroke: #dc2626; }
+.box-c1 { stroke: #2563eb; }
+.box-c2 { stroke: #16a34a; }
+.box-c3 { stroke: #d97706; }
+.box-c4 { stroke: #9333ea; }
+.box-c5 { stroke: #db2777; }
+
+.box-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  min-height: var(--tap);
+}
+
+.suggestion { display: flex; flex-direction: column; gap: var(--space-2); }
+.suggestion svg { width: 28px; height: 28px; color: var(--green); }
+.suggestion p { margin: 0; }
+
+.product-head { display: flex; align-items: center; gap: var(--space-2); }
+.product-head h3 { margin: 0; }
+.name-local { font-weight: 600; color: var(--muted); }
+.swatch { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+.swatch-c0 { background: #dc2626; }
+.swatch-c1 { background: #2563eb; }
+.swatch-c2 { background: #16a34a; }
+.swatch-c3 { background: #d97706; }
+.swatch-c4 { background: #9333ea; }
+.swatch-c5 { background: #db2777; }
+
+.stepper { display: flex; align-items: center; gap: var(--space-2); }
+.stepper input[type="number"] { width: 5.5rem; flex: none; text-align: center; }
+
+.seller-note svg { width: 14px; height: 14px; vertical-align: -2px; }
+
 /* ---- Wide screens ---- */
 @media (min-width: 900px) {
   body.is-seller .shell {

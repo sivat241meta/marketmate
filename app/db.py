@@ -13,7 +13,7 @@ from pathlib import Path
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
-_SESSION_KINDS = {"video", "voice_update"}
+_SESSION_KINDS = {"video", "voice_update", "photo"}
 
 STAGES: list[tuple[str, str]] = [
     ("uploaded", "Video received"),
@@ -26,6 +26,14 @@ STAGES: list[tuple[str, str]] = [
 ]
 STAGE_LABELS = dict(STAGES)
 VOICE_STAGES = ["uploaded", "listening", "items", "checking", "ready"]
+PHOTO_STAGES = ["uploaded", "looking", "counting", "suggesting", "ready"]
+PHOTO_STAGE_LABELS = {
+    "uploaded": "Photo received",
+    "looking": "Looking at your photo",
+    "counting": "Counting each item",
+    "suggesting": "Preparing suggestions",
+    "ready": "Ready to check",
+}
 STAGE_FRIENDLY = {
     "uploaded": "Your recording arrived safely.",
     "audio": "Getting the sound out of your video.",
@@ -33,6 +41,13 @@ STAGE_FRIENDLY = {
     "items": "Muse Spark is finding the items and prices you said.",
     "photos": "Picking a photo for each item.",
     "checking": "Checking every price against what you said.",
+    "ready": "Ready for you to check.",
+}
+PHOTO_STAGE_FRIENDLY = {
+    "uploaded": "Your photo arrived safely.",
+    "looking": "Muse Spark is looking at your photo.",
+    "counting": "Counting each item in the photo.",
+    "suggesting": "Preparing suggestions for you.",
     "ready": "Ready for you to check.",
 }
 _STAGE_COLUMNS = (
@@ -47,7 +62,23 @@ def stages_for_kind(kind: str) -> list[str]:
     """Stage keys for a session kind; voice updates skip audio and photos."""
     if kind == "voice_update":
         return list(VOICE_STAGES)
+    if kind == "photo":
+        return list(PHOTO_STAGES)
     return [key for key, _ in STAGES]
+
+
+def stage_label(kind: str, key: str) -> str:
+    """Stepper label for a stage; photo sessions use their own wording."""
+    if kind == "photo":
+        return PHOTO_STAGE_LABELS.get(key, key)
+    return STAGE_LABELS.get(key, key)
+
+
+def stage_friendly(kind: str, key: str) -> str:
+    """One-line explanation under the active step, per session kind."""
+    if kind == "photo":
+        return PHOTO_STAGE_FRIENDLY.get(key, "")
+    return STAGE_FRIENDLY.get(key, "")
 
 
 class ApprovalError(Exception):
@@ -248,7 +279,8 @@ def session_progress(row, *, now: datetime | None = None) -> dict:
                 end = moment
             if start is not None and end is not None:
                 seconds = max(0.0, (end - start).total_seconds())
-        steps.append({"key": key, "label": STAGE_LABELS.get(key, key),
+        steps.append({"key": key,
+                      "label": stage_label(_row_get(row, "kind", "video"), key),
                       "state": state, "seconds": round(seconds, 1)})
     elapsed = 0.0
     created = _parse_moment(_row_get(row, "created_at"))
@@ -424,6 +456,10 @@ def version_items(conn, version_id: int) -> list[Item]:
             proof=Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
                         start_ms=proof["start_ms"], end_ms=proof["end_ms"],
                         frame=proof.get("frame"), audio_clip=proof.get("audio_clip")),
+            stock_qty=(Decimal(_row_get(row, "stock_qty"))
+                       if _row_get(row, "stock_qty") is not None else None),
+            stock_unit=_row_get(row, "stock_unit"),
+            stock_source=_row_get(row, "stock_source"),
         ))
     return items
 

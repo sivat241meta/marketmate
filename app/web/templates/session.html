@@ -6,7 +6,7 @@
 <nav class="sidebar" aria-label="Seller">
   <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
   <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("photo") }}<span>Photos</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("receipt") }}<span>Bills</span> <span class="soon">soon</span></span>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
@@ -41,7 +41,7 @@
 <p>These changes are waiting on the confirm page. If you closed it, record the update again.</p>
 <p><a class="btn" href="/e/{{ token }}/update">Update prices by voice</a></p>
 {% else %}
-<h1>Working on your video…</h1>
+<h1>{% if session["kind"] == "photo" %}Working on your photo…{% else %}Working on your video…{% endif %}</h1>
 <p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
 <ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/s/{{ session["id"] }}/status">
   {% for step in progress["steps"] %}

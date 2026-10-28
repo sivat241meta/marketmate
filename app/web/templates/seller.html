@@ -6,7 +6,7 @@
 <nav class="sidebar" aria-label="Seller">
   <a class="side-link is-active" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
   <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("photo") }}<span>Photos</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("receipt") }}<span>Bills</span> <span class="soon">soon</span></span>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
@@ -50,6 +50,7 @@
 
 <div class="tiles tiles-four">
   {{ ui.tile("mic", "Update by voice", "/e/" ~ token ~ "/update") }}
+  {{ ui.tile("photo", "Scan stock photo", "/e/" ~ token ~ "/photos") }}
   {% if versions %}
   {{ ui.tile("printer", "Print board", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
   {{ ui.tile("download", "Export CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
@@ -79,6 +80,7 @@
   <div class="list-main">
     <span class="list-name" lang="ta">{{ item.name_ta }}</span>
     <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
+    {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
     {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
   </div>
   <div class="list-price">{% for line in item.lines %}<span>₹{{ line.price }}</span><small>per {{ line.per }}</small>{% endfor %}</div>

@@ -46,6 +46,10 @@ from app.pipeline.update import (
     flags_for_change,
     parse_update,
 )
+from app.web.photos import (
+    process_photo_session,
+    read_photo_meta,
+)
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
@@ -245,6 +249,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             stock = {"total": total, "left_out": left_out,
                      "version_id": versions[0]["id"]}
             for item in latest_items:
+                stock_line = None
+                if item.stock_qty is not None and item.stock_source:
+                    stock_line = (f"Stock: about {item.stock_qty}"
+                                  f" ({item.stock_source})")
                 items.append({
                     "id": item.id,
                     "name_ta": item.name_ta,
@@ -252,6 +260,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
                     "sold_out": item.sold_out,
+                    "stock_line": stock_line,
                     "lines": [{"price": str(line.price),
                                "per": f"{line.per_amount} {line.unit}"}
                               for line in item.price_lines],
@@ -356,10 +365,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def session_page(request: Request, token: str, session_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
+        if session["kind"] == "photo" and session["status"] == "review":
+            meta = read_photo_meta(data_dir, session_id)
+            if meta.get("check_id") is not None:
+                return RedirectResponse(
+                    f"/e/{token}/photos/{meta['check_id']}", status_code=303)
         progress = db.session_progress(session)
         context = {"shop": shop, "session": session, "token": token,
                    "progress": progress,
-                   "friendly": db.STAGE_FRIENDLY.get(progress["stage"], "")}
+                   "friendly": db.stage_friendly(session["kind"],
+                                                progress["stage"])}
         if session["status"] == "review" and session["kind"] == "video":
             items = db.load_drafts(conn, session_id)
             cards = []
@@ -407,7 +422,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "stage": progress["stage"], "step": progress["step"],
             "steps": progress["steps"], "detail": progress["detail"],
             "elapsed_s": progress["elapsed_s"],
-            "friendly": db.STAGE_FRIENDLY.get(progress["stage"], ""),
+            "friendly": db.stage_friendly(session["kind"], progress["stage"]),
         })
 
     @app.get("/e/{token}/s/{session_id}/clip/{index}")
@@ -447,7 +462,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/s/{session_id}/retry")
     def retry_session(token: str, session_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
-        _session_of_shop(conn, shop["id"], session_id)
+        session = _session_of_shop(conn, shop["id"], session_id)
+        if session["kind"] == "photo":
+            meta = read_photo_meta(data_dir, session_id)
+            if not meta.get("image"):
+                raise HTTPException(400, "this photo is gone; scan it again")
+            process_photo_session(
+                conn, session_id, Path(meta["image"]),
+                settings=app.state.settings,
+                ledger=CostLedger(data_dir / "costs.db",
+                                  app.state.settings.daily_budget_usd))
+            return RedirectResponse(f"/e/{token}/s/{session_id}",
+                                    status_code=303)
         try:
             reprocess(
                 conn,
@@ -495,13 +521,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return cards
 
     @app.get("/e/{token}/update")
-    def update_page(request: Request, token: str, conn: Conn):
+    def update_page(request: Request, token: str, conn: Conn,
+                    hint: str | None = None):
         shop = _shop_or_404(conn, token)
         version_id = db.latest_version(conn, shop["id"])
         items = db.version_items(conn, version_id) if version_id else []
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "record", "items": items,
-            "notice": NOTICE, "error": None,
+            "notice": NOTICE, "error": None, "hint": (hint or "").strip(),
             "max_upload_bytes": app.state.settings.max_upload_bytes})
 
     @app.post("/e/{token}/update")
@@ -725,5 +752,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if base not in target.parents and target != base or not target.is_file():
             raise HTTPException(404, "no such photo")
         suffix = target.suffix.lower()
-        media_type = "image/png" if suffix == ".png" else "image/jpeg"
+        media_type = {".png": "image/png", ".webp": "image/webp"}.get(
+            suffix, "image/jpeg")
         return FileResponse(target, media_type=media_type)

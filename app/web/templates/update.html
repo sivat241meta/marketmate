@@ -6,7 +6,7 @@
 <nav class="sidebar" aria-label="Seller">
   <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
   <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("photo") }}<span>Photos</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("receipt") }}<span>Bills</span> <span class="soon">soon</span></span>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
@@ -91,6 +91,7 @@
   {{ ui.icon("mic") }}
   <h1>Update prices by voice</h1>
   <p class="muted">Say today's changes, e.g. “thakkali 22, vengayam sold out”. No video needed.</p>
+  {% if hint %}<div class="alert alert-info">Say the price for <strong>{{ hint }}</strong> — e.g. “{{ hint }} 20 rupees a kilo”.</div>{% endif %}
   {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
   <div class="record-actions">
     <button class="btn btn-primary" type="button" id="rec-start">Start recording</button>
