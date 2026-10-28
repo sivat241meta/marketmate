@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import load_settings
 from app.costs import CostLedger
 from app.models import PriceLine
-from app.pipeline.extract import extract_items
+from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.run import _transcript_from_json
 from app.pipeline.units import normalize_unit, rate
 
@@ -164,6 +164,8 @@ def _rerun_baseten(out_path: Path) -> Path:
         conn.close()
     transcript = _transcript_from_json(out["transcript"])
     items = extract_items(transcript, ledger=ledger, settings=settings)
+    for item in items:
+        merge_repeated_prices(item)
     for item in items:
         item.flags = check_item(item, previous)
     from scripts.run_clip import _draft_to_dict

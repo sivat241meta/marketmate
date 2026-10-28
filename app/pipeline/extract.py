@@ -95,6 +95,92 @@ def _backfill_units(price_lines: list[PriceLine]) -> list[Flag]:
     return flags
 
 
+def _same_price_key(first: PriceLine, second: PriceLine) -> bool:
+    """True when two lines share price and (per_amount, unit)."""
+    if first.unit != second.unit:
+        return False
+    if (first.price is None) != (second.price is None):
+        return False
+    if (first.price is not None and second.price is not None
+            and first.price != second.price):
+        return False
+    if (first.per_amount is None) != (second.per_amount is None):
+        return False
+    return not (first.per_amount is not None and second.per_amount is not None
+                and first.per_amount != second.per_amount)
+
+
+def _append_said(item: DraftItem, said: str) -> None:
+    if not said or not said.strip() or said in item.proof.quote:
+        return
+    if item.proof.quote:
+        item.proof.quote = f"{item.proof.quote} {said}"
+    else:
+        item.proof.quote = said
+
+
+def merge_repeated_prices(item: DraftItem) -> None:
+    """Collapse one price said several times into a single line.
+
+    Lines with the same price and the same (per_amount, unit) merge, with
+    missing counting as equal to missing. A missing unit beside a known
+    unit for the same price merges into the known unit only when that is
+    the only other line with that price; otherwise both stay for the
+    seller. The first line's ``said`` is kept; other quotes join the proof
+    quote when not already in it.
+    """
+    lines = item.price_lines
+    if len(lines) < 2:
+        return
+    deduped: list[PriceLine] = []
+    for line in lines:
+        if next((kept for kept in deduped
+                 if _same_price_key(kept, line)), None) is None:
+            deduped.append(line)
+        else:
+            _append_said(item, line.said)
+    groups: list[tuple[Decimal, list[int]]] = []
+    for index, line in enumerate(deduped):
+        if line.price is None:
+            continue
+        placed = next(
+            (indices for price, indices in groups if price == line.price),
+            None)
+        if placed is None:
+            groups.append((line.price, [index]))
+        else:
+            placed.append(index)
+    replacements: dict[int, PriceLine] = {}
+    dropped: set[int] = set()
+    for _, indices in groups:
+        if len(indices) != 2:
+            continue
+        first, second = deduped[indices[0]], deduped[indices[1]]
+        if first.unit is None and second.unit is not None:
+            missing, known = first, second
+        elif second.unit is None and first.unit is not None:
+            missing, known = second, first
+        else:
+            continue
+        if (missing.per_amount is not None and known.per_amount is not None
+                and missing.per_amount != known.per_amount):
+            continue
+        per = (known.per_amount if known.per_amount is not None
+               else missing.per_amount)
+        replacements[indices[0]] = PriceLine(
+            price=first.price, per_amount=per, unit=known.unit,
+            said=first.said)
+        dropped.add(indices[1])
+        _append_said(item, second.said)
+    if replacements:
+        item.price_lines = [
+            replacements.get(index, line)
+            for index, line in enumerate(deduped) if index not in dropped
+        ]
+    else:
+        item.price_lines = deduped
+
+
 def _proof_times(quote: str, turn_ids: list, transcript: Transcript) -> tuple[int, int]:
     by_id = {turn.id: turn for turn in transcript.turns}
     known = [by_id[tid] for tid in turn_ids if tid in by_id]
@@ -149,7 +235,7 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             normalize_price_line(line)
         qty_unit, qty = normalize_qty_unit(raw.get("qty_unit"),
                                            _decimal_or_none(raw.get("qty")))
-        items.append(DraftItem(
+        item = DraftItem(
             name_spoken=name_spoken,
             name_local=_local_name(raw, name_en, name_spoken, language),
             name_en=name_en,
@@ -161,7 +247,9 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
                         start_ms=start_ms, end_ms=end_ms),
             range_said=bool(raw.get("range_said", False)),
             flags=flags,
-        ))
+        )
+        merge_repeated_prices(item)
+        items.append(item)
     return items
 
 

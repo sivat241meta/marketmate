@@ -34,7 +34,7 @@ from app.meta.realtime import RealtimeASR, RealtimeError
 from app.meta.spark import SparkError
 from app.models import Frame, Transcript, Turn
 from app.pipeline.checks import check_item
-from app.pipeline.extract import extract_items
+from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.photos import make_photo  # noqa: F401 - monkeypatch seam
 from app.pipeline.run import live_frame_for_item, process_turns
 
@@ -730,6 +730,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             def _run():
                 found = extract_items(transcript, ledger=ledger,
                                       settings=settings, language=language)
+                for draft in found:
+                    merge_repeated_prices(draft)
                 for draft in found:
                     draft.flags.extend(check_item(
                         draft, previous, language=language,

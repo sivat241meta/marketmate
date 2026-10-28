@@ -11,7 +11,7 @@ from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
 from app.pipeline.checks import check_item
-from app.pipeline.extract import extract_items
+from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.frames import frames_for_window, item_window, pick_best_frame
 from app.pipeline.media import (
     VideoTooLong,
@@ -149,6 +149,8 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     db.set_stage(conn, session_id, "items")
     items = extract_items(transcript, ledger=ledger, settings=settings,
                           language=language, progress=_extract_progress)
+    for item in items:
+        merge_repeated_prices(item)
     shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()["shop_id"]
     previous = db.last_prices(conn, shop_id)

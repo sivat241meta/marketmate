@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from app.languages import by_api_name, currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
+from app.pipeline.extract import merge_repeated_prices
 from app.pipeline.numbers import find_numbers, fold_tamil, parse_number
 from app.pipeline.units import CANONICAL_UNITS, normalise_unit, rate
 
@@ -260,6 +261,7 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
     quoted number phrase; agreement counts as heard, anything else is a
     blocking NUMBER_CHECK flag.
     """
+    merge_repeated_prices(item)
     flags: list[Flag] = []
     quote = item.proof.quote or ""
     heard = find_numbers(quote,
