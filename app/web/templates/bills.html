@@ -9,6 +9,7 @@
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
   <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
@@ -77,4 +78,33 @@
 {% else %}
 {{ ui.empty_state("Nothing billed yet", "Your best sellers will show up here once you bill today.", None, None, "tag") }}
 {% endif %}
+
+<div class="section-head"><h2>Exports</h2></div>
+<section class="card">
+  <form method="get" action="/e/{{ token }}/exports/sales.xlsx">
+    <div class="field">
+      <label for="bills-range">Date range</label>
+      <select id="bills-range" name="range">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="week">Last 7 days</option>
+        <option value="month">This month</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="bills-from">From</label>
+      <input id="bills-from" type="date" name="from">
+    </div>
+    <div class="field">
+      <label for="bills-to">To</label>
+      <input id="bills-to" type="date" name="to">
+    </div>
+    <p>
+      <button class="btn btn-secondary" type="submit">Excel (.xlsx)</button>
+      <button class="btn btn-secondary" type="submit" formaction="/e/{{ token }}/exports/pos.csv">General POS CSV</button>
+      <a class="btn btn-secondary" href="/e/{{ token }}/exports/pricelist.csv">Price list CSV</a>
+    </p>
+  </form>
+</section>
 {% endblock %}

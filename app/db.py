@@ -251,6 +251,12 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             source TEXT NOT NULL DEFAULT 'typed',
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS wastage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            date TEXT NOT NULL, name_en TEXT NOT NULL,
+            qty TEXT, unit TEXT
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -280,6 +286,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_bill_token"
         " ON quotes(bill_token) WHERE bill_token IS NOT NULL")
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_wastage_shop_date_item"
+        " ON wastage(shop_id, date, name_en)")
     conn.commit()
     return conn
 

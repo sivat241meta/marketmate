@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Close day {{ day }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+</nav>
+{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Close day</h1>
+  <p class="muted">{{ shop["name"] }} · {{ day }}</p>
+</header>
+
+<form class="inline-form" method="get" action="/e/{{ token }}/close">
+  <div class="field">
+    <label for="close-date">Day</label>
+    <input id="close-date" type="date" name="date" value="{{ day }}" max="{{ today }}">
+  </div>
+  <button class="btn btn-small btn-secondary" type="submit">Show</button>
+</form>
+
+<div class="stat-grid">
+  <div class="stat"><span class="stat-num money">{{ sales }}</span><span class="stat-label">Sales</span><span class="stat-caption">billed and paid</span></div>
+  <div class="stat"><span class="stat-num">{{ bills_count }}</span><span class="stat-label">Bills</span><span class="stat-caption">billed and paid</span></div>
+  <div class="stat"><span class="stat-num money">{{ spent }}</span><span class="stat-label">Spent on purchases</span><span class="stat-caption">market run</span></div>
+  <div class="stat"><span class="stat-num money">{{ margin }}</span><span class="stat-label">Gross margin</span><span class="stat-caption">sales minus cost</span></div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><span class="stat-num money">{{ cash }}</span><span class="stat-label">Cash</span><span class="stat-caption">paid</span></div>
+  <div class="stat"><span class="stat-num money">{{ upi }}</span><span class="stat-label">UPI</span><span class="stat-caption">paid</span></div>
+  <div class="stat"><span class="stat-num money">{{ card }}</span><span class="stat-label">Card</span><span class="stat-caption">paid</span></div>
+  <div class="stat"><span class="stat-num money">{{ unpaid }}</span><span class="stat-label">Unpaid</span><span class="stat-caption">billed, not paid</span></div>
+</div>
+
+<div class="section-head"><h2>Items sold</h2></div>
+{% if rows %}
+<form method="post" action="/e/{{ token }}/close/wastage">
+  <input type="hidden" name="date" value="{{ day }}">
+  <table class="close-table">
+    <tr><th>Item</th><th>Sold</th><th>Sales</th><th>Opening</th><th>Stock left</th><th>Wastage</th></tr>
+    {% for row in rows %}
+    <tr>
+      <td><strong>{{ row.display }}</strong>{% if row.name_local %} <span lang="ta">{{ row.name_local }}</span>{% endif %}</td>
+      <td>{{ row.sold }}</td>
+      <td class="money">{{ row.amount }}</td>
+      <td>{{ row.opening }}</td>
+      <td>{{ row.left }}</td>
+      <td>
+        <input type="number" min="0" step="any" name="wastage_{{ row.slug }}" value="{{ row.wastage }}" aria-label="Wastage for {{ row.display }}">
+        <input type="hidden" name="unit_{{ row.slug }}" value="{{ row.unit }}">
+        <span class="muted">{{ row.unit }}</span>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p><button class="btn btn-primary" type="submit">Save wastage</button></p>
+</form>
+{% else %}
+{{ ui.empty_state("Nothing billed", "Bills you make today will show up here.", None, None, "receipt") }}
+{% endif %}
+
+<p class="muted">Carry over to tomorrow: stock left becomes tomorrow's opening stock when no purchase is entered.</p>
+
+<p>
+  <a class="btn btn-secondary" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}Send summary on WhatsApp</a>
+  <a class="btn btn-secondary" href="/e/{{ token }}/close.pdf?date={{ day }}">{{ ui.icon("printer") }}Print / PDF</a>
+</p>
+
+<div class="section-head"><h2>Exports</h2></div>
+<section class="card">
+  <form method="get" action="/e/{{ token }}/exports/sales.xlsx">
+    <div class="field">
+      <label for="close-range">Date range</label>
+      <select id="close-range" name="range">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="week">Last 7 days</option>
+        <option value="month">This month</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="close-from">From</label>
+      <input id="close-from" type="date" name="from" value="{{ day }}">
+    </div>
+    <div class="field">
+      <label for="close-to">To</label>
+      <input id="close-to" type="date" name="to" value="{{ day }}">
+    </div>
+    <p>
+      <button class="btn btn-secondary" type="submit">Excel (.xlsx)</button>
+      <button class="btn btn-secondary" type="submit" formaction="/e/{{ token }}/exports/pos.csv">General POS CSV</button>
+      <a class="btn btn-secondary" href="/e/{{ token }}/exports/pricelist.csv">Price list CSV</a>
+    </p>
+  </form>
+</section>
+{% endblock %}
