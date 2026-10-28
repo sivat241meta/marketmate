@@ -497,6 +497,44 @@ _ENGLISH: dict[str, str] = {
     "set.seller_desc": "Open your dashboard, bills and prices from any device.",
     "set.keep_private": "Keep this link private: anyone with this link can change your prices.",
     "set.copy_prompt": "Copy your seller link:",
+    # --- task 41: install, offline, order status, helpers, link safety ---
+    "dash.install_app": "Install app",
+    "dash.install_hint": "Add MarketMate to your home screen for one-tap billing.",
+    "dash.install_ios": "On iPhone: Share → Add to Home Screen.",
+    "dash.send_link_wa": "Send my link to my WhatsApp",
+    "dash.keep_safe": "Keep this safe",
+    "bills.filter_packing": "Packing",
+    "bills.filter_ready": "Ready",
+    "bills.filter_collected": "Collected",
+    "bills.pill_packing": "Packing",
+    "bills.pill_ready": "Ready",
+    "bills.pill_collected": "Collected",
+    "bill.start_packing": "Start packing",
+    "bill.mark_ready": "Ready for pickup",
+    "bill.mark_collected": "Collected",
+    "bill.cancel_order": "Cancel order",
+    "bill.tell_whatsapp": "Tell the customer on WhatsApp",
+    "bill.price_changed": "Price changed while offline — please check each line before collecting.",
+    "bill.made_by": "Made by {name}",
+    "bill.order_status": "Order status",
+    "set.add_helper": "Add a helper",
+    "set.helper_name": "Helper name",
+    "set.helper_desc": "Helpers can only make bills. They cannot change prices, photos, purchases, settings, exports or day close.",
+    "set.helper_once": "Share this link now — it will not be shown again.",
+    "set.helper_remove": "Remove",
+    "set.no_helpers": "No helpers yet.",
+    "set.send_link_wa": "Send my link to my WhatsApp",
+    "set.keep_safe": "Keep this safe",
+    "set.keep_safe_desc": "Print this card and keep it in your shop. Anyone with this link can run your shop.",
+    "set.print_card": "Print safe card",
+    "error.helper_title": "Helpers can only make bills",
+    "error.helper_message": "This page changes your shop, so helpers cannot open it. Ask the shop owner.",
+    "order.step_new": "Order received",
+    "order.step_packing": "Packing your order",
+    "order.step_ready": "Ready for pickup",
+    "order.step_collected": "Collected",
+    "order.step_cancelled": "Cancelled",
+    "order.status_label": "Order status",
     # --- purchases ---
     "pur.title": "Purchases — {shop}",
     "pur.heading": "Today's purchases",
@@ -607,6 +645,8 @@ _ENGLISH: dict[str, str] = {
     "wa.summary_top": "Top: {items}.",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "Margin {margin}.",
+    "wa.order_ready": "Your order from {shop} is ready for pickup. Total Rs.{total}.",
+    "wa.link_self": "My MarketMate seller link (keep this safe): {url}",
 }
 
 
@@ -1092,6 +1132,43 @@ _TAMIL: dict[str, str] = {
     "set.seller_desc": "எந்த போனிலிருந்தும் முகப்பு, பில், விலையை திறங்க.",
     "set.keep_private": "இதை ரகசியமா வையுங்க: இருந்தா விலையை மாற்றலாம்.",
     "set.copy_prompt": "விற்பனை லிங்கை நகலெடுங்க:",
+    "dash.install_app": "ஆப் நிறுவு",
+    "dash.install_hint": "ஒரே தட்டில் பில் போட MarketMate-ஐ முகப்புத் திரையில் சேருங்கள்.",
+    "dash.install_ios": "iPhone-இல்: Share → Add to Home Screen.",
+    "dash.send_link_wa": "என் லிங்க்கை என் WhatsApp-க்கு அனுப்பு",
+    "dash.keep_safe": "பத்திரமாக வை",
+    "bills.filter_packing": "பேக்கிங்",
+    "bills.filter_ready": "தயார்",
+    "bills.filter_collected": "எடுத்தாச்சு",
+    "bills.pill_packing": "பேக்கிங்",
+    "bills.pill_ready": "தயார்",
+    "bills.pill_collected": "எடுத்தாச்சு",
+    "bill.start_packing": "கட்டத் தொடங்கு",
+    "bill.mark_ready": "எடுக்கத் தயார்",
+    "bill.mark_collected": "எடுத்தாச்சு",
+    "bill.cancel_order": "ஆர்டரை ரத்து செய்",
+    "bill.tell_whatsapp": "வாடிக்கையாளருக்கு WhatsApp-இல் சொல்",
+    "bill.price_changed": "நீங்கள் offline-இல் இருந்தபோது விலை மாறிவிட்டது — வசூலிக்குமுன் ஒவ்வொரு வரியையும் சரிபாருங்கள்.",
+    "bill.made_by": "{name} போட்ட பில்",
+    "bill.order_status": "ஆர்டர் நிலை",
+    "set.add_helper": "உதவியாளர் சேர்",
+    "set.helper_name": "உதவியாளர் பெயர்",
+    "set.helper_desc": "உதவியாளர்கள் பில் மட்டுமே போடலாம். விலை, போட்டோ, கொள்முதல், அமைப்புகள், ஏற்றுமதி, நாள் முடிவை மாற்ற முடியாது.",
+    "set.helper_once": "இந்த லிங்க்கை இப்போதே பகிருங்கள் — மீண்டும் காட்டப்படாது.",
+    "set.helper_remove": "நீக்கு",
+    "set.no_helpers": "உதவியாளர்கள் இல்லை.",
+    "set.send_link_wa": "என் லிங்க்கை என் WhatsApp-க்கு அனுப்பு",
+    "set.keep_safe": "பத்திரமாக வை",
+    "set.keep_safe_desc": "இந்த அட்டையை அச்சிட்டு கடையில் வையுங்கள். இந்த லிங்க் உள்ளவர் உங்கள் கடையை இயக்கலாம்.",
+    "set.print_card": "பாதுகாப்பு அட்டையை அச்சிடு",
+    "error.helper_title": "உதவியாளர்கள் பில் மட்டுமே போடலாம்",
+    "error.helper_message": "இந்தப் பக்கம் உங்கள் கடையை மாற்றும், அதனால் உதவியாளர்கள் திறக்க முடியாது. கடை உரிமையாளரைக் கேளுங்கள்.",
+    "order.step_new": "ஆர்டர் வந்தது",
+    "order.step_packing": "உங்கள் ஆர்டர் கட்டப்படுகிறது",
+    "order.step_ready": "எடுக்கத் தயார்",
+    "order.step_collected": "எடுத்தாச்சு",
+    "order.step_cancelled": "ரத்தானது",
+    "order.status_label": "ஆர்டர் நிலை",
     # --- purchases ---
     "pur.title": "வாங்கியது — {shop}",
     "pur.heading": "இன்று வாங்கியது",
@@ -1202,6 +1279,8 @@ _TAMIL: dict[str, str] = {
     "wa.summary_top": "நல்லா போனது: {items}.",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "லாபம் {margin}.",
+    "wa.order_ready": "{shop} கடையில் உங்கள் ஆர்டர் எடுக்கத் தயார். மொத்தம் ரூ.{total}.",
+    "wa.link_self": "என் MarketMate விற்பனை லிங்க் (பத்திரமாக வையுங்கள்): {url}",
 }
 
 
@@ -1687,6 +1766,43 @@ _HINDI: dict[str, str] = {
     "set.seller_desc": "किसी फोन से होम, बिल, दाम खोलिए।",
     "set.keep_private": "ये लिंक छिपाकर रखिए: इससे दाम बदल सकते हैं।",
     "set.copy_prompt": "विक्रेता लिंक कॉपी करिए:",
+    "dash.install_app": "ऐप इंस्टॉल करें",
+    "dash.install_hint": "एक टैप में बिल बनाने के लिए MarketMate को होम स्क्रीन पर जोड़ें।",
+    "dash.install_ios": "iPhone पर: Share → Add to Home Screen.",
+    "dash.send_link_wa": "मेरा लिंक मेरे WhatsApp पर भेजें",
+    "dash.keep_safe": "इसे संभालकर रखें",
+    "bills.filter_packing": "पैकिंग",
+    "bills.filter_ready": "तैयार",
+    "bills.filter_collected": "ले लिया",
+    "bills.pill_packing": "पैकिंग",
+    "bills.pill_ready": "तैयार",
+    "bills.pill_collected": "ले लिया",
+    "bill.start_packing": "पैकिंग शुरू करें",
+    "bill.mark_ready": "लेने के लिए तैयार",
+    "bill.mark_collected": "ग्राहक ले गया",
+    "bill.cancel_order": "ऑर्डर रद्द करें",
+    "bill.tell_whatsapp": "ग्राहक को WhatsApp पर बताएँ",
+    "bill.price_changed": "आपके ऑफ़लाइन रहने के दौरान दाम बदल गया — वसूली से पहले हर लाइन जाँच लें।",
+    "bill.made_by": "{name} ने बनाया",
+    "bill.order_status": "ऑर्डर की स्थिति",
+    "set.add_helper": "मददगार जोड़ें",
+    "set.helper_name": "मददगार का नाम",
+    "set.helper_desc": "मददगार सिर्फ़ बिल बना सकते हैं। दाम, फ़ोटो, ख़रीद, सेटिंग, एक्सपोर्ट या दिन-बंद नहीं बदल सकते।",
+    "set.helper_once": "यह लिंक अभी बाँट लें — यह दोबारा नहीं दिखेगा।",
+    "set.helper_remove": "हटाएँ",
+    "set.no_helpers": "अभी कोई मददगार नहीं।",
+    "set.send_link_wa": "मेरा लिंक मेरे WhatsApp पर भेजें",
+    "set.keep_safe": "इसे संभालकर रखें",
+    "set.keep_safe_desc": "यह कार्ड छपवाकर दुकान में रखें। इस लिंक वाला आपकी दुकान चला सकता है।",
+    "set.print_card": "सुरक्षा कार्ड छापें",
+    "error.helper_title": "मददगार सिर्फ़ बिल बना सकते हैं",
+    "error.helper_message": "यह पेज आपकी दुकान बदलता है, इसलिए मददगार इसे नहीं खोल सकते। दुकान मालिक से पूछें।",
+    "order.step_new": "ऑर्डर मिला",
+    "order.step_packing": "आपका ऑर्डर पैक हो रहा है",
+    "order.step_ready": "लेने के लिए तैयार",
+    "order.step_collected": "ले लिया",
+    "order.step_cancelled": "रद्द",
+    "order.status_label": "ऑर्डर की स्थिति",
     # --- purchases ---
     "pur.title": "खरीद — {shop}",
     "pur.heading": "आज की खरीद",
@@ -1797,6 +1913,8 @@ _HINDI: dict[str, str] = {
     "wa.summary_top": "खूब बिका: {items}।",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "मुनाफा {margin}।",
+    "wa.order_ready": "{shop} से आपका ऑर्डर लेने के लिए तैयार है। कुल रु.{total}।",
+    "wa.link_self": "मेरा MarketMate विक्रेता लिंक (संभालकर रखें): {url}",
 }
 
 
@@ -2333,6 +2451,40 @@ def summary_whatsapp_text(day: str, tiles: dict, items: list[dict],
             margin_fmt = format_money(margin, tiles.get("currency", "INR"))
         text += " " + t("wa.summary_margin", margin=margin_fmt)
     return text
+
+
+def _shop_lang(shop: Any) -> str:
+    try:
+        code = (shop["language"] or "en").strip().lower()
+    except (KeyError, IndexError, TypeError):
+        code = "en"
+    return code if code in ("ta", "hi") else "en"
+
+
+def order_ready_whatsapp_text(shop: Any, total: Any) -> str:
+    """Short 'ready for pickup' message in the shop's language."""
+    t = t_for(_shop_lang(shop))
+    try:
+        shop_name = shop["name"]
+    except (KeyError, IndexError, TypeError):
+        shop_name = getattr(shop, "name", "shop")
+    return t("wa.order_ready", shop=shop_name,
+             total=_fmt_number(total))
+
+
+def link_self_whatsapp_url(shop: Any, seller_url: str) -> str:
+    """wa.me link to the shop's own phone carrying the seller link."""
+    import re
+    from urllib.parse import quote as _quote
+
+    try:
+        phone = shop["phone"] or ""
+    except (KeyError, IndexError, TypeError):
+        phone = ""
+    digits = re.sub(r"\D", "", phone)
+    t = t_for(_shop_lang(shop))
+    text = t("wa.link_self", url=seller_url)
+    return f"https://wa.me/{digits}?text={_quote(text)}"
 
 
 # ---------------------------------------------------------------------------

@@ -8,6 +8,19 @@
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
+{% if order_status == "cancelled" %}
+<div class="alert alert-warn">{{ t["order.step_cancelled"] }}</div>
+{% else %}
+<ol class="steps order-steps" aria-label="{{ t["order.status_label"] }}">
+  {% for step in order_steps %}
+  <li class="{% if step.done %}is-done{% endif %}{% if step.current %} is-current{% endif %}">
+    <span class="step-dot" aria-hidden="true"></span>
+    <span>{{ step.label }}</span>
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
 <section class="card quote-total" aria-label="{{ t.total }}">
   <span class="quote-total-label">{{ t.your_total }}</span>
   <span class="quote-total-value money" data-total>{{ total | money(shop["currency"]) }}</span>

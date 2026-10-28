@@ -25,11 +25,12 @@ from app.outputs.day_pdf import day_summary_pdf
 from app.outputs.excel import sales_workbook
 from app.outputs.money import format_money
 from app.outputs.pos_csv import pos_csv, pricelist_csv
+from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import get_ui_lang, summary_whatsapp_text
 
 
 def _shop_or_404(conn, token: str):
-    shop = db.shop_by_token(conn, token)
+    shop, _role, _helper = resolve_or_404(conn, token)
     if shop is None:
         raise HTTPException(404, "unknown shop token")
     return shop
@@ -61,6 +62,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
+
+    def _owner_page(request, conn, token):
+        """(shop, None) for owners; (None, friendly 403) for staff."""
+        shop, role, _helper = resolve_or_404(conn, token)
+        if shop is None:
+            raise HTTPException(404, "unknown shop token")
+        if role != "owner":
+            ui_lang = get_ui_lang(request, shop)
+            return None, owner_or_403(request, templates, role, ui_lang)
+        return shop, None
 
     def _close_context(request, shop, token, day):
         ui_lang = get_ui_lang(request, shop)
@@ -137,7 +148,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/close")
     def close_page(request: Request, token: str, conn: Conn,
                    date: str | None = None):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         try:
             day = parse_day(date, shop, datetime.now(UTC))
         except ValueError:
@@ -148,7 +161,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     async def close_wastage_post(request: Request, token: str):
         conn = db.connect(data_dir)
         try:
-            shop = _shop_or_404(conn, token)
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
             form = await request.form()
             raw_date = str(form.get("date") or "").strip() or None
             try:
@@ -219,7 +234,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/close.pdf")
     def close_pdf(request: Request, token: str, conn: Conn,
                   date: str | None = None):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         try:
             day = parse_day(date, shop, datetime.now(UTC))
@@ -238,7 +255,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/exports/sales.xlsx")
     def exports_xlsx(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         start, end = _range_from_query(request, shop)
         data = sales_workbook(conn, shop, start, end)
         name = f"sales-{start}-to-{end}.xlsx" if start != end \
@@ -251,7 +270,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/exports/pos.csv")
     def exports_pos(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         start, end = _range_from_query(request, shop)
         data = pos_csv(conn, shop, start, end)
         name = f"pos-{start}-to-{end}.csv" if start != end \
@@ -261,8 +282,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                  f'attachment; filename="{name}"'})
 
     @app.get("/e/{token}/exports/pricelist.csv")
-    def exports_pricelist(token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+    def exports_pricelist(request: Request, token: str, conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         data = pricelist_csv(conn, shop)
         return Response(
             data, media_type="text/csv",

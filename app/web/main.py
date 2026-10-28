@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -227,6 +227,35 @@ def create_app(settings: Settings) -> FastAPI:
             "unknown": list(query.unknown) if query else [],
             "error": error, "searched": searched, "basket": basket,
             "ui_lang": "en"})
+
+    @app.get("/manifest.webmanifest")
+    def manifest():
+        return JSONResponse(
+            {
+                "name": "MarketMate",
+                "short_name": "MarketMate",
+                "theme_color": "#14532d",
+                "background_color": "#fbf7ef",
+                "display": "standalone",
+                "start_url": "/",
+                "icons": [
+                    {"src": "/static/icons/icon-192.png",
+                     "sizes": "192x192", "type": "image/png"},
+                    {"src": "/static/icons/icon-512.png",
+                     "sizes": "512x512", "type": "image/png"},
+                ],
+            },
+            media_type="application/manifest+json",
+        )
+
+    @app.get("/sw.js")
+    def service_worker():
+        body = (here / "static" / "sw.js").read_bytes()
+        return Response(
+            body, media_type="application/javascript",
+            headers={"Service-Worker-Allowed": "/",
+                     "Cache-Control": "no-cache"},
+        )
 
     @app.get("/")
     def home(request: Request):

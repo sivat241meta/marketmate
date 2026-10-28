@@ -50,7 +50,15 @@ from app.pipeline.update import (
     flags_for_change,
     parse_update,
 )
-from app.web.i18n import get_strings, get_ui_lang, stage_friendly, stage_label, t_for
+from app.web.auth import owner_or_403, resolve_or_404
+from app.web.i18n import (
+    get_strings,
+    get_ui_lang,
+    link_self_whatsapp_url,
+    stage_friendly,
+    stage_label,
+    t_for,
+)
 from app.web.photos import read_photo_meta, run_photo_job
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
@@ -65,9 +73,15 @@ def _clean_phone(phone: str) -> str:
 
 
 def _shop_or_404(conn, token: str):
-    shop = db.shop_by_token(conn, token)
-    if shop is None:
-        raise HTTPException(404, "unknown shop token")
+    shop, _role, _helper = resolve_or_404(conn, token)
+    return shop
+
+
+def _owner_or_403_exc(conn, token: str):
+    """Owner shop lookup for non-HTML routes; staff get a plain 403."""
+    shop, role, _helper = resolve_or_404(conn, token)
+    if role != "owner":
+        raise HTTPException(403, "Helpers can only make bills")
     return shop
 
 
@@ -245,6 +259,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
+    def _owner_page(request, conn, token):
+        """(shop, None) for owners; (None, friendly 403) for staff."""
+        shop, role, _helper = resolve_or_404(conn, token)
+        if role != "owner":
+            ui_lang = get_ui_lang(request, shop)
+            return None, owner_or_403(request, templates, role, ui_lang)
+        return shop, None
+
     @app.get("/new")
     def new_shop(request: Request):
         return templates.TemplateResponse(request, "new_shop.html", {
@@ -287,7 +309,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}")
     def seller_home(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, role, helper_name = resolve_or_404(conn, token)
+        if shop is None:
+            raise HTTPException(404, "unknown shop token")
+        is_staff = role == "staff"
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         sessions = conn.execute(
@@ -358,6 +383,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         buy_per, buy_unit, sell_per, line.unit,
                         currency=currency, lang=ui_lang)
             entry["margin_chip"] = margin_chip
+        seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         return templates.TemplateResponse(
             request,
             "seller.html",
@@ -367,7 +393,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
              "bills": bills, "shop_lang": shop["language"],
-             "spent_today": spent, "ui_lang": ui_lang},
+             "spent_today": spent, "ui_lang": ui_lang,
+             "is_staff": is_staff, "helper_name": helper_name,
+             "seller_url": seller_url,
+             "self_wa_url": (link_self_whatsapp_url(shop, seller_url)
+                             if not is_staff else None)},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -385,6 +415,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/v/{version_id}/board.pdf")
     def version_board(request: Request, token: str, version_id: int, conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         shop, items = _version_items(conn, token, version_id)
         ui_lang = get_ui_lang(request, shop)
         pdf = price_board_pdf(
@@ -395,7 +428,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/tags.pdf")
     def shop_tags(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         if version_id is None:
@@ -408,15 +443,34 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return Response(pdf, media_type="application/pdf")
 
     @app.get("/e/{token}/v/{version_id}/export.csv")
-    def version_csv(token: str, version_id: int, conn: Conn):
+    def version_csv(request: Request, token: str, version_id: int, conn: Conn):
+        _shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         _, items = _version_items(conn, token, version_id)
         return Response(generic_csv(items, datetime.now(IST)),
                         media_type="text/csv")
 
     @app.get("/e/{token}/v/{version_id}/posapp.csv")
-    def version_posapp(token: str, version_id: int, conn: Conn):
+    def version_posapp(request: Request, token: str, version_id: int, conn: Conn):
+        _shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         _, items = _version_items(conn, token, version_id)
         return Response(posapp_pos_csv(items), media_type="text/csv")
+
+    @app.get("/e/{token}/link-card.pdf")
+    def link_card(request: Request, token: str, conn: Conn):
+        """Printable "Keep this safe" card with the seller link QR."""
+        from app.outputs.link_card import link_card_pdf
+
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        seller_url = f"{app.state.settings.public_base_url}/e/{token}"
+        pdf = link_card_pdf(shop, seller_url, lang=ui_lang)
+        return Response(pdf, media_type="application/pdf")
 
     @app.get("/try")
     def try_judge(conn: Conn):
@@ -428,7 +482,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/upload")
     def upload(request: Request, token: str, video: UploadFile, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
@@ -480,7 +536,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         from app.pipeline.board import run_board_job, write_board_meta
 
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
@@ -542,7 +600,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/s/{session_id}")
     def session_page(request: Request, token: str, session_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         session = _session_of_shop(conn, shop["id"], session_id)
         ui_lang = get_ui_lang(request, shop)
         if session["kind"] == "photo" and session["status"] == "review":
@@ -605,7 +665,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/s/{session_id}/status")
     def session_status(request: Request, token: str, session_id: int,
                        conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop = _owner_or_403_exc(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
         ui_lang = get_ui_lang(request, shop)
         progress, friendly = _translated_progress(session, ui_lang)
@@ -619,7 +679,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/s/{session_id}/clip/{index}")
     def session_clip(token: str, session_id: int, index: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop = _owner_or_403_exc(conn, token)
         _session_of_shop(conn, shop["id"], session_id)
         items = db.load_drafts(conn, session_id)
         if not 0 <= index < len(items) or not items[index].proof.audio_clip:
@@ -628,7 +688,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/s/{session_id}/approve")
     def approve(token: str, session_id: int, body: dict, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop = _owner_or_403_exc(conn, token)
         _session_of_shop(conn, shop["id"], session_id)
         raw_items = body.get("items", [])
         confirmed = set(body.get("confirmed", []))
@@ -666,8 +726,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/s/{session_id}/retry")
-    def retry_session(token: str, session_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+    def retry_session(request: Request, token: str, session_id: int,
+                      conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         session = _session_of_shop(conn, shop["id"], session_id)
         if session["kind"] == "photo":
             meta = read_photo_meta(data_dir, session_id)
@@ -739,7 +802,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/update")
     def update_page(request: Request, token: str, conn: Conn,
                     hint: str | None = None):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         version_id = db.latest_version(conn, shop["id"])
         items = db.version_items(conn, version_id) if version_id else []
@@ -759,7 +824,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     async def _update_post_impl(request: Request, token: str, conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         base_version_id = db.latest_version(conn, shop["id"])
         if base_version_id is None:
@@ -840,7 +907,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     async def _update_confirm_impl(request: Request, token: str, session_id: int,
                                    conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         session = _session_of_shop(conn, shop["id"], session_id)
         if session["kind"] != "voice_update":
             raise HTTPException(400, "not a voice update session")
@@ -911,22 +980,30 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/v/{version_id}/publish")
-    def publish_version(token: str, version_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+    def publish_version(request: Request, token: str, version_id: int,
+                        conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         _version_of_shop(conn, shop["id"], version_id)
         db.set_published(conn, version_id, True)
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/v/{version_id}/unpublish")
-    def unpublish_version(token: str, version_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+    def unpublish_version(request: Request, token: str, version_id: int,
+                          conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         _version_of_shop(conn, shop["id"], version_id)
         db.set_published(conn, version_id, False)
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.post("/e/{token}/item/{item_id}/soldout")
-    def toggle_soldout(token: str, item_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+    def toggle_soldout(request: Request, token: str, item_id: int, conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         row = conn.execute(
             "SELECT items.sold_out, versions.shop_id FROM items"
             " JOIN versions ON versions.id = items.version_id"

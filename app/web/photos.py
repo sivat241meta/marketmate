@@ -29,6 +29,7 @@ from app.outputs.time import format_relative
 from app.pipeline.names import CANONICAL_NAMES
 from app.pipeline.run import friendly_error_message
 from app.pipeline.vision import PhotoReport, analyse_photo
+from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import (
     get_ui_lang,
     photo_button_text,
@@ -106,7 +107,7 @@ def report_to_dict(report: PhotoReport, width: int | None,
 
 
 def _shop_or_404(conn, token: str):
-    shop = db.shop_by_token(conn, token)
+    shop, _role, _helper = resolve_or_404(conn, token)
     if shop is None:
         raise HTTPException(404, "unknown shop token")
     return shop
@@ -337,9 +338,21 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
+    def _owner_page(request, conn, token):
+        """(shop, None) for owners; (None, friendly 403) for staff."""
+        shop, role, _helper = resolve_or_404(conn, token)
+        if shop is None:
+            raise HTTPException(404, "unknown shop token")
+        if role != "owner":
+            ui_lang = get_ui_lang(request, shop)
+            return None, owner_or_403(request, templates, role, ui_lang)
+        return shop, None
+
     @app.get("/e/{token}/photos")
     def photos_list(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         return templates.TemplateResponse(request, "photos.html", {
             "shop": shop, "token": token,
@@ -349,7 +362,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/photos")
     def photos_upload(request: Request, token: str, photo: UploadFile,
                       conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
@@ -419,7 +434,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/photos/{check_id}")
     def photo_result(request: Request, token: str, check_id: int, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         check = _check_of_shop(conn, shop["id"], check_id)
         ui_lang = get_ui_lang(request, shop)
         try:
@@ -439,7 +456,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     request: Request,
                     action: str = Form(""), item: str = Form(""),
                     qty: str | None = Form(None)):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         check = _check_of_shop(conn, shop["id"], check_id)
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)

@@ -198,7 +198,8 @@ def _build_order_payload(data_dir: Path, shop_id: int, wanted: list,
 
 async def _run_order_live(websocket: WebSocket, shop: dict,
                           bill_token: str | None, kind: str,
-                          settings, data_dir: Path) -> None:
+                          settings, data_dir: Path,
+                          created_by: str = "owner") -> None:
     """Relay mic audio to Meta realtime; parse each turn into order lines."""
     is_bill = kind == "bill"
     max_seconds = MAX_LIVE_SECONDS if is_bill else MAX_QUOTE_LIVE_SECONDS
@@ -419,7 +420,7 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
             if is_bill:
                 token = db.create_quote(
                     conn, shop_id=shop_id, quote=quote, source="seller",
-                    kind="bill", status="billed")
+                    kind="bill", status="billed", created_by=created_by)
                 row = db.get_quote_by_token(conn, token)
                 url = f"/e/{bill_token}/bills/{row['id']}"
                 return ({"type": "done", "bill_url": url}, None)
@@ -453,13 +454,19 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/live")
     def live_page(request: Request, token: str):
+        from app.web.auth import owner_or_403, resolve_or_404
+        from app.web.i18n import get_ui_lang as _ui_lang
+
         conn = db.connect(data_dir)
         try:
-            shop = db.shop_by_token(conn, token)
+            shop, role, _helper = resolve_or_404(conn, token)
             if shop is None:
                 from fastapi import HTTPException
 
                 raise HTTPException(404, "unknown shop token")
+            if role != "owner":
+                return owner_or_403(request, templates, role,
+                                    _ui_lang(request, shop))
             shop_dict = dict(shop)
         finally:
             conn.close()
@@ -482,11 +489,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raise HTTPException(404, "no such frame")
         if not (name.startswith("turn") and ("_start" in name or "_end" in name)):
             raise HTTPException(404, "no such frame")
+        from app.web.auth import resolve_or_404 as _resolve
+
         conn = db.connect(data_dir)
         try:
-            shop = db.shop_by_token(conn, token)
+            shop, role, _helper = _resolve(conn, token)
             if shop is None:
                 raise HTTPException(404, "unknown shop token")
+            if role != "owner":
+                raise HTTPException(403, "Helpers can only make bills")
             row = conn.execute(
                 "SELECT * FROM sessions WHERE id = ? AND shop_id = ?",
                 (session_id, shop["id"])).fetchone()
@@ -508,11 +519,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.websocket("/e/{token}/live/ws")
     async def live_ws(websocket: WebSocket, token: str):
+        from app.web.auth import created_by_for, resolve_or_404
+
         tmp_conn = db.connect(data_dir)
         try:
             db.purge_expired(tmp_conn, data_dir, datetime.now(UTC))
-            shop_row = db.shop_by_token(tmp_conn, token)
+            shop_row, role, helper = resolve_or_404(tmp_conn, token)
             shop = dict(shop_row) if shop_row else None
+            made_by = created_by_for(role or "owner", helper)
+            is_staff = role == "staff"
         finally:
             tmp_conn.close()
         if shop is None:
@@ -563,7 +578,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return
         if start_data.get("kind") == "bill":
             await _run_order_live(websocket, shop, token, "bill", settings,
-                                 data_dir)
+                                 data_dir, created_by=made_by)
+            return
+        if is_staff:
+            # Helpers may bill live, but never capture live prices.
+            await websocket.send_text(json.dumps(
+                {"type": "error",
+                 "message": "Helpers can only make bills"}))
+            await websocket.close()
             return
 
         language = shop.get("language") or "ta"

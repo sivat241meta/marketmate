@@ -15,7 +15,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-<div class="live-wrap" data-live data-token="{{ token }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
+<div class="live-wrap" data-live data-needs-internet data-token="{{ token }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
   <div class="live-columns">
     <div class="live-main">
       <div class="live-preview">
@@ -34,6 +34,7 @@
         <button class="mic-btn is-big live-mic" type="button" data-live-mic aria-label="{{ t('live.start_aria') }}">{{ ui.icon("mic") }}</button>
         <p class="muted live-hint" data-live-hint>{{ t('live.tap_start') }}</p>
       </div>
+      <p class="muted" data-needs-internet-hint hidden>needs internet</p>
       <div class="alert alert-warn" data-live-error hidden></div>
       <div class="live-finish" data-live-finish hidden>
         <p><strong>{{ t('live.finishing') }}</strong></p>
@@ -76,4 +77,5 @@
 {% block scripts %}
 <script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 <script src="{{ static_url('live.js') if static_url is defined else '/static/live.js' }}"></script>
+<script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 {% endblock %}

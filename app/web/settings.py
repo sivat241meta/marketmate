@@ -1,4 +1,4 @@
-"""Seller settings: shop profile, UPI, language, currency, rounding."""
+"""Seller settings: shop profile, UPI, language, currency, rounding, helpers."""
 
 import re
 import sqlite3
@@ -12,7 +12,8 @@ from fastapi.templating import Jinja2Templates
 from app import db
 from app.languages import LANGUAGES, all_currencies
 from app.outputs.qr import qr_svg
-from app.web.i18n import get_ui_lang
+from app.web.auth import owner_or_403, resolve_or_404
+from app.web.i18n import get_ui_lang, link_self_whatsapp_url
 
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")
 _UPI_RE = re.compile(r"^[a-zA-Z0-9._\-]{2,}@[a-zA-Z]{2,}[a-zA-Z0-9.\-]*$")
@@ -47,14 +48,29 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
     def _shop_or_404(conn, token: str):
-        shop = db.shop_by_token(conn, token)
+        shop, _role, _helper = resolve_or_404(conn, token)
         if shop is None:
             raise HTTPException(404, "unknown shop token")
         return shop
 
-    def _context(request, shop, token, error=None):
+    def _owner_page(request, conn, token):
+        """(shop, None) for owners; (None, friendly 403) for staff."""
+        shop, role, _helper = resolve_or_404(conn, token)
+        if shop is None:
+            raise HTTPException(404, "unknown shop token")
+        if role != "owner":
+            ui_lang = get_ui_lang(request, shop)
+            return None, owner_or_403(request, templates, role, ui_lang)
+        return shop, None
+
+    def _context(request, shop, token, error=None, just_created=None):
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         ui_lang = get_ui_lang(request, shop)
+        conn = db.connect(data_dir)
+        try:
+            helpers = db.list_helpers(conn, shop["id"])
+        finally:
+            conn.close()
         return templates.TemplateResponse(request, "settings.html", {
             "shop": shop, "token": token, "error": error,
             "languages": LANGUAGES, "currencies": all_currencies(),
@@ -62,18 +78,25 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "seller_qr": qr_svg(seller_url),
             "rounding_on": db.shop_rounding_enabled(shop),
             "ui_lang": ui_lang,
+            "helpers": helpers,
+            "just_created": just_created,
+            "self_wa_url": link_self_whatsapp_url(shop, seller_url),
         })
 
     @app.get("/e/{token}/settings")
     def settings_page(request: Request, token: str, conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         return _context(request, shop, token)
 
     @app.post("/e/{token}/settings")
     async def settings_post(request: Request, token: str):
         conn = db.connect(data_dir)
         try:
-            shop = _shop_or_404(conn, token)
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
             form = await request.form()
             name = str(form.get("name") or "").strip()
             area = str(form.get("area") or "").strip()
@@ -99,25 +122,66 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if error is not None:
                 fresh = _shop_or_404(conn, token)
                 ui_lang = get_ui_lang(request, fresh)
+                helpers = db.list_helpers(conn, fresh["id"])
+                seller_url = (f"{app.state.settings.public_base_url}"
+                              f"/e/{token}")
                 return templates.TemplateResponse(
                     request, "settings.html", {
                         "shop": fresh, "token": token, "error": error,
                         "languages": LANGUAGES,
                         "currencies": all_currencies(),
-                        "seller_url": (
-                            f"{app.state.settings.public_base_url}"
-                            f"/e/{token}"),
-                        "seller_qr": qr_svg(
-                            f"{app.state.settings.public_base_url}"
-                            f"/e/{token}"),
+                        "seller_url": seller_url,
+                        "seller_qr": qr_svg(seller_url),
                         "rounding_on": db.shop_rounding_enabled(fresh),
                         "ui_lang": ui_lang,
+                        "helpers": helpers,
+                        "just_created": None,
+                        "self_wa_url": link_self_whatsapp_url(
+                            fresh, seller_url),
                     }, status_code=400)
             db.update_shop_settings(
                 conn, shop["id"], name=name, area=area, phone=phone,
                 language=language, currency=currency, shop_type=shop_type,
                 upi_id=upi_id, upi_payee=(upi_payee_raw or None),
                 round_bills=("round_bills" in form))
+            return RedirectResponse(f"/e/{token}/settings", status_code=303)
+        finally:
+            conn.close()
+
+    @app.post("/e/{token}/settings/helpers")
+    async def helper_add(request: Request, token: str):
+        """Create a billing-only helper; the link + QR show once."""
+        conn = db.connect(data_dir)
+        try:
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
+            form = await request.form()
+            name = str(form.get("name") or "").strip()
+            if not name:
+                return _context(request, shop, token,
+                                error="give your helper a name")
+            _helper_id, helper_token = db.create_helper(
+                conn, shop["id"], name)
+            helper_url = (f"{app.state.settings.public_base_url}"
+                          f"/e/{helper_token}")
+            return _context(request, shop, token, just_created={
+                "name": name, "url": helper_url,
+                "qr": qr_svg(helper_url)})
+        finally:
+            conn.close()
+
+    @app.post("/e/{token}/settings/helpers/{helper_id}/remove")
+    async def helper_remove(request: Request, token: str, helper_id: int):
+        conn = db.connect(data_dir)
+        try:
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
+            try:
+                db.remove_helper(conn, shop["id"], helper_id)
+            except ValueError as exc:
+                return _context(request, shop, token, error=str(exc))
             return RedirectResponse(f"/e/{token}/settings", status_code=303)
         finally:
             conn.close()

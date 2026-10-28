@@ -34,6 +34,7 @@ from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.market.quote import (
     WantedLine,
     build_quote,
+    build_quote_for_version,
     wanted_from_photo,
     wanted_from_text,
 )
@@ -45,9 +46,11 @@ from app.pipeline.media import extract_audio
 from app.pipeline.names import keywords_for
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
+from app.web.auth import created_by_for, resolve_or_404
 from app.web.i18n import (
     bill_whatsapp_text,
     get_ui_lang,
+    order_ready_whatsapp_text,
     stage_friendly,
     stage_label,
     t_for,
@@ -111,10 +114,15 @@ def write_bill_meta(data_dir: Path, session_id: int, payload: dict) -> None:
 
 
 def _shop_or_404(conn, token: str):
-    shop = db.shop_by_token(conn, token)
-    if shop is None:
-        raise HTTPException(404, "unknown shop token")
+    """Owner or staff shop lookup; the role is resolved alongside."""
+    shop, _role, _helper = resolve_or_404(conn, token)
     return shop
+
+
+def _actor_or_404(conn, token: str):
+    """(shop, role, helper_name, created_by) for billing routes."""
+    shop, role, helper = resolve_or_404(conn, token)
+    return shop, role, helper, created_by_for(role, helper)
 
 
 def _bill_of_shop(conn, shop_id: int, bill_id: int):
@@ -347,6 +355,12 @@ def _status_pill(row, lang: str = "en") -> tuple[str, str]:
     t = t_for(lang)
     if row["kind"] == "quote" and row["status"] == "new":
         return (t("bills.pill_quote"), "quote")
+    if row["status"] == "packing":
+        return (t("bills.pill_packing"), "packing")
+    if row["status"] == "ready":
+        return (t("bills.pill_ready"), "ready")
+    if row["status"] == "collected":
+        return (t("bills.pill_collected"), "paid")
     if row["status"] == "billed":
         return (t("bills.pill_billed"), "billed")
     if row["status"] == "paid":
@@ -354,6 +368,37 @@ def _status_pill(row, lang: str = "en") -> tuple[str, str]:
     if row["status"] == "cancelled":
         return (t("bills.pill_cancelled"), "info")
     return (str(row["status"]).title(), "info")
+
+
+def _row_created_by(row) -> str | None:
+    try:
+        value = row["created_by"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    text = str(value or "").strip()
+    return text or None
+
+
+def _row_price_changed(row) -> bool:
+    try:
+        return bool(row["price_changed"])
+    except (KeyError, IndexError, TypeError):
+        return False
+
+
+def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
+    """Big order-status buttons: (status value, label, button kind)."""
+    t = t_for(lang)
+    if status == "new":
+        return [("packing", t("bill.start_packing"), "primary"),
+                ("cancelled", t("bill.cancel_order"), "ghost")]
+    if status == "packing":
+        return [("ready", t("bill.mark_ready"), "primary"),
+                ("cancelled", t("bill.cancel_order"), "ghost")]
+    if status == "ready":
+        return [("collected", t("bill.mark_collected"), "primary"),
+                ("cancelled", t("bill.cancel_order"), "ghost")]
+    return []
 
 
 def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
@@ -476,10 +521,14 @@ def process_bill_voice_session(conn, session_id: int, audio: Path, *,
                                   "We could not hear any items. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
+        made_by = read_bill_meta(
+            Path(settings.data_dir), session_id).get("created_by") or "owner"
         token = db.create_quote(conn, shop_id=shop_id, quote=quote,
-                                source="seller", kind="bill", status="billed")
+                                source="seller", kind="bill", status="billed",
+                                created_by=made_by)
         bill_id = db.get_quote_by_token(conn, token)["id"]
-        write_bill_meta(Path(settings.data_dir), session_id, {"bill_id": bill_id})
+        write_bill_meta(Path(settings.data_dir), session_id,
+                        {"bill_id": bill_id, "created_by": made_by})
         db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines billed")
@@ -512,10 +561,14 @@ def process_bill_photo_session(conn, session_id: int, image: Path, *,
                                   "We could not read that photo. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
+        made_by = read_bill_meta(
+            Path(settings.data_dir), session_id).get("created_by") or "owner"
         token = db.create_quote(conn, shop_id=shop_id, quote=quote,
-                                source="seller", kind="bill", status="billed")
+                                source="seller", kind="bill", status="billed",
+                                created_by=made_by)
         bill_id = db.get_quote_by_token(conn, token)["id"]
-        write_bill_meta(Path(settings.data_dir), session_id, {"bill_id": bill_id})
+        write_bill_meta(Path(settings.data_dir), session_id,
+                        {"bill_id": bill_id, "created_by": made_by})
         db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines billed")
@@ -582,6 +635,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 continue
             if status_key == "waiting" and not (
                     row["kind"] == "quote" and row["status"] == "new"):
+                continue
+            if status_key in ("packing", "ready", "collected",
+                              "cancelled") and not (
+                    row["kind"] == "quote"
+                    and row["status"] == status_key):
                 continue
             if status_key == "billed" and not (
                     row["kind"] == "bill" and row["status"] == "billed"):
@@ -685,6 +743,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         pay_modes = (("cash", t("bill.paid_cash")), ("upi", t("bill.paid_upi"))
                      ) if is_inr else (("cash", t("bill.paid_cash")),
                                        ("card", t("bill.paid_card")))
+        is_open_quote = (bill["kind"] == "quote"
+                         and bill["status"] in ("new", "packing", "ready"))
+        order_actions = (_order_actions(bill["status"], ui_lang)
+                         if bill["kind"] == "quote" else [])
+        ready_wa_url = None
+        if bill["kind"] == "quote" and bill["status"] == "ready":
+            ready_wa_url = _whatsapp_link(
+                phone, order_ready_whatsapp_text(shop, str(rounded)))
         return templates.TemplateResponse(request, "bill.html", {
             "shop": shop, "token": token, "bill": bill, "lines": lines,
             "total": _fmt_money(rounded),
@@ -698,7 +764,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "whatsapp_url": _whatsapp_link(
                 phone, _bill_text(shop, bill["id"], raw_lines,
                                   str(rounded), ui_lang)),
-            "is_quote": bill["kind"] == "quote" and bill["status"] == "new",
+            "is_quote": is_open_quote,
             "is_billed": bill["kind"] == "bill" and bill["status"] == "billed",
             "is_paid": bill["status"] == "paid",
             "is_inr": is_inr, "upi_id": upi_id, "upi_url": upi_url,
@@ -707,6 +773,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "paid_at": paid_at or "",
             "bill_token": bill_token, "public_url": public_url,
             "public_qr": qr_svg(public_url), "ui_lang": ui_lang,
+            "order_actions": order_actions,
+            "ready_wa_url": ready_wa_url,
+            "price_changed": _row_price_changed(bill),
+            "made_by": _row_created_by(bill),
         }, status_code=status_code)
 
     @app.get("/e/{token}/bills")
@@ -714,9 +784,39 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                    range: str = "today", status: str = "all"):
         shop = _shop_or_404(conn, token)
         range_key = range if range in ("today", "yesterday", "week") else "today"
-        status_key = (status if status in ("all", "waiting", "billed", "paid")
+        status_key = (status if status in ("all", "waiting", "packing",
+                                            "ready", "collected", "billed",
+                                            "paid", "cancelled")
                       else "all")
         return _list_context(request, shop, token, range_key, status_key)
+
+    @app.get("/e/{token}/prices.json")
+    def prices_json(token: str, conn: Conn):
+        """Today's published price list for offline tap-billing.
+
+        Seller token only (owner or helper). Items carry their id,
+        names, rate lines and the version id they were priced from.
+        """
+        shop = _shop_or_404(conn, token)
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        if version_id is None:
+            return JSONResponse({"version_id": None, "items": []})
+        items = []
+        for item in db.version_items(conn, version_id):
+            items.append({
+                "id": item.id,
+                "name_en": item.name_en,
+                "name_local": item.name_local,
+                "sold_out": item.sold_out,
+                "lines": [{
+                    "price": (str(line.price)
+                              if line.price is not None else None),
+                    "per_amount": (str(line.per_amount)
+                                   if line.per_amount is not None else None),
+                    "unit": line.unit,
+                } for line in item.price_lines],
+            })
+        return JSONResponse({"version_id": version_id, "items": items})
 
     @app.get("/e/{token}/bills/new")
     def bills_new_page(request: Request, token: str, conn: Conn):
@@ -725,6 +825,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "bills_new.html", {
             "shop": shop, "token": token,
             "price_items": _price_items(conn, shop["id"], ui_lang),
+            "prices_version_id": db.latest_version(
+                conn, shop["id"], published_only=True),
             "error": None, "ui_lang": ui_lang})
 
     @app.post("/e/{token}/bills/new")
@@ -736,20 +838,22 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     async def _bills_new_impl(request: Request, token: str, conn):
-        shop = _shop_or_404(conn, token)
+        shop, _role, _helper, made_by = _actor_or_404(conn, token)
         form = await request.form()
         audio = form.get("audio")
         photo = form.get("photo")
         has_audio = audio is not None and hasattr(audio, "file")
         has_photo = photo is not None and hasattr(photo, "file")
         if has_audio:
-            return _start_voice_bill(request, shop, token, audio, conn)
+            return _start_voice_bill(request, shop, token, audio, conn,
+                                     made_by)
         if has_photo:
-            return _start_photo_bill(request, shop, token, photo, conn)
+            return _start_photo_bill(request, shop, token, photo, conn,
+                                     made_by)
         text = str(form.get("items") or "").strip()
         if text:
-            return _type_bill(request, shop, token, text, conn)
-        return _tap_bill(request, shop, token, form, conn)
+            return _type_bill(request, shop, token, text, conn, made_by)
+        return _tap_bill(request, shop, token, form, conn, made_by)
 
     def _guarded(request, shop, token=None):
         ui_lang = get_ui_lang(request, shop)
@@ -779,10 +883,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "bills_new.html", {
             "shop": shop, "token": token,
             "price_items": _price_items(conn, shop["id"], ui_lang),
+            "prices_version_id": db.latest_version(
+                conn, shop["id"], published_only=True),
             "error": message, "ui_lang": ui_lang},
             status_code=status_code)
 
-    def _start_voice_bill(request, shop, token, audio, conn):
+    def _start_voice_bill(request, shop, token, audio, conn, made_by="owner"):
         denied = _guarded(request, shop, token)
         if denied is not None:
             return denied
@@ -796,12 +902,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         safe_name = Path(getattr(audio, "filename", "") or "order.webm").name
         saved = uploads / f"b{session_id}_{secrets.token_hex(4)}_{safe_name}"
         saved.write_bytes(payload)
-        write_bill_meta(data_dir, session_id, {"bill_id": None})
+        write_bill_meta(data_dir, session_id,
+                        {"bill_id": None, "created_by": made_by})
         jobs.submit(run_bill_voice_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/bills/new/{session_id}",
                                 status_code=303)
 
-    def _start_photo_bill(request, shop, token, photo: UploadFile, conn):
+    def _start_photo_bill(request, shop, token, photo: UploadFile, conn,
+                          made_by="owner"):
         denied = _guarded(request, shop, token)
         if denied is not None:
             return denied
@@ -838,12 +946,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         photo_dir.mkdir(parents=True, exist_ok=True)
         saved = photo_dir / f"b{session_id}_{secrets.token_hex(4)}{ext}"
         saved.write_bytes(payload)
-        write_bill_meta(data_dir, session_id, {"bill_id": None})
+        write_bill_meta(data_dir, session_id,
+                        {"bill_id": None, "created_by": made_by})
         jobs.submit(run_bill_photo_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/bills/new/{session_id}",
                                 status_code=303)
 
-    def _type_bill(request, shop, token, text, conn):
+    def _type_bill(request, shop, token, text, conn, made_by="owner"):
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
         try:
@@ -860,11 +969,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         quote = build_quote(conn, shop["id"], wanted)
         quote_token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                       source="seller", kind="bill",
-                                      status="billed")
+                                      status="billed", created_by=made_by)
         bill_id = db.get_quote_by_token(conn, quote_token)["id"]
         return RedirectResponse(f"/e/{token}/bills/{bill_id}", status_code=303)
 
-    def _tap_bill(request, shop, token, form, conn):
+    def _tap_bill(request, shop, token, form, conn, made_by="owner"):
         indices: list[int] = []
         for key in form:
             for prefix in ("qty_", "amount_"):
@@ -917,7 +1026,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         quote = build_quote(conn, shop["id"], wanted)
         quote_token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                       source="seller", kind="bill",
-                                      status="billed")
+                                      status="billed", created_by=made_by)
         bill_id = db.get_quote_by_token(conn, quote_token)["id"]
         return RedirectResponse(f"/e/{token}/bills/{bill_id}", status_code=303)
 
@@ -963,6 +1072,181 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "friendly": stage_friendly(kind, raw.get("stage", ""), ui_lang),
             "bill_id": meta.get("bill_id"),
         })
+
+    def _sync_wanted(raw_lines) -> list[WantedLine]:
+        wanted: list[WantedLine] = []
+        for position, raw in enumerate(raw_lines):
+            if not isinstance(raw, dict):
+                raise TypeError(f"line {position + 1} is not valid")
+            name = str(raw.get("name_en") or "").strip()
+            if not name:
+                raise ValueError(f"line {position + 1} has no item name")
+            amount_raw = raw.get("amount")
+            if amount_raw not in (None, ""):
+                try:
+                    amount = Decimal(str(amount_raw).strip())
+                except (InvalidOperation, ValueError, AttributeError):
+                    raise ValueError(
+                        f"amount for {name} does not look right") from None
+                if amount.is_nan() or amount <= 0:
+                    raise ValueError(
+                        f"amount for {name} does not look right")
+                wanted.append(WantedLine(name_en=name, qty=None, unit=None,
+                                         source="offline", amount=amount))
+                continue
+            try:
+                qty = Decimal(str(raw.get("qty", "1")).strip())
+            except (InvalidOperation, ValueError, AttributeError):
+                raise ValueError(
+                    f"quantity for {name} does not look right") from None
+            if qty.is_nan() or qty <= 0:
+                raise ValueError(f"quantity for {name} does not look right")
+            unit = raw.get("unit")
+            unit = str(unit).strip() or None if unit is not None else None
+            wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
+                                     source="offline"))
+        if not wanted:
+            raise ValueError("that bill has no items")
+        return wanted
+
+    def _sync_changed(client_lines: list, server_lines: list,
+                      fresh_lines: list) -> bool:
+        """True when the offline price no longer matches.
+
+        Compares the client's claimed price against the recomputed
+        price from the offline version, and that version's price
+        against today's published price. Either mismatch flags the
+        bill; the bill is never silently repriced.
+        """
+        def _dec(value):
+            if value is None or value == "":
+                return None
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, ValueError):
+                return None
+
+        for position, server in enumerate(server_lines):
+            client = (client_lines[position]
+                      if position < len(client_lines) else None)
+            if isinstance(client, dict):
+                for key in ("unit_price", "line_total"):
+                    claimed = _dec(client.get(key))
+                    actual = _dec(getattr(server, key, None))
+                    if (claimed is not None and actual is not None
+                            and claimed != actual):
+                        return True
+            if position < len(fresh_lines):
+                fresh = fresh_lines[position]
+                if ((server.unit_price, server.per_amount, server.unit)
+                        != (fresh.unit_price, fresh.per_amount, fresh.unit)):
+                    return True
+                if (server.status == "priced"
+                        and fresh.status != server.status):
+                    return True
+        return False
+
+    @app.post("/e/{token}/bills/sync")
+    async def bills_sync(request: Request, token: str):
+        """Store bills queued offline. Idempotent on client_id.
+
+        Every line is recomputed ONLY from the published price lines
+        of the version the bill was priced from. When a line's price
+        no longer matches, the bill is saved with a blocking "price
+        changed while offline" flag, never silently repriced.
+        """
+        conn = db.connect(data_dir)
+        try:
+            shop, _role, _helper, made_by = _actor_or_404(conn, token)
+            try:
+                payload = await request.json()
+            except ValueError:
+                raise HTTPException(400, "send the queued bills as JSON")
+            entries = (payload.get("bills") if isinstance(payload, dict)
+                       else None)
+            if not isinstance(entries, list) or not entries:
+                raise HTTPException(400, "send the queued bills as JSON")
+            current_id = db.latest_version(conn, shop["id"],
+                                           published_only=True)
+            results = []
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    raise HTTPException(400, "each queued bill must be JSON")
+                client_id = str(entry.get("client_id") or "").strip()
+                if not client_id:
+                    raise HTTPException(400, "each bill needs a client_id")
+                existing = db.get_quote_by_client_id(conn, shop["id"],
+                                                     client_id)
+                if existing is not None:
+                    results.append({
+                        "client_id": client_id, "bill_id": existing["id"],
+                        "created": False,
+                        "price_changed": _row_price_changed(existing),
+                    })
+                    continue
+                try:
+                    version_id = int(entry.get("version_id"))
+                except (TypeError, ValueError):
+                    results.append({"client_id": client_id,
+                                    "error": "unknown price list version"})
+                    continue
+                owner = conn.execute(
+                    "SELECT shop_id FROM versions WHERE id = ?",
+                    (version_id,)).fetchone()
+                if owner is None or owner["shop_id"] != shop["id"]:
+                    results.append({"client_id": client_id,
+                                    "error": "unknown price list version"})
+                    continue
+                try:
+                    wanted = _sync_wanted(entry.get("lines") or [])
+                except (ValueError, TypeError) as exc:
+                    results.append({"client_id": client_id,
+                                    "error": str(exc)})
+                    continue
+                quote = build_quote_for_version(
+                    conn, shop["id"], wanted, version_id=version_id)
+                fresh = (build_quote_for_version(
+                    conn, shop["id"], wanted, version_id=current_id)
+                    if current_id != version_id else quote)
+                changed = _sync_changed(
+                    entry.get("lines") or [], quote.lines, fresh.lines)
+                quote_token = db.create_quote(
+                    conn, shop_id=shop["id"], quote=quote, source="seller",
+                    kind="bill", status="billed", created_by=made_by,
+                    client_id=client_id, priced_version_id=version_id,
+                    price_changed=changed)
+                bill_id = db.get_quote_by_token(conn, quote_token)["id"]
+                phone = str(entry.get("customer_phone") or "").strip()
+                if phone:
+                    try:
+                        db.set_bill_phone(conn, bill_id, phone)
+                    except ValueError:
+                        pass
+                results.append({"client_id": client_id, "bill_id": bill_id,
+                                "created": True, "price_changed": changed})
+            return JSONResponse({"results": results})
+        finally:
+            conn.close()
+
+    @app.post("/e/{token}/bills/{bill_id}/order-status")
+    async def bill_order_status_post(request: Request, token: str,
+                                     bill_id: int):
+        conn = db.connect(data_dir)
+        try:
+            shop = _shop_or_404(conn, token)
+            bill = _bill_of_shop(conn, shop["id"], bill_id)
+            form = await request.form()
+            wanted = str(form.get("status") or "").strip()
+            try:
+                db.set_order_status(conn, bill["id"], wanted)
+            except ValueError as exc:
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(request, shop, token, fresh, conn,
+                                     error=str(exc), status_code=400)
+            return RedirectResponse(f"/e/{token}/bills/{bill_id}",
+                                    status_code=303)
+        finally:
+            conn.close()
 
     @app.get("/e/{token}/bills/{bill_id}")
     def bill_page(request: Request, token: str, bill_id: int, conn: Conn):

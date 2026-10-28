@@ -25,6 +25,7 @@ from app.pipeline.purchase import (
     read_purchase_meta,
     run_purchase_job,
 )
+from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import get_ui_lang, t_for
 
 
@@ -33,7 +34,7 @@ def _today_ist() -> str:
 
 
 def _shop_or_404(conn, token: str):
-    shop = db.shop_by_token(conn, token)
+    shop, _role, _helper = resolve_or_404(conn, token)
     if shop is None:
         raise HTTPException(404, "unknown shop token")
     return shop
@@ -136,11 +137,23 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
+    def _owner_page(request, conn, token):
+        """(shop, None) for owners; (None, friendly 403) for staff."""
+        shop, role, _helper = resolve_or_404(conn, token)
+        if shop is None:
+            raise HTTPException(404, "unknown shop token")
+        if role != "owner":
+            ui_lang = get_ui_lang(request, shop)
+            return None, owner_or_403(request, templates, role, ui_lang)
+        return shop, None
+
     @app.get("/e/{token}/purchases")
     def purchases_page(request: Request, token: str, conn: Conn):
         from app import purchases as pur
 
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         today = _today_ist()
         currency = shop["currency"] or "INR"
@@ -162,7 +175,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/purchases/voice")
     def purchases_voice(request: Request, token: str, audio: UploadFile,
                         conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
@@ -206,7 +221,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/purchases/{session_id}")
     def purchase_review(request: Request, token: str, session_id: int,
                         conn: Conn):
-        shop = _shop_or_404(conn, token)
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
         session = _session_of_shop(conn, shop["id"], session_id)
         ui_lang = get_ui_lang(request, shop)
         if session["status"] != "review":
@@ -240,7 +257,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         conn = db.connect(data_dir)
         try:
-            shop = _shop_or_404(conn, token)
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
             session = _session_of_shop(conn, shop["id"], session_id)
             if session["status"] == "approved":
                 return RedirectResponse(f"/e/{token}/purchases",
@@ -283,7 +302,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         conn = db.connect(data_dir)
         try:
-            shop = _shop_or_404(conn, token)
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
             form = await request.form()
             name = str(form.get("item") or "").strip()
             qty_raw = str(form.get("quantity") or "").strip()

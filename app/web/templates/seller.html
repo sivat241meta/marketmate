@@ -16,6 +16,7 @@
 {% endblock %}
 {% block content %}
 {% if shop["is_judge"] %}<div class="alert alert-warn">{{ t('dash.test_shop') }}</div>{% endif %}
+{% if is_staff %}<div class="alert">{{ t('bill.made_by', name=helper_name) }}</div>{% endif %}
 
 <section class="shopcard">
   <h1>{{ shop["name"] }}</h1>
@@ -29,6 +30,25 @@
   </div>
 </section>
 
+<section class="card" id="install-card" hidden>
+  <h2>{{ t('dash.install_app') }}</h2>
+  <p class="muted">{{ t('dash.install_hint') }}</p>
+  <p><button class="btn btn-primary" type="button" id="install-btn">{{ t('dash.install_app') }}</button></p>
+  <p class="muted" id="install-ios" hidden>{{ t('dash.install_ios') }}</p>
+</section>
+
+{% if not is_staff %}
+<section class="card">
+  <h2>{{ t('dash.keep_safe') }}</h2>
+  <p class="muted">{{ t('set.keep_safe_desc') }}</p>
+  <p>
+    <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('dash.send_link_wa') }}</a>
+    <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+  </p>
+</section>
+{% endif %}
+
+{% if not is_staff %}
 <section class="card cta-card">
   <h2>{{ t('dash.live_prices') }}</h2>
   <p class="muted">{{ t('dash.live_desc') }}</p>
@@ -50,11 +70,15 @@
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>
+{% endif %}
 
 <div class="tiles tiles-four">
+  {% if not is_staff %}
   {{ ui.tile("mic", t('dash.tile_update'), "/e/" ~ token ~ "/update") }}
   {{ ui.tile("photo", t('dash.tile_scan'), "/e/" ~ token ~ "/photos") }}
+  {% endif %}
   <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('dash.tile_bills') }}</span><span class="tile-sub">{{ t('dash.tile_bills_sub', sales=bills.sales_today | money(shop["currency"]), waiting=bills.quotes_waiting) }}</span></a>
+  {% if not is_staff %}
   <a class="tile" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('dash.tile_purchases') }}</span><span class="tile-sub">{{ t('dash.tile_purchases_sub', spent=spent_today | money(shop["currency"])) }}</span></a>
   {% if versions %}
   {{ ui.tile("printer", t('dash.tile_print_board'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
@@ -66,6 +90,7 @@
   {{ ui.tile("tag", t('dash.tile_print_tags')) }}
   {{ ui.tile("download", t('dash.tile_export_csv')) }}
   {{ ui.tile("download", t('dash.tile_posapp_csv')) }}
+  {% endif %}
   {% endif %}
 </div>
 
@@ -92,17 +117,20 @@
     {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
   </div>
   <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>{{ t('dash.per', per=line.per) }}</small>{% endfor %}</div>
+  {% if not is_staff %}
   <div class="list-action">
     <form class="inline-form" method="post" action="/e/{{ token }}/item/{{ item.id }}/soldout">
       <button class="btn btn-small btn-secondary" type="submit">{% if item.sold_out %}{{ t('dash.back_in_stock') }}{% else %}{{ t('dash.sold_out') }}{% endif %}</button>
     </form>
   </div>
+  {% endif %}
 </div>
 {% endfor %}
 {% else %}
 {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), None, None) }}
 {% endif %}
 
+{% if not is_staff %}
 <div class="section-head"><h2>{{ t('dash.recent_sessions') }}</h2></div>
 {% if sessions %}
 {% for s in sessions %}
@@ -116,12 +144,14 @@
 {% else %}
 <p class="muted">{{ t('dash.no_uploads') }}</p>
 {% endif %}
+{% endif %}
 
 <div class="section-head"><h2>{{ t('dash.versions') }}</h2></div>
 {% if versions %}
 {% for v in versions %}
 <div class="version-row">
   <div class="row-main"><strong>{{ t('dash.version', id=v["id"]) }}</strong> {% if v["published"] %}{{ ui.pill(t('dash.published'), "live") }}{% endif %}</div>
+  {% if not is_staff %}
   {% if v["published"] %}
   <form class="inline-form" method="post" action="/e/{{ token }}/v/{{ v["id"] }}/unpublish">
     <button class="btn btn-small btn-ghost" type="submit">{{ t('dash.unpublish') }}</button>
@@ -130,6 +160,7 @@
   <form class="inline-form" method="post" action="/e/{{ token }}/v/{{ v["id"] }}/publish">
     <button class="btn btn-small btn-secondary" type="submit">{{ t('dash.publish') }}</button>
   </form>
+  {% endif %}
   {% endif %}
 </div>
 {% endfor %}
@@ -169,6 +200,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
+  }
+  const installCard = document.getElementById("install-card");
+  const installBtn = document.getElementById("install-btn");
+  const installIos = document.getElementById("install-ios");
+  let deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    if (installCard) { installCard.hidden = false; }
+  });
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt = null;
+      }
+    });
+  }
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
+  const isStandalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+  if (isIos && !isStandalone && installCard && installIos) {
+    installCard.hidden = false;
+    installIos.hidden = false;
+    if (installBtn) { installBtn.hidden = true; }
   }
 });
 </script>

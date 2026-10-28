@@ -87,6 +87,44 @@
   <p><button class="btn btn-small" type="button" id="copy-seller" data-link="{{ seller_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('set.copy_prompt') }}">{{ t('dash.copy') }}</button></p>
   <div class="alert alert-warn">{{ t('set.keep_private') }}</div>
 </section>
+
+<section class="card">
+  <h2>{{ t('set.keep_safe') }}</h2>
+  <p class="muted">{{ t('set.keep_safe_desc') }}</p>
+  <p>
+    <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('set.send_link_wa') }}</a>
+    <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+  </p>
+</section>
+
+<section class="card">
+  <h2>{{ t('set.add_helper') }}</h2>
+  <p class="muted">{{ t('set.helper_desc') }}</p>
+  {% if just_created %}
+  <div class="alert">{{ t('set.helper_once') }}</div>
+  <div class="qr-wrap">{{ just_created.qr | safe }}</div>
+  <p><span class="shop-link">{{ just_created.url }}</span></p>
+  {% endif %}
+  {% if helpers %}
+  {% for helper in helpers %}
+  <div class="version-row">
+    <div class="row-main"><strong>{{ helper["name"] }}</strong></div>
+    <form class="inline-form" method="post" action="/e/{{ token }}/settings/helpers/{{ helper["id"] }}/remove">
+      <button class="btn btn-small btn-ghost" type="submit">{{ t('set.helper_remove') }}</button>
+    </form>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="muted">{{ t('set.no_helpers') }}</p>
+  {% endif %}
+  <form method="post" action="/e/{{ token }}/settings/helpers">
+    <div class="field">
+      <label for="helper-name">{{ t('set.helper_name') }}</label>
+      <input id="helper-name" name="name" required autocomplete="off">
+    </div>
+    <button class="btn btn-secondary" type="submit">{{ t('set.add_helper') }}</button>
+  </form>
+</section>
 {% endblock %}
 {% block scripts %}
 <script>

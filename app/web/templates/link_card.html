@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face {
+  font-family: "Noto Sans Tamil";
+  src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
+}
+@page { size: A5 landscape; margin: 12mm; }
+body {
+  font-family: "Noto Sans Tamil", -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1c1917; background: #fbf7ef;
+}
+.card {
+  border: 3px solid #14532d; border-radius: 18px; padding: 24px;
+  text-align: center;
+}
+h1 { color: #14532d; font-size: 30px; margin: 0 0 4px; }
+.shop { font-size: 20px; margin: 0 0 12px; }
+img.qr { width: 220px; height: 220px; }
+.url { font-size: 13px; word-break: break-all; color: #44403c; }
+.warn {
+  display: inline-block; margin-top: 12px; padding: 8px 16px;
+  background: #f59e0b; color: #1c1917; border-radius: 12px;
+  font-weight: bold; font-size: 16px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>{{ t('set.keep_safe') }} — MarketMate</h1>
+  <p class="shop">{{ shop["name"] }}</p>
+  <img class="qr" src="{{ qr_data_uri }}" alt="seller link QR">
+  <p class="url">{{ seller_url }}</p>
+  <p class="warn">{{ t('set.keep_safe_desc') }}</p>
+</div>
+</body>
+</html>

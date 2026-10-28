@@ -257,6 +257,12 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             date TEXT NOT NULL, name_en TEXT NOT NULL,
             qty TEXT, unit TEXT
         );
+        CREATE TABLE IF NOT EXISTS helpers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            name TEXT NOT NULL, token_hash TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -275,7 +281,11 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     for name, column_type in (("payment_mode", "TEXT"),
                               ("paid_at", "TEXT"),
                               ("total_exact", "TEXT"),
-                              ("bill_token", "TEXT")):
+                              ("bill_token", "TEXT"),
+                              ("client_id", "TEXT"),
+                              ("priced_version_id", "INTEGER"),
+                              ("price_changed", "INTEGER"),
+                              ("created_by", "TEXT")):
         if name not in quote_columns:
             conn.execute(f"ALTER TABLE quotes ADD COLUMN {name} {column_type}")
     shop_columns = {row[1] for row in conn.execute("PRAGMA table_info(shops)")}
@@ -286,6 +296,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_bill_token"
         " ON quotes(bill_token) WHERE bill_token IS NOT NULL")
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_client_id"
+        " ON quotes(shop_id, client_id) WHERE client_id IS NOT NULL")
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_wastage_shop_date_item"
         " ON wastage(shop_id, date, name_en)")
@@ -800,7 +813,19 @@ def load_photo_checks(conn, shop_id: int) -> list[sqlite3.Row]:
 
 _QUOTE_SOURCES = {"customer", "seller"}
 _QUOTE_KINDS = {"quote", "bill"}
-_QUOTE_STATUSES = {"new", "billed", "paid", "cancelled"}
+_QUOTE_STATUSES = {"new", "packing", "ready", "collected", "billed", "paid",
+                   "cancelled"}
+
+# Order status for customer quotes: new -> packing -> ready -> collected,
+# or cancelled from any open state. Bills keep billed/paid.
+ORDER_TRANSITIONS = {
+    "new": {"packing", "cancelled"},
+    "packing": {"ready", "cancelled"},
+    "ready": {"collected", "cancelled"},
+    "collected": set(),
+    "cancelled": set(),
+}
+ORDER_STEPS = ("new", "packing", "ready", "collected")
 
 
 def _quote_line_to_dict(line) -> dict:
@@ -835,7 +860,11 @@ def _store_totals(conn, shop_id: int, kind: str,
 
 def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
                  kind: str = "quote", status: str = "new",
-                 customer_note: str | None = None) -> str:
+                 customer_note: str | None = None,
+                 created_by: str | None = None,
+                 client_id: str | None = None,
+                 priced_version_id: int | None = None,
+                 price_changed: bool = False) -> str:
     """Store a priced quote; returns its unguessable public token."""
     if source not in _QUOTE_SOURCES:
         raise ValueError(f"unknown quote source: {source}")
@@ -854,14 +883,109 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
     total, total_exact = _store_totals(conn, shop_id, kind, quote.total)
     conn.execute(
         "INSERT INTO quotes (shop_id, token, source, kind, status, lines_json,"
-        " total, total_exact, customer_note, created_at, updated_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " total, total_exact, customer_note, created_at, updated_at,"
+        " created_by, client_id, priced_version_id, price_changed)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (shop_id, token, source, kind, status,
          json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
-         total, total_exact, customer_note, now, now),
+         total, total_exact, customer_note, now, now,
+         created_by, client_id, priced_version_id,
+         int(bool(price_changed))),
     )
     conn.commit()
     return token
+
+
+def set_order_status(conn, quote_id: int, new_status: str) -> None:
+    """Move a customer quote through new -> packing -> ready -> collected.
+
+    Raises ValueError for unknown quotes, non-quote rows, unknown
+    statuses and skipped or backwards transitions.
+    """
+    row = get_quote_by_id(conn, quote_id)
+    if row is None:
+        raise ValueError("unknown order")
+    if row["kind"] != "quote":
+        raise ValueError("only customer quotes have an order status")
+    if new_status not in ORDER_TRANSITIONS:
+        raise ValueError("unknown order status")
+    current = row["status"]
+    if current not in ORDER_TRANSITIONS:
+        raise ValueError("this order can no longer change status")
+    if new_status not in ORDER_TRANSITIONS[current]:
+        raise ValueError(
+            f"cannot move an order from {current} to {new_status}")
+    conn.execute("UPDATE quotes SET status = ?, updated_at = ? WHERE id = ?",
+                 (new_status, _now(), row["id"]))
+    conn.commit()
+
+
+def get_quote_by_client_id(conn, shop_id: int, client_id: str):
+    """Fetch a synced bill by its offline client_id; None when unknown."""
+    return conn.execute(
+        "SELECT * FROM quotes WHERE shop_id = ? AND client_id = ?",
+        (shop_id, client_id)).fetchone()
+
+
+def create_helper(conn, shop_id: int, name: str) -> tuple[int, str]:
+    """Create a billing-only helper; returns (helper_id, token).
+
+    Only the token hash is stored; the token itself is shown once.
+    """
+    cleaned = (name or "").strip()
+    if not cleaned:
+        raise ValueError("give your helper a name")
+    for _ in range(5):
+        token = secrets.token_urlsafe(24)
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        if conn.execute("SELECT 1 FROM helpers WHERE token_hash = ?",
+                        (digest,)).fetchone() is None:
+            break
+    else:
+        raise ValueError("could not mint a unique helper token")
+    cursor = conn.execute(
+        "INSERT INTO helpers (shop_id, name, token_hash, created_at)"
+        " VALUES (?, ?, ?, ?)",
+        (shop_id, cleaned, digest, _now()))
+    conn.commit()
+    return cursor.lastrowid, token
+
+
+def list_helpers(conn, shop_id: int) -> list:
+    return conn.execute(
+        "SELECT id, shop_id, name, created_at FROM helpers"
+        " WHERE shop_id = ? ORDER BY id", (shop_id,)).fetchall()
+
+
+def remove_helper(conn, shop_id: int, helper_id: int) -> None:
+    row = conn.execute(
+        "SELECT * FROM helpers WHERE id = ? AND shop_id = ?",
+        (helper_id, shop_id)).fetchone()
+    if row is None:
+        raise ValueError("unknown helper")
+    conn.execute("DELETE FROM helpers WHERE id = ?", (row["id"],))
+    conn.commit()
+
+
+def resolve_seller_token(conn, token: str):
+    """Resolve an owner or helper token.
+
+    Returns (shop_row, role, helper_name) where role is "owner" or
+    "staff"; (None, None, None) when the token is unknown.
+    """
+    shop = shop_by_token(conn, token)
+    if shop is not None:
+        return shop, "owner", None
+    digest = hashlib.sha256((token or "").encode()).hexdigest()
+    helper = conn.execute("SELECT * FROM helpers WHERE token_hash = ?",
+                          (digest,)).fetchone()
+    if helper is None:
+        return None, None, None
+    shop = conn.execute("SELECT * FROM shops WHERE id = ?",
+                        (helper["shop_id"],)).fetchone()
+    if shop is None:
+        return None, None, None
+    return shop, "staff", helper["name"]
 
 
 def get_quote_by_token(conn, token: str) -> sqlite3.Row | None:

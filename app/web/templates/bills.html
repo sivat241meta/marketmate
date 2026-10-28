@@ -43,6 +43,9 @@
 <nav class="chips" aria-label="{{ t('bills.filter_aria') }}">
   <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">{{ t('bills.filter_all') }}</a>
   <a class="chip{% if status == "waiting" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=waiting">{{ t('bills.filter_waiting') }}</a>
+  <a class="chip{% if status == "packing" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=packing">{{ t('bills.filter_packing') }}</a>
+  <a class="chip{% if status == "ready" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=ready">{{ t('bills.filter_ready') }}</a>
+  <a class="chip{% if status == "collected" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=collected">{{ t('bills.filter_collected') }}</a>
   <a class="chip{% if status == "billed" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=billed">{{ t('bills.filter_billed') }}</a>
   <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">{{ t('bills.filter_paid') }}</a>
 </nav>

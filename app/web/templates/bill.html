@@ -18,9 +18,26 @@
 <header class="page-head">
   <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bill.back') }}</a></p>
   <h1>{{ t('bill.heading', id=bill["id"]) }}</h1>
-  <p class="muted">{{ shop["name"] }} · {{ created_label }} · {{ label }}</p>
+  <p class="muted">{{ shop["name"] }} · {{ created_label }} · {{ label }}{% if made_by %} · {{ t('bill.made_by', name=made_by) }}{% endif %}</p>
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if price_changed %}<div class="alert alert-warn">{{ t('bill.price_changed') }}</div>{% endif %}
+{% if order_actions %}
+<section class="card" aria-label="{{ t('bill.order_status') }}">
+  <h2>{{ t('bill.order_status') }}</h2>
+  <div class="order-actions">
+    {% for value, label, kind in order_actions %}
+    <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/order-status" class="inline-form">
+      <input type="hidden" name="status" value="{{ value }}">
+      <button class="btn btn-big {% if kind == "primary" %}btn-primary{% else %}btn-ghost{% endif %}" type="submit">{{ label }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% if ready_wa_url %}
+  <p><a class="btn btn-green btn-big" href="{{ ready_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_whatsapp') }}</a></p>
+  {% endif %}
+</section>
+{% endif %}
 
 <div class="bill-layout">
   <section class="receipt-card" aria-label="{{ t('bill.receipt_aria') }}">

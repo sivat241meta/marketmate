@@ -14,8 +14,9 @@
   <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
 </div>
 
-<section class="card method-panel" data-panel="speak">
+<section class="card method-panel" data-panel="speak" data-needs-internet>
   <h2>{{ ui.icon("mic") }} {{ t.speak_list }}</h2>
+  <p class="muted" data-needs-internet-hint hidden>needs internet</p>
   <p class="muted">{{ t.speak_help }}</p>
   <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
     <div class="live-captions" aria-live="polite">
@@ -84,4 +85,5 @@
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
+<script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 {% endblock %}

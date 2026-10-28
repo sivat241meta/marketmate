@@ -25,6 +25,7 @@ __all__ = [
     "QuoteLine",
     "WantedLine",
     "build_quote",
+    "build_quote_for_version",
     "wanted_from_photo",
     "wanted_from_text",
 ]
@@ -273,6 +274,25 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
     from app import db as _db
 
     version_id = _db.latest_version(conn, shop_id, published_only=True)
+    return build_quote_for_version(conn, shop_id, wanted,
+                                   version_id=version_id)
+
+
+def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
+                            wanted: list[WantedLine],
+                            version_id: int | None) -> Quote:
+    """Price wanted lines from one specific version's price lines only.
+
+    Used by offline sync: a bill priced from a cached list is recomputed
+    only from that version, never from client totals.
+    """
+    from app import db as _db
+
+    if version_id is not None:
+        owner = conn.execute("SELECT shop_id FROM versions WHERE id = ?",
+                             (version_id,)).fetchone()
+        if owner is None or owner["shop_id"] != shop_id:
+            version_id = None
     if version_id is None:
         lines = [
             QuoteLine(

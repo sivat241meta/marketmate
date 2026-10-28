@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}MarketMate{% endblock %}</title>
 <link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#14532d">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 <header class="topbar">

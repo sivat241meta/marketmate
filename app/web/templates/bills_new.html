@@ -22,6 +22,8 @@
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
+<div class="alert" data-offline-banner hidden><span data-offline-text>Offline – bills will sync when you're back online</span></div>
+
 <div class="segmented" data-methods role="group" aria-label="{{ t('bn.method_aria') }}">
   <button type="button" data-method="tap" aria-pressed="true">{{ ui.icon("tag") }}{{ t('bn.tap') }}</button>
   <button type="button" data-method="speak" aria-pressed="false">{{ ui.icon("mic") }}{{ t('bn.speak') }}</button>
@@ -33,7 +35,7 @@
   <h2>{{ ui.icon("tag") }} {{ t('bn.tap') }}</h2>
   <p class="muted">{{ t('bn.tap_desc') }}</p>
   {% if price_items %}
-  <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-zero="{{ 0 | money(shop["currency"]) }}">
+  <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-token="{{ token }}" data-version="{{ prices_version_id or '' }}" data-zero="{{ 0 | money(shop["currency"]) }}">
     <div class="receipt-lines">
       {% for item in price_items %}
       <div class="receipt-line" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
@@ -105,8 +107,9 @@
   {% endif %}
 </section>
 
-<section class="card method-panel" data-panel="speak">
+<section class="card method-panel" data-panel="speak" data-needs-internet>
   <h2>{{ ui.icon("mic") }} {{ t('bn.speak_title') }}</h2>
+  <p class="muted" data-needs-internet-hint hidden>needs internet</p>
   <p class="muted">{{ t('bn.speak_desc') }}</p>
   <div data-live-order data-ws-url="/e/{{ token }}/live/ws" data-kind="bill" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
     <div class="live-captions" aria-live="polite">
@@ -158,8 +161,9 @@
   </form>
 </section>
 
-<section class="card method-panel" data-panel="photo">
+<section class="card method-panel" data-panel="photo" data-needs-internet>
   <h2>{{ ui.icon("photo") }} {{ t('bn.photo_title') }}</h2>
+  <p class="muted" data-needs-internet-hint hidden>needs internet</p>
   <p class="muted">{{ t('bn.photo_desc') }}</p>
   <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
     <div class="field">
@@ -177,4 +181,5 @@
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
 <script src="{{ static_url('tap-chips.js') if static_url is defined else '/static/tap-chips.js' }}"></script>
+<script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 {% endblock %}

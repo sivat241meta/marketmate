@@ -273,6 +273,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             rel = format_relative(db.version_time(conn, published_id),
                                   datetime.now(UTC))
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
+        steps = []
+        for key in db.ORDER_STEPS:
+            steps.append({
+                "key": key,
+                "label": strings[f"order.step_{key}"],
+                "done": (db.ORDER_STEPS.index(row["status"])
+                         >= db.ORDER_STEPS.index(key))
+                if row["status"] in db.ORDER_STEPS else False,
+                "current": row["status"] == key,
+            })
         return templates.TemplateResponse(request, "quote.html", {
             "shop": shop, "token": row["token"], "lines": lines,
             "total": _fmt_money(row["total"]),
@@ -283,7 +293,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "subtitle": strings["quote_subtitle"].format(
                 shop=shop["name"], rel=rel),
             "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
-                                           quote_url, language)})
+                                           quote_url, language),
+            "order_status": row["status"],
+            "order_steps": steps})
 
     def _lang_suffix(language: str) -> str:
         return f"?lang={language}" if language != "en" else ""
