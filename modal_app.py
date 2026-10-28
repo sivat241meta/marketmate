@@ -8,7 +8,14 @@ app = modal.App("marketmate")
 # files, fonts), not just .py files.
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .apt_install("ffmpeg", "libpango-1.0-0", "libpangoft2-1.0-0", "fonts-dejavu-core")
+    .apt_install(
+        "ffmpeg",
+        "libpango-1.0-0",
+        "libpangoft2-1.0-0",
+        "fonts-dejavu-core",
+        "fonts-noto-core",
+        "fonts-noto-cjk",
+    )
     .pip_install_from_pyproject("pyproject.toml")
     .env({"DATA_DIR": "/data", "MARKETMATE_ON_MODAL": "1"})
     .add_local_dir("app", remote_path="/root/app")

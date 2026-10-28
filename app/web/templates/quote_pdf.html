@@ -5,6 +5,15 @@
 <title>{{ shop["name"] }} — price quote</title>
 <style>
 @font-face {
+  font-family: "Noto Sans";
+  src: url("{{ fonts_uri }}/NotoSans-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSans-Bold.ttf");
+}
+@font-face {
   font-family: "Noto Sans Tamil";
   src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
 }
@@ -22,8 +31,35 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Bengali";
+  src: url("{{ fonts_uri }}/NotoSansBengali-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Bengali";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansBengali-Bold.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  src: url("{{ fonts_uri }}/NotoSansTelugu-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansTelugu-Bold.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  src: url("{{ fonts_uri }}/NotoSansKannada-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansKannada-Bold.ttf");
+}
 @page { size: A4; margin: 15mm 12mm; }
-body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
+body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
 .header { background: #14532d; color: #fbf7ef; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
 .header h1 { font-size: 26pt; margin: 0; }
 .header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }

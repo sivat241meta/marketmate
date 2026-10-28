@@ -1,3 +1,8 @@
+MarketMate bundles these Noto families under this licence (see SOURCES.md):
+Noto Sans, Noto Sans Tamil, Noto Sans Devanagari, Noto Sans Bengali,
+Noto Sans Telugu, Noto Sans Kannada.
+Source: https://github.com/notofonts/notofonts.github.io
+
 Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tamil)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.

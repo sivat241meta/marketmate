@@ -1,25 +1,81 @@
 /* MarketMate "Fresh Market" design system (Task 22). Mobile-first, no external assets. */
 @font-face {
+  font-family: "Noto Sans";
+  src: url("fonts/NotoSans-Regular.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+25CC, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Noto Sans";
+  font-weight: 700;
+  src: url("fonts/NotoSans-Bold.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+25CC, U+FEFF, U+FFFD;
+}
+@font-face {
   font-family: "Noto Sans Tamil";
   src: url("fonts/NotoSansTamil-Regular.ttf") format("truetype");
   font-display: swap;
+  unicode-range: U+0B80-0BFF;
 }
 @font-face {
   font-family: "Noto Sans Tamil";
   font-weight: 700;
   src: url("fonts/NotoSansTamil-Bold.ttf") format("truetype");
   font-display: swap;
+  unicode-range: U+0B80-0BFF;
 }
 @font-face {
   font-family: "Noto Sans Devanagari";
   src: url("fonts/NotoSansDevanagari-Regular.ttf") format("truetype");
   font-display: swap;
+  unicode-range: U+0900-097F, U+A830-A83F;
 }
 @font-face {
   font-family: "Noto Sans Devanagari";
   font-weight: 700;
   src: url("fonts/NotoSansDevanagari-Bold.ttf") format("truetype");
   font-display: swap;
+  unicode-range: U+0900-097F, U+A830-A83F;
+}
+@font-face {
+  font-family: "Noto Sans Bengali";
+  src: url("fonts/NotoSansBengali-Regular.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0980-09FF;
+}
+@font-face {
+  font-family: "Noto Sans Bengali";
+  font-weight: 700;
+  src: url("fonts/NotoSansBengali-Bold.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0980-09FF;
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  src: url("fonts/NotoSansTelugu-Regular.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0C00-0C7F;
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  font-weight: 700;
+  src: url("fonts/NotoSansTelugu-Bold.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0C00-0C7F;
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  src: url("fonts/NotoSansKannada-Regular.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0C80-0CFF;
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  font-weight: 700;
+  src: url("fonts/NotoSansKannada-Bold.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0C80-0CFF;
 }
 
 :root {
@@ -56,7 +112,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif;
+  font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
   color: var(--ink);
   background: var(--cream);
   line-height: 1.5;

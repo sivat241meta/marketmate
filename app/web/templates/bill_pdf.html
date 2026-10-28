@@ -5,6 +5,15 @@
 <title>{{ t('bpdf.bill', id=bill_id) }} — {{ shop["name"] }}</title>
 <style>
 @font-face {
+  font-family: "Noto Sans";
+  src: url("{{ fonts_uri }}/NotoSans-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSans-Bold.ttf");
+}
+@font-face {
   font-family: "Noto Sans Tamil";
   src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
 }
@@ -22,8 +31,35 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Bengali";
+  src: url("{{ fonts_uri }}/NotoSansBengali-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Bengali";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansBengali-Bold.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  src: url("{{ fonts_uri }}/NotoSansTelugu-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Telugu";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansTelugu-Bold.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  src: url("{{ fonts_uri }}/NotoSansKannada-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Kannada";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansKannada-Bold.ttf");
+}
 @page { size: 80mm auto; margin: 5mm 4mm; }
-body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; margin: 0; font-size: 10pt; }
+body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #1c1917; margin: 0; font-size: 10pt; }
 .shop { text-align: center; border-bottom: 0.5pt dashed #1c1917; padding-bottom: 3mm; margin-bottom: 3mm; }
 .shop h1 { font-size: 15pt; margin: 0; }
 .shop p { margin: 1mm 0 0; font-size: 9pt; }
