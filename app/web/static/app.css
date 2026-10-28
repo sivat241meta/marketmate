@@ -2249,6 +2249,87 @@ svg.boxes text.box-badge {
   .live-main { position: sticky; top: 76px; }
 }
 
+/* ---- Task 50: seller Fresh Green ---- */
+button.pill { font: inherit; cursor: pointer; }
+.pill { max-width: 100%; }
+.pill.big { white-space: normal; text-align: center; }
+.pill[disabled] { background: var(--line-2); color: var(--muted); cursor: default; border-color: transparent; }
+.sticky-bar .pill { width: 100%; }
+
+/* Seller home: order cards + compact bottom cards. */
+.order-rcpt { margin-bottom: var(--space-3); }
+.order-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.order-top b { font-weight: 800; color: var(--forest); }
+.order-names { color: var(--muted); font-size: 13px; margin: 6px 0 10px; overflow-wrap: anywhere; }
+.order-bottom { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.order-bottom b { font-size: 22px; font-weight: 800; color: var(--forest); }
+.quick-links { margin: var(--space-4) 0; }
+.card.compact { padding: var(--space-3) var(--space-4); }
+.card.compact h2 { font-size: 1rem; }
+.card.compact p { margin-bottom: var(--space-2); }
+
+/* Live: camera card, stop button, heard rows. */
+.live-kick-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.live-kick-row .kick { margin: 0; }
+.cam .live-video { height: 100%; aspect-ratio: auto; }
+.cam .live-ready { position: absolute; top: 12px; right: 12px; }
+.cam .live-captions { background: rgba(23, 63, 42, 0.82); border-radius: 16px; padding: 10px 12px; left: 12px; right: 12px; bottom: 12px; }
+.stopb { width: 70px; height: 70px; border-radius: 50%; background: var(--forest); color: #fff; display: grid; place-items: center; border: 0; cursor: pointer; box-shadow: 0 0 0 8px var(--mint-2); padding: 0; }
+.stopb .icon { width: 30px; height: 30px; }
+.stopb.is-recording { background: var(--danger); box-shadow: 0 0 0 8px #FBE3E0; }
+.stopb[disabled] { opacity: 0.6; cursor: default; }
+.stopb-sq { width: 22px; height: 22px; border-radius: 6px; background: #fff; }
+.stopb-label { font-weight: 700; font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
+.heard-title { font-size: 22px; }
+.live-cards .heard { margin-bottom: var(--space-2); }
+.heard .nophoto { width: 46px; height: 46px; border-radius: 12px; background: var(--mint); color: var(--leaf-ink); display: grid; place-items: center; font-weight: 800; flex: none; }
+.heard .n small { display: block; }
+
+/* Review: question headline, big option pills, fine list. */
+.question { font-size: 1.4rem; font-weight: 800; color: var(--forest); margin: var(--space-3) 0 var(--space-2); overflow-wrap: anywhere; }
+.choice .opt-btn { border-radius: 999px; }
+.fine-title { margin-top: var(--space-5); }
+.line select[data-field="unit"] { width: auto; border-radius: 999px; font-weight: 700; }
+
+/* New bill: method chips, product grid beside the bill card. */
+.segmented.chips { background: transparent; padding: 0; border-radius: 0; gap: var(--space-2); }
+.segmented.chips .chip { border: 1.5px solid var(--line-2); background: #fff; border-radius: 999px; flex: 0 1 auto; color: var(--ink); box-shadow: none; }
+.segmented.chips .chip.is-active { background: var(--forest); border-color: var(--forest); color: #fff; }
+.tap-panel h2 { margin-top: 0; }
+.bill-split { display: grid; gap: var(--space-4); }
+.tap-grid { align-content: start; }
+.tap-grid .card { margin: 0; }
+.tap-grid .bd h3 { overflow-wrap: anywhere; }
+.tap-grid .stepper { margin: 0; }
+.tap-grid .stepper.is-compact { width: 100%; }
+.tap-grid .stepper.is-compact input[type="number"] { flex: 1 1 3rem; width: 3rem; min-width: 0; }
+.tap-grid .quick-chips { margin-top: var(--space-2); }
+.tap-grid .quick-chips .chip { min-height: 44px; }
+.tap-rcpt { align-self: start; }
+.tap-rcpt .rt { align-items: center; }
+.tap-rcpt .rt span { color: var(--muted); font-weight: 700; }
+.tap-rcpt .pill { width: 100%; }
+
+/* Get paid: standee QR, cash card. */
+.upi-qr svg { width: 168px; height: 168px; margin: 14px auto 4px; display: block; }
+.cash-rcpt { margin-top: var(--space-3); }
+.bill-cta { margin: var(--space-3) 0; }
+.bill-cta .pill { flex: 1 1 auto; }
+
+/* Bills list rows, close extras, purchases rows. */
+a.bill-row.rcpt { display: flex; text-decoration: none; color: inherit; margin-bottom: var(--space-2); }
+h1.big, h2.h2s { overflow-wrap: anywhere; }
+.table-scroll { overflow-x: auto; }
+.close-extra { margin-top: var(--space-2); }
+.close-cta { margin: var(--space-3) 0; }
+.pur-row { margin-bottom: var(--space-2); }
+
+@media (min-width: 900px) {
+  .bill-split { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+  .bill-split .grid-products { grid-template-columns: repeat(3, 1fr); }
+  .tap-rcpt { position: sticky; top: 76px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none; animation: none; }
   .btn:active { transform: none; }

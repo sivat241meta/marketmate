@@ -3,13 +3,11 @@
 {% block title %}{{ t('set.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t('set.heading') }}</h1>
-  <p class="muted">{{ t('set.sub', shop=shop["name"]) }}</p>
-</header>
+<p class="kick">{{ t('set.heading') }}</p>
+<h2 class="h2s">{{ t('set.sub', shop=shop["name"]) }}</h2>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
-<section class="card">
+<section class="rcpt">
   <h2>{{ t('set.profile') }}</h2>
   <form method="post" action="/e/{{ token }}/settings">
     <div class="field">
@@ -63,29 +61,29 @@
       </label>
       <span class="help">{{ t('set.round_help') }}</span>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ t('set.save') }}</button>
+    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
   </form>
 </section>
 
-<section class="card">
+<section class="rcpt">
   <h2>{{ t('set.seller_link') }}</h2>
   <p class="muted">{{ t('set.seller_desc') }}</p>
   <div class="qr-wrap">{{ seller_qr | safe }}</div>
   <p><span class="shop-link">{{ seller_url }}</span></p>
-  <p><button class="btn btn-small" type="button" id="copy-seller" data-link="{{ seller_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('set.copy_prompt') }}">{{ t('dash.copy') }}</button></p>
+  <p><button class="pill ghost" type="button" id="copy-seller" data-link="{{ seller_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('set.copy_prompt') }}">{{ t('dash.copy') }}</button></p>
   <div class="alert alert-warn">{{ t('set.keep_private') }}</div>
 </section>
 
-<section class="card">
+<section class="rcpt">
   <h2>{{ t('set.keep_safe') }}</h2>
   <p class="muted">{{ t('set.keep_safe_desc') }}</p>
   <p>
-    <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('set.send_link_wa') }}</a>
-    <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+    <a class="pill cta" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('set.send_link_wa') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
   </p>
 </section>
 
-<section class="card">
+<section class="rcpt">
   <h2>{{ t('set.add_helper') }}</h2>
   <p class="muted">{{ t('set.helper_desc') }}</p>
   {% if just_created %}
@@ -110,7 +108,7 @@
       <label for="helper-name">{{ t('set.helper_name') }}</label>
       <input id="helper-name" name="name" required autocomplete="off">
     </div>
-    <button class="btn btn-secondary" type="submit">{{ t('set.add_helper') }}</button>
+    <button class="pill ghost" type="submit">{{ t('set.add_helper') }}</button>
   </form>
 </section>
 {% endblock %}

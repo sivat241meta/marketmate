@@ -109,6 +109,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
         currency = shop["currency"] or "INR"
+        top_entry = items[0] if items else None
+        top_amount = (top_entry.get("sales_amount")
+                      if top_entry else None)
+        has_top = bool(top_amount is not None and top_amount > 0)
         rows = []
         for entry in items:
             sold = entry["sold_qty"]
@@ -140,6 +144,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "spent": _fmt_money(tiles["spent"], currency),
             "margin": _fmt_money(tiles["margin"], currency),
             "margin_known": tiles["margin"] is not None,
+            "has_top": has_top,
+            "top_display": (top_entry["display"] if has_top else ""),
+            "top_amount": (_fmt_money(top_amount, currency)
+                           if has_top else ""),
             "rows": rows, "whatsapp_url": url, "whatsapp_text": text,
             "today": shop_today(shop, datetime.now(UTC)),
             "ui_lang": ui_lang,

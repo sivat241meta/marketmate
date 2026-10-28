@@ -43,6 +43,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function revealStepper(line) {
+    const add = line.querySelector("[data-add]");
+    const stepper = line.querySelector("[data-stepper]");
+    if (add) {
+      add.hidden = true;
+    }
+    if (stepper) {
+      stepper.hidden = false;
+    }
+  }
+
   function setQty(line, qty, unit) {
     const parts = lineInputs(line);
     if (!parts.qty) {
@@ -53,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
       parts.unit.value = unit;
     }
     clearAmount(line);
+    revealStepper(line);
     fireChanged(parts.qty);
   }
 
@@ -70,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       parts.label.textContent = "₹" + amount + " worth";
       parts.label.hidden = false;
     }
+    revealStepper(line);
   }
 
   function refreshDisplay() {
@@ -111,6 +124,24 @@ document.addEventListener("DOMContentLoaded", () => {
     activeLine = null;
     buffer = "";
   }
+
+  document.querySelectorAll("[data-tap-form] [data-line]").forEach((line) => {
+    const add = line.querySelector("[data-add]");
+    const stepper = line.querySelector("[data-stepper]");
+    const qty = line.querySelector('input[name^="qty_"]');
+    if (!add || !stepper || !qty) {
+      return;
+    }
+    if ((parseFloat(qty.value || "0") || 0) > 0) {
+      add.hidden = true;
+      return;
+    }
+    stepper.hidden = true;
+    add.hidden = false;
+    add.addEventListener("click", () => {
+      revealStepper(line);
+    });
+  });
 
   document.querySelectorAll("[data-chips]").forEach((box) => {
     const line = box.closest("[data-line]");

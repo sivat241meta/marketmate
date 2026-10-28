@@ -6,26 +6,25 @@
 <div class="live-wrap" data-live data-needs-internet data-token="{{ token }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
   <div class="live-columns">
     <div class="live-main">
-      <div class="live-preview">
+      <div class="live-kick-row"><p class="kick">{{ t('dash.live_prices') }}</p><span class="pill sm ghost live-lang">{{ shop_lang }} · <span data-live-timer hidden>0:00</span></span></div>
+      <div class="cam">
         <video class="live-video" data-live-video playsinline muted autoplay aria-label="{{ t('live.camera_preview') }}"></video>
-        <div class="live-topbar">
-          <span class="live-ready" data-live-ready>{{ t('live.ready') }}</span>
-          <span class="live-live" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>{{ t('live.live') }}</span>
-          <span class="live-timer" data-live-timer hidden>0:00</span>
-        </div>
-        <div class="live-captions" aria-live="polite">
+        <span class="live-ready" data-live-ready>{{ t('live.ready') }}</span>
+        <span class="rec" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>{{ t('live.live') }}</span>
+        <div class="cap live-captions" aria-live="polite">
           <p class="live-last" data-live-last></p>
           <p class="live-partial" data-live-partial></p>
         </div>
         <canvas data-live-canvas hidden></canvas>
       </div>
       <div class="live-controls">
-        <button class="mic-btn is-big live-mic" type="button" data-live-mic aria-label="{{ t('live.start_aria') }}">{{ ui.icon("mic") }}</button>
+        <button class="stopb live-mic" type="button" data-live-mic aria-label="{{ t('live.start_aria') }}"><span data-live-mic-icon>{{ ui.icon("mic") }}</span><span class="stopb-sq" data-live-stop-icon hidden aria-hidden="true"></span></button>
+        <p class="stopb-label" data-live-stop-label hidden>{{ t('live.tap_stop') }}</p>
         <p class="muted live-hint" data-live-hint>{{ t('live.tap_start') }}</p>
       </div>
       <p class="muted" data-needs-internet-hint hidden>{{ t('notice.needs_internet') }}</p>
       <div class="alert alert-warn" data-live-error hidden></div>
-      <div class="live-finish" data-live-finish hidden>
+      <div class="rcpt live-finish" data-live-finish hidden>
         <p><strong>{{ t('live.finishing_live') }}</strong></p>
         <p class="muted" data-live-elapsed hidden></p>
         <ol class="vstepper">
@@ -38,7 +37,7 @@
       <p class="live-offline" data-live-offline hidden><a class="btn btn-secondary" href="/e/{{ token }}">{{ t('live.upload_instead') }}</a></p>
     </div>
     <div class="live-cards" data-live-cards>
-      <h2>{{ t('live.heard') }}</h2>
+      <h2 class="h2s heard-title">{{ t('live.heard_pre') }} <span data-live-count>0</span> {{ t('live.heard_post') }}</h2>
       <p class="muted" data-live-empty>{{ t('live.no_prices') }}</p>
     </div>
   </div>

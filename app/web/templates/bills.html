@@ -3,10 +3,8 @@
 {% block title %}{{ t('bills.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t('bills.heading') }}</h1>
-  <p class="muted">{{ t('bills.sub', shop=shop["name"]) }}</p>
-</header>
+<p class="kick">{{ t('bills.heading') }}</p>
+<h2 class="h2s">{{ t('bills.sub', shop=shop["name"]) }}</h2>
 <nav class="chips" aria-label="{{ t('bills.date_aria') }}">
   <a class="chip{% if range == "today" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status={{ status }}">{{ t('bills.today') }}</a>
   <a class="chip{% if range == "yesterday" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=yesterday&amp;status={{ status }}">{{ t('bills.yesterday') }}</a>
@@ -24,23 +22,24 @@
   <div class="stat"><span class="stat-num money">{{ sales_cash | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.cash') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
   <div class="stat"><span class="stat-num money">{{ sales_upi | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.upi') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
   <div class="stat"><span class="stat-num money">{{ sales_card | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.card') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
+  <div class="stat"><span class="stat-num money">{{ unpaid_total | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.unpaid_stat') }}</span><span class="stat-caption">{{ unpaid_count }}</span></div>
 </div>
 
-<p>{{ ui.button(t('bills.new_bill'), href="/e/" ~ token ~ "/bills/new", kind="primary", icon_name="receipt") }}</p>
+<p><a class="pill dark" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('bills.new_bill') }}</a></p>
 
 <nav class="chips" aria-label="{{ t('bills.filter_aria') }}">
-  <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">{{ t('bills.filter_all') }}</a>
-  <a class="chip{% if status == "waiting" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=waiting">{{ t('bills.filter_waiting') }}</a>
-  <a class="chip{% if status == "packing" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=packing">{{ t('bills.filter_packing') }}</a>
-  <a class="chip{% if status == "ready" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=ready">{{ t('bills.filter_ready') }}</a>
-  <a class="chip{% if status == "collected" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=collected">{{ t('bills.filter_collected') }}</a>
-  <a class="chip{% if status == "billed" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=billed">{{ t('bills.filter_billed') }}</a>
-  <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">{{ t('bills.filter_paid') }}</a>
+  <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">{{ t('bills.filter_all') }}<small>{{ counts.all }}</small></a>
+  <a class="chip{% if status == "waiting" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=waiting">{{ t('bills.filter_waiting') }}<small>{{ counts.waiting }}</small></a>
+  <a class="chip{% if status == "packing" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=packing">{{ t('bills.filter_packing') }}<small>{{ counts.packing }}</small></a>
+  <a class="chip{% if status == "ready" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=ready">{{ t('bills.filter_ready') }}<small>{{ counts.ready }}</small></a>
+  <a class="chip{% if status == "collected" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=collected">{{ t('bills.filter_collected') }}<small>{{ counts.collected }}</small></a>
+  <a class="chip{% if status == "billed" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=billed">{{ t('bills.filter_billed') }}<small>{{ counts.billed }}</small></a>
+  <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">{{ t('bills.filter_paid') }}<small>{{ counts.paid }}</small></a>
 </nav>
 
 {% if rows %}
 {% for row in rows %}
-<a class="bill-row" href="/e/{{ token }}/bills/{{ row.id }}">
+<a class="bill-row rcpt" href="/e/{{ token }}/bills/{{ row.id }}">
   <span class="row-main">
     <span class="list-name">{{ row.label }}</span>
     {% if row.names %}<span class="list-sub">{{ row.names[:2] | join(", ") }}{% if row.names | length > 2 %} +{{ row.names | length - 2 }}{% endif %}</span>{% endif %}
@@ -92,9 +91,9 @@
       <input id="bills-to" type="date" name="to">
     </div>
     <p>
-      <button class="btn btn-secondary" type="submit">{{ t('bills.excel') }}</button>
-      <button class="btn btn-secondary" type="submit" formaction="/e/{{ token }}/exports/pos.csv">{{ t('bills.pos_csv') }}</button>
-      <a class="btn btn-secondary" href="/e/{{ token }}/exports/pricelist.csv">{{ t('bills.pricelist_csv') }}</a>
+      <button class="pill ghost" type="submit">{{ t('bills.excel') }}</button>
+      <button class="pill ghost" type="submit" formaction="/e/{{ token }}/exports/pos.csv">{{ t('bills.pos_csv') }}</button>
+      <a class="pill ghost" href="/e/{{ token }}/exports/pricelist.csv">{{ t('bills.pricelist_csv') }}</a>
     </p>
   </form>
 </section>

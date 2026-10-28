@@ -3,74 +3,74 @@
 {% block title %}{{ t('bn.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<header class="page-head">
-  <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bn.back') }}</a></p>
-  <h1>{{ t('bn.heading') }}</h1>
-  <p class="muted">{{ t('bn.sub', shop=shop["name"]) }}</p>
-</header>
+<p class="kick">{{ t('bn.heading') }}</p>
+<h2 class="h2s">{{ t('bn.hero') }}</h2>
+<p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bn.back') }}</a></p>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <div class="alert" data-offline-banner hidden><span data-offline-text>{{ t('notice.offline_bills') }}</span></div>
 
-<div class="segmented" data-methods role="group" aria-label="{{ t('bn.method_aria') }}">
-  <button type="button" data-method="tap" aria-pressed="true">{{ ui.icon("tag") }}{{ t('bn.tap') }}</button>
-  <button type="button" data-method="speak" aria-pressed="false">{{ ui.icon("mic") }}{{ t('bn.speak') }}</button>
-  <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("receipt") }}{{ t('bn.type') }}</button>
-  <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}{{ t('bn.photo') }}</button>
+<div class="segmented chips" data-methods role="group" aria-label="{{ t('bn.method_aria') }}">
+  <button type="button" class="chip" data-method="tap" aria-pressed="true">{{ ui.icon("tag") }}{{ t('bn.tap') }}</button>
+  <button type="button" class="chip" data-method="speak" aria-pressed="false">{{ ui.icon("mic") }}{{ t('bn.speak') }}</button>
+  <button type="button" class="chip" data-method="type" aria-pressed="false">{{ ui.icon("receipt") }}{{ t('bn.type') }}</button>
+  <button type="button" class="chip" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}{{ t('bn.photo') }}</button>
 </div>
 
-<section class="card method-panel" data-panel="tap">
+<section class="method-panel tap-panel" data-panel="tap">
   <h2>{{ ui.icon("tag") }} {{ t('bn.tap') }}</h2>
   <p class="muted">{{ t('bn.tap_desc') }}</p>
   {% if price_items %}
   <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-token="{{ token }}" data-version="{{ prices_version_id or '' }}" data-zero="{{ 0 | money(shop["currency"]) }}">
-    <div class="tap-list">
-      {% for item in price_items %}
-      <div class="tap-line" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
-        {% if item.photo_url %}<img class="line-thumb" src="{{ item.photo_url }}" alt="">{% else %}<span class="line-thumb">{{ ui.icon("photo") }}</span>{% endif %}
-        <div class="tap-main">
-          <div class="tap-top">
-            <div class="tap-names">
-              <span class="line-name">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span>
-              <span class="line-rate muted">{{ item.summary }}</span>
-              {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
-            </div>
+    <div class="bill-split">
+      <div class="grid-products tap-grid">
+        {% for item in price_items %}
+        <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
+          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.display[:1] }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+          <div class="bd tap-main">
+            <h3><span class="tname">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span><small class="line-rate">{{ item.summary }}</small></h3>
             {% if not item.sold_out %}
             <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
             <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
             <input type="hidden" name="amount_{{ item.index }}" value="">
-            <span class="stepper is-compact" data-stepper>
-              <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('bill.less_aria', display=item.display) }}">−</button>
-              <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="{{ t('bill.qty_aria', display=item.display) }}">
-              <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('bill.more_aria', display=item.display) }}">+</button>
-            </span>
+            <span class="muted" data-amount-label hidden></span>
+            <div class="pr">
+              <button type="button" class="add" data-add hidden>{{ t('shop.add') }}</button>
+              <span class="stepper is-compact" data-stepper>
+                <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('bill.less_aria', display=item.display) }}">−</button>
+                <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="{{ t('bill.qty_aria', display=item.display) }}">
+                <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('bill.more_aria', display=item.display) }}">+</button>
+              </span>
+            </div>
+            <div class="quick-chips sizes" data-chips data-unit="{{ item.unit or '' }}">
+              {% if item.unit in ("kg", "g") %}
+              <button class="chip" type="button" data-chip="100g">100 g</button>
+              <button class="chip" type="button" data-chip="250g">250 g</button>
+              <button class="chip" type="button" data-chip="500g">½ kg</button>
+              <button class="chip" type="button" data-chip="1000g">1 kg</button>
+              <button class="chip" type="button" data-chip="2000g">2 kg</button>
+              <button class="chip" type="button" data-chip="keypad" aria-label="{{ t('bill.weight_aria', display=item.display) }}">{{ t('bill.weight_chip') }}</button>
+              {% elif item.unit in ("piece", "dozen") %}
+              <button class="chip" type="button" data-chip="+1">+1</button>
+              <button class="chip" type="button" data-chip="+6">+6</button>
+              <button class="chip" type="button" data-chip="+12">+12</button>
+              {% endif %}
+              <button class="chip" type="button" data-chip="amount" aria-label="{{ t('bill.amount_aria', display=item.display) }}">{{ t('bill.amount_chip') }}</button>
+            </div>
             {% endif %}
           </div>
-          {% if not item.sold_out %}
-          <span class="muted" data-amount-label hidden></span>
-          <div class="quick-chips" data-chips data-unit="{{ item.unit or '' }}">
-            {% if item.unit in ("kg", "g") %}
-            <button class="chip" type="button" data-chip="100g">100 g</button>
-            <button class="chip" type="button" data-chip="250g">250 g</button>
-            <button class="chip" type="button" data-chip="500g">½ kg</button>
-            <button class="chip" type="button" data-chip="1000g">1 kg</button>
-            <button class="chip" type="button" data-chip="2000g">2 kg</button>
-            <button class="chip" type="button" data-chip="keypad" aria-label="{{ t('bill.weight_aria', display=item.display) }}">{{ t('bill.weight_chip') }}</button>
-            {% elif item.unit in ("piece", "dozen") %}
-            <button class="chip" type="button" data-chip="+1">+1</button>
-            <button class="chip" type="button" data-chip="+6">+6</button>
-            <button class="chip" type="button" data-chip="+12">+12</button>
-            {% endif %}
-            <button class="chip" type="button" data-chip="amount" aria-label="{{ t('bill.amount_aria', display=item.display) }}">{{ t('bill.amount_chip') }}</button>
-          </div>
-          {% endif %}
-        </div>
+        </article>
+        {% endfor %}
       </div>
-      {% endfor %}
+      <div class="rcpt desk-only tap-rcpt">
+        <p class="kick">{{ t('bn.heading') }}</p>
+        <div class="rt"><span data-tap-count>0</span><b class="money" data-tap-total>{{ 0 | money(shop["currency"]) }}</b></div>
+        <p><button class="pill dark big" type="submit">{{ t('bn.make_bill') }}</button></p>
+      </div>
     </div>
-    <div class="sticky-bar tap-bar">
-      <span class="sticky-total" data-tap-summary>{{ t('bn.pick_items') }}</span>
-      <button class="btn btn-primary btn-big" type="submit">{{ t('bn.make_bill') }}</button>
+    <div class="float tap-bar mob-only">
+      <div class="t"><b data-tap-summary>{{ t('bn.pick_items') }}</b><small>{{ t('bn.tap') }}</small></div>
+      <button class="pill gold" type="submit">{{ t('bn.make_bill') }}</button>
     </div>
   </form>
   <div class="keypad-sheet" data-keypad hidden>

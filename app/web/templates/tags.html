@@ -69,15 +69,18 @@ body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Not
   width: 88mm; height: 62mm;
   border: 0.5pt dashed #78716c;
   border-radius: 3mm;
-  padding: 4mm 5mm;
+  padding: 0 0 4mm 0;
   box-sizing: border-box;
   page-break-inside: avoid;
+  overflow: hidden;
 }
-.tag-local { font-size: 22pt; font-weight: bold; line-height: 1.1; padding-right: 17mm; overflow-wrap: anywhere; word-break: break-word; }
+.tag-band { background: #173F2A; color: #fff; font-size: 9pt; font-weight: bold; padding: 2mm 5mm; }
+.tag-body { padding: 2.5mm 5mm 0 5mm; }
+.tag-local { font-size: 22pt; font-weight: bold; line-height: 1.1; padding-right: 17mm; overflow-wrap: anywhere; word-break: break-word; color: #173F2A; }
 .tag-en { font-size: 10pt; color: #57534e; margin-top: 1mm; padding-right: 17mm; overflow-wrap: anywhere; word-break: break-word; }
-.tag-price { font-size: 34pt; font-weight: bold; color: #14532d; margin-top: 2mm; white-space: nowrap; }
+.tag-price { display: inline-block; font-size: 32pt; font-weight: bold; color: #173F2A; background: #F5C451; border-radius: 2mm; padding: 0 3mm; margin-top: 2mm; white-space: nowrap; }
 .tag-per { font-size: 12pt; color: #57534e; font-weight: normal; }
-.tag-qr { position: absolute; top: 3mm; right: 3mm; width: 14mm; }
+.tag-qr { position: absolute; top: 11mm; right: 3mm; width: 14mm; }
 .tag-date { position: absolute; bottom: 3mm; right: 4mm; font-size: 8pt; color: #78716c; }
 .tag-shop { position: absolute; bottom: 3mm; left: 4mm; font-size: 8pt; color: #78716c; }
 </style>
@@ -88,10 +91,13 @@ body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Not
 <div class="sheet">
 {% for tag in page %}
 <div class="tag">
-  <img class="tag-qr" src="{{ qr_data_uri }}" alt="shop QR code">
-  <div class="tag-local">{{ tag.name_local }}</div>
-  <div class="tag-en">{{ tag.name_en }}{% if tag.variety %} ({{ tag.variety }}){% endif %}</div>
-  <div class="tag-price">{{ tag.price | money(shop["currency"]) }} <span class="tag-per">/ {{ tag.per }}</span></div>
+  <div class="tag-band">{{ shop["name"] }}</div>
+  <div class="tag-body">
+    <img class="tag-qr" src="{{ qr_data_uri }}" alt="shop QR code">
+    <div class="tag-local">{{ tag.name_local }}</div>
+    <div class="tag-en">{{ tag.name_en }}{% if tag.variety %} ({{ tag.variety }}){% endif %}</div>
+    <div class="tag-price">{{ tag.price | money(shop["currency"]) }} <span class="tag-per">/ {{ tag.per }}</span></div>
+  </div>
   <div class="tag-shop">{{ shop["name"] }}</div>
   <div class="tag-date">{{ t('tags.today', at=at) }}</div>
 </div>

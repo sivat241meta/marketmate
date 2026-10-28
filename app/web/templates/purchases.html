@@ -3,13 +3,11 @@
 {% block title %}{{ t('pur.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t('pur.heading') }}</h1>
-  <p class="muted">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</p>
-</header>
+<p class="kick">{{ t('pur.heading') }}</p>
+<h2 class="h2s">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</h2>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
-<section class="card record-card">
+<section class="rcpt record-card">
   {{ ui.icon("mic") }}
   <h2>{{ t('pur.say_title') }}</h2>
   <p class="muted">{{ t('pur.say_desc') }}</p>
@@ -18,12 +16,12 @@
       <label for="purchase-audio">{{ t('pur.upload_label') }}</label>
       <input id="purchase-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
     </div>
-    <button class="btn btn-secondary" type="submit">{{ t('pur.upload_check') }}</button>
+    <button class="pill ghost" type="submit">{{ t('pur.upload_check') }}</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>
 
-<section class="card">
+<section class="rcpt">
   <h2>{{ t('pur.type_title') }}</h2>
   <form method="post" action="/e/{{ token }}/purchases/add">
     <div class="field">
@@ -44,14 +42,14 @@
       <label for="p-total">{{ t('pur.total_paid') }}</label>
       <input id="p-total" type="number" step="any" min="0" name="total_paid" placeholder="1200" required>
     </div>
-    <button class="btn btn-primary" type="submit">{{ t('pur.add') }}</button>
+    <button class="pill dark" type="submit">{{ t('pur.add') }}</button>
   </form>
 </section>
 
 <div class="section-head"><h2>{{ t('pur.bought_today') }}</h2></div>
 {% if rows %}
 {% for row in rows %}
-<div class="list-row">
+<div class="rcpt pur-row">
   <div class="list-main">
     <span class="list-name">{{ row.display }}{% if row.name_local %} <span lang="ta">{{ row.name_local }}</span>{% endif %}</span>
     <span class="list-sub">{{ row.qty }} {{ row.unit }} · {{ row.paid_cost }}</span>

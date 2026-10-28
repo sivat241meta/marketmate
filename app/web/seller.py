@@ -249,6 +249,124 @@ def _price_summary(item, currency: str = "INR", lang: str = "en") -> str:
     return t_for(lang)("review.no_price")
 
 
+def _home_extras(conn, shop, ui_lang: str) -> dict:
+    """Fresh Green home data: greeting, tap notice, orders, week numbers.
+
+    Every figure comes from existing rows: today's tiles, sessions in
+    review, waiting customer quotes and the last 7 day-close tiles.
+    """
+    from datetime import date as date_cls
+    from datetime import timedelta
+
+    from app.dayclose import day_tiles, shop_today
+
+    t = t_for(ui_lang)
+    now = datetime.now(UTC)
+    local = now.astimezone(IST)
+    hour = local.hour
+    if hour < 12:
+        greet_key = "sh.greet_morning"
+    elif hour < 17:
+        greet_key = "sh.greet_afternoon"
+    else:
+        greet_key = "sh.greet_evening"
+    today_label = local.strftime("%A, %d %B")
+
+    taps = []
+    taps_total = 0
+    for session in conn.execute(
+            "SELECT * FROM sessions WHERE shop_id = ? AND status = 'review'"
+            " AND kind IN ('video', 'live', 'board', 'voice_update')"
+            " ORDER BY id DESC", (shop["id"],)).fetchall():
+        try:
+            drafts = db.load_drafts(conn, session["id"])
+        except Exception:  # noqa: BLE001 - unreadable drafts count as none
+            drafts = []
+        need = sum(1 for draft in drafts if _needs_decision(draft))
+        taps.append({"id": session["id"], "need": need})
+        taps_total += need
+
+    orders = []
+    week_orders = 0
+    base = date_cls.fromisoformat(shop_today(shop, now))
+    week_start = base - timedelta(days=6)
+    currency = shop["currency"] or "INR"
+    for row in db.list_quotes(conn, shop["id"]):
+        try:
+            when = datetime.fromisoformat(row["created_at"])
+        except (TypeError, ValueError):
+            when = None
+        if when is not None:
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            local_day = when.astimezone(IST).date()
+        else:
+            local_day = None
+        if (row["kind"] == "quote" and local_day is not None
+                and week_start <= local_day <= base):
+            week_orders += 1
+        if not (row["source"] == "customer" and row["kind"] == "quote"
+                and row["status"] == "new"):
+            continue
+        try:
+            raw = json.loads(row["lines_json"] or "[]")
+        except ValueError:
+            raw = []
+        names = [str(entry.get("name_en") or "").strip().capitalize()
+                 for entry in raw
+                 if isinstance(entry, dict) and entry.get("name_en")]
+        try:
+            total = db.bill_display_totals(shop, row)["rounded"]
+        except (ValueError, ArithmeticError):
+            total = row["total"]
+        try:
+            phone = (row["customer_phone"] or "").strip() or None
+        except (KeyError, IndexError, TypeError):
+            phone = None
+        orders.append({
+            "id": row["id"],
+            "label": phone or t("bills.walk_in"),
+            "names": names,
+            "count": len(raw) if isinstance(raw, list) else 0,
+            "total": format_money(total, currency),
+            "time": (when.astimezone(IST).strftime("%H:%M")
+                     if when else ""),
+        })
+    orders.sort(key=lambda entry: entry["id"])
+
+    sales_week = Decimal("0.00")
+    bills_week = 0
+    margin_week = Decimal("0.00")
+    margin_known = True
+    for back in range(7):
+        day = (base - timedelta(days=back)).isoformat()
+        tiles = day_tiles(conn, shop, day)
+        sales_week += tiles["sales"]
+        bills_week += tiles["bills_count"]
+        if tiles["bills_count"]:
+            if tiles["margin"] is None:
+                margin_known = False
+            else:
+                margin_week += tiles["margin"]
+    week_known = margin_known and bills_week > 0
+    return {
+        "today_label": today_label,
+        "greet_key": greet_key,
+        "taps": taps,
+        "taps_total": taps_total,
+        "taps_first": taps[0]["id"] if taps else None,
+        "orders": orders,
+        "week": {
+            "sales": format_money(sales_week, currency),
+            "bills": bills_week,
+            "orders": week_orders,
+            "margin": (format_money(margin_week, currency)
+                       if week_known else None),
+            "margin_known": week_known,
+        },
+    }
+
+
 def _mb(size_bytes: int) -> str:
     return f"{size_bytes / (1024 * 1024):.0f}"
 
@@ -395,6 +513,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         currency=currency, lang=ui_lang)
             entry["margin_chip"] = margin_chip
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
+        home = _home_extras(conn, shop, ui_lang)
         return templates.TemplateResponse(
             request,
             "seller.html",
@@ -408,7 +527,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "is_staff": is_staff, "helper_name": helper_name,
              "seller_url": seller_url,
              "self_wa_url": (link_self_whatsapp_url(shop, seller_url)
-                             if not is_staff else None)},
+                             if not is_staff else None),
+             "today_label": home["today_label"],
+             "greet_key": home["greet_key"],
+             "taps": home["taps"], "taps_total": home["taps_total"],
+             "taps_first": home["taps_first"], "orders": home["orders"],
+             "week": home["week"]},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):

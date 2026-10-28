@@ -22,6 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const offlineBox = root.querySelector("[data-live-offline]");
   const cardsBox = root.querySelector("[data-live-cards]");
   const emptyNote = root.querySelector("[data-live-empty]");
+  const countEl = root.querySelector("[data-live-count]");
+  const micIcon = root.querySelector("[data-live-mic-icon]");
+  const stopIcon = root.querySelector("[data-live-stop-icon]");
+  const stopLabel = root.querySelector("[data-live-stop-label]");
   const fallback = root.querySelector("[data-live-fallback]");
   const mainCols = root.querySelector(".live-columns");
 
@@ -119,6 +123,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return price;
   }
 
+  function escHtml(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function setCaption(el, text) {
+    if (!el) {
+      return;
+    }
+    const clean = (text || "").trim();
+    if (!clean) {
+      el.textContent = "";
+      return;
+    }
+    const words = clean.split(/(\s+)/);
+    let idx = words.length - 1;
+    while (idx >= 0 && /^\s*$/.test(words[idx])) {
+      idx -= 1;
+    }
+    el.innerHTML = words.map((word, at) =>
+      (at === idx ? "<mark>" + escHtml(word) + "</mark>" : escHtml(word))
+    ).join("");
+  }
+
   function renderCards(items) {
     if (!items) {
       return;
@@ -126,55 +154,61 @@ document.addEventListener("DOMContentLoaded", () => {
     if (emptyNote) {
       emptyNote.hidden = items.length > 0;
     }
+    if (countEl) {
+      countEl.textContent = String(items.length);
+    }
     const seen = new Set();
     items.forEach((item) => {
       seen.add(item.key);
       let card = cards.get(item.key);
       if (!card) {
         card = document.createElement("div");
-        card.className = "list-row live-card";
+        card.className = "heard live-card";
         card.dataset.key = item.key;
         cardsBox.appendChild(card);
         cards.set(item.key, card);
       }
+      card.className = item.needs_check ? "heard need live-card" : "heard live-card";
       card.innerHTML = "";
       if (item.photo_url) {
         const img = document.createElement("img");
-        img.className = "list-thumb";
         img.src = item.photo_url;
         img.alt = "";
         card.appendChild(img);
       } else {
         const span = document.createElement("span");
-        span.className = "list-thumb";
-        span.textContent = "•";
+        span.className = "nophoto";
+        span.textContent = (item.name_local || item.name_en || "?").slice(0, 1);
         card.appendChild(span);
       }
       const main = document.createElement("div");
-      main.className = "list-main";
-      const name = document.createElement("span");
-      name.className = "list-name";
+      main.className = "n";
+      const name = document.createElement("b");
       name.textContent = item.name_local || item.name_en;
       main.appendChild(name);
-      const sub = document.createElement("span");
-      sub.className = "list-sub";
-      sub.textContent = item.variety ? item.name_en + " (" + item.variety + ")" : item.name_en;
-      main.appendChild(sub);
-      if (item.needs_check) {
-        const pill = document.createElement("span");
-        pill.className = "pill pill-check";
-        pill.textContent = "check";
-        main.appendChild(pill);
+      const sub = document.createElement("small");
+      const first = (item.price_lines || [])[0] || {};
+      let detail = item.variety ? item.name_en + " (" + item.variety + ")" : item.name_en;
+      if (first.unit) {
+        detail += " · per " + first.unit;
       }
+      sub.textContent = detail;
+      main.appendChild(sub);
       card.appendChild(main);
-      const price = document.createElement("div");
-      price.className = "list-price";
-      (item.price_lines || []).forEach((line) => {
-        const row = document.createElement("span");
-        row.textContent = priceText(line);
-        price.appendChild(row);
-      });
+      const price = document.createElement("span");
+      price.className = "p";
+      price.textContent = (item.price_lines || []).length
+        ? priceText((item.price_lines || [])[0]) : "—";
       card.appendChild(price);
+      const mark = document.createElement("span");
+      if (item.needs_check) {
+        mark.className = "ask";
+        mark.textContent = "?";
+      } else {
+        mark.className = "ok";
+        mark.textContent = "✓";
+      }
+      card.appendChild(mark);
     });
     cards.forEach((card, key) => {
       if (!seen.has(key)) {
@@ -210,6 +244,15 @@ document.addEventListener("DOMContentLoaded", () => {
     micBtn.setAttribute("aria-label", on ? "Stop live prices" : "Start live prices");
     badge.hidden = !on;
     timerEl.hidden = !on;
+    if (micIcon) {
+      micIcon.hidden = on;
+    }
+    if (stopIcon) {
+      stopIcon.hidden = !on;
+    }
+    if (stopLabel) {
+      stopLabel.hidden = !on;
+    }
     if (readyEl) {
       readyEl.hidden = on;
     }
@@ -272,12 +315,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       startTimer();
     } else if (data.type === "partial") {
-      partialEl.textContent = data.text || "";
+      setCaption(partialEl, data.text || "");
     } else if (data.type === "speech_start") {
       grabFrame(data.turn_id, "start");
     } else if (data.type === "turn") {
-      lastEl.textContent = data.text || "";
-      partialEl.textContent = "";
+      setCaption(lastEl, data.text || "");
+      setCaption(partialEl, "");
       grabFrame(data.turn_id, "end");
     } else if (data.type === "items") {
       renderCards(data.items || []);

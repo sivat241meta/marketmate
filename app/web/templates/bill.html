@@ -3,11 +3,16 @@
 {% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<header class="page-head">
-  <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bill.back') }}</a></p>
-  <h1>{{ t('bill.heading', id=bill["id"]) }}</h1>
-  <p class="muted">{{ shop["name"] }} · {{ created_label }} · {{ label }}{% if made_by %} · {{ t('bill.made_by', name=made_by) }}{% endif %}</p>
-</header>
+<p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bill.back') }}</a></p>
+<p class="kick">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
+{% if is_paid %}
+<h1 class="big">{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</h1>
+{% elif is_quote %}
+<h1 class="big">{{ t('bill.heading', id=bill["id"]) }} · <em>{{ total }}</em></h1>
+{% else %}
+<h1 class="big">{{ t('bill.to_collect', total=total) }}</h1>
+{% endif %}
+<p class="muted">{{ shop["name"] }} · {{ label }}{% if made_by %} · {{ t('bill.made_by', name=made_by) }}{% endif %}</p>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if price_changed %}<div class="alert alert-warn">{{ t('bill.price_changed') }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">{{ t('bill.not_understood', items=not_understood) }}</div>{% endif %}
@@ -18,12 +23,12 @@
     {% for value, label, kind in order_actions %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/order-status" class="inline-form">
       <input type="hidden" name="status" value="{{ value }}">
-      <button class="btn btn-big {% if kind == "primary" %}btn-primary{% else %}btn-ghost{% endif %}" type="submit">{{ label }}</button>
+      <button class="pill big {% if kind == "primary" %}cta{% else %}ghost{% endif %}" type="submit">{{ label }}</button>
     </form>
     {% endfor %}
   </div>
   {% if ready_wa_url %}
-  <p><a class="btn btn-green btn-big" href="{{ ready_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_whatsapp') }}</a></p>
+  <p><a class="pill cta big" href="{{ ready_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_whatsapp') }}</a></p>
   {% endif %}
 </section>
 {% endif %}
@@ -122,15 +127,19 @@
   <aside class="bill-actions" aria-label="Bill actions">
     {% if is_quote %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/accept">
-      <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("check") }}{{ t('bill.accept_quote') }}</button>
+      <button class="pill cta big" type="submit">{{ ui.icon("check") }}{{ t('bill.accept_quote') }}</button>
     </form>
     {% elif is_billed %}
-    <section class="card" aria-label="{{ t('bill.collect') }}">
+    <section aria-label="{{ t('bill.collect') }}">
       <h2>{{ t('bill.collect') }}</h2>
       {% if is_inr and upi_qr %}
-      <p class="pay-amount money">{{ total | money(shop["currency"]) }}</p>
-      <div class="qr-wrap" data-upi-url="{{ upi_url }}">{{ upi_qr | safe }}</div>
-      <p class="muted">{{ t('bill.scan_upi') }}</p>
+      <div class="upi">
+        <div class="h">{{ t('bill.scan_upi') }}</div>
+        <div class="upi-qr" data-upi-url="{{ upi_url }}">{{ upi_qr | safe }}</div>
+        <div class="a money">{{ total | money(shop["currency"]) }}</div>
+        <div class="p">{{ shop["upi_payee"] or shop["name"] }} · {{ upi_id }}</div>
+        <div class="apps">{{ t('bill.upi_apps') }}</div>
+      </div>
       {% elif is_inr %}
       <p class="muted">{{ t('bill.add_upi') }} <a href="/e/{{ token }}/settings">{{ t('nav.settings') }}</a></p>
       {% endif %}
@@ -138,12 +147,12 @@
         {% for value, label in pay_modes %}
         <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid" class="inline-form">
           <input type="hidden" name="mode" value="{{ value }}">
-          <button class="btn btn-green" type="submit">{{ ui.icon("check") }}{{ label }}</button>
+          <button class="pill cta" type="submit">{{ ui.icon("check") }}{{ label }}</button>
         </form>
         {% endfor %}
       </div>
-      <details class="card" open>
-        <summary>{{ t('bill.cash_helper') }}</summary>
+      <div class="rcpt cash-rcpt">
+        <p class="kick">{{ t('bill.cash_title') }}</p>
         <div data-cash data-total="{{ total }}">
           <div class="field">
             <label for="cash-gave">{{ t('bill.customer_gave') }}</label>
@@ -170,9 +179,9 @@
             <button type="button" data-key="0">0</button>
             <button type="button" data-key="back">⌫</button>
           </div>
-          <p class="give-back">{{ t('bill.give_back', amount="") }} <strong class="money" data-cash-back>₹0</strong></p>
+          <p class="change"><span>{{ t('bill.give_back', amount="") }}</span> <b class="money" data-cash-back>₹0</b></p>
         </div>
-      </details>
+      </div>
     </section>
     {% elif is_paid %}
     <p class="paid-state">{{ ui.icon("check") }}{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</p>
@@ -187,8 +196,10 @@
       <p><span class="shop-link">{{ public_url }}</span></p>
     </section>
     {% endif %}
-    <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.share_wa') }}</a>
-    <a class="btn btn-secondary" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}{{ t('bill.print_pdf') }}</a>
+    <div class="hero-cta bill-cta">
+      <a class="pill ghost big" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.share_wa') }}</a>
+      <a class="pill ghost" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}{{ t('bill.print_pdf') }}</a>
+    </div>
     <details class="card">
       <summary>{{ t('bill.cust_phone') }}</summary>
       <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/phone">
@@ -233,7 +244,7 @@
   {% for value, label in pay_modes %}
   <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/paid">
     <input type="hidden" name="mode" value="{{ value }}">
-    <button class="btn btn-green" type="submit">{{ label }}</button>
+    <button class="pill cta" type="submit">{{ label }}</button>
   </form>
   {% endfor %}
 </div>

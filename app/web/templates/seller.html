@@ -6,34 +6,57 @@
 {% if shop["is_judge"] %}<div class="alert alert-warn">{{ t('dash.test_shop') }}</div>{% endif %}
 {% if is_staff %}<div class="alert">{{ t('bill.made_by', name=helper_name) }}</div>{% endif %}
 
-<section class="shopcard">
-  <h1>{{ shop["name"] }}</h1>
-  <div class="sub">{{ shop["area"] }}</div>
-  {% if live %}<p>{{ ui.pill(t('dash.live_pill', count=live_count), "live") }}</p>{% endif %}
-  <div class="linkrow">
-    <a class="shop-link" href="{{ shop_url }}">{{ t('dash.shop_link', url=shop_url) }}</a>
-    <button class="btn btn-small" type="button" id="copy-link" data-link="{{ shop_url }}" data-copied="{{ t('dash.copied') }}">{{ t('dash.copy') }}</button>
-    <button class="btn btn-small" type="button" id="share-link" data-link="{{ shop_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('dash.copy_prompt') }}" data-share-title="{{ t('dash.share_title') }}">{{ ui.icon("share") }}{{ t('dash.share') }}</button>
-    <a class="btn btn-small" href="{{ shop_url }}/qr.png" download>{{ t('dash.qr') }}</a>
-  </div>
-</section>
+<p class="kick">{{ today_label }}</p>
+<h1 class="big">{{ t(greet_key, name=shop["name"]) }}<br><em>{{ t('sh.sold_today', total=bills.sales_today | money(shop["currency"])) }}</em></h1>
+{% if live %}<p>{{ ui.pill(t('dash.live_pill', count=live_count), "live") }}</p>{% endif %}
+<div class="trio">
+  <div class="tri"><span class="tile m">{{ ui.icon("receipt") }}</span><b>{{ bills.bills_today }}</b><small>{{ t('sh.trio_bills') }}</small></div>
+  <div class="tri"><span class="tile y">{{ ui.icon("tag") }}</span><b class="money">{{ bills.sales_cash | money(shop["currency"]) }}</b><small>{{ t('sh.trio_cash') }}</small></div>
+  <div class="tri"><span class="tile s">{{ ui.icon("qr") }}</span><b class="money">{{ bills.sales_upi | money(shop["currency"]) }}</b><small>{{ t('sh.trio_upi') }}</small></div>
+</div>
+<div class="hero-cta">
+  {% if not is_staff %}<a class="pill dark big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('sh.say_prices') }}</a>{% endif %}
+  <a class="pill ghost big" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('sh.new_bill') }}</a>
+</div>
 
-<section class="card" id="install-card" hidden>
-  <h2>{{ t('dash.install_app') }}</h2>
-  <p class="muted">{{ t('dash.install_hint') }}</p>
-  <p><button class="btn btn-primary" type="button" id="install-btn">{{ t('dash.install_app') }}</button></p>
-  <p class="muted" id="install-ios" hidden>{{ t('dash.install_ios') }}</p>
-</section>
+{% if taps_total and taps_first %}
+<p class="notice need">{{ ui.icon("check") }}<span><strong>{% if taps_total == 1 %}{{ t('sh.need_tap_one') }}{% else %}{{ t('sh.need_tap', n=taps_total) }}{% endif %}</strong> <a href="/e/{{ token }}/s/{{ taps_first }}">{{ t('sh.check_now') }}</a></span></p>
+{% endif %}
+
+{% if orders %}
+<p class="kick">{{ t('sh.new_orders') }}</p>
+{% for order in orders %}
+<div class="rcpt order-rcpt">
+  <div class="order-top"><b>{{ order.label }} · #{{ order.id }}</b>{% if order.time %}<span class="pill sm gold">{{ order.time }}</span>{% endif %}</div>
+  {% if order.names %}<p class="order-names">{{ order.names[:3] | join(" · ") }}{% if order.names | length > 3 %} +{{ order.names | length - 3 }}{% endif %}</p>{% endif %}
+  <div class="order-bottom"><b class="money">{{ order.total }}</b>
+    <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ order.id }}/order-status">
+      <input type="hidden" name="status" value="packing">
+      <button class="pill dark" type="submit">{{ t('bill.start_packing') }}</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="band">
+  <p class="kick">{{ t('sh.week') }}</p>
+  <div class="gcards">
+    <div class="gc"><span class="gi">{{ ui.icon("chart") }}</span><b class="money">{{ week.sales }}</b><small>{{ t('sh.week_sales') }}</small></div>
+    <div class="gc"><span class="gi g">{{ ui.icon("receipt") }}</span><b>{{ week.bills }}</b><small>{{ t('sh.week_bills') }}</small></div>
+    <div class="gc"><span class="gi g">{{ ui.icon("user") }}</span><b>{{ week.orders }}</b><small>{{ t('sh.week_orders') }}</small></div>
+    {% if week.margin_known %}<div class="gc"><span class="gi">{{ ui.icon("check") }}</span><b class="money">{{ week.margin }}</b><small>{{ t('sh.week_margin') }}</small></div>{% endif %}
+  </div>
+</div>
 
 {% if not is_staff %}
-<section class="card">
-  <h2>{{ t('dash.keep_safe') }}</h2>
-  <p class="muted">{{ t('set.keep_safe_desc') }}</p>
-  <p>
-    <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('dash.send_link_wa') }}</a>
-    <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
-  </p>
-</section>
+<div class="hero-cta quick-links">
+  <a class="pill ghost" href="/e/{{ token }}/update">{{ ui.icon("photo") }}{{ t('sh.quick_board') }}</a>
+  {% if versions %}<a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('sh.quick_tags') }}</a>{% endif %}
+  <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}{{ t('sh.quick_purchases') }}</a>
+  <a class="pill ghost" href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}{{ t('sh.quick_settings') }}</a>
+</div>
 {% endif %}
 
 {% if not is_staff %}
@@ -156,40 +179,29 @@
 {% else %}
 <p class="muted">{{ t('dash.no_versions') }}</p>
 {% endif %}
+
+<section class="card compact" id="install-card" hidden>
+  <h2>{{ t('dash.install_app') }}</h2>
+  <p class="muted">{{ t('dash.install_hint') }}</p>
+  <p><button class="btn btn-primary" type="button" id="install-btn">{{ t('dash.install_app') }}</button></p>
+  <p class="muted" id="install-ios" hidden>{{ t('dash.install_ios') }}</p>
+</section>
+
+{% if not is_staff %}
+<section class="card compact">
+  <h2>{{ t('dash.keep_safe') }}</h2>
+  <p class="muted">{{ t('set.keep_safe_desc') }}</p>
+  <p>
+    <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('dash.send_link_wa') }}</a>
+    <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+  </p>
+</section>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const copyBtn = document.getElementById("copy-link");
-  const shareBtn = document.getElementById("share-link");
-  function fullUrl(path) { return new URL(path, window.location.origin).toString(); }
-  if (copyBtn) {
-    copyBtn.addEventListener("click", async () => {
-      const url = fullUrl(copyBtn.dataset.link);
-      try {
-        await navigator.clipboard.writeText(url);
-        copyBtn.textContent = copyBtn.dataset.copied || "Copied";
-      } catch (err) {
-        window.prompt(copyBtn.dataset.prompt || "Copy:", url);
-      }
-    });
-  }
-  if (shareBtn) {
-    shareBtn.addEventListener("click", async () => {
-      const url = fullUrl(shareBtn.dataset.link);
-      if (navigator.share) {
-        try { await navigator.share({ title: shareBtn.dataset.shareTitle || "MarketMate shop", url: url }); } catch (err) { /* dismissed */ }
-      } else {
-        try {
-          await navigator.clipboard.writeText(url);
-          shareBtn.textContent = shareBtn.dataset.copied || "Copied";
-        } catch (err) {
-          window.prompt(shareBtn.dataset.prompt || "Copy:", url);
-        }
-      }
-    });
-  }
   const installCard = document.getElementById("install-card");
   const installBtn = document.getElementById("install-btn");
   const installIos = document.getElementById("install-ios");

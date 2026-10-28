@@ -98,12 +98,26 @@ document.addEventListener("DOMContentLoaded", () => {
         total += (qty / parsed.per) * parsed.rate;
       }
     });
+    const totalEl = form.querySelector("[data-tap-total]");
+    const countEl = form.querySelector("[data-tap-count]");
     if (!count) {
       summary.textContent = "Pick items with +";
+      if (totalEl) {
+        totalEl.textContent = formatAmount(0, prefix);
+      }
+      if (countEl) {
+        countEl.textContent = "0";
+      }
       return;
     }
     const noun = count === 1 ? "item" : "items";
-    summary.textContent = `${count} ${noun} · ${formatAmount(total, prefix)}`;
+    summary.textContent = `Bill · ${formatAmount(total, prefix)} · ${count} ${noun}`;
+    if (totalEl) {
+      totalEl.textContent = formatAmount(total, prefix);
+    }
+    if (countEl) {
+      countEl.textContent = `${count} ${noun}`;
+    }
   }
 
   document.querySelectorAll("[data-stepper]").forEach((stepper) => {

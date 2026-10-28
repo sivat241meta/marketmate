@@ -673,6 +673,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             ui_lang = get_ui_lang(request, shop)
             tiles = bills_tiles(conn, shop["id"], now=now)
             rows = _filtered(conn, shop["id"], range_key, status_key, now)
+            counts = {key: len(_filtered(conn, shop["id"], range_key,
+                                         key, now))
+                      for key in ("all", "waiting", "packing", "ready",
+                                  "collected", "billed", "paid")}
+            unpaid_total = Decimal("0.00")
+            for row in _filtered(conn, shop["id"], range_key, "billed",
+                                 now):
+                try:
+                    unpaid_total += db.bill_display_totals(
+                        shop, row)["rounded"]
+                except (InvalidOperation, ValueError):
+                    continue
             items = []
             for row in rows:
                 try:
@@ -710,6 +722,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "sales_card": _fmt_money(tiles["sales_card"]),
                 "quotes_waiting": tiles["quotes_waiting"],
                 "average_bill": _fmt_money(tiles["average_bill"]),
+                "counts": counts,
+                "unpaid_count": counts["billed"],
+                "unpaid_total": _fmt_money(unpaid_total),
                 "top": top_items(conn, shop["id"], now=now),
                 "ui_lang": ui_lang, "is_staff": _is_staff(conn, token),
             })
