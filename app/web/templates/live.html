@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Live prices — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>Live prices</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="live-wrap" data-live data-token="{{ token }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
+  <div class="live-columns">
+    <div class="live-main">
+      <div class="live-preview">
+        <video class="live-video" data-live-video playsinline muted autoplay aria-label="Camera preview"></video>
+        <div class="live-topbar">
+          <span class="live-live" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>Live</span>
+          <span class="live-timer" data-live-timer>0:00</span>
+        </div>
+        <div class="live-captions" aria-live="polite">
+          <p class="live-last" data-live-last></p>
+          <p class="live-partial" data-live-partial></p>
+        </div>
+        <canvas data-live-canvas hidden></canvas>
+      </div>
+      <div class="live-controls">
+        <button class="mic-btn is-big live-mic" type="button" data-live-mic aria-label="Start live prices">{{ ui.icon("mic") }}</button>
+        <p class="muted live-hint" data-live-hint>Tap to start. Point at your stall and say each price.</p>
+      </div>
+      <div class="alert alert-warn" data-live-error hidden></div>
+      <div class="live-finish" data-live-finish hidden>
+        <p><strong>Finishing… checking every price</strong></p>
+        <ol class="vstepper">
+          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">Listening live</span></span></li>
+          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">Finding the items</span></span></li>
+          <li class="vstep is-active"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">Checking every price</span><span class="vfriendly">Checking every price against what you said.</span></span></li>
+          <li class="vstep is-todo"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">Ready to check</span></span></li>
+        </ol>
+      </div>
+      <p class="live-offline" data-live-offline hidden><a class="btn btn-secondary" href="/e/{{ token }}">Upload a video instead</a></p>
+    </div>
+    <div class="live-cards" data-live-cards>
+      <h2>Prices heard</h2>
+      <p class="muted" data-live-empty>No prices yet — start talking.</p>
+    </div>
+  </div>
+  <div class="live-fallback" data-live-fallback hidden>
+    <div class="alert alert-info">Live mode needs a browser with camera and microphone support. You can still upload a video.</div>
+    <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
+      <div class="field">
+        <label for="live-clip">Video of your stall</label>
+        <input id="live-clip" type="file" name="video" accept="video/*" capture="environment" required>
+        <span class="help">Up to 3 minutes. Film each item as you say its price.</span>
+      </div>
+      <p class="upload-file" data-upload-file hidden></p>
+      <p class="form-error" data-upload-error hidden></p>
+      <div class="upload-progress" data-upload-progress hidden>
+        <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+        <p class="upload-meta" data-upload-meta></p>
+        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
+      </div>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}Upload a video instead</button>
+    </form>
+  </div>
+  <p class="notice">{{ notice | safe }}</p>
+  <p><a href="/e/{{ token }}">Back to dashboard</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
+<script src="{{ static_url('live.js') if static_url is defined else '/static/live.js' }}"></script>
+{% endblock %}

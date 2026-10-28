@@ -14,6 +14,7 @@ dependencies = [
   "qrcode",
   "uvicorn",
   "weasyprint",
+  "websockets>=13",
 ]
 
 [project.optional-dependencies]

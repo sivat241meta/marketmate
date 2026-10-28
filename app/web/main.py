@@ -27,6 +27,7 @@ from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.web import bills as bills_routes
+from app.web import live as live_routes
 from app.web import photos as photo_routes
 from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
@@ -89,6 +90,7 @@ def create_app(settings: Settings) -> FastAPI:
     photo_routes.register(app, settings, templates)
     quote_routes.register(app, settings, templates)
     bills_routes.register(app, settings, templates)
+    live_routes.register(app, settings, templates)
 
     def get_conn():
         conn = db.connect(data_dir)

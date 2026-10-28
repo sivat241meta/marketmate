@@ -88,9 +88,60 @@ def _load_frames(frames_dir: Path) -> list[Frame]:
     return sorted(frames, key=lambda f: f.t_ms)
 
 
-def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[Frame],
-                    wav: Path, session_dir: Path, *, settings, ledger,
-                    language: str = "ta") -> None:
+def live_frame_for_item(item, frames_by_turn, turns=None):
+    """End frame else start frame of the turn holding the item's quote.
+
+    ``frames_by_turn`` maps turn id -> {"start": Frame, "end": Frame} or a
+    list of Frames (last wins as the end frame). Falls back to any frame
+    when the quoted turn has none, else None.
+    """
+    if not frames_by_turn:
+        return None
+
+    def _pick(entry):
+        if entry is None:
+            return None
+        if isinstance(entry, dict):
+            return entry.get("end") or entry.get("start")
+        if isinstance(entry, (list, tuple)) and entry:
+            return entry[-1]
+        return entry if isinstance(entry, Frame) else None
+
+    candidates: list[int] = list(getattr(item.proof, "turn_ids", None) or [])
+    quote = getattr(item.proof, "quote", "") or ""
+    if not candidates and quote and turns:
+        for turn in turns:
+            if quote in (turn.text or ""):
+                candidates.append(turn.id)
+                break
+    for turn_id in candidates:
+        frame = _pick(frames_by_turn.get(turn_id))
+        if frame is not None:
+            return frame
+    for entry in frames_by_turn.values():
+        frame = _pick(entry)
+        if frame is not None:
+            return frame
+    return None
+
+
+def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
+                  wav_path, *, settings, ledger, language: str = "ta",
+                  all_frames: list[Frame] | None = None):
+    """Shared final steps after transcription for the video and live paths.
+
+    ``turns`` are the completed turns. ``frames_by_turn`` maps turn id to
+    that turn's saved frames (live path) or None (video path, which uses
+    ``all_frames`` with the windowed Spark picker). Cuts clips from
+    ``wav_path``, saves drafts and moves the session to review.
+    Returns the draft items.
+    """
+    wav_path = Path(wav_path)
+    session_dir = _session_dir(settings, session_id)
+    duration_ms = max((t.end_ms for t in turns), default=0)
+    transcript = Transcript(text=" ".join(t.text for t in turns),
+                            duration_ms=duration_ms, turns=list(turns))
+
     def _extract_progress(part: int, total: int) -> None:
         detail = f"part {part} of {total}" if total > 1 else None
         db.set_stage(conn, session_id, "items", detail=detail)
@@ -106,20 +157,37 @@ def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[
     clip_dir = session_dir / "clips"
     clip_dir.mkdir(parents=True, exist_ok=True)
     matched: list[bool] = []
-    db.set_stage(conn, session_id, "photos")
+    use_live_frames = frames_by_turn is not None
+    row = conn.execute("SELECT kind FROM sessions WHERE id = ?",
+                       (session_id,)).fetchone()
+    is_live = (row["kind"] == "live") if row else use_live_frames
+    if not is_live:
+        db.set_stage(conn, session_id, "photos")
     for index, item in enumerate(items):
-        db.set_stage(conn, session_id, "photos",
-                     detail=f"item {index + 1} of {len(items)}")
-        start_ms, end_ms = item_window(item, transcript.turns)
-        frame, matches = pick_best_frame(
-            item, frames_for_window(frames, start_ms, end_ms),
-            ledger=ledger, settings=settings)
-        matched.append(matches)
+        if not is_live:
+            db.set_stage(conn, session_id, "photos",
+                         detail=f"item {index + 1} of {len(items)}")
+        if use_live_frames:
+            frame = live_frame_for_item(item, frames_by_turn, turns)
+            if frame is None:
+                matched.append(False)
+                clip = cut_audio_clip(wav_path, item.proof.start_ms,
+                                      item.proof.end_ms,
+                                      clip_dir / f"item_{index}.m4a")
+                item.proof.audio_clip = str(clip)
+                continue
+            matched.append(True)
+        else:
+            start_ms, end_ms = item_window(item, transcript.turns)
+            frame, matches = pick_best_frame(
+                item, frames_for_window(all_frames or [], start_ms, end_ms),
+                ledger=ledger, settings=settings)
+            matched.append(matches)
         item.photo = str(make_photo(
             frame, item.name_en, photo_dir / f"s{session_id}_{index}.jpg",
             ledger=ledger, settings=settings))
         item.proof.frame = str(frame.path)
-        clip = cut_audio_clip(wav, item.proof.start_ms, item.proof.end_ms,
+        clip = cut_audio_clip(wav_path, item.proof.start_ms, item.proof.end_ms,
                               clip_dir / f"item_{index}.m4a")
         item.proof.audio_clip = str(clip)
     db.set_stage(conn, session_id, "checking")
@@ -133,6 +201,15 @@ def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[
     db.save_drafts(conn, session_id, items)
     db.set_stage(conn, session_id, "ready")
     db.set_session_status(conn, session_id, "review", f"{len(items)} items need review")
+    return items
+
+
+def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[Frame],
+                    wav: Path, session_dir: Path, *, settings, ledger,
+                    language: str = "ta") -> None:
+    process_turns(conn, session_id, transcript.turns, None, wav,
+                  settings=settings, ledger=ledger, language=language,
+                  all_frames=frames)
 
 
 def process_video_session(conn, session_id: int, video: Path, *,
@@ -171,9 +248,25 @@ def process_video_session(conn, session_id: int, video: Path, *,
                               friendly_error_message(exc))
 
 
+def _load_live_frames(frames_dir: Path) -> dict[int, dict[str, Frame]]:
+    """Live frames turn<N>_<at>.jpg grouped by turn for process_turns."""
+    grouped: dict[int, dict[str, Frame]] = {}
+    for path in sorted(frames_dir.glob("turn*_*.jpg")):
+        stem = path.stem
+        try:
+            turn_part, at = stem.split("_", 1)
+            turn_id = int(turn_part[4:])
+        except (ValueError, IndexError):
+            continue
+        if at not in ("start", "end"):
+            continue
+        grouped.setdefault(turn_id, {})[at] = Frame(path=path, t_ms=0)
+    return grouped
+
+
 def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     """Retry a failed (or review) session from its cached transcript."""
-    row = conn.execute("SELECT status FROM sessions WHERE id = ?",
+    row = conn.execute("SELECT status, kind FROM sessions WHERE id = ?",
                        (session_id,)).fetchone()
     # "processing" is allowed so the retry route can flip the session to the
     # stepper immediately and let the background job do the re-run.
@@ -186,11 +279,17 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     transcript = _transcript_from_json(json.loads(transcript_path.read_text()))
     db.set_session_status(conn, session_id, "processing", "Trying again...")
     try:
-        frames = _load_frames(session_dir / "frames")
         wav = session_dir / "audio.wav"
+        language = _shop_language(conn, session_id)
+        if row["kind"] == "live":
+            frames_by_turn = _load_live_frames(session_dir / "frames")
+            process_turns(conn, session_id, transcript.turns, frames_by_turn, wav,
+                          settings=settings, ledger=ledger, language=language)
+            return
+        frames = _load_frames(session_dir / "frames")
         _finish_session(conn, session_id, transcript, frames, wav, session_dir,
                         settings=settings, ledger=ledger,
-                        language=_shop_language(conn, session_id))
+                        language=language)
     except CostCapExceeded:
         db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status

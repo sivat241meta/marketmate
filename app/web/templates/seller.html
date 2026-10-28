@@ -28,11 +28,12 @@
 </section>
 
 <section class="card cta-card">
-  <h2>Record today's prices</h2>
-  <p class="muted">Walk past your stall and say each price.</p>
+  <h2>Live prices</h2>
+  <p class="muted">Point at your stall and say each price. Cards appear as you speak.</p>
+  <p><a class="btn btn-primary btn-big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}Go live</a></p>
   <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <div class="field">
-      <label for="clip">Video of your stall</label>
+      <label for="clip">Or upload a video of your stall</label>
       <input id="clip" type="file" name="video" accept="video/*" capture="environment" required>
       <span class="help">Up to 3 minutes. Film each item as you say its price.</span>
     </div>
@@ -43,7 +44,7 @@
       <p class="upload-meta" data-upload-meta></p>
       <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}Record today's prices</button>
+    <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}Upload a video</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>

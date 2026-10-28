@@ -383,7 +383,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                    "progress": progress, "shop_lang": shop["language"],
                    "friendly": db.stage_friendly(session["kind"],
                                                 progress["stage"])}
-        if session["status"] == "review" and session["kind"] == "video":
+        if session["status"] == "review" and session["kind"] in ("video", "live"):
             items = db.load_drafts(conn, session_id)
             cards = []
             for index, item in enumerate(items):

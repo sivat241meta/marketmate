@@ -14,7 +14,7 @@ from app.models import DraftItem, Flag, Item, PriceLine, Proof
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
 _SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo",
-                  "bill_voice", "bill_photo"}
+                  "bill_voice", "bill_photo", "live"}
 
 STAGES: list[tuple[str, str]] = [
     ("uploaded", "Video received"),
@@ -67,6 +67,19 @@ QUOTE_STAGE_FRIENDLY = {
     "matching": "Matching each line to the shop's prices.",
     "ready": "Your quote is ready.",
 }
+LIVE_STAGES = ["listening", "items", "checking", "ready"]
+LIVE_STAGE_LABELS = {
+    "listening": "Listening live",
+    "items": "Finding the items",
+    "checking": "Checking every price",
+    "ready": "Ready to check",
+}
+LIVE_STAGE_FRIENDLY = {
+    "listening": "Listening live to your prices.",
+    "items": "Muse Spark is finding the items and prices you said.",
+    "checking": "Checking every price against what you said.",
+    "ready": "Ready for you to check.",
+}
 _STAGE_COLUMNS = (
     ("stage", "TEXT"),
     ("stage_detail", "TEXT"),
@@ -85,6 +98,8 @@ def stages_for_kind(kind: str) -> list[str]:
         return list(QUOTE_VOICE_STAGES)
     if kind in ("quote_photo", "bill_photo"):
         return list(QUOTE_PHOTO_STAGES)
+    if kind == "live":
+        return list(LIVE_STAGES)
     return [key for key, _ in STAGES]
 
 
@@ -94,6 +109,8 @@ def stage_label(kind: str, key: str) -> str:
         return PHOTO_STAGE_LABELS.get(key, key)
     if kind in ("quote_voice", "quote_photo", "bill_voice", "bill_photo"):
         return QUOTE_STAGE_LABELS.get(key, key)
+    if kind == "live":
+        return LIVE_STAGE_LABELS.get(key, STAGE_LABELS.get(key, key))
     return STAGE_LABELS.get(key, key)
 
 
@@ -103,6 +120,8 @@ def stage_friendly(kind: str, key: str) -> str:
         return PHOTO_STAGE_FRIENDLY.get(key, "")
     if kind in ("quote_voice", "quote_photo", "bill_voice", "bill_photo"):
         return QUOTE_STAGE_FRIENDLY.get(key, "")
+    if kind == "live":
+        return LIVE_STAGE_FRIENDLY.get(key, STAGE_FRIENDLY.get(key, ""))
     return STAGE_FRIENDLY.get(key, "")
 
 

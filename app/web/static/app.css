@@ -1177,3 +1177,106 @@ svg.boxes text.box-badge {
   .check-grid { grid-template-columns: repeat(4, 1fr); }
   .segmented { max-width: 640px; }
 }
+
+/* ---- Task 35: live prices ---- */
+.live-wrap { display: block; }
+.live-columns { display: grid; gap: var(--space-4); }
+.live-preview {
+  position: relative;
+  background: var(--ink);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.live-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--ink);
+}
+.live-topbar {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.live-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(28, 25, 23, 0.72);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border-radius: 99px;
+  padding: 4px 12px;
+}
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+.live-timer {
+  background: rgba(28, 25, 23, 0.72);
+  color: #fff;
+  font-weight: 800;
+  border-radius: 99px;
+  padding: 4px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.live-captions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-3) var(--space-3) var(--space-4);
+}
+.live-last {
+  margin: 0 0 var(--space-1);
+  color: #d6cfbd;
+  font-size: 0.9rem;
+}
+.live-partial {
+  margin: 0;
+  color: #fff;
+  background: rgba(28, 25, 23, 0.72);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 1.5em;
+}
+.live-partial:empty { display: none; }
+.live-last:empty { display: none; }
+.live-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+.live-mic {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  padding: 0;
+}
+.live-mic .icon { width: 34px; height: 34px; }
+.live-hint { text-align: center; }
+.live-finish { margin: var(--space-3) 0; }
+.live-offline { margin: var(--space-3) 0; }
+.live-cards { min-width: 0; }
+.live-card { margin-bottom: var(--space-2); }
+.live-fallback { margin: var(--space-4) 0; }
+
+@media (min-width: 900px) {
+  .live-video { aspect-ratio: 16 / 9; }
+  .live-columns { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .live-main { position: sticky; top: 76px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-mic.is-recording { animation: none; }
+}
