@@ -24,6 +24,7 @@ class Settings:
     public_base_url: str
     uploads_per_ip_hour: int
     uploads_per_hour: int
+    max_upload_bytes: int = 512 * 1024 * 1024
 
 
 def _get(env: Mapping[str, str], key: str, default: str) -> str:
@@ -79,6 +80,12 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     except ValueError as exc:
         raise ValueError("upload limits must be integers") from exc
 
+    try:
+        max_upload_bytes = int(_get(env, "MAX_UPLOAD_BYTES",
+                                    str(512 * 1024 * 1024)))
+    except ValueError as exc:
+        raise ValueError("MAX_UPLOAD_BYTES must be an integer") from exc
+
     return Settings(
         model_api_key=model_api_key,
         baseten_api_key=baseten_api_key,
@@ -89,4 +96,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         public_base_url=public_base_url,
         uploads_per_ip_hour=uploads_per_ip_hour,
         uploads_per_hour=uploads_per_hour,
+        max_upload_bytes=max_upload_bytes,
     )

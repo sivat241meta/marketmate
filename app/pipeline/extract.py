@@ -135,10 +135,18 @@ def chunk_transcript(transcript: Transcript) -> list[Transcript]:
     ]
 
 
-def extract_items(transcript: Transcript, *, ledger, settings) -> list[DraftItem]:
-    """One low-reasoning Spark call per turn group; items merged in order."""
+def extract_items(transcript: Transcript, *, ledger, settings,
+                  progress=None) -> list[DraftItem]:
+    """One low-reasoning Spark call per turn group; items merged in order.
+
+    ``progress`` is called as ``progress(part, total)`` before each chunk so
+    callers can report "part 2 of 3" while long transcripts are extracted.
+    """
+    chunks = chunk_transcript(transcript)
     items: list[DraftItem] = []
-    for chunk in chunk_transcript(transcript):
+    for number, chunk in enumerate(chunks, start=1):
+        if progress is not None:
+            progress(number, len(chunks))
         data = chat_json(build_extract_messages(chunk), ledger=ledger,
                          settings=settings, reasoning_effort="low")
         items.extend(parse_extract_json(data, transcript))

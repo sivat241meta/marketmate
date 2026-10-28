@@ -34,7 +34,11 @@ from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
 from app.pipeline.names import CANONICAL_NAMES, PRODUCE_KEYWORDS
 from app.pipeline.numbers import parse_number
-from app.pipeline.run import process_video_session, reprocess
+from app.pipeline.run import (
+    friendly_error_message,
+    process_video_session,
+    reprocess,
+)
 from app.pipeline.update import (
     apply_changes,
     change_from_dict,
@@ -169,6 +173,15 @@ def _price_summary(item) -> str:
     return "no price yet"
 
 
+def _mb(size_bytes: int) -> str:
+    return f"{size_bytes / (1024 * 1024):.0f}"
+
+
+def _too_big_message(size_bytes: int, limit_bytes: int) -> str:
+    return (f"That file is {_mb(size_bytes)} MB, which is too big to upload. "
+            f"Please choose a file under {_mb(limit_bytes)} MB.")
+
+
 def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     data_dir = Path(settings.data_dir)
 
@@ -257,7 +270,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             {"shop": shop, "sessions": sessions, "versions": versions,
              "notice": NOTICE, "stock": stock, "token": token,
              "items": items, "live": live, "live_count": live_count,
-             "shop_url": f"/s/{shop['slug']}"},
+             "shop_url": f"/s/{shop['slug']}",
+             "max_upload_bytes": app.state.settings.max_upload_bytes},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -321,12 +335,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 {"title": "Demo budget used up",
                  "message": BUDGET_EXHAUSTED_MESSAGE},
                 status_code=503)
+        payload = video.file.read()
+        limit = app.state.settings.max_upload_bytes
+        if len(payload) > limit:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "File too big",
+                 "message": _too_big_message(len(payload), limit)},
+                status_code=413)
         session_id = db.create_session(conn, shop["id"], "video")
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         safe_name = Path(video.filename or "clip.mp4").name
         saved = uploads / f"{session_id}_{safe_name}"
-        saved.write_bytes(video.file.read())
+        saved.write_bytes(payload)
         jobs.submit(_run_session_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
@@ -334,7 +356,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def session_page(request: Request, token: str, session_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
-        context = {"shop": shop, "session": session, "token": token}
+        progress = db.session_progress(session)
+        context = {"shop": shop, "session": session, "token": token,
+                   "progress": progress,
+                   "friendly": db.STAGE_FRIENDLY.get(progress["stage"], "")}
         if session["status"] == "review" and session["kind"] == "video":
             items = db.load_drafts(conn, session_id)
             cards = []
@@ -376,7 +401,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def session_status(token: str, session_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
-        return JSONResponse({"status": session["status"], "message": session["message"]})
+        progress = db.session_progress(session)
+        return JSONResponse({
+            "status": session["status"], "message": session["message"],
+            "stage": progress["stage"], "step": progress["step"],
+            "steps": progress["steps"], "detail": progress["detail"],
+            "elapsed_s": progress["elapsed_s"],
+            "friendly": db.STAGE_FRIENDLY.get(progress["stage"], ""),
+        })
 
     @app.get("/e/{token}/s/{session_id}/clip/{index}")
     def session_clip(token: str, session_id: int, index: int, conn: Conn):
@@ -469,7 +501,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         items = db.version_items(conn, version_id) if version_id else []
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "record", "items": items,
-            "notice": NOTICE, "error": None})
+            "notice": NOTICE, "error": None,
+            "max_upload_bytes": app.state.settings.max_upload_bytes})
 
     @app.post("/e/{token}/update")
     async def update_post(request: Request, token: str):
@@ -489,6 +522,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         upload = form.get("audio") or form.get("file") or form.get("video")
         if upload is None or not hasattr(upload, "file"):
             raise HTTPException(422, "an audio recording is required")
+        payload = await upload.read()
+        limit = app.state.settings.max_upload_bytes
+        if len(payload) > limit:
+            items = db.version_items(conn, base_version_id)
+            return templates.TemplateResponse(request, "update.html", {
+                "shop": shop, "token": token, "mode": "record", "items": items,
+                "notice": NOTICE, "error": _too_big_message(len(payload), limit),
+                "max_upload_bytes": limit})
         session_id = db.create_session(conn, shop["id"], "voice_update")
         session_dir = data_dir / "sessions" / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
@@ -496,29 +537,37 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         uploads.mkdir(parents=True, exist_ok=True)
         safe_name = Path(getattr(upload, "filename", "") or "update.webm").name
         saved = uploads / f"{session_id}_{safe_name}"
-        saved.write_bytes(await upload.read())
+        saved.write_bytes(payload)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
         try:
+            db.set_session_status(conn, session_id, "processing",
+                                  "Listening to the update...")
+            db.set_stage(conn, session_id, "listening")
             wav = extract_audio(saved, session_dir / "audio.wav")
             transcript = transcribe_wav(
                 wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
                 settings=app.state.settings)
+            db.set_stage(conn, session_id, "items")
             current = db.version_items(conn, base_version_id)
             changes = parse_update(transcript, current,
                                    ledger=ledger, settings=app.state.settings)
+            db.set_stage(conn, session_id, "checking")
         except (TranscribeError, SparkError, CostCapExceeded,
                 subprocess.CalledProcessError, OSError) as exc:
-            db.set_session_status(conn, session_id, "failed", str(exc))
+            message = friendly_error_message(exc, media="recording")
+            db.set_session_status(conn, session_id, "failed", message)
             items = db.version_items(conn, base_version_id)
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
-                "notice": NOTICE, "error": str(exc) or "the update failed"})
+                "notice": NOTICE, "error": message,
+                "max_upload_bytes": limit})
         finally:
             saved.unlink(missing_ok=True)
         _update_path(data_dir, session_id).write_text(json.dumps({
             "base_version_id": base_version_id,
             "changes": [change_to_dict(change) for change in changes]}))
+        db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(changes)} changes heard")
         current_map = {item.name_en: item for item in current}

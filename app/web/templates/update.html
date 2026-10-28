@@ -97,10 +97,17 @@
     <button class="btn btn-secondary" type="button" id="rec-stop" disabled>Stop and check</button>
   </div>
   <p class="muted" id="rec-status">Tap Start and say the new prices.</p>
-  <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data">
+  <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <div class="field">
       <label for="update-audio">Or upload a recording</label>
       <input id="update-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+    </div>
+    <p class="upload-file" data-upload-file hidden></p>
+    <p class="form-error" data-upload-error hidden></p>
+    <div class="upload-progress" data-upload-progress hidden>
+      <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+      <p class="upload-meta" data-upload-meta></p>
+      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
     </div>
     <button class="btn btn-secondary" type="submit">Upload and check</button>
   </form>
@@ -132,5 +139,6 @@
 <script src="{{ static_url('review.js') if static_url is defined else '/static/review.js' }}"></script>
 {% else %}
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
+<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 {% endif %}
 {% endblock %}

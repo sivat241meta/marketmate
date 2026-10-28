@@ -682,6 +682,58 @@ progress.progress::-moz-progress-bar { background: var(--green); border-radius: 
 .record-actions { display: flex; gap: var(--space-3); justify-content: center; margin: var(--space-3) 0; flex-wrap: wrap; }
 .update-confirm-head { margin-bottom: var(--space-3); }
 
+/* ---- Task 24: processing stepper and upload progress ---- */
+.vstepper { list-style: none; margin: var(--space-4) 0; padding: 0; }
+.vstep {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: var(--space-4);
+}
+.vstep::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 34px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--line);
+}
+.vstep:last-child { padding-bottom: 0; }
+.vstep:last-child::before { display: none; }
+.vstep.is-done::before { background: var(--ok); }
+.vdot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  flex: none;
+  background: var(--line);
+  color: var(--muted);
+}
+.vstep.is-done .vdot { background: var(--ok); color: #fff; }
+.vstep.is-active .vdot {
+  background: var(--saffron);
+  animation: vpulse 1.4s ease-in-out infinite;
+}
+@keyframes vpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+  50% { box-shadow: 0 0 0 9px rgba(245, 158, 11, 0); }
+}
+.vmain { display: flex; flex-direction: column; gap: 2px; padding-top: 5px; }
+.vlabel { font-weight: 800; }
+.vstep.is-todo .vlabel { color: var(--muted); font-weight: 600; }
+.vdetail { font-weight: 700; }
+.vfriendly { color: var(--muted); font-size: 0.9rem; }
+
+.upload-file { font-weight: 700; overflow-wrap: anywhere; }
+.upload-progress { margin: var(--space-3) 0; }
+.upload-progress .progress { height: 12px; }
+.upload-meta { color: var(--muted); font-size: 0.9rem; margin: var(--space-1) 0 var(--space-2); }
+
 /* ---- Wide screens ---- */
 @media (min-width: 900px) {
   body.is-seller .shell {
@@ -718,4 +770,5 @@ progress.progress::-moz-progress-bar { background: var(--green); border-radius: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none; animation: none; }
   .btn:active { transform: none; }
+  .vstep.is-active .vdot { animation: none; }
 }

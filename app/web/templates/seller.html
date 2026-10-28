@@ -30,11 +30,18 @@
 <section class="card cta-card">
   <h2>Record today's prices</h2>
   <p class="muted">Walk past your stall and say each price.</p>
-  <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data">
+  <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <div class="field">
       <label for="clip">Video of your stall</label>
       <input id="clip" type="file" name="video" accept="video/*" capture="environment" required>
       <span class="help">Up to 3 minutes. Film each item as you say its price.</span>
+    </div>
+    <p class="upload-file" data-upload-file hidden></p>
+    <p class="form-error" data-upload-error hidden></p>
+    <div class="upload-progress" data-upload-progress hidden>
+      <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+      <p class="upload-meta" data-upload-meta></p>
+      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
     </div>
     <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}Record today's prices</button>
   </form>
@@ -121,6 +128,7 @@
 {% endif %}
 {% endblock %}
 {% block scripts %}
+<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const copyBtn = document.getElementById("copy-link");

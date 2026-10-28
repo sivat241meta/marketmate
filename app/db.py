@@ -15,6 +15,40 @@ from app.models import DraftItem, Flag, Item, PriceLine, Proof
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
 _SESSION_KINDS = {"video", "voice_update"}
 
+STAGES: list[tuple[str, str]] = [
+    ("uploaded", "Video received"),
+    ("audio", "Getting the sound out"),
+    ("listening", "Listening to your prices"),
+    ("items", "Finding the items"),
+    ("photos", "Picking a photo for each item"),
+    ("checking", "Checking every price"),
+    ("ready", "Ready to check"),
+]
+STAGE_LABELS = dict(STAGES)
+VOICE_STAGES = ["uploaded", "listening", "items", "checking", "ready"]
+STAGE_FRIENDLY = {
+    "uploaded": "Your recording arrived safely.",
+    "audio": "Getting the sound out of your video.",
+    "listening": "Meta Muse Voice is turning your speech into text.",
+    "items": "Muse Spark is finding the items and prices you said.",
+    "photos": "Picking a photo for each item.",
+    "checking": "Checking every price against what you said.",
+    "ready": "Ready for you to check.",
+}
+_STAGE_COLUMNS = (
+    ("stage", "TEXT"),
+    ("stage_detail", "TEXT"),
+    ("stage_started_at", "TEXT"),
+    ("stages_json", "TEXT"),
+)
+
+
+def stages_for_kind(kind: str) -> list[str]:
+    """Stage keys for a session kind; voice updates skip audio and photos."""
+    if kind == "voice_update":
+        return list(VOICE_STAGES)
+    return [key for key, _ in STAGES]
+
 
 class ApprovalError(Exception):
     def __init__(self, message: str, needs_confirm=None):
@@ -73,6 +107,11 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             price TEXT, per_amount TEXT, unit TEXT, said TEXT NOT NULL DEFAULT ''
         );
     """)
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
+    for name, column_type in _STAGE_COLUMNS:
+        if name not in existing:
+            conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {column_type}")
+    conn.commit()
     return conn
 
 
@@ -120,13 +159,94 @@ def shop_by_slug(conn, slug: str) -> sqlite3.Row | None:
 def create_session(conn, shop_id: int, kind: str) -> int:
     if kind not in _SESSION_KINDS:
         raise ValueError(f"unknown session kind: {kind}")
+    now = _now()
+    history = json.dumps([{"key": "uploaded", "started_at": now,
+                           "ended_at": None}])
     cursor = conn.execute(
-        "INSERT INTO sessions (shop_id, kind, status, created_at)"
-        " VALUES (?, ?, 'uploaded', ?)",
-        (shop_id, kind, _now()),
+        "INSERT INTO sessions (shop_id, kind, status, created_at, stage,"
+        " stage_detail, stage_started_at, stages_json)"
+        " VALUES (?, ?, 'uploaded', ?, 'uploaded', '', ?, ?)",
+        (shop_id, kind, now, now, history),
     )
     conn.commit()
     return cursor.lastrowid
+
+
+def set_stage(conn, session_id: int, key: str, detail: str | None = None) -> None:
+    """Move a session to a stage, closing the previous history entry.
+
+    Re-setting the current stage only refreshes its detail line, so callers
+    can report "item 3 of 5" without rewriting the history.
+    """
+    row = conn.execute("SELECT stage, stages_json FROM sessions WHERE id = ?",
+                       (session_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"unknown session: {session_id}")
+    now = _now()
+    history = json.loads(row["stages_json"]) if row["stages_json"] else []
+    if row["stage"] == key and history:
+        conn.execute("UPDATE sessions SET stage_detail = ? WHERE id = ?",
+                     (detail or "", session_id))
+    else:
+        if history and history[-1].get("ended_at") is None:
+            history[-1]["ended_at"] = now
+        history.append({"key": key, "started_at": now, "ended_at": None})
+        conn.execute(
+            "UPDATE sessions SET stage = ?, stage_detail = ?,"
+            " stage_started_at = ?, stages_json = ? WHERE id = ?",
+            (key, detail or "", now, json.dumps(history), session_id))
+    conn.commit()
+
+
+def _parse_moment(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return _as_utc(datetime.fromisoformat(value))
+    except ValueError:
+        return None
+
+
+def _row_get(row, key: str, default=None):
+    try:
+        value = row[key]
+    except (KeyError, IndexError, TypeError):
+        return default
+    return default if value is None else value
+
+
+def session_progress(row, *, now: datetime | None = None) -> dict:
+    """Stepper state for a session row: stage, 1-based step, per-step states."""
+    moment = _as_utc(now) if now is not None else datetime.now(UTC)
+    keys = stages_for_kind(_row_get(row, "kind", "video"))
+    stage = _row_get(row, "stage") or (
+        "ready" if _row_get(row, "status") in ("review", "approved")
+        else "uploaded")
+    position = keys.index(stage) if stage in keys else 0
+    history = json.loads(_row_get(row, "stages_json") or "[]")
+    last_by_key = {entry["key"]: entry for entry in history}
+    steps = []
+    for index, key in enumerate(keys):
+        state = ("done" if index < position
+                 else "active" if index == position else "todo")
+        seconds = 0.0
+        entry = last_by_key.get(key)
+        if entry is not None and state != "todo":
+            start = _parse_moment(entry.get("started_at"))
+            end = _parse_moment(entry.get("ended_at"))
+            if end is None and state == "active":
+                end = moment
+            if start is not None and end is not None:
+                seconds = max(0.0, (end - start).total_seconds())
+        steps.append({"key": key, "label": STAGE_LABELS.get(key, key),
+                      "state": state, "seconds": round(seconds, 1)})
+    elapsed = 0.0
+    created = _parse_moment(_row_get(row, "created_at"))
+    if created is not None:
+        elapsed = max(0.0, (moment - created).total_seconds())
+    return {"stage": stage, "step": position + 1, "steps": steps,
+            "detail": _row_get(row, "stage_detail", "") or "",
+            "elapsed_s": round(elapsed, 1)}
 
 
 def set_session_status(conn, session_id: int, status: str, message: str = "") -> None:

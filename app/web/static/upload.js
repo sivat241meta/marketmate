@@ -1,0 +1,150 @@
+"use strict";
+/* Upload with a real progress bar. Uses XMLHttpRequest so bytes-sent progress
+   is visible; without JS the plain form still posts to the same endpoint. */
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("form[data-upload-form]").forEach((form) => {
+    const input = form.querySelector('input[type="file"]');
+    const fileLine = form.querySelector("[data-upload-file]");
+    const errorLine = form.querySelector("[data-upload-error]");
+    const progressWrap = form.querySelector("[data-upload-progress]");
+    const bar = form.querySelector("[data-upload-bar]");
+    const meta = form.querySelector("[data-upload-meta]");
+    const cancelBtn = form.querySelector("[data-upload-cancel]");
+    const submitBtn = form.querySelector('[type="submit"]');
+    if (!input || !progressWrap || !bar || !meta) {
+      return;
+    }
+    const maxBytes = parseInt(form.dataset.maxBytes || "0", 10) || 0;
+    let xhr = null;
+
+    function fmtMB(bytes) {
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function tooBig(file) {
+      return maxBytes > 0 && file.size > maxBytes;
+    }
+
+    function bigMessage(file) {
+      return (
+        "That file is " + fmtMB(file.size) + ", which is too big to upload. " +
+        "Please choose a file under " + fmtMB(maxBytes) + "."
+      );
+    }
+
+    function showError(message) {
+      if (errorLine) {
+        errorLine.textContent = message;
+        errorLine.hidden = false;
+      }
+    }
+
+    function clearError() {
+      if (errorLine) {
+        errorLine.textContent = "";
+        errorLine.hidden = true;
+      }
+    }
+
+    function reset(file) {
+      xhr = null;
+      progressWrap.hidden = true;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+      }
+      if (file) {
+        fileLine.hidden = false;
+        fileLine.textContent = file.name + " · " + fmtMB(file.size);
+      }
+    }
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      clearError();
+      if (!file) {
+        fileLine.hidden = true;
+        return;
+      }
+      reset(file);
+      if (tooBig(file)) {
+        showError(bigMessage(file));
+      }
+    });
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        if (xhr) {
+          xhr.abort();
+        }
+      });
+    }
+
+    form.addEventListener("submit", (event) => {
+      const file = input.files && input.files[0];
+      if (!file) {
+        return; // No file chosen: let the browser enforce `required`.
+      }
+      if (tooBig(file)) {
+        event.preventDefault();
+        showError(bigMessage(file));
+        return;
+      }
+      event.preventDefault();
+      clearError();
+      reset(file);
+      progressWrap.hidden = false;
+      bar.value = 0;
+      meta.textContent = "Starting upload…";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+      const data = new FormData();
+      data.append(input.name, file, file.name);
+      xhr = new XMLHttpRequest();
+      xhr.open("POST", form.action);
+      xhr.upload.addEventListener("progress", (progressEvent) => {
+        if (!progressEvent.lengthComputable) {
+          return;
+        }
+        const percent = Math.round(
+          (progressEvent.loaded / progressEvent.total) * 100
+        );
+        bar.value = percent;
+        meta.textContent =
+          fmtMB(progressEvent.loaded) + " of " + fmtMB(progressEvent.total) +
+          " · " + percent + "%";
+      });
+      xhr.addEventListener("load", () => {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          showError("Upload failed — try again.");
+          reset(file);
+          return;
+        }
+        const target = xhr.responseURL || "";
+        const same = target &&
+          new URL(target, window.location.href).href ===
+            new URL(form.action, window.location.href).href;
+        if (target && !same) {
+          // The server answered with a redirect (video upload): the XHR
+          // followed the 303 Location, so go to the session page.
+          window.location.assign(target);
+          return;
+        }
+        // Same-URL answer (voice update): show the confirm page it returned.
+        document.open();
+        document.write(xhr.responseText);
+        document.close();
+      });
+      xhr.addEventListener("error", () => {
+        showError("Upload failed — check your connection and try again.");
+        reset(file);
+      });
+      xhr.addEventListener("abort", () => {
+        showError("Upload cancelled.");
+        reset(file);
+      });
+      xhr.send(data);
+    });
+  });
+});
