@@ -146,8 +146,10 @@ def test_seller_home_fresh_green(tmp_path):
     # Week band with real figures only.
     assert "This week in numbers" in html
     assert "gcards" in html or "gc " in html or 'class="gc"' in html
-    # Quick links as ghost pills.
-    for label in ("Price tags", "Purchases", "Shop QR", "Settings"):
+    # Quick links as ghost pills (Task 52: one grid, each target once).
+    for label in ("Update by voice", "Scan stock photo", "Bills",
+                  "Purchases", "Print board", "Print price tags",
+                  "Export CSV", "POS-app CSV", "Settings", "Shop QR"):
         assert label in html, label
     # Install + recovery cards kept, small; old shop-name card gone.
     assert "Install app" in html

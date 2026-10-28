@@ -10,7 +10,7 @@
 {% elif is_quote %}
 <h1 class="big">{{ t('bill.heading', id=bill["id"]) }} · <em>{{ total }}</em></h1>
 {% else %}
-<h1 class="big">{{ t('bill.to_collect', total=total) }}</h1>
+<h1 class="big">{{ t('bill.to_collect', total=total | money(shop["currency"])) }}</h1>
 {% endif %}
 <p class="muted">{{ shop["name"] }} · {{ label }}{% if made_by %} · {{ t('bill.made_by', name=made_by) }}{% endif %}</p>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}

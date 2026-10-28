@@ -49,6 +49,7 @@ from app.pipeline.units import convert
 from app.web.auth import created_by_for, resolve_or_404
 from app.web.i18n import (
     bill_whatsapp_text,
+    first_grapheme,
     get_ui_lang,
     order_ready_whatsapp_text,
     stage_friendly,
@@ -336,6 +337,10 @@ def _row_phone(row) -> str | None:
 
 
 def _customer_label(row, lang: str = "en") -> str:
+    if row["kind"] == "quote":
+        label = t_for(lang)("bills.order_num", id=row["id"])
+        phone = _row_phone(row)
+        return f"{label} · {phone}" if phone else label
     return _row_phone(row) or t_for(lang)("bills.walk_in")
 
 
@@ -361,7 +366,7 @@ def _row_time(row, *, now: datetime | None = None, lang: str = "en") -> str:
 def _status_pill(row, lang: str = "en") -> tuple[str, str]:
     t = t_for(lang)
     if row["kind"] == "quote" and row["status"] == "new":
-        return (t("bills.pill_quote"), "quote")
+        return (t("bills.pill_new"), "quote")
     if row["status"] == "packing":
         return (t("bills.pill_packing"), "packing")
     if row["status"] == "ready":
@@ -491,11 +496,13 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
                 summary = price
         else:
             summary = t("bill.no_price_yet")
+        display = _display(item.name_en)
         items.append({
             "index": index,
             "name_en": item.name_en,
-            "display": _display(item.name_en),
+            "display": display,
             "name_local": item.name_local,
+            "tile": first_grapheme(item.name_local or display),
             "unit": first.unit if first is not None else "",
             "summary": summary,
             "sold_out": item.sold_out,
@@ -861,6 +868,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "price_items": _price_items(conn, shop["id"], ui_lang),
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
+            "shop_lang": shop["language"] or "en",
             "error": None, "ui_lang": ui_lang,
             "is_staff": _is_staff(conn, token)})
 
@@ -920,6 +928,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "price_items": _price_items(conn, shop["id"], ui_lang),
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
+            "shop_lang": shop["language"] or "en",
             "error": message, "ui_lang": ui_lang,
             "is_staff": _is_staff(conn, token)},
             status_code=status_code)

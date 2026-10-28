@@ -1157,7 +1157,7 @@ def update_quote_lines(conn, token: str, lines: list[dict]):
             qty = Decimal(str(qty_raw).strip())
         except (InvalidOperation, ValueError, AttributeError):
             raise ValueError(f"quantity for {name} does not look right")
-        if qty.is_nan() or qty <= 0:
+        if not qty.is_finite() or qty <= 0 or qty > 100:
             raise ValueError(f"quantity for {name} does not look right")
         unit = raw.get("unit", fallback.get("unit"))
         if unit is not None:

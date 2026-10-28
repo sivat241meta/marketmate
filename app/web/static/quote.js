@@ -79,6 +79,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const zero = form.getAttribute("data-zero") || "";
     const prefix = prefixOf(zero) || prefixOf("₹0");
+    const countOne = form.getAttribute("data-count-one") || "1 item";
+    const countMany = form.getAttribute("data-count-many") || "{n} items";
+    function countText(n) {
+      if (n === 1) {
+        return countOne;
+      }
+      return countMany.replace("{n}", String(n));
+    }
     let count = 0;
     let total = 0;
     form.querySelectorAll("[data-line]").forEach((line) => {
@@ -106,17 +114,16 @@ document.addEventListener("DOMContentLoaded", () => {
         totalEl.textContent = formatAmount(0, prefix);
       }
       if (countEl) {
-        countEl.textContent = "0";
+        countEl.textContent = countText(0);
       }
       return;
     }
-    const noun = count === 1 ? "item" : "items";
-    summary.textContent = `Bill · ${formatAmount(total, prefix)} · ${count} ${noun}`;
+    summary.textContent = `Bill · ${formatAmount(total, prefix)} · ${countText(count)}`;
     if (totalEl) {
       totalEl.textContent = formatAmount(total, prefix);
     }
     if (countEl) {
-      countEl.textContent = `${count} ${noun}`;
+      countEl.textContent = countText(count);
     }
   }
 

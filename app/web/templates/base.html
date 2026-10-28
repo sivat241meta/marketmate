@@ -58,7 +58,7 @@
   {% elif _shop_known %}
   <nav class="nav" aria-label="{{ t('top.main_nav') }}">
     <a class="{% if _path == "/s/" ~ shop["slug"] %}on{% endif %}" href="/s/{{ shop["slug"] }}">{{ t('shell.todays_prices') }}</a>
-    <a class="{% if _path.startswith("/s/" ~ shop["slug"] ~ "/quote") or _path.startswith("/q/") %}on{% endif %}" href="/s/{{ shop["slug"] }}/quote">{{ t('shell.order_voice') }}</a>
+    <a class="{% if _path.startswith("/s/" ~ shop["slug"] ~ "/quote") %}on{% endif %}" href="/s/{{ shop["slug"] }}/quote">{{ t('shell.order_voice') }}</a>
     <a class="{% if _path == "/market" %}on{% endif %}" href="/market">{{ t('shell.find_shop') }}</a>
   </nav>
   {% else %}

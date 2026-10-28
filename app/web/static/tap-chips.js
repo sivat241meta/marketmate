@@ -54,6 +54,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function syncAddVisibility(line) {
+    const add = line.querySelector("[data-add]");
+    const stepper = line.querySelector("[data-stepper]");
+    const qty = line.querySelector('input[name^="qty_"]');
+    const amount = line.querySelector('input[name^="amount_"]');
+    if (!add || !stepper || !qty) {
+      return;
+    }
+    const value = parseFloat(qty.value || "0") || 0;
+    const hasAmount = amount && (parseFloat(amount.value || "0") || 0) > 0;
+    const empty = !(value > 0) && !hasAmount;
+    add.hidden = !empty;
+    stepper.hidden = empty;
+  }
+
+  function defaultQty(line) {
+    const sized = line.querySelector("[data-sizes] .sz.on");
+    if (sized) {
+      const picked = parseFloat(sized.getAttribute("data-qty") || "");
+      if (picked > 0) {
+        return picked;
+      }
+    }
+    return 1;
+  }
+
   function setQty(line, qty, unit) {
     const parts = lineInputs(line);
     if (!parts.qty) {
@@ -139,7 +165,15 @@ document.addEventListener("DOMContentLoaded", () => {
     stepper.hidden = true;
     add.hidden = false;
     add.addEventListener("click", () => {
-      revealStepper(line);
+      // First tap sets a real quantity (the chosen size, else 1 unit);
+      // setQty fires input/change so quote.js refreshes line, receipt
+      // and float bar together.
+      setQty(line, defaultQty(line), null);
+    });
+    qty.addEventListener("input", () => syncAddVisibility(line));
+    qty.addEventListener("change", () => syncAddVisibility(line));
+    stepper.querySelectorAll("[data-step]").forEach((button) => {
+      button.addEventListener("click", () => syncAddVisibility(line));
     });
   });
 

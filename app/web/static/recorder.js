@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       recorder.start();
       startBtn.disabled = true;
       startBtn.classList.add("is-recording");
+      stopBtn.hidden = false;
       stopBtn.disabled = false;
       status.textContent = recPrompt;
     } catch (err) {

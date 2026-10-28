@@ -470,5 +470,5 @@ def test_dashboard_shows_go_live(tmp_path):
         "language": "ta", "currency": "INR", "type": "vegetable"})
     seller_url = resp.headers["location"]
     html = c.get(seller_url).text
-    assert "Go live" in html
+    assert "Say today" in html
     assert "/live" in html

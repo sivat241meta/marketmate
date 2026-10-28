@@ -383,7 +383,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         The client preview (totals, per-line prices) is ignored entirely;
         build_quote recomputes every price from the published version.
+        Every line is validated: finite qty with 0 < qty <= 100, name at
+        most 80 characters, unit at most 20, at most 50 lines.
         """
+        if not request.app.state.limiter.allow(client_ip(request),
+                                               datetime.now(UTC)):
+            return JSONResponse({"error": RATE_LIMIT_MESSAGE},
+                                status_code=429)
         try:
             payload = await request.json()
         except ValueError:
@@ -391,20 +397,44 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         raw_lines = payload.get("lines") if isinstance(payload, dict) else None
         if not raw_lines:
             return JSONResponse({"error": "empty cart"}, status_code=400)
+        if not isinstance(raw_lines, list):
+            return JSONResponse({"error": "cart lines must be a list"},
+                                status_code=400)
+        if len(raw_lines) > 50:
+            return JSONResponse({"error": "too many lines (at most 50)"},
+                                status_code=400)
         wanted: list[WantedLine] = []
-        for entry in raw_lines:
+        for index, entry in enumerate(raw_lines):
+            label = f"line {index + 1}"
             if not isinstance(entry, dict):
-                continue
+                return JSONResponse({"error": f"{label} is not valid"},
+                                    status_code=400)
             name = str(entry.get("name_en") or "").strip()
             if not name:
-                continue
+                return JSONResponse(
+                    {"error": f"{label} has no item name"}, status_code=400)
+            if len(name) > 80:
+                return JSONResponse(
+                    {"error": f"item name on {label} is too long"},
+                    status_code=400)
             try:
                 qty = Decimal(str(entry.get("qty", "1")))
             except (InvalidOperation, ValueError, TypeError):
-                continue
-            if qty <= 0:
-                continue
+                return JSONResponse(
+                    {"error": f"quantity on {label} does not look right"},
+                    status_code=400)
+            if not qty.is_finite() or qty <= 0 or qty > 100:
+                return JSONResponse(
+                    {"error": (f"quantity on {label} must be more than 0"
+                               " and at most 100")},
+                    status_code=400)
             unit = entry.get("unit") or None
+            if unit is not None:
+                unit = str(unit).strip() or None
+                if unit is not None and len(unit) > 20:
+                    return JSONResponse(
+                        {"error": f"unit on {label} is too long"},
+                        status_code=400)
             wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
                                      source="cart"))
         if not wanted:

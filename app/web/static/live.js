@@ -243,7 +243,6 @@ document.addEventListener("DOMContentLoaded", () => {
     micBtn.classList.toggle("is-recording", on);
     micBtn.setAttribute("aria-label", on ? "Stop live prices" : "Start live prices");
     badge.hidden = !on;
-    timerEl.hidden = !on;
     if (micIcon) {
       micIcon.hidden = on;
     }
@@ -263,7 +262,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showFinishing() {
     badge.hidden = true;
-    timerEl.hidden = true;
     stopTimer();
     finishBox.hidden = false;
     hint.textContent = "Finishing – checking every price…";

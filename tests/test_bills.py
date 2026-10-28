@@ -211,7 +211,7 @@ def test_bills_page_tiles_filters_and_top_items(tmp_path):
     assert "Bills" in html
     assert "Today" in html and "Yesterday" in html and "Last 7 days" in html
     assert "New bill" in html
-    assert "All" in html and "Quotes waiting" in html
+    assert "All" in html and "New orders" in html
     assert "Billed" in html and "Paid" in html
     assert "Walk-in" in html
     assert "Top items today" in html

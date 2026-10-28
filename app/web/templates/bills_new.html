@@ -21,14 +21,14 @@
   <h2>{{ ui.icon("tag") }} {{ t('bn.tap') }}</h2>
   <p class="muted">{{ t('bn.tap_desc') }}</p>
   {% if price_items %}
-  <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-token="{{ token }}" data-version="{{ prices_version_id or '' }}" data-zero="{{ 0 | money(shop["currency"]) }}">
+  <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-token="{{ token }}" data-version="{{ prices_version_id or '' }}" data-zero="{{ 0 | money(shop["currency"]) }}" data-count-one="{{ t('bills.item_one', count=1) }}" data-count-many="{{ t('bills.item_many', count='{n}') }}">
     <div class="bill-split">
       <div class="grid-products tap-grid">
         {% for item in price_items %}
         <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
-          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.display[:1] }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
           <div class="bd tap-main">
-            <h3><span class="tname">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span><small class="line-rate">{{ item.summary }}</small></h3>
+            <h3><span class="tname" lang="{{ shop_lang }}">{{ item.name_local or item.display }}</span>{% if item.name_local %}<small>{{ item.display }}</small>{% endif %}<small class="line-rate">{{ item.summary }}</small></h3>
             {% if not item.sold_out %}
             <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
             <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
@@ -64,7 +64,7 @@
       </div>
       <div class="rcpt desk-only tap-rcpt">
         <p class="kick">{{ t('bn.heading') }}</p>
-        <div class="rt"><span data-tap-count>0</span><b class="money" data-tap-total>{{ 0 | money(shop["currency"]) }}</b></div>
+        <div class="rt"><span data-tap-count>{{ t('bills.item_many', count=0) }}</span><b class="money" data-tap-total>{{ 0 | money(shop["currency"]) }}</b></div>
         <p><button class="pill dark big" type="submit">{{ t('bn.make_bill') }}</button></p>
       </div>
     </div>

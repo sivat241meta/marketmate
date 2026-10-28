@@ -52,6 +52,7 @@ from app.pipeline.update import (
 )
 from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import (
+    first_grapheme,
     get_strings,
     get_ui_lang,
     link_self_whatsapp_url,
@@ -323,9 +324,10 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
             phone = (row["customer_phone"] or "").strip() or None
         except (KeyError, IndexError, TypeError):
             phone = None
+        order_num = t("bills.order_num", id=row["id"])
         orders.append({
             "id": row["id"],
-            "label": phone or t("bills.walk_in"),
+            "label": f"{order_num} · {phone}" if phone else order_num,
             "names": names,
             "count": len(raw) if isinstance(raw, list) else 0,
             "total": format_money(total, currency),
@@ -1229,6 +1231,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "name": f"{name} ({item.variety})" if item.variety else name,
                     "name_local": item.name_local,
                     "name_en": item.name_en,
+                    "tile": first_grapheme(item.name_local or name),
                     "variety": item.variety,
                     "photo_url": photo_url,
                     "sold_out": item.sold_out,

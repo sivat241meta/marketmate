@@ -4,7 +4,8 @@
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
 <header class="review-head">
-  <h1>{{ t('review.title') }}</h1>
+  <p class="kick">{{ t('review.title') }}</p>
+  {% if need_count %}<h1 class="h2s">{{ t('review.head_need', n=need_count) }}</h1>{% else %}<h1 class="h2s">{{ t('review.head_all') }}</h1>{% endif %}
   {% if stopped_note %}<div class="alert alert-warn">{{ stopped_note }}</div>{% endif %}
   <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
   <progress class="progress" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>

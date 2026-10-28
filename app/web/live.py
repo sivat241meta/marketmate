@@ -517,10 +517,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         from app.web.i18n import get_ui_lang, t_for
 
         ui_lang = get_ui_lang(request, shop_dict)
+        from app.languages import get_language
+
+        shop_lang = shop_dict.get("language") or "ta"
+        try:
+            shop_native = get_language(shop_lang).native_name
+        except KeyError:
+            shop_native = "English"
         return templates.TemplateResponse(request, "live.html", {
             "shop": shop_dict, "token": token,
             "notice": t_for(ui_lang)("notice.voice"),
-            "shop_lang": shop_dict.get("language") or "ta",
+            "shop_lang": shop_lang,
+            "shop_native": shop_native,
             "max_upload_bytes": app.state.settings.max_upload_bytes,
             "ui_lang": ui_lang,
         })

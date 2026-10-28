@@ -6,7 +6,7 @@
 <div class="live-wrap" data-live data-needs-internet data-token="{{ token }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
   <div class="live-columns">
     <div class="live-main">
-      <div class="live-kick-row"><p class="kick">{{ t('dash.live_prices') }}</p><span class="pill sm ghost live-lang">{{ shop_lang }} · <span data-live-timer hidden>0:00</span></span></div>
+      <div class="live-kick-row"><p class="kick">{{ t('dash.live_prices') }}</p><span class="pill sm ghost live-lang">{{ shop_native }} · <span data-live-timer>0:00</span></span></div>
       <div class="cam">
         <video class="live-video" data-live-video playsinline muted autoplay aria-label="{{ t('live.camera_preview') }}"></video>
         <span class="live-ready" data-live-ready>{{ t('live.ready') }}</span>

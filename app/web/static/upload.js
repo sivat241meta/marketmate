@@ -5,6 +5,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("form[data-upload-form]").forEach((form) => {
     const input = form.querySelector('input[type="file"]');
+    const nameEl = form.querySelector("[data-upload-name]");
+    const nameDefault = nameEl ? nameEl.textContent : "";
     const fileLine = form.querySelector("[data-upload-file]");
     const errorLine = form.querySelector("[data-upload-error]");
     const progressWrap = form.querySelector("[data-upload-progress]");
@@ -56,6 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (file) {
         fileLine.hidden = false;
         fileLine.textContent = file.name + " · " + fmtMB(file.size);
+        if (nameEl) {
+          nameEl.textContent = file.name;
+        }
       }
     }
 
@@ -64,6 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
       clearError();
       if (!file) {
         fileLine.hidden = true;
+        if (nameEl) {
+          nameEl.textContent = nameDefault;
+        }
         return;
       }
       reset(file);

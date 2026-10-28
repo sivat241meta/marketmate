@@ -27,7 +27,7 @@
 <p class="kick">{{ t('sh.new_orders') }}</p>
 {% for order in orders %}
 <div class="rcpt order-rcpt">
-  <div class="order-top"><b>{{ order.label }} · #{{ order.id }}</b>{% if order.time %}<span class="pill sm gold">{{ order.time }}</span>{% endif %}</div>
+  <div class="order-top"><b>{{ order.label }}</b><span>{{ ui.pill(t('bills.pill_new'), "quote") }}{% if order.time %}<span class="pill sm gold">{{ order.time }}</span>{% endif %}</span></div>
   {% if order.names %}<p class="order-names">{{ order.names[:3] | join(" · ") }}{% if order.names | length > 3 %} +{{ order.names | length - 3 }}{% endif %}</p>{% endif %}
   <div class="order-bottom"><b class="money">{{ order.total }}</b>
     <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ order.id }}/order-status">
@@ -50,26 +50,17 @@
 </div>
 
 {% if not is_staff %}
-<div class="hero-cta quick-links">
-  <a class="pill ghost" href="/e/{{ token }}/update">{{ ui.icon("photo") }}{{ t('sh.quick_board') }}</a>
-  {% if versions %}<a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('sh.quick_tags') }}</a>{% endif %}
-  <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}{{ t('sh.quick_purchases') }}</a>
-  <a class="pill ghost" href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
-  <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}{{ t('sh.quick_settings') }}</a>
-</div>
-{% endif %}
-
-{% if not is_staff %}
 <section class="card cta-card">
-  <h2>{{ t('dash.live_prices') }}</h2>
+  <h2>{{ t('shell.todays_prices') }}</h2>
   <p class="muted">{{ t('dash.live_desc') }}</p>
-  <p><a class="btn btn-primary btn-big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('dash.go_live') }}</a></p>
+  <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('sh.say_prices') }}</a></p>
   <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
-    <div class="field">
-      <label for="clip">{{ t('dash.upload_label') }}</label>
-      <input id="clip" type="file" name="video" accept="video/*" capture="environment" required>
-      <span class="help">{{ t('dash.upload_help') }}</span>
-    </div>
+    <p>
+      <label class="pill ghost" for="clip">{{ ui.icon("camera") }}<span data-upload-name>{{ t('sh.choose_video') }}</span>
+        <input id="clip" class="file-hidden" type="file" name="video" accept="video/*" capture="environment" required>
+      </label>
+    </p>
+    <p class="help">{{ t('dash.upload_help') }}</p>
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
     <div class="upload-progress" data-upload-progress hidden>
@@ -83,26 +74,22 @@
 </section>
 {% endif %}
 
-<div class="tiles tiles-four" id="more">
+<div class="hero-cta quick-links" id="more">
   {% if not is_staff %}
-  {{ ui.tile("mic", t('dash.tile_update'), "/e/" ~ token ~ "/update") }}
-  {{ ui.tile("photo", t('dash.tile_scan'), "/e/" ~ token ~ "/photos") }}
+  <a class="pill ghost" href="/e/{{ token }}/update">{{ ui.icon("mic") }}{{ t('dash.tile_update') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}{{ t('dash.tile_scan') }}</a>
   {% endif %}
-  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('dash.tile_bills') }}</span><span class="tile-sub">{{ t('dash.tile_bills_sub', sales=bills.sales_today | money(shop["currency"]), waiting=bills.quotes_waiting) }}</span></a>
+  <a class="pill ghost" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}{{ t('dash.tile_bills') }}</a>
   {% if not is_staff %}
-  <a class="tile" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('dash.tile_purchases') }}</span><span class="tile-sub">{{ t('dash.tile_purchases_sub', spent=spent_today | money(shop["currency"])) }}</span></a>
+  <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}{{ t('dash.tile_purchases') }}</a>
   {% if versions %}
-  {{ ui.tile("printer", t('dash.tile_print_board'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
-  {{ ui.tile("tag", t('dash.tile_print_tags'), "/e/" ~ token ~ "/tags.pdf") }}
-  {{ ui.tile("download", t('dash.tile_export_csv'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
-  {{ ui.tile("download", t('dash.tile_posapp_csv'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/posapp.csv") }}
-  {% else %}
-  {{ ui.tile("printer", t('dash.tile_print_board')) }}
-  {{ ui.tile("tag", t('dash.tile_print_tags')) }}
-  {{ ui.tile("download", t('dash.tile_export_csv')) }}
-  {{ ui.tile("download", t('dash.tile_posapp_csv')) }}
+  <a class="pill ghost" href="/e/{{ token }}/v/{{ versions[0]["id"] }}/board.pdf">{{ ui.icon("printer") }}{{ t('dash.tile_print_board') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('dash.tile_print_tags') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/v/{{ versions[0]["id"] }}/export.csv">{{ ui.icon("download") }}{{ t('dash.tile_export_csv') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/v/{{ versions[0]["id"] }}/posapp.csv">{{ ui.icon("download") }}{{ t('dash.tile_posapp_csv') }}</a>
   {% endif %}
-  {{ ui.tile("settings", t('dash.tile_settings'), "/e/" ~ token ~ "/settings") }}
+  <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}{{ t('dash.tile_settings') }}</a>
+  <a class="pill ghost" href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
   {% endif %}
 </div>
 

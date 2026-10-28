@@ -9,6 +9,7 @@ via ``get_strings`` for their ``?lang`` behaviour.
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -160,6 +161,7 @@ _ENGLISH: dict[str, str] = {
     "sh.quick_purchases": "Purchases",
     "sh.quick_qr": "Shop QR",
     "sh.quick_settings": "Settings",
+    "sh.choose_video": "Choose video",
     "live.heard_pre": "Heard so far ·",
     "live.heard_post": "prices",
     "live.tap_stop": "Tap to stop and check",
@@ -258,6 +260,8 @@ _ENGLISH: dict[str, str] = {
     "friendly.purchase.ready": "Ready for you to check.",
     # --- review ---
     "review.title": "Check prices",
+    "review.head_need": "{n} prices need one tap.",
+    "review.head_all": "All prices look right.",
     "review.counts": "{ok} of {total} look right · {need} need you",
     "review.counts_aria": "{ok} of {total} prices look right",
     "review.check_again": "Check again",
@@ -419,7 +423,7 @@ _ENGLISH: dict[str, str] = {
     "bills.billed_paid": "billed and paid",
     "bills.sales_today": "Sales today",
     "bills.total_billed": "total billed",
-    "bills.quotes_waiting": "Quotes waiting",
+    "bills.quotes_waiting": "New orders",
     "bills.from_customers": "from customers",
     "bills.avg_bill": "Average bill",
     "bills.per_bill": "per bill today",
@@ -429,7 +433,7 @@ _ENGLISH: dict[str, str] = {
     "bills.card": "Card",
     "bills.new_bill": "New bill",
     "bills.filter_all": "All",
-    "bills.filter_waiting": "Quotes waiting",
+    "bills.filter_waiting": "New orders",
     "bills.filter_billed": "Billed",
     "bills.filter_paid": "Paid",
     "bills.item_one": "{count} item",
@@ -437,6 +441,8 @@ _ENGLISH: dict[str, str] = {
     "bills.walk_in": "Walk-in",
     "bills.time_yesterday": "Yesterday {clock}",
     "bills.pill_quote": "Quote",
+    "bills.pill_new": "New",
+    "bills.order_num": "Order #{id}",
     "bills.pill_billed": "Billed",
     "bills.pill_paid": "Paid",
     "bills.pill_cancelled": "Cancelled",
@@ -741,6 +747,7 @@ _ENGLISH: dict[str, str] = {
     "shop.add": "Add",
     "shop.view_order": "View order",
     "shop.cart_summary": "{n} items · {total}",
+    "shop.cart_one": "1 item · {total}",
     "shop.cart_title": "Your order",
     "shop.send_order": "Send order",
     "shop.kicker_fallback": "Per {unit}",
@@ -925,6 +932,7 @@ _TAMIL: dict[str, str] = {
     "sh.quick_purchases": "வாங்கியது",
     "sh.quick_qr": "கடை QR",
     "sh.quick_settings": "செட்டிங்",
+    "sh.choose_video": "வீடியோவைத் தேர்வு செய்க",
     "live.heard_pre": "இதுவரை ·",
     "live.heard_post": "விலை",
     "live.tap_stop": "நிறுத்திப் பார்க்க தட்டுங்க",
@@ -1023,6 +1031,8 @@ _TAMIL: dict[str, str] = {
     "friendly.purchase.ready": "நீங்க பார்க்க தயார்.",
     # --- review ---
     "review.title": "சரி பார்க்கவும்",
+    "review.head_need": "{n} விலைக்கு ஒரு தட்டு தேவை.",
+    "review.head_all": "எல்லா விலையும் சரியாக உள்ளது.",
     "review.counts": "{total}இல் {ok} சரி · {need} உங்களுக்கு",
     "review.counts_aria": "{total}இல் {ok} விலை சரி",
     "review.check_again": "மீண்டும் பார்",
@@ -1184,7 +1194,7 @@ _TAMIL: dict[str, str] = {
     "bills.billed_paid": "போட்டது + வசூல்",
     "bills.sales_today": "இன்றைய விற்பனை",
     "bills.total_billed": "மொத்த பில்",
-    "bills.quotes_waiting": "காத்திருக்கும் கணக்கு",
+    "bills.quotes_waiting": "புது ஆர்டர்கள்",
     "bills.from_customers": "வாடிக்கையாளரிடமிருந்து",
     "bills.avg_bill": "சராசரி பில்",
     "bills.per_bill": "இன்று ஒரு பில்லுக்கு",
@@ -1194,7 +1204,7 @@ _TAMIL: dict[str, str] = {
     "bills.card": "கார்டு",
     "bills.new_bill": "புது பில்",
     "bills.filter_all": "எல்லாம்",
-    "bills.filter_waiting": "காத்திருப்பு",
+    "bills.filter_waiting": "புது ஆர்டர்கள்",
     "bills.filter_billed": "பில் போட்டது",
     "bills.filter_paid": "வசூலானது",
     "bills.item_one": "{count} சாமான்",
@@ -1202,6 +1212,8 @@ _TAMIL: dict[str, str] = {
     "bills.walk_in": "நேரடி",
     "bills.time_yesterday": "நேற்று {clock}",
     "bills.pill_quote": "கணக்கு",
+    "bills.pill_new": "புதிது",
+    "bills.order_num": "ஆர்டர் #{id}",
     "bills.pill_billed": "பில்",
     "bills.pill_paid": "வசூல்",
     "bills.pill_cancelled": "ரத்து",
@@ -1505,6 +1517,7 @@ _TAMIL: dict[str, str] = {
     "shop.add": "சேர்",
     "shop.view_order": "ஆர்டரை பார்",
     "shop.cart_summary": "{n} பொருட்கள் · {total}",
+    "shop.cart_one": "1 சாமான் · {total}",
     "shop.cart_title": "உங்கள் ஆர்டர்",
     "shop.send_order": "ஆர்டர் அனுப்பு",
     "shop.kicker_fallback": "{unit}க்கு",
@@ -1689,6 +1702,7 @@ _HINDI: dict[str, str] = {
     "sh.quick_purchases": "खरीद",
     "sh.quick_qr": "दुकान QR",
     "sh.quick_settings": "सेटिंग",
+    "sh.choose_video": "वीडियो चुनें",
     "live.heard_pre": "अब तक ·",
     "live.heard_post": "दाम",
     "live.tap_stop": "रोककर देखने के लिए टैप करिए",
@@ -1787,6 +1801,8 @@ _HINDI: dict[str, str] = {
     "friendly.purchase.ready": "आप जाँच लीजिए।",
     # --- review ---
     "review.title": "जाँच लें",
+    "review.head_need": "{n} दामों पर एक टैप चाहिए।",
+    "review.head_all": "सभी दाम सही हैं।",
     "review.counts": "{total} में {ok} ठीक · {need} आप देखिए",
     "review.counts_aria": "{total} में {ok} दाम ठीक",
     "review.check_again": "फिर जाँचिए",
@@ -1948,7 +1964,7 @@ _HINDI: dict[str, str] = {
     "bills.billed_paid": "बने + वसूल",
     "bills.sales_today": "आज की बिक्री",
     "bills.total_billed": "कुल बिल",
-    "bills.quotes_waiting": "रुके अनुमान",
+    "bills.quotes_waiting": "नए ऑर्डर",
     "bills.from_customers": "ग्राहकों से",
     "bills.avg_bill": "औसत बिल",
     "bills.per_bill": "आज प्रति बिल",
@@ -1958,7 +1974,7 @@ _HINDI: dict[str, str] = {
     "bills.card": "कार्ड",
     "bills.new_bill": "नया बिल",
     "bills.filter_all": "सब",
-    "bills.filter_waiting": "रुके",
+    "bills.filter_waiting": "नए ऑर्डर",
     "bills.filter_billed": "बने",
     "bills.filter_paid": "वसूल",
     "bills.item_one": "{count} सामान",
@@ -1966,6 +1982,8 @@ _HINDI: dict[str, str] = {
     "bills.walk_in": "सीधे",
     "bills.time_yesterday": "कल {clock}",
     "bills.pill_quote": "अनुमान",
+    "bills.pill_new": "नया",
+    "bills.order_num": "ऑर्डर #{id}",
     "bills.pill_billed": "बिल",
     "bills.pill_paid": "वसूल",
     "bills.pill_cancelled": "रद्द",
@@ -2269,6 +2287,7 @@ _HINDI: dict[str, str] = {
     "shop.add": "जोड़ें",
     "shop.view_order": "ऑर्डर देखें",
     "shop.cart_summary": "{n} सामान · {total}",
+    "shop.cart_one": "1 सामान · {total}",
     "shop.cart_title": "आपका ऑर्डर",
     "shop.send_order": "ऑर्डर भेजें",
     "shop.kicker_fallback": "प्रति {unit}",
@@ -2710,6 +2729,24 @@ def photo_suggestion_text(suggestion: dict, products: list[dict],
             return t("phr.sugg_set_stock", count=count, name=raw_name or name)
         return str(suggestion.get("text") or "")
     return str(suggestion.get("text") or "")
+
+
+def first_grapheme(name: str | None) -> str:
+    """First grapheme cluster for letter tiles: first character plus any
+    following combining marks (unicodedata category M*), uppercased.
+
+    "பூண்டு" -> "பூ" (not "ப"), "கொத்தமல்லி" -> "கொ", "onion" -> "O".
+    """
+    text = (name or "").strip()
+    if not text:
+        return ""
+    cluster = text[0]
+    for char in text[1:]:
+        if unicodedata.category(char).startswith("M"):
+            cluster += char
+        else:
+            break
+    return cluster.upper()
 
 
 def photo_button_text(action: str | None, lang: str = "en") -> str:

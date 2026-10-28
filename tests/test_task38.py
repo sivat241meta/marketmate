@@ -481,6 +481,9 @@ def test_dashboard_spent_and_margin_chip(tmp_path, monkeypatch):
     finally:
         conn.close()
     html = client.get(f"/e/{token}").text
-    assert "Spent today" in html
-    assert "₹1,200" in html or "₹1200" in html or "1200" in html
+    # Task 52 merged the tile grid into one quick-links grid: the spent
+    # figure lives on the purchases page; the margin chip stays here.
     assert "67%" in html or "margin" in html.lower()
+    pur_html = client.get(f"/e/{token}/purchases").text
+    assert "Spent today" in pur_html
+    assert "₹1,200" in pur_html or "₹1200" in pur_html or "1200" in pur_html

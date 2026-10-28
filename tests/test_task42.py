@@ -508,7 +508,9 @@ def test_live_page_ready_and_finishing_states(tmp_path):
     assert "Finishing – checking every price…" in html
     assert "data-live-timer" in html
     assert "data-live-elapsed" in html
-    # Timer hidden until recording starts.
+    # Task 52: the pill shows the language name and the timer always.
     timer_tag = next(line for line in html.splitlines()
                      if "data-live-timer" in line)
-    assert "hidden" in timer_tag
+    assert "0:00" in timer_tag
+    assert "hidden" not in timer_tag
+    assert "தமிழ்" in html
