@@ -17,7 +17,9 @@ _SESSION_KINDS = {"video", "voice_update"}
 
 
 class ApprovalError(Exception):
-    pass
+    def __init__(self, message: str, needs_confirm=None):
+        super().__init__(message)
+        self.needs_confirm = needs_confirm or []
 
 
 def _now() -> str:
@@ -202,9 +204,23 @@ def load_drafts(conn, session_id: int) -> list[DraftItem]:
 
 def approve(conn, session_id: int, items: list[DraftItem]) -> int:
     """Freeze approved drafts as a new immutable version; returns version_id."""
+    needs: list[dict] = []
+    for index, item in enumerate(items):
+        blocking = [flag for flag in item.flags if flag.blocking]
+        if blocking and not item.confirmed:
+            needs.append({
+                "index": index,
+                "name": item.name_en,
+                "messages": [flag.message for flag in blocking],
+            })
+    if needs:
+        first = needs[0]
+        raise ApprovalError(
+            f"Please check {first['name']}: {first['messages'][0]}."
+            " Play the clip, then tick I confirm.",
+            needs_confirm=needs,
+        )
     for item in items:
-        if any(flag.blocking for flag in item.flags) and not item.confirmed:
-            raise ApprovalError(f"unconfirmed blocking flag on {item.name_en}")
         priced = [line for line in item.price_lines if line.price is not None]
         if not priced:
             raise ApprovalError(f"no priced line for {item.name_en}")

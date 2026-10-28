@@ -13,9 +13,9 @@
   {% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
   {% for line in item.price_lines %}
   <div class="line">
-    <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
-    <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
-    <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
+    <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
+    <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
+    <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" data-original="{{ line.unit if line.unit is not none }}">
       {% for u in units %}
       <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
       {% endfor %}
@@ -47,12 +47,18 @@
   {% endfor %}
   {% set ns = namespace(need_confirm=false) %}
   {% for flag in item.flags %}
-    {% if flag.blocking and not flag.options %}
+    {% if flag.blocking %}
       {% set ns.need_confirm = true %}
     {% endif %}
   {% endfor %}
   {% if ns.need_confirm %}
+  <p data-edit-note hidden>You changed this from what was heard. Play the clip, then tick I confirm.</p>
   <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+  {% else %}
+  <div data-confirm-wrap hidden>
+    <p data-edit-note hidden>You changed this from what was heard. Play the clip, then tick I confirm.</p>
+    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+  </div>
   {% endif %}
   <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
 </section>

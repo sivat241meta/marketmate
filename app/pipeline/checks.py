@@ -21,6 +21,16 @@ WEIGHT_ITEMS: set[str] = {
     "coriander", "radish", "beetroot", "peas", "capsicum", "spinach",
 }
 
+TAMIL_FIFTY_WORDS = frozenset({
+    "ஐம்பது", "அம்பது",
+    "aimbadhu", "aimbathu", "ambadhu", "ambathu",
+})
+
+TAMIL_EIGHTY_WORDS = frozenset({
+    "எண்பது", "எம்பது",
+    "enbadhu", "enbathu", "embadhu", "embathu", "yenbadhu",
+})
+
 CORRECTION_MARKERS = (
     "illa illa", "illai", "sorry", "no no", "wait", "correction", "இல்ல", "இல்லை",
 )
@@ -38,19 +48,59 @@ def _within(rate: tuple[Decimal, str], ref: tuple[Decimal, str],
     return abs(rate[0] - ref[0]) / abs(ref[0]) <= tolerance
 
 
-def _sound_alike_rates(item: DraftItem, line: PriceLine, pair: list[int],
+def _sound_alike_rates(item: DraftItem, line: PriceLine,
+                       alt_value: int | Decimal,
                        previous: dict[str, PriceLine]):
     """(heard rate, alternative rate, previous rate); None when incomparable."""
     prev_line = (previous or {}).get(item.name_en)
     if prev_line is None:
         return (None, None, None)
     heard = rate(line)
-    alt_value = pair[1] if pair[0] == int(line.price) else pair[0]
     alt = rate(PriceLine(Decimal(alt_value), line.per_amount, line.unit))
     old = rate(prev_line)
     if heard is None or alt is None or old is None:
         return (None, None, None)
     return (heard, alt, old)
+
+
+def _closer_than(heard: tuple[Decimal, str], alt: tuple[Decimal, str],
+                 ref: tuple[Decimal, str]) -> bool:
+    """True when heard is strictly closer to ref than alt on the same base."""
+    if heard[1] != ref[1] or alt[1] != ref[1]:
+        return False
+    return abs(heard[0] - ref[0]) < abs(alt[0] - ref[0])
+
+
+def _has_word(tokens: list[str], words: frozenset[str]) -> bool:
+    return any(token.startswith(word) for token in tokens for word in words)
+
+
+def _sound_alike_alternatives(heard: list[tuple[Decimal, str]],
+                              has_fifty: bool,
+                              has_eighty: bool) -> set[Decimal]:
+    """Alternatives of heard numbers via English pairs and the Tamil 50/80 pair."""
+    alts: set[Decimal] = set()
+    for value, kind in heard:
+        if value != int(value):
+            continue
+        ivalue = int(value)
+        if kind == "english" and ivalue in _PAIR_OF:
+            alts.add(Decimal(_PAIR_OF[ivalue]))
+        if has_fifty and ivalue % 100 == 50:
+            alts.add(Decimal(ivalue + 30))
+        if has_eighty and ivalue % 100 == 80:
+            alts.add(Decimal(ivalue - 30))
+    return alts
+
+
+def _non_blocking(heard_rate, alt_rate, prev_rate) -> bool:
+    if heard_rate is None or alt_rate is None or prev_rate is None:
+        return False
+    if not _within(heard_rate, prev_rate, Decimal("0.3")):
+        return False
+    if not _within(alt_rate, prev_rate, Decimal("0.3")):
+        return True
+    return _closer_than(heard_rate, alt_rate, prev_rate)
 
 
 def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
@@ -59,26 +109,59 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
     quote = item.proof.quote or ""
     heard = find_numbers(quote)
     heard_values = {value for value, _ in heard}
+    quote_tokens = [t for t in _raw_tokens(quote) if t]
+    has_fifty = _has_word(quote_tokens, TAMIL_FIFTY_WORDS)
+    has_eighty = _has_word(quote_tokens, TAMIL_EIGHTY_WORDS)
+    alternatives = _sound_alike_alternatives(heard, has_fifty, has_eighty)
 
     for line in item.price_lines:
-        if line.price is not None and line.price not in heard_values:
+        if (line.price is not None and line.price not in heard_values
+                and line.price not in alternatives):
             flags.append(Flag(field="price", code="NOT_HEARD",
                               message=f"price {line.price} not heard in quote"))
         if line.price is not None and line.price == int(line.price):
             for value, kind in heard:
-                if (kind == "english" and value == line.price
-                        and int(value) in _PAIR_OF):
-                    pair = sorted([int(value), _PAIR_OF[int(value)]])
+                if (kind == "english" and value == int(value)
+                        and int(value) in _PAIR_OF
+                        and (value == line.price
+                             or Decimal(_PAIR_OF[int(value)]) == line.price)):
+                    alt_value = _PAIR_OF[int(value)]
+                    pair = sorted([int(value), alt_value])
+                    other = pair[1] if pair[0] == int(line.price) else pair[0]
                     message = f"did you say {pair[0]} or {pair[1]}?"
                     blocking = True
                     heard_rate, alt_rate, prev_rate = _sound_alike_rates(
-                        item, line, pair, previous)
-                    if (heard_rate is not None and alt_rate is not None
-                            and prev_rate is not None
-                            and _within(heard_rate, prev_rate, Decimal("0.3"))
-                            and not _within(alt_rate, prev_rate, Decimal("0.3"))):
+                        item, line, other, previous)
+                    if _non_blocking(heard_rate, alt_rate, prev_rate):
                         blocking = False
-                        message += (f" {int(value)} matches the previous price"
+                        message += (f" {int(line.price)} matches the previous price"
+                                    f" ({prev_rate[0]} per {prev_rate[1]})")
+                    flags.append(Flag(
+                        field="price", code="SOUND_ALIKE", message=message,
+                        options=[str(pair[0]), str(pair[1])], blocking=blocking))
+                    break
+            for value, _ in heard:
+                if value != int(value):
+                    continue
+                ivalue = int(value)
+                alt_value = None
+                if has_fifty and ivalue % 100 == 50:
+                    alt_value = ivalue + 30
+                elif has_eighty and ivalue % 100 == 80:
+                    alt_value = ivalue - 30
+                if alt_value is None:
+                    continue
+                if line.price == ivalue or line.price == alt_value:
+                    pair = sorted([ivalue, alt_value])
+                    other = pair[1] if pair[0] == int(line.price) else pair[0]
+                    message = (f"did you say {pair[0]} or {pair[1]}?"
+                               " (50 and 80 sound alike in Tamil)")
+                    blocking = True
+                    heard_rate, alt_rate, prev_rate = _sound_alike_rates(
+                        item, line, other, previous)
+                    if _non_blocking(heard_rate, alt_rate, prev_rate):
+                        blocking = False
+                        message += (f" {int(line.price)} matches the previous price"
                                     f" ({prev_rate[0]} per {prev_rate[1]})")
                     flags.append(Flag(
                         field="price", code="SOUND_ALIKE", message=message,

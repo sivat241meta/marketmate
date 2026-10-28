@@ -90,6 +90,66 @@ function keepChosenLine(card) {
   });
 }
 
+function isHiddenBox(box) {
+  return box.closest("[hidden]") !== null;
+}
+
+function cardEdited(card) {
+  const initial = Number(card.dataset.initialLines || 0);
+  const current = card.querySelectorAll(".line").length;
+  if (initial && current < initial) {
+    return true;
+  }
+  const fields = card.querySelectorAll(
+    '[data-field="price"], [data-field="per_amount"], [data-field="unit"]');
+  for (const input of fields) {
+    const original = input.dataset.original ?? "";
+    if ((input.value ?? "") !== original) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function showConfirm(card) {
+  const wrap = card.querySelector("[data-confirm-wrap]");
+  const note = card.querySelector("[data-edit-note]");
+  const box = card.querySelector("[data-card-confirm]");
+  if (wrap) {
+    wrap.hidden = false;
+  }
+  if (note) {
+    note.hidden = false;
+  }
+  if (box) {
+    box.checked = false;
+  }
+}
+
+function hideConfirmIfClean(card) {
+  const wrap = card.querySelector("[data-confirm-wrap]");
+  const note = card.querySelector("[data-edit-note]");
+  if (cardEdited(card)) {
+    return;
+  }
+  if (wrap) {
+    if (note) {
+      note.hidden = true;
+    }
+    wrap.hidden = true;
+  } else if (note) {
+    note.hidden = true;
+  }
+}
+
+function syncCardConfirm(card) {
+  if (cardEdited(card)) {
+    showConfirm(card);
+  } else {
+    hideConfirmIfClean(card);
+  }
+}
+
 function updateApprove(form) {
   const button = form.querySelector("#approve-btn");
   const error = form.querySelector("#approve-error");
@@ -100,16 +160,50 @@ function updateApprove(form) {
     }
   });
   form.querySelectorAll("[data-card-confirm]").forEach((box) => {
-    if (!box.checked) {
+    if (!box.checked && !isHiddenBox(box)) {
       unresolved += 1;
     }
   });
   button.disabled = unresolved > 0;
   if (error) {
+    if (error.dataset.serverMessage === "true") {
+      return;
+    }
     error.hidden = unresolved === 0;
     if (unresolved > 0) {
       error.textContent = `${unresolved} flag(s) still need a choice or a confirm tick.`;
     }
+  }
+}
+
+function revealNeedsConfirm(form, needs) {
+  let firstCard = null;
+  for (const need of needs || []) {
+    const card = form.querySelector(`.card[data-card="${need.index}"]`);
+    if (!card) {
+      continue;
+    }
+    const wrap = card.querySelector("[data-confirm-wrap]");
+    const note = card.querySelector("[data-edit-note]");
+    const box = card.querySelector("[data-card-confirm]");
+    if (wrap) {
+      wrap.hidden = false;
+    }
+    if (note) {
+      note.hidden = false;
+      if (need.messages && need.messages.length) {
+        note.textContent = `${need.messages.join(" ")} Play the clip, then tick I confirm.`;
+      }
+    }
+    if (box) {
+      box.checked = false;
+    }
+    if (!firstCard) {
+      firstCard = card;
+    }
+  }
+  if (firstCard && firstCard.scrollIntoView) {
+    firstCard.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 }
 
@@ -118,6 +212,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form) {
     return;
   }
+  form.querySelectorAll(".card").forEach((card) => {
+    card.dataset.initialLines = String(card.querySelectorAll(".line").length);
+  });
   form.querySelectorAll(".opt-btn").forEach((button) => {
     button.addEventListener("click", () => {
       const group = button.closest(".flag-options");
@@ -133,20 +230,40 @@ document.addEventListener("DOMContentLoaded", () => {
       if (group.dataset.flag === "TWO_PRICES") {
         keepChosenLine(button.closest(".card"));
       }
+      const card = button.closest(".card");
+      if (card) {
+        syncCardConfirm(card);
+      }
       updateApprove(form);
     });
   });
   form.querySelectorAll(".line-remove").forEach((button) => {
     button.addEventListener("click", () => {
+      const card = button.closest(".card");
       const wrap = button.closest(".line");
       if (wrap) {
         wrap.remove();
       }
+      if (card) {
+        showConfirm(card);
+      }
       updateApprove(form);
     });
   });
-  form.addEventListener("input", () => updateApprove(form));
-  form.addEventListener("change", () => updateApprove(form));
+  form.addEventListener("input", (event) => {
+    const card = event.target ? event.target.closest(".card") : null;
+    if (card) {
+      syncCardConfirm(card);
+    }
+    updateApprove(form);
+  });
+  form.addEventListener("change", (event) => {
+    const card = event.target ? event.target.closest(".card") : null;
+    if (card) {
+      syncCardConfirm(card);
+    }
+    updateApprove(form);
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const response = await fetch(form.dataset.approveUrl, {
@@ -159,9 +276,21 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       const error = form.querySelector("#approve-error");
       const detail = await response.json().catch(() => ({}));
+      if (detail && detail.needs_confirm) {
+        revealNeedsConfirm(form, detail.needs_confirm);
+      }
       if (error) {
         error.hidden = false;
+        error.dataset.serverMessage = "true";
         error.textContent = detail.detail || "Approve failed.";
+      }
+      updateApprove(form);
+      if (error) {
+        error.hidden = false;
+        delete error.dataset.serverMessage;
+        if (detail.detail) {
+          error.textContent = detail.detail;
+        }
       }
     }
   });

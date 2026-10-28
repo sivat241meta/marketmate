@@ -338,6 +338,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             db.approve(conn, session_id, items)
         except db.ApprovalError as exc:
+            if exc.needs_confirm:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": str(exc),
+                             "needs_confirm": exc.needs_confirm},
+                )
             raise HTTPException(400, str(exc))
         return RedirectResponse(f"/e/{token}", status_code=303)
 
