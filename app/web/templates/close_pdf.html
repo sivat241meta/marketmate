@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
 <meta charset="utf-8">
-<title>Day close {{ day }} — {{ shop["name"] }}</title>
+<title>{{ t('close.heading') }} — {{ day }}</title>
 <style>
 @font-face {
   font-family: "Noto Sans Tamil";
@@ -13,44 +13,54 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
-@page { size: A4; margin: 12mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; margin: 0; font-size: 10pt; }
-h1 { font-size: 18pt; margin: 0; }
-.sub { color: #57534e; margin: 1mm 0 4mm; }
-.tiles { display: flex; flex-wrap: wrap; gap: 3mm; margin-bottom: 4mm; }
-.tile { border: 0.5pt solid #d6cfbd; border-radius: 3mm; padding: 2mm 3mm; min-width: 32mm; }
-.tile .num { font-size: 13pt; font-weight: bold; }
-.tile .label { font-size: 8pt; color: #57534e; }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
+}
+@page { size: A4; margin: 14mm 12mm; }
+body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; margin: 0; }
+h1 { font-size: 20pt; margin: 0 0 2mm; }
+.meta { font-size: 10pt; color: #57534e; margin: 0 0 5mm; }
+.tiles { display: flex; gap: 4mm; margin-bottom: 5mm; }
+.tile { flex: 1; background: #f5efe0; border-radius: 3mm; padding: 3mm 4mm; }
+.tile .num { font-size: 15pt; font-weight: bold; }
+.tile .label { font-size: 9pt; color: #57534e; }
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-size: 8pt; border-bottom: 0.5pt solid #1c1917; padding: 1mm 0; }
-td { padding: 1.2mm 0; border-bottom: 0.4pt dotted #d6cfbd; vertical-align: top; }
-.note { font-size: 8pt; color: #57534e; margin-top: 3mm; }
+th { background: #14532d; color: #fbf7ef; font-size: 9pt; padding: 2.5mm; text-align: left; }
+td { border-bottom: 0.5pt solid #efe8d8; padding: 2.5mm; font-size: 10pt; }
+.amount { white-space: nowrap; text-align: right; }
+.carry { font-size: 9pt; color: #57534e; margin-top: 4mm; }
 </style>
 </head>
 <body>
-<h1>{{ shop["name"] }} — Close day</h1>
-<p class="sub">{{ day }} · {{ shop["area"] }} · {{ shop["phone"] }}</p>
+<h1>{{ shop["name"] }} — {{ t('close.heading') }}</h1>
+<p class="meta">{{ day }}</p>
 <div class="tiles">
-  <div class="tile"><div class="num">{{ tiles.sales | money(shop["currency"]) }}</div><div class="label">Sales ({{ tiles.bills_count }} bills)</div></div>
-  <div class="tile"><div class="num">{{ tiles.cash | money(shop["currency"]) }}</div><div class="label">Cash</div></div>
-  <div class="tile"><div class="num">{{ tiles.upi | money(shop["currency"]) }}</div><div class="label">UPI</div></div>
-  <div class="tile"><div class="num">{{ tiles.card | money(shop["currency"]) }}</div><div class="label">Card</div></div>
-  <div class="tile"><div class="num">{{ tiles.unpaid | money(shop["currency"]) }}</div><div class="label">Unpaid</div></div>
-  <div class="tile"><div class="num">{{ tiles.spent | money(shop["currency"]) }}</div><div class="label">Spent on purchases</div></div>
-  <div class="tile"><div class="num">{% if tiles.margin is none %}—{% else %}{{ tiles.margin | money(shop["currency"]) }}{% endif %}</div><div class="label">Gross margin</div></div>
+  <div class="tile"><div class="num">{{ tiles.sales_fmt }}</div><div class="label">{{ t('cpdf.sales_bills', n=tiles.bills_count) }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.cash_fmt }}</div><div class="label">{{ t('close.cash') }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.upi_fmt }}</div><div class="label">{{ t('close.upi') }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.card_fmt }}</div><div class="label">{{ t('close.card') }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.unpaid_fmt }}</div><div class="label">{{ t('close.unpaid') }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.spent_fmt }}</div><div class="label">{{ t('close.spent') }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.margin_fmt }}</div><div class="label">{{ t('close.margin') }}</div></div>
 </div>
 <table>
-<tr><th>Item</th><th>Sold</th><th>Sales</th><th>Opening</th><th>Stock left</th></tr>
+<tr><th>{{ t('close.th_item') }}</th><th>{{ t('close.th_sold') }}</th><th>{{ t('close.th_sales') }}</th><th>{{ t('close.th_opening') }}</th><th>{{ t('close.th_left') }}</th></tr>
 {% for row in rows %}
 <tr>
-  <td><strong>{{ row.name_local or row.display }}</strong><br><span>{{ row.display }}</span></td>
+  <td><strong>{{ row.display }}</strong>{% if row.name_local %} {{ row.name_local }}{% endif %}</td>
   <td>{{ row.sold }}</td>
-  <td>{{ row.amount | money(shop["currency"]) }}</td>
+  <td class="amount">{{ row.amount | money(shop["currency"]) }}</td>
   <td>{{ row.opening }}</td>
   <td>{{ row.left }}</td>
 </tr>
 {% endfor %}
 </table>
-<p class="note">Carry over to tomorrow: stock left becomes tomorrow's opening stock when no purchase is entered.</p>
+<p class="carry">{{ t('close.carry') }}</p>
 </body>
 </html>

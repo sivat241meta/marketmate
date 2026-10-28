@@ -509,6 +509,8 @@ def _client_with_shop(tmp_path):
     settings = load_settings({"MODEL_API_KEY": "k",
                               "DATA_DIR": str(tmp_path / "data")})
     client = TestClient(create_app(settings), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
     return client, shop_id, slug, token
 
 

@@ -1,49 +1,49 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Confirm purchases{% endblock %}
+{% block title %}{{ t('pr.title') }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="page-head">
-  <h1>Confirm purchases</h1>
-  <p class="muted">Heard: {{ transcript }}</p>
+  <h1>{{ t('pr.heading') }}</h1>
+  <p class="muted">{{ t('pr.heard', transcript=transcript) }}</p>
 </header>
 <form method="post" action="/e/{{ token }}/purchases/{{ session["id"] }}/confirm">
 {% for card in cards %}
 <section class="card review-card needs" data-card="{{ card.index }}">
   <div class="review-body">
     <h2>{% if card.name_local %}<span lang="ta">{{ card.name_local }}</span> {% endif %}<span class="name-en">{{ card.name_en }}</span></h2>
-    <p><strong>{{ card.qty }} {{ card.unit }}</strong> · total {{ card.total_cost | money(currency) }}</p>
+    <p><strong>{{ t('pr.qty_total', qty=card.qty, unit=card.unit, total=card.total_cost | money(currency)) }}</strong></p>
     <blockquote class="quote">{{ card.quote }}</blockquote>
     {% for flag in card.flags %}
       {% if flag.blocking %}
-      <div class="alert alert-warn flag-blocking">{{ flag.message }}</div>
+      <div class="alert alert-warn flag-blocking">{{ t_flag(flag) }}</div>
       {% else %}
-      <p class="flag-note">{{ flag.message }}</p>
+      <p class="flag-note">{{ t_flag(flag) }}</p>
       {% endif %}
     {% endfor %}
     {% if card.need_confirm %}
-    <label class="card-confirm"><input type="checkbox" name="confirmed" value="{{ card.index }}"> I confirm</label>
+    <label class="card-confirm"><input type="checkbox" name="confirmed" value="{{ card.index }}"> {{ t('review.confirm') }}</label>
     {% endif %}
   </div>
 </section>
 {% endfor %}
 {% if not cards %}
-<p class="muted">Nothing heard. Try again.</p>
+<p class="muted">{{ t('pr.nothing') }}</p>
 {% endif %}
   <div class="sticky-bar">
-    <button class="btn btn-green btn-big" type="submit">Confirm purchases</button>
+    <button class="btn btn-green btn-big" type="submit">{{ t('pr.confirm_btn') }}</button>
   </div>
 </form>
 {% endblock %}

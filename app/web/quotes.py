@@ -36,7 +36,7 @@ from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
 from app.pipeline.names import keywords_for
 from app.pipeline.run import friendly_error_message
-from app.web.i18n import get_strings
+from app.web.i18n import get_strings, quote_whatsapp_text
 
 MAX_QUOTE_PHOTO_BYTES = 10 * 1024 * 1024
 
@@ -135,24 +135,10 @@ def _quote_lines_context(raw_lines: list[dict],
 
 
 def _whatsapp_link(shop, raw_lines: list[dict], total: str,
-                   quote_url: str) -> str:
+                   quote_url: str, lang: str = "en") -> str:
     digits = re.sub(r"\D", "", shop["phone"] or "")
-    parts = [f"Quote from {shop['name']}"]
-    for raw in raw_lines:
-        name = _display(raw.get("name_en", ""))
-        status = raw.get("status", "")
-        if status in ("priced", "needs_qty") and raw.get("line_total"):
-            qty = _fmt_money(raw.get("qty", ""))
-            unit = raw.get("unit") or ""
-            parts.append(
-                f"{name} {qty} {unit} - Rs.{_fmt_money(raw['line_total'])}".strip())
-        elif status == "sold_out":
-            parts.append(f"{name} - sold out")
-        else:
-            parts.append(f"{name} - not on list")
-    parts.append(f"Total: Rs.{_fmt_money(total)}")
-    parts.append(f"Quote: {quote_url}")
-    return f"https://wa.me/{digits}?text={url_quote(chr(10).join(parts))}"
+    text = quote_whatsapp_text(shop, raw_lines, total, quote_url, lang)
+    return f"https://wa.me/{digits}?text={url_quote(text)}"
 
 
 def process_quote_voice_session(conn, session_id: int, audio: Path, *,
@@ -293,10 +279,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "priced_count": priced_count, "unpriced_count": unpriced_count,
             "rel": rel, "error": error, "lang": language, "t": strings,
             "shop_lang": shop["language"] or "en",
+            "ui_lang": language if language in ("ta", "hi", "en") else "en",
             "subtitle": strings["quote_subtitle"].format(
                 shop=shop["name"], rel=rel),
             "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
-                                           quote_url)})
+                                           quote_url, language)})
 
     def _lang_suffix(language: str) -> str:
         return f"?lang={language}" if language != "en" else ""
@@ -306,7 +293,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(
             request, "quote_start.html",
             {"shop": shop, "error": error, "lang": language,
-             "t": get_strings(language)},
+             "t": get_strings(language),
+             "ui_lang": language if language in ("ta", "hi", "en") else "en"},
             status_code=status)
 
     @app.get("/s/{slug}/quote")
@@ -365,7 +353,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                                datetime.now(UTC)):
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE,
+                 "ui_lang": "en"},
                 status_code=429)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
@@ -375,7 +364,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return templates.TemplateResponse(
                 request, "error.html",
                 {"title": "Demo budget used up",
-                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                 "message": BUDGET_EXHAUSTED_MESSAGE, "ui_lang": "en"},
                 status_code=503)
         return None
 
@@ -413,7 +402,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 request, "error.html",
                 {"title": "Photo too big",
                  "message": (f"That photo is {size_mb:.0f} MB, which is too big"
-                             " to upload. Please choose a photo under 10 MB.")},
+                             " to upload. Please choose a photo under 10 MB."),
+                 "ui_lang": "en"},
                 status_code=400)
         try:
             with Image.open(io.BytesIO(payload)) as img:
@@ -423,7 +413,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return templates.TemplateResponse(
                 request, "error.html",
                 {"title": "Not a photo",
-                 "message": "We could not open that file as a photo."},
+                 "message": "We could not open that file as a photo.",
+                 "ui_lang": "en"},
                 status_code=400)
         ext = {"jpeg": ".jpg", "jpg": ".jpg", "png": ".png",
                "webp": ".webp"}.get(photo_format, ".jpg")
@@ -453,7 +444,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "quote_status.html", {
             "shop": shop, "session": session, "progress": progress,
             "friendly": db.stage_friendly(session["kind"],
-                                          progress["stage"])})
+                                          progress["stage"]),
+            "ui_lang": language if language in ("ta", "hi", "en") else "en"})
 
     @app.get("/s/{slug}/quote/{session_id}/status")
     def quote_session_status(slug: str, session_id: int, conn: Conn):

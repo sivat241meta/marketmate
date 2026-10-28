@@ -37,7 +37,10 @@ def _client(tmp_path, drafts=None, monkeypatch=None):
 
         monkeypatch.setattr("app.web.seller.jobs.submit", fake_submit)
         monkeypatch.setattr("app.web.seller.process_video_session", fake_process)
-    return TestClient(app, follow_redirects=False)
+    client = TestClient(app, follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def _create_shop(client):

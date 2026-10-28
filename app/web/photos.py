@@ -29,6 +29,13 @@ from app.outputs.time import format_relative
 from app.pipeline.names import CANONICAL_NAMES
 from app.pipeline.run import friendly_error_message
 from app.pipeline.vision import PhotoReport, analyse_photo
+from app.web.i18n import (
+    get_ui_lang,
+    photo_button_text,
+    photo_count_text,
+    photo_suggestion_text,
+    t_for,
+)
 
 MAX_PHOTO_BYTES = 10 * 1024 * 1024
 BOX_COLOURS = 6
@@ -37,6 +44,12 @@ _SUGGESTION_BUTTONS = {
     "set_stock": ("tag", "Save stock"),
     "unsold": ("check", "Put back on sale"),
     "voice_update": ("mic", "Say its price"),
+}
+
+_SUGGESTION_ICONS = {
+    "set_stock": "tag",
+    "unsold": "check",
+    "voice_update": "mic",
 }
 
 
@@ -248,7 +261,7 @@ def _check_summaries(conn, shop_id: int, now: datetime) -> list[dict]:
     return rows
 
 
-def _result_context(report: dict) -> dict:
+def _result_context(report: dict, lang: str = "en") -> dict:
     products = []
     width = report.get("image_w")
     height = report.get("image_h")
@@ -261,16 +274,7 @@ def _result_context(report: dict) -> dict:
         count = raw.get("count")
         span = raw.get("count_range")
         needs_check = bool(raw.get("needs_check"))
-        if not raw.get("countable"):
-            count_text = ""
-        elif needs_check and span:
-            count_text = (f"Between {span[0]} and {span[1]} - please check")
-        elif needs_check and isinstance(count, int):
-            count_text = (f"About {count} - some may be hidden, please check")
-        elif isinstance(count, int):
-            count_text = f"About {count} visible"
-        else:
-            count_text = ""
+        count_text = photo_count_text(raw, lang)
         default_qty = None
         if raw.get("countable"):
             if isinstance(count, int):
@@ -300,12 +304,12 @@ def _result_context(report: dict) -> dict:
     raws = report.get("products") or []
     for index, raw in enumerate(report.get("suggestions") or []):
         action = raw.get("action")
-        icon, button = _SUGGESTION_BUTTONS.get(
-            action, ("camera", "Retake photo"))
+        icon = _SUGGESTION_ICONS.get(action, "camera")
+        button = photo_button_text(action, lang)
         suggestions.append({
             "index": index,
             "kind": raw.get("kind") or "",
-            "text": raw.get("text") or "",
+            "text": photo_suggestion_text(raw, raws, lang),
             "item_name": raw.get("item_name") or "",
             "action": action or "",
             "icon": icon,
@@ -336,21 +340,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/photos")
     def photos_list(request: Request, token: str, conn: Conn):
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
         return templates.TemplateResponse(request, "photos.html", {
             "shop": shop, "token": token,
             "checks": _check_summaries(conn, shop["id"], datetime.now(UTC)),
-            "max_photo_bytes": MAX_PHOTO_BYTES})
+            "max_photo_bytes": MAX_PHOTO_BYTES, "ui_lang": ui_lang})
 
     @app.post("/e/{token}/photos")
     def photos_upload(request: Request, token: str, photo: UploadFile,
                       conn: Conn):
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
         if not request.app.state.limiter.allow(client_ip(request),
                                                datetime.now(UTC)):
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                {"title": t("error.too_many_title"),
+                 "message": RATE_LIMIT_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
                 status_code=429)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
@@ -359,24 +368,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except CostCapExceeded:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Demo budget used up",
-                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                {"title": t("error.budget_title"),
+                 "message": BUDGET_EXHAUSTED_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
                 status_code=503)
         payload = photo.file.read()
         if not payload:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "No photo chosen",
+                {"title": t("error.no_photo_title"),
                  "message": ("Choose a photo of your stock first, then tap"
-                             " upload.")},
+                             " upload."), "token": token, "ui_lang": ui_lang},
                 status_code=400)
         if len(payload) > MAX_PHOTO_BYTES:
             size_mb = len(payload) / (1024 * 1024)
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Photo too big",
+                {"title": t("error.photo_big_title"),
                  "message": (f"That photo is {size_mb:.0f} MB, which is too big"
-                             " to upload. Please choose a photo under 10 MB.")},
+                             " to upload. Please choose a photo under 10 MB."),
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         try:
             with Image.open(io.BytesIO(payload)) as img:
@@ -385,10 +396,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except Exception:  # noqa: BLE001 - any unreadable file is a 400
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Not a photo",
+                {"title": t("error.not_photo_title"),
                  "message": ("We could not open that file as a photo. Please"
                              " choose a jpeg, png or webp photo (HEIC photos"
-                             " need converting to jpeg first).")},
+                             " need converting to jpeg first)."),
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         ext = {"jpeg": ".jpg", "jpg": ".jpg", "png": ".png",
                "webp": ".webp"}.get(photo_format)
@@ -409,15 +421,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def photo_result(request: Request, token: str, check_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
         check = _check_of_shop(conn, shop["id"], check_id)
+        ui_lang = get_ui_lang(request, shop)
         try:
             report = json.loads(check["report_json"] or "{}")
         except ValueError:
             report = {}
-        context = _result_context(report if isinstance(report, dict) else {})
+        context = _result_context(
+            report if isinstance(report, dict) else {}, ui_lang)
         return templates.TemplateResponse(request, "photo.html", {
             "shop": shop, "token": token, "check": check,
             "rel": _relative_time(check["created_at"], datetime.now(UTC)),
-            "image_url": _photo_url(check["image_path"]), **context})
+            "image_url": _photo_url(check["image_path"]), "ui_lang": ui_lang,
+            **context})
 
     @app.post("/e/{token}/photos/{check_id}/apply")
     def photo_apply(token: str, check_id: int, conn: Conn,
@@ -426,6 +441,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     qty: str | None = Form(None)):
         shop = _shop_or_404(conn, token)
         check = _check_of_shop(conn, shop["id"], check_id)
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
         try:
             report = json.loads(check["report_json"] or "{}")
         except ValueError:
@@ -439,16 +456,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if not name:
                 return templates.TemplateResponse(
                     request, "error.html",
-                    {"title": "Which item?",
-                     "message": "Tell us which item needs a price first."},
+                    {"title": t("error.which_item_title"),
+                     "message": "Tell us which item needs a price first.",
+                     "token": token, "ui_lang": ui_lang},
                     status_code=400)
             return RedirectResponse(
                 f"/e/{token}/update?hint={quote(name)}", status_code=303)
         if action not in ("set_stock", "unsold"):
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Unknown action",
-                 "message": "That suggestion button did nothing."},
+                {"title": t("error.unknown_action_title"),
+                 "message": "That suggestion button did nothing.",
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         version_id = db.latest_version(conn, shop["id"])
         current = db.version_items(conn, version_id) if version_id else []
@@ -456,9 +475,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if target is None:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Not on your list",
+                {"title": t("error.not_on_list_title"),
                  "message": (f"{_display(name)} is not on your price list yet."
-                             " Say its price first, then save the stock.")},
+                             " Say its price first, then save the stock."),
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         if action == "unsold":
             db.set_sold_out(conn, target.id, False)
@@ -473,9 +493,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if amount is None or amount < 0:
                 return templates.TemplateResponse(
                     request, "error.html",
-                    {"title": "Count does not look right",
+                    {"title": t("error.count_wrong_title"),
                      "message": ("That count is not a whole number. Pick the"
-                                 " count with - and +, then save again.")},
+                                 " count with - and +, then save again."),
+                     "token": token, "ui_lang": ui_lang},
                     status_code=400)
         else:
             for raw in suggestions:
@@ -486,9 +507,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if amount is None:
                 return templates.TemplateResponse(
                     request, "error.html",
-                    {"title": "No count yet",
+                    {"title": t("error.no_count_title"),
                      "message": ("Pick the count with - and +, then save"
-                                 " again.")},
+                                 " again."),
+                     "token": token, "ui_lang": ui_lang},
                     status_code=400)
         db.set_stock(conn, target.id, amount, "piece", "photo")
         return RedirectResponse(f"/e/{token}/photos/{check_id}",

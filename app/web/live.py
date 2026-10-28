@@ -463,12 +463,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             shop_dict = dict(shop)
         finally:
             conn.close()
+        from app.web.i18n import get_ui_lang
         from app.web.seller import NOTICE
 
+        ui_lang = get_ui_lang(request, shop_dict)
         return templates.TemplateResponse(request, "live.html", {
             "shop": shop_dict, "token": token, "notice": NOTICE,
             "shop_lang": shop_dict.get("language") or "ta",
             "max_upload_bytes": app.state.settings.max_upload_bytes,
+            "ui_lang": ui_lang,
         })
 
     @app.get("/e/{token}/s/{session_id}/frame/{name}")

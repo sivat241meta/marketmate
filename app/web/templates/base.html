@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ ui_lang|default('en') }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,9 +12,16 @@
     <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#14532d"/><path d="M5 19l8-8" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>
     <span>MarketMate</span>
   </a>
-  <nav class="topbar-nav" aria-label="Main">
-    <a href="/market">Find prices</a>
-    <a href="/new">Start selling</a>
+  {% if request is defined and request.url.path.startswith("/e/") %}
+  <div class="lang-toggle" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}is-active{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}is-active{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}is-active{% endif %}">हिन्दी</button>
+  </div>
+  {% endif %}
+  <nav class="topbar-nav" aria-label="{{ t('top.main_nav') }}">
+    <a href="/market">{{ t('top.find_prices') }}</a>
+    <a href="/new">{{ t('top.start_selling') }}</a>
   </nav>
 </header>
 <div class="shell">
@@ -24,8 +31,21 @@
 </main>
 </div>
 <footer class="footer">
-  <p>MarketMate · Every price comes from the seller's own voice. Nothing is guessed.</p>
+  <p>{{ t('top.footer') }}</p>
 </footer>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.querySelector("[data-ui-toggle]");
+  if (!toggle) { return; }
+  toggle.querySelectorAll("[data-ui-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lang = btn.getAttribute("data-ui-lang") || "en";
+      document.cookie = "ui_lang=" + encodeURIComponent(lang) + "; path=/; max-age=31536000; SameSite=Lax";
+      window.location.reload();
+    });
+  });
+});
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

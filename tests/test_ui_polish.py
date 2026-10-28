@@ -26,7 +26,10 @@ TEMPLATES = ROOT / "app" / "web" / "templates"
 def make_client(tmp_path):
     settings = load_settings(
         {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")})
-    return TestClient(create_app(settings), follow_redirects=False)
+    client = TestClient(create_app(settings), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def seed_shop(tmp_path, *, name="Polish Stall", items=(("tomato", 20, 1, "kg"),

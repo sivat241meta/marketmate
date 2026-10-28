@@ -23,7 +23,10 @@ def _settings(tmp_path):
 
 
 def _client(tmp_path):
-    return TestClient(create_app(_settings(tmp_path)), follow_redirects=False)
+    client = TestClient(create_app(_settings(tmp_path)), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def _seed_shop(tmp_path, name="T31 Store", currency="INR", listed=False,

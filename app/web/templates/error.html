@@ -6,7 +6,7 @@
   {{ ui.icon("tag") }}
   <h1>{{ title | safe }}</h1>
   <p>{{ message | safe }}</p>
-  <p><a class="btn btn-secondary" href="/market">Try the sample shops</a></p>
-  <p><a href="/">Back home</a></p>
+  <p><a class="btn btn-secondary" href="/market">{{ t('error.try_samples') }}</a></p>
+  <p><a href="/">{{ t('error.back_home') }}</a></p>
 </div>
 {% endblock %}

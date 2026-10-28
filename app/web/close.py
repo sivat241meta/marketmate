@@ -25,6 +25,7 @@ from app.outputs.day_pdf import day_summary_pdf
 from app.outputs.excel import sales_workbook
 from app.outputs.money import format_money
 from app.outputs.pos_csv import pos_csv, pricelist_csv
+from app.web.i18n import get_ui_lang, summary_whatsapp_text
 
 
 def _shop_or_404(conn, token: str):
@@ -62,11 +63,38 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
     def _close_context(request, shop, token, day):
+        ui_lang = get_ui_lang(request, shop)
         conn = db.connect(data_dir)
         try:
             tiles = day_tiles(conn, shop, day)
             items = items_for_day(conn, shop, day)
-            text, url = whatsapp_summary(shop, day, tiles, items)
+            if ui_lang in ("ta", "hi"):
+                from urllib.parse import quote as url_quote
+
+                currency = shop["currency"] or "INR"
+                tiles_fmt = {
+                    **tiles,
+                    "sales_fmt": _fmt_money(tiles["sales"], currency),
+                    "cash_fmt": _fmt_money(tiles["cash"], currency),
+                    "upi_fmt": _fmt_money(tiles["upi"], currency),
+                    "card_fmt": _fmt_money(tiles["card"], currency),
+                    "unpaid_fmt": _fmt_money(tiles["unpaid"], currency),
+                    "spent_fmt": _fmt_money(tiles["spent"], currency),
+                    "margin_fmt": (_fmt_money(tiles["margin"], currency)
+                                   if tiles["margin"] is not None else ""),
+                    "currency": currency,
+                }
+                items_fmt = [{
+                    **entry,
+                    "sales_amount_fmt": _fmt_money(
+                        entry.get("sales_amount"), currency),
+                } for entry in items]
+                text = summary_whatsapp_text(day, tiles_fmt, items_fmt,
+                                             ui_lang)
+                url = ("https://wa.me/?text="
+                       + url_quote(text))
+            else:
+                text, url = whatsapp_summary(shop, day, tiles, items)
         finally:
             conn.close()
         currency = shop["currency"] or "INR"
@@ -103,6 +131,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "margin_known": tiles["margin"] is not None,
             "rows": rows, "whatsapp_url": url, "whatsapp_text": text,
             "today": shop_today(shop, datetime.now(UTC)),
+            "ui_lang": ui_lang,
         })
 
     @app.get("/e/{token}/close")
@@ -188,15 +217,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     @app.get("/e/{token}/close.pdf")
-    def close_pdf(token: str, conn: Conn, date: str | None = None):
+    def close_pdf(request: Request, token: str, conn: Conn,
+                  date: str | None = None):
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
         try:
             day = parse_day(date, shop, datetime.now(UTC))
         except ValueError:
             day = shop_today(shop, datetime.now(UTC))
         tiles = day_tiles(conn, shop, day)
         items = items_for_day(conn, shop, day)
-        pdf = day_summary_pdf(shop, day, tiles, items)
+        pdf = day_summary_pdf(shop, day, tiles, items, lang=ui_lang)
         return Response(pdf, media_type="application/pdf")
 
     def _range_from_query(request, shop):

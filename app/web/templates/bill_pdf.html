@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
 <meta charset="utf-8">
-<title>Bill {{ bill_id }} — {{ shop["name"] }}</title>
+<title>{{ t('bpdf.bill', id=bill_id) }} — {{ shop["name"] }}</title>
 <style>
 @font-face {
   font-family: "Noto Sans Tamil";
@@ -13,8 +13,17 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
+}
 @page { size: 80mm auto; margin: 5mm 4mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; margin: 0; font-size: 10pt; }
+body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; margin: 0; font-size: 10pt; }
 .shop { text-align: center; border-bottom: 0.5pt dashed #1c1917; padding-bottom: 3mm; margin-bottom: 3mm; }
 .shop h1 { font-size: 15pt; margin: 0; }
 .shop p { margin: 1mm 0 0; font-size: 9pt; }
@@ -37,21 +46,21 @@ td { padding: 1.2mm 0; vertical-align: top; border-bottom: 0.4pt dotted #d6cfbd;
   <p>{{ shop["area"] }} · {{ shop["phone"] }}</p>
 </div>
 <div class="meta">
-  <div><span>Bill {{ bill_id }}</span><span>{{ created_label }}</span></div>
-  {% if customer_phone %}<div><span>Customer</span><span>{{ customer_phone }}</span></div>{% endif %}
+  <div><span>{{ t('bpdf.bill', id=bill_id) }}</span><span>{{ created_label }}</span></div>
+  {% if customer_phone %}<div><span>{{ t('bpdf.customer') }}</span><span>{{ customer_phone }}</span></div>{% endif %}
 </div>
 <table>
-<tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
+<tr><th>{{ t('bpdf.item') }}</th><th>{{ t('bpdf.qty') }}</th><th>{{ t('bpdf.amount') }}</th></tr>
 {% for row in rows %}
 <tr>
-  <td><div class="name">{{ row.name_local or row.name_en }}</div><div class="sub">{{ row.name_en }}{% if row.unit_price %} · {{ row.unit_price | money(shop["currency"]) }} per {{ row.per_amount }} {{ row.unit }}{% endif %}</div></td>
+  <td><div class="name">{{ row.name_local or row.name_en }}</div><div class="sub">{{ row.name_en }}{% if row.unit_price %} · {{ row.unit_price | money(shop["currency"]) }} {{ t('bpdf.per', amount=row.per_amount, unit=row.unit) }}{% endif %}</div></td>
   <td class="qty">{{ row.qty }} {{ row.unit }}</td>
   <td class="amount">{% if row.line_total %}{{ row.line_total | money(shop["currency"]) }}{% else %}—{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
-<div class="total"><span>Total</span><span>{{ total | money(shop["currency"]) }}</span></div>
-<p class="thanks">Thank you, come again!</p>
-<p class="note">Prices from {{ shop["name"] }}'s list.</p>
+<div class="total"><span>{{ t('bpdf.total') }}</span><span>{{ total | money(shop["currency"]) }}</span></div>
+<p class="thanks">{{ t('bpdf.thanks') }}</p>
+<p class="note">{{ t('bpdf.note', shop=shop["name"]) }}</p>
 </body>
 </html>

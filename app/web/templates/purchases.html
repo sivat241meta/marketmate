@@ -1,86 +1,86 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Purchases — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('pur.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="page-head">
-  <h1>Today's purchases</h1>
-  <p class="muted">{{ shop["name"] }} · {{ today }} · Spent today {{ spent | money(currency) }}</p>
+  <h1>{{ t('pur.heading') }}</h1>
+  <p class="muted">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</p>
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <section class="card record-card">
   {{ ui.icon("mic") }}
-  <h2>Say what you bought</h2>
-  <p class="muted">E.g. “onion 50 kilo 1200 rupees”. Every number must be heard.</p>
+  <h2>{{ t('pur.say_title') }}</h2>
+  <p class="muted">{{ t('pur.say_desc') }}</p>
   <form method="post" action="/e/{{ token }}/purchases/voice" enctype="multipart/form-data">
     <div class="field">
-      <label for="purchase-audio">Upload a recording</label>
+      <label for="purchase-audio">{{ t('pur.upload_label') }}</label>
       <input id="purchase-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload and check</button>
+    <button class="btn btn-secondary" type="submit">{{ t('pur.upload_check') }}</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>
 
 <section class="card">
-  <h2>Type one row</h2>
+  <h2>{{ t('pur.type_title') }}</h2>
   <form method="post" action="/e/{{ token }}/purchases/add">
     <div class="field">
-      <label for="p-item">Item</label>
+      <label for="p-item">{{ t('pur.item') }}</label>
       <input id="p-item" type="text" name="item" placeholder="onion" required>
     </div>
     <div class="field">
-      <label for="p-qty">Quantity</label>
+      <label for="p-qty">{{ t('pur.qty') }}</label>
       <input id="p-qty" type="number" step="any" min="0" name="quantity" placeholder="50" required>
     </div>
     <div class="field">
-      <label for="p-unit">Unit</label>
+      <label for="p-unit">{{ t('pur.unit') }}</label>
       <select id="p-unit" name="unit">
         {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
       </select>
     </div>
     <div class="field">
-      <label for="p-total">Total paid</label>
+      <label for="p-total">{{ t('pur.total_paid') }}</label>
       <input id="p-total" type="number" step="any" min="0" name="total_paid" placeholder="1200" required>
     </div>
-    <button class="btn btn-primary" type="submit">Add purchase</button>
+    <button class="btn btn-primary" type="submit">{{ t('pur.add') }}</button>
   </form>
 </section>
 
-<div class="section-head"><h2>Bought today</h2></div>
+<div class="section-head"><h2>{{ t('pur.bought_today') }}</h2></div>
 {% if rows %}
 {% for row in rows %}
 <div class="list-row">
   <div class="list-main">
     <span class="list-name">{{ row.display }}{% if row.name_local %} <span lang="ta">{{ row.name_local }}</span>{% endif %}</span>
-    <span class="list-sub">{{ row.qty }} {{ row.unit }} · paid {{ row.total }} · cost {{ row.cost_per }}</span>
+    <span class="list-sub">{{ row.qty }} {{ row.unit }} · {{ row.paid_cost }}</span>
     {% if row.sell_per %}<span class="list-sub">{{ row.margin }}</span>{% endif %}
-    {% if row.stock_left %}<span class="list-sub">Stock left: {{ row.stock_left }}</span>{% endif %}
+    {% if row.stock_left %}<span class="list-sub">{{ t('pur.stock_left', left=row.stock_left) }}</span>{% endif %}
   </div>
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state("Nothing bought yet", "Say or type what you bought at the market this morning.", None, None) }}
+{{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), None, None) }}
 {% endif %}
 
 {% if sessions %}
-<div class="section-head"><h2>Recent voice notes</h2></div>
+<div class="section-head"><h2>{{ t('pur.recent') }}</h2></div>
 {% for s in sessions %}
 <div class="session-row">
-  <div class="row-main"><a href="/e/{{ token }}/purchases/{{ s["id"] }}">Purchase {{ s["id"] }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
+  <div class="row-main"><a href="/e/{{ token }}/purchases/{{ s["id"] }}">{{ t('pur.purchase_n', id=s["id"]) }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
   {{ ui.pill(s["status"], "live" if s["status"] == "approved" else "check") }}
 </div>
 {% endfor %}

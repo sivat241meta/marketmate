@@ -13,8 +13,17 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
+}
 @page { size: A4; margin: 10mm 12mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; margin: 0; }
+body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; margin: 0; }
 .page { page-break-after: always; }
 .page:last-child { page-break-after: avoid; }
 /* 2 columns x 4 rows = 8 tags per page. */
@@ -48,7 +57,7 @@ body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; margin: 0; }
   <div class="tag-en">{{ tag.name_en }}{% if tag.variety %} ({{ tag.variety }}){% endif %}</div>
   <div class="tag-price">{{ tag.price | money(shop["currency"]) }} <span class="tag-per">/ {{ tag.per }}</span></div>
   <div class="tag-shop">{{ shop["name"] }}</div>
-  <div class="tag-date">Today, {{ at }}</div>
+  <div class="tag-date">{{ t('tags.today', at=at) }}</div>
 </div>
 {% endfor %}
 </div>

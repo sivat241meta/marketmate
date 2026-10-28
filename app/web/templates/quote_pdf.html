@@ -13,8 +13,17 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
+}
 @page { size: A4; margin: 15mm 12mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
+body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
 .header { background: #14532d; color: #fbf7ef; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
 .header h1 { font-size: 26pt; margin: 0; }
 .header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }

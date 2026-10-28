@@ -31,7 +31,10 @@ def make_client(tmp_path, monkeypatch, *, analyse=None, extra_env=None):
     monkeypatch.setattr("app.web.photos.jobs.submit", lambda fn, *a: fn(*a))
     if analyse is not None:
         monkeypatch.setattr("app.web.photos.analyse_photo", analyse)
-    return TestClient(app, follow_redirects=False)
+    client = TestClient(app, follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def create_shop(client):

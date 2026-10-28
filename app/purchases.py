@@ -91,21 +91,27 @@ def _rounded_pct(margin: Decimal, base: Decimal) -> int:
 
 def margin_text(buy_per: Decimal | None, buy_unit: str | None,
                 sell_per: Decimal | None, sell_unit: str | None,
-                currency: str = "INR") -> str:
+                currency: str = "INR", lang: str = "en") -> str:
     """buy/sell line: "buy ₹24/kg · sell ₹40/kg · +₹16 (67%)".
 
     Units are converted when possible (kg<->g, piece<->dozen); when they
-    cannot be compared only the buy part is shown.
+    cannot be compared only the buy part is shown. ``lang`` translates the
+    buy/sell words; amounts stay via the money filter.
     """
     if buy_per is None or sell_per is None:
         return ""
     buy_unit = buy_unit or ""
     sell_unit = sell_unit or ""
+    buy_word, sell_word = "buy", "sell"
+    if lang == "ta":
+        buy_word, sell_word = "வாங்கியது", "விற்பனை"
+    elif lang == "hi":
+        buy_word, sell_word = "खरीद", "बिक्री"
     buy_in_sell = buy_per
     if buy_unit != sell_unit:
         converted = convert(Decimal(1), buy_unit, sell_unit)
         if converted is None:
-            return f"buy {format_money(buy_per, currency)}/{buy_unit}"
+            return f"{buy_word} {format_money(buy_per, currency)}/{buy_unit}"
         # 1 buy_unit = N sell_units, so price per sell_unit = buy/N.
         buy_in_sell = (buy_per / converted).quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -115,8 +121,8 @@ def margin_text(buy_per: Decimal | None, buy_unit: str | None,
         margin = Decimal(int(margin))
     pct = _rounded_pct(sell_per - buy_in_sell, buy_in_sell)
     sign = "+" if margin >= 0 else ""
-    buy_part = f"buy {format_money(buy_per, currency)}/{buy_unit}"
-    sell_part = f"sell {format_money(sell_per, currency)}/{sell_unit}"
+    buy_part = f"{buy_word} {format_money(buy_per, currency)}/{buy_unit}"
+    sell_part = f"{sell_word} {format_money(sell_per, currency)}/{sell_unit}"
     return f"{buy_part} · {sell_part} · {sign}{format_money(margin, currency)} ({pct}%)"
 
 

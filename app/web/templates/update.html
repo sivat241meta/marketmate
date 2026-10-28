@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}{% if mode == "confirm" %}Confirm price changes{% else %}Update prices by voice{% endif %}{% endblock %}
+{% block title %}{% if mode == "confirm" %}{{ t('upd.confirm_title') }}{% else %}{{ t('upd.record_title') }}{% endif %}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 {% if mode == "confirm" %}
 <header class="update-confirm-head">
-  <h1>Confirm price changes</h1>
-  <p class="muted">Heard: {{ transcript }}</p>
+  <h1>{{ t('upd.confirm_title') }}</h1>
+  <p class="muted">{{ t('upd.heard', transcript=transcript) }}</p>
 </header>
 <form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm">
 {% for card in cards %}
@@ -31,9 +31,9 @@
     {% if card.action == "set_price" %}
     {% for line in card.lines %}
     <div class="line">
-      <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
-      <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
-      <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
+      <label>{{ t('review.price') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
+      <label>{{ t('review.per') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>{{ t('review.unit') }} <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
         {% for u in units %}
         <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
         {% endfor %}
@@ -41,25 +41,25 @@
         <option value="{{ line.unit }}" selected>{{ line.unit }}</option>
         {% endif %}
       </select></label>
-      <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="Remove this price line">✕ Remove</button>
+      <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
     {% elif card.action == "set_qty" %}
-    <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
     {% else %}
     <input type="hidden" data-item="{{ card.index }}" data-field="qty" value="">
     {% if card.action == "sold_out" %}
-    <p>Sold out{% if card.current_summary %} — was {{ card.current_summary }}{% endif %}</p>
+    <p>{% if card.current_summary %}{{ t('upd.sold_out_was', summary=card.current_summary) }}{% else %}{{ t('dash.sold_out') }}{% endif %}</p>
     {% else %}
-    <p>Back in stock{% if card.current_summary %} — {{ card.current_summary }}{% endif %}</p>
+    <p>{% if card.current_summary %}{{ t('upd.back_in_stock', summary=card.current_summary) }}{% else %}{{ t('dash.back_in_stock') }}{% endif %}</p>
     {% endif %}
     {% endif %}
     <blockquote class="quote">{{ card.quote }}</blockquote>
     {% for flag in card.flags %}
       {% if flag.options %}
       <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
-        <div class="alert alert-warn">{{ flag.message }}</div>
+        <div class="alert alert-warn">{{ t_flag(flag) }}</div>
         <div class="choice">
           {% for option in flag.options %}
           <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% else %}{{ option }}{% endif %}</button>
@@ -67,85 +67,85 @@
         </div>
       </div>
       {% elif flag.blocking %}
-      <div class="alert alert-warn flag-blocking">{{ flag.message }}</div>
+      <div class="alert alert-warn flag-blocking">{{ t_flag(flag) }}</div>
       {% else %}
-      <p class="flag-note">{{ flag.message }}</p>
+      <p class="flag-note">{{ t_flag(flag) }}</p>
       {% endif %}
     {% endfor %}
     {% if card.need_confirm %}
-    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}" name="confirmed" value="{{ card.index }}"> I confirm</label>
+    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}" name="confirmed" value="{{ card.index }}"> {{ t('review.confirm') }}</label>
     {% endif %}
     <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
   </div>
 </section>
 {% endfor %}
 {% if not cards %}
-<p class="muted">No changes heard. Nothing to confirm.</p>
+<p class="muted">{{ t('upd.no_changes') }}</p>
 {% endif %}
   <p class="form-error" id="approve-error" hidden></p>
   <div class="sticky-bar">
     <p class="muted sticky-count" data-approve-count></p>
-    <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>Confirm and publish</button>
+    <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>{{ t('upd.confirm_publish') }}</button>
   </div>
 </form>
 {% else %}
 <section class="card record-card">
   {{ ui.icon("mic") }}
-  <h1>Update prices by voice</h1>
-  <p class="muted">Say today's changes, e.g. “thakkali 22, vengayam sold out”. No video needed.</p>
-  {% if hint %}<div class="alert alert-info">Say the price for <strong>{{ hint }}</strong> — e.g. “{{ hint }} 20 rupees a kilo”.</div>{% endif %}
+  <h1>{{ t('upd.record_title') }}</h1>
+  <p class="muted">{{ t('upd.say_changes') }}</p>
+  {% if hint %}<div class="alert alert-info">{{ t('upd.say_price_for', hint=hint) }}</div>{% endif %}
   {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
   <div class="record-actions">
-    <button class="btn btn-primary" type="button" id="rec-start">Start recording</button>
-    <button class="btn btn-secondary" type="button" id="rec-stop" disabled>Stop and check</button>
+    <button class="btn btn-primary" type="button" id="rec-start">{{ t('upd.start_rec') }}</button>
+    <button class="btn btn-secondary" type="button" id="rec-stop" disabled>{{ t('upd.stop_check') }}</button>
   </div>
-  <p class="muted" id="rec-status">Tap Start and say the new prices.</p>
+  <p class="muted" id="rec-status">{{ t('upd.tap_start') }}</p>
   <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <div class="field">
-      <label for="update-audio">Or upload a recording</label>
+      <label for="update-audio">{{ t('upd.upload_rec') }}</label>
       <input id="update-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
     </div>
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
     <div class="upload-progress" data-upload-progress hidden>
-      <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+      <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
       <p class="upload-meta" data-upload-meta></p>
-      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
+      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload and check</button>
+    <button class="btn btn-secondary" type="submit">{{ t('upd.upload_check') }}</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>
 <section class="card">
   {{ ui.icon("photo") }}
-  <h2>Photo of your price board</h2>
-  <p class="muted">Take a photo of your handwritten or printed board. We read each price — you tap every price to confirm before anything is published.</p>
+  <h2>{{ t('upd.board_title') }}</h2>
+  <p class="muted">{{ t('upd.board_desc') }}</p>
   <form method="post" action="/e/{{ token }}/board" enctype="multipart/form-data">
     <div class="field">
-      <label for="board-photo">Choose a photo of your board</label>
+      <label for="board-photo">{{ t('upd.board_choose') }}</label>
       <input id="board-photo" type="file" name="photo" accept="image/*" capture="environment" required>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload board and check</button>
+    <button class="btn btn-secondary" type="submit">{{ t('upd.board_upload') }}</button>
   </form>
 </section>
 {% if items %}
-<h2>Current prices</h2>
+<h2>{{ t('upd.current_prices') }}</h2>
 {% for item in items %}
 <div class="list-row">
   <div class="list-main">
     <span class="list-name"><span lang="{{ shop_lang }}">{{ item.name_local }}</span> {{ item.name_en }}</span>
     {% if item.sold_out %}
-    <span class="list-sub">sold out</span>
+    <span class="list-sub">{{ t('upd.sold_out_label') }}</span>
     {% else %}
     {% for line in item.price_lines %}
-    <span class="list-sub">{{ line.price | money(shop["currency"]) }} per {{ line.per_amount }} {{ line.unit }}</span>
+    <span class="list-sub">{{ t('upd.price_line', price=line.price | money(shop["currency"]), amount=line.per_amount, unit=line.unit) }}</span>
     {% endfor %}
     {% endif %}
   </div>
 </div>
 {% endfor %}
 {% else %}
-<p class="muted">No approved price list yet — upload a video first.</p>
+<p class="muted">{{ t('upd.no_list') }}</p>
 {% endif %}
 {% endif %}
 {% endblock %}

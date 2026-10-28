@@ -64,7 +64,10 @@ def make_client(tmp_path, **kwargs):
 
     env = {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")}
     env.update(kwargs.get("extra_env") or {})
-    return TestClient(create_app(load_settings(env)), follow_redirects=False)
+    client = TestClient(create_app(load_settings(env)), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def seed_published(tmp_path):
@@ -490,7 +493,10 @@ def test_bill_prices_only_from_shop_list(tmp_path, monkeypatch):
               "name_en_1": "tomato", "qty_1": "1", "unit_1": "kg"})
     assert response.status_code in (302, 303)
     html = client.get(response.headers["location"]).text
-    assert "not on this shop's list" in html
+    # Task 40: seller labels render via t() so apostrophes are HTML-escaped.
+    import html as html_lib
+
+    assert "not on this shop's list" in html_lib.unescape(html)
     assert "₹18" in html
 
 

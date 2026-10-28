@@ -1,84 +1,84 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}{{ shop["name"] }} — dashboard{% endblock %}
+{% block title %}{{ shop["name"] }} — {{ t('dash.title_suffix') }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link is-active" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link is-active" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
-{% if shop["is_judge"] %}<div class="alert alert-warn">Test shop - not listed in the market, deleted after 7 days</div>{% endif %}
+{% if shop["is_judge"] %}<div class="alert alert-warn">{{ t('dash.test_shop') }}</div>{% endif %}
 
 <section class="shopcard">
   <h1>{{ shop["name"] }}</h1>
   <div class="sub">{{ shop["area"] }}</div>
-  {% if live %}<p>{{ ui.pill("Live · " ~ live_count ~ " prices", "live") }}</p>{% endif %}
+  {% if live %}<p>{{ ui.pill(t('dash.live_pill', count=live_count), "live") }}</p>{% endif %}
   <div class="linkrow">
-    <a class="shop-link" href="{{ shop_url }}">Your shop link · {{ shop_url }}</a>
-    <button class="btn btn-small" type="button" id="copy-link" data-link="{{ shop_url }}">Copy</button>
-    <button class="btn btn-small" type="button" id="share-link" data-link="{{ shop_url }}">{{ ui.icon("share") }}Share</button>
-    <a class="btn btn-small" href="{{ shop_url }}/qr.png" download>QR</a>
+    <a class="shop-link" href="{{ shop_url }}">{{ t('dash.shop_link', url=shop_url) }}</a>
+    <button class="btn btn-small" type="button" id="copy-link" data-link="{{ shop_url }}" data-copied="{{ t('dash.copied') }}">{{ t('dash.copy') }}</button>
+    <button class="btn btn-small" type="button" id="share-link" data-link="{{ shop_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('dash.copy_prompt') }}" data-share-title="{{ t('dash.share_title') }}">{{ ui.icon("share") }}{{ t('dash.share') }}</button>
+    <a class="btn btn-small" href="{{ shop_url }}/qr.png" download>{{ t('dash.qr') }}</a>
   </div>
 </section>
 
 <section class="card cta-card">
-  <h2>Live prices</h2>
-  <p class="muted">Point at your stall and say each price. Cards appear as you speak.</p>
-  <p><a class="btn btn-primary btn-big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}Go live</a></p>
+  <h2>{{ t('dash.live_prices') }}</h2>
+  <p class="muted">{{ t('dash.live_desc') }}</p>
+  <p><a class="btn btn-primary btn-big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('dash.go_live') }}</a></p>
   <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
     <div class="field">
-      <label for="clip">Or upload a video of your stall</label>
+      <label for="clip">{{ t('dash.upload_label') }}</label>
       <input id="clip" type="file" name="video" accept="video/*" capture="environment" required>
-      <span class="help">Up to 3 minutes. Film each item as you say its price.</span>
+      <span class="help">{{ t('dash.upload_help') }}</span>
     </div>
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
     <div class="upload-progress" data-upload-progress hidden>
-      <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+      <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
       <p class="upload-meta" data-upload-meta></p>
-      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
+      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
     </div>
-    <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}Upload a video</button>
+    <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}{{ t('dash.upload_video') }}</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
 </section>
 
 <div class="tiles tiles-four">
-  {{ ui.tile("mic", "Update by voice", "/e/" ~ token ~ "/update") }}
-  {{ ui.tile("photo", "Scan stock photo", "/e/" ~ token ~ "/photos") }}
-  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span><span class="tile-sub">{{ bills.sales_today | money(shop["currency"]) }} today · {{ bills.quotes_waiting }} waiting</span></a>
-  <a class="tile" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span><span class="tile-sub">Spent today {{ spent_today | money(shop["currency"]) }}</span></a>
+  {{ ui.tile("mic", t('dash.tile_update'), "/e/" ~ token ~ "/update") }}
+  {{ ui.tile("photo", t('dash.tile_scan'), "/e/" ~ token ~ "/photos") }}
+  <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('dash.tile_bills') }}</span><span class="tile-sub">{{ t('dash.tile_bills_sub', sales=bills.sales_today | money(shop["currency"]), waiting=bills.quotes_waiting) }}</span></a>
+  <a class="tile" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('dash.tile_purchases') }}</span><span class="tile-sub">{{ t('dash.tile_purchases_sub', spent=spent_today | money(shop["currency"])) }}</span></a>
   {% if versions %}
-  {{ ui.tile("printer", "Print board", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
-  {{ ui.tile("tag", "Print price tags", "/e/" ~ token ~ "/tags.pdf") }}
-  {{ ui.tile("download", "Export CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
-  {{ ui.tile("download", "POS-app CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/posapp.csv") }}
+  {{ ui.tile("printer", t('dash.tile_print_board'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
+  {{ ui.tile("tag", t('dash.tile_print_tags'), "/e/" ~ token ~ "/tags.pdf") }}
+  {{ ui.tile("download", t('dash.tile_export_csv'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
+  {{ ui.tile("download", t('dash.tile_posapp_csv'), "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/posapp.csv") }}
   {% else %}
-  {{ ui.tile("printer", "Print board") }}
-  {{ ui.tile("tag", "Print price tags") }}
-  {{ ui.tile("download", "Export CSV") }}
-  {{ ui.tile("download", "POS-app CSV") }}
+  {{ ui.tile("printer", t('dash.tile_print_board')) }}
+  {{ ui.tile("tag", t('dash.tile_print_tags')) }}
+  {{ ui.tile("download", t('dash.tile_export_csv')) }}
+  {{ ui.tile("download", t('dash.tile_posapp_csv')) }}
   {% endif %}
 </div>
 
 {% if stock %}
 <section class="card">
-  <p><strong>{{ stock.total | money(shop["currency"]) }}</strong> in stock (version {{ stock.version_id }})</p>
-  {% if stock.left_out %}<p class="muted">Not counted: {{ stock.left_out | join(", ") }}</p>{% endif %}
+  <p><strong>{{ t('dash.stock_total', total=stock.total | money(shop["currency"]), vid=stock.version_id) }}</strong></p>
+  {% if stock.left_out %}<p class="muted">{{ t('dash.stock_left_out', items=stock.left_out | join(", ")) }}</p>{% endif %}
 </section>
 {% endif %}
 
 <div class="section-head">
-  <h2>Today's list</h2>
-  {% if versions %}<a href="/e/{{ token }}/update">Edit</a>{% endif %}
+  <h2>{{ t('dash.todays_list') }}</h2>
+  {% if versions %}<a href="/e/{{ token }}/update">{{ t('dash.edit') }}</a>{% endif %}
 </div>
 {% if items %}
 {% for item in items %}
@@ -89,52 +89,52 @@
     <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
     {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
     {% if item.margin_chip %}<span class="list-sub">{{ item.margin_chip }}</span>{% endif %}
-    {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+    {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
   </div>
-  <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>per {{ line.per }}</small>{% endfor %}</div>
+  <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>{{ t('dash.per', per=line.per) }}</small>{% endfor %}</div>
   <div class="list-action">
     <form class="inline-form" method="post" action="/e/{{ token }}/item/{{ item.id }}/soldout">
-      <button class="btn btn-small btn-secondary" type="submit">{% if item.sold_out %}Back in stock{% else %}Sold out{% endif %}</button>
+      <button class="btn btn-small btn-secondary" type="submit">{% if item.sold_out %}{{ t('dash.back_in_stock') }}{% else %}{{ t('dash.sold_out') }}{% endif %}</button>
     </form>
   </div>
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state("No prices yet", "Record today's prices to build your first list.", None, None) }}
+{{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), None, None) }}
 {% endif %}
 
-<div class="section-head"><h2>Recent sessions</h2></div>
+<div class="section-head"><h2>{{ t('dash.recent_sessions') }}</h2></div>
 {% if sessions %}
 {% for s in sessions %}
 {% set kind = "check" %}
 {% if s["status"] == "approved" %}{% set kind = "live" %}{% elif s["status"] == "failed" %}{% set kind = "soldout" %}{% endif %}
 <div class="session-row">
-  <div class="row-main"><a href="/e/{{ token }}/s/{{ s["id"] }}">Session {{ s["id"] }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
+  <div class="row-main"><a href="/e/{{ token }}/s/{{ s["id"] }}">{{ t('dash.session', id=s["id"]) }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
   {{ ui.pill(s["status"], kind) }}
 </div>
 {% endfor %}
 {% else %}
-<p class="muted">No uploads yet.</p>
+<p class="muted">{{ t('dash.no_uploads') }}</p>
 {% endif %}
 
-<div class="section-head"><h2>Versions</h2></div>
+<div class="section-head"><h2>{{ t('dash.versions') }}</h2></div>
 {% if versions %}
 {% for v in versions %}
 <div class="version-row">
-  <div class="row-main"><strong>Version {{ v["id"] }}</strong> {% if v["published"] %}{{ ui.pill("Published", "live") }}{% endif %}</div>
+  <div class="row-main"><strong>{{ t('dash.version', id=v["id"]) }}</strong> {% if v["published"] %}{{ ui.pill(t('dash.published'), "live") }}{% endif %}</div>
   {% if v["published"] %}
   <form class="inline-form" method="post" action="/e/{{ token }}/v/{{ v["id"] }}/unpublish">
-    <button class="btn btn-small btn-ghost" type="submit">Unpublish</button>
+    <button class="btn btn-small btn-ghost" type="submit">{{ t('dash.unpublish') }}</button>
   </form>
   {% else %}
   <form class="inline-form" method="post" action="/e/{{ token }}/v/{{ v["id"] }}/publish">
-    <button class="btn btn-small btn-secondary" type="submit">Publish</button>
+    <button class="btn btn-small btn-secondary" type="submit">{{ t('dash.publish') }}</button>
   </form>
   {% endif %}
 </div>
 {% endfor %}
 {% else %}
-<p class="muted">No approved price lists yet.</p>
+<p class="muted">{{ t('dash.no_versions') }}</p>
 {% endif %}
 {% endblock %}
 {% block scripts %}
@@ -149,9 +149,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const url = fullUrl(copyBtn.dataset.link);
       try {
         await navigator.clipboard.writeText(url);
-        copyBtn.textContent = "Copied";
+        copyBtn.textContent = copyBtn.dataset.copied || "Copied";
       } catch (err) {
-        window.prompt("Copy your shop link:", url);
+        window.prompt(copyBtn.dataset.prompt || "Copy:", url);
       }
     });
   }
@@ -159,13 +159,13 @@ document.addEventListener("DOMContentLoaded", () => {
     shareBtn.addEventListener("click", async () => {
       const url = fullUrl(shareBtn.dataset.link);
       if (navigator.share) {
-        try { await navigator.share({ title: "MarketMate shop", url: url }); } catch (err) { /* dismissed */ }
+        try { await navigator.share({ title: shareBtn.dataset.shareTitle || "MarketMate shop", url: url }); } catch (err) { /* dismissed */ }
       } else {
         try {
           await navigator.clipboard.writeText(url);
-          shareBtn.textContent = "Copied";
+          shareBtn.textContent = shareBtn.dataset.copied || "Copied";
         } catch (err) {
-          window.prompt("Copy your shop link:", url);
+          window.prompt(shareBtn.dataset.prompt || "Copy:", url);
         }
       }
     });

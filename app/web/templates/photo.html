@@ -1,31 +1,31 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Photo check — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('phr.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="page-head">
-  <p class="back-link"><a href="/e/{{ token }}/photos">← All photo checks</a></p>
-  <h1>Photo check</h1>
-  <p class="muted">{{ shop["name"] }} · {{ rel }}</p>
+  <p class="back-link"><a href="/e/{{ token }}/photos">{{ t('phr.back') }}</a></p>
+  <h1>{{ t('phr.heading') }}</h1>
+  <p class="muted">{{ t('phr.sub', shop=shop["name"], rel=rel) }}</p>
 </header>
 
 <div class="photo-layout">
   <div class="photo-left">
     <div class="photo-frame" data-photo-frame>
-      {% if image_url %}<img src="{{ image_url }}" alt="Scanned stock photo">{% endif %}
-      <svg class="icon boxes" data-boxes viewBox="0 0 {{ width }} {{ height }}" role="img" aria-label="Counted items">
+      {% if image_url %}<img src="{{ image_url }}" alt="{{ t('phr.scanned_alt') }}">{% endif %}
+      <svg class="icon boxes" data-boxes viewBox="0 0 {{ width }} {{ height }}" role="img" aria-label="{{ t('phr.counted_aria') }}">
         {% for product in products %}
         {% for box in product.boxes %}
         <g class="box-g">
@@ -36,11 +36,11 @@
         {% endfor %}
       </svg>
     </div>
-    <p><label class="box-toggle" for="show-boxes"><input type="checkbox" id="show-boxes" checked> Show boxes</label></p>
+    <p><label class="box-toggle" for="show-boxes"><input type="checkbox" id="show-boxes" checked> {{ t('phr.show_boxes') }}</label></p>
   </div>
 
   <div class="photo-right">
-    <div class="section-head"><h2>What we see</h2></div>
+    <div class="section-head"><h2>{{ t('phr.what_we_see') }}</h2></div>
     {% for product in products %}
     <section class="card product-card-line">
       <div class="product-head">
@@ -48,26 +48,26 @@
         <h3>{{ product.display }}{% if product.name_local %} <span class="name-local" lang="ta">{{ product.name_local }}</span>{% endif %}</h3>
       </div>
       {% if not product.countable %}
-      <p class="muted">Sold by weight - no count</p>
+      <p class="muted">{{ t('phr.sold_by_weight') }}</p>
       {% elif product.needs_check %}
       <p>{{ ui.pill(product.count_text, "check") }}</p>
       <div class="stepper" data-stepper>
-        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
-        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
-        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
+        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('phr.count_less') }}">−</button>
+        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="{{ t('phr.count_for', display=product.display) }}">
+        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('phr.count_more') }}">+</button>
       </div>
       {% else %}
       <p><strong>{{ product.count_text }}</strong></p>
       <div class="stepper" data-stepper>
-        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
-        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
-        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
+        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('phr.count_less') }}">−</button>
+        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="{{ t('phr.count_for', display=product.display) }}">
+        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('phr.count_more') }}">+</button>
       </div>
       {% endif %}
     </section>
     {% endfor %}
 
-    <div class="section-head"><h2>Suggestions</h2></div>
+    <div class="section-head"><h2>{{ t('phr.suggestions') }}</h2></div>
     {% if suggestions %}
     {% for suggestion in suggestions %}
     <section class="card suggestion">
@@ -90,17 +90,17 @@
     </section>
     {% endfor %}
     {% else %}
-    <p class="muted">Nothing to suggest for this photo.</p>
+    <p class="muted">{{ t('phr.no_suggestions') }}</p>
     {% endif %}
 
     {% if conditions %}
-    <div class="section-head"><h2>Notes for you</h2></div>
+    <div class="section-head"><h2>{{ t('phr.notes') }}</h2></div>
     {% for name, note in conditions %}
-    <p class="muted seller-note">{{ ui.icon("lock") }} Seller only: {{ name }} — {{ note }}</p>
+    <p class="muted seller-note">{{ ui.icon("lock") }} {{ t('phr.seller_only', name=name, note=note) }}</p>
     {% endfor %}
     {% endif %}
 
-    <p class="honesty">Counts are estimates from the photo. Prices only come from what you say.</p>
+    <p class="honesty">{{ t('phr.honesty') }}</p>
   </div>
 </div>
 {% endblock %}

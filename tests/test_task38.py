@@ -36,7 +36,10 @@ def make_client(tmp_path, monkeypatch=None):
     if monkeypatch is not None:
         monkeypatch.setattr("app.web.seller.jobs.submit", lambda fn, *a: fn(*a))
         monkeypatch.setattr("app.web.purchases.jobs.submit", lambda fn, *a: fn(*a))
-    return TestClient(app, follow_redirects=False)
+    client = TestClient(app, follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def create_shop(client):
@@ -149,7 +152,8 @@ def test_tags_template_has_grid_qr_cutlines_and_money():
     src = (Path("app/web/templates/tags.html")).read_text()
     assert "money" in src
     assert "qr_data_uri" in src or "qr" in src.lower()
-    assert "Today," in src
+    # Task 40: date line is translated via the tags.today catalogue key.
+    assert "tags.today" in src
     # 2 columns x 4 rows layout + cut lines between tags.
     assert "2" in src and "4" in src or "grid" in src.lower()
     assert "dashed" in src.lower() or "cut" in src.lower()

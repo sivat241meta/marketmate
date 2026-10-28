@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Bill {{ bill["id"] }} — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
 {% block content %}
 <header class="page-head">
   <h1>{{ shop["name"] }}</h1>
-  <p class="muted">{{ shop["area"] }} · Bill #{{ bill["id"] }} · {{ created_label }}</p>
+  <p class="muted">{{ shop["area"] }} · {{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
 </header>
-<section class="receipt-card" aria-label="Bill receipt">
+<section class="receipt-card" aria-label="{{ t('bill.receipt_aria') }}">
   <div class="receipt-head">
     <p class="receipt-shop">{{ shop["name"] }}</p>
-    <p class="receipt-meta">Bill #{{ bill["id"] }} · {{ created_label }}</p>
+    <p class="receipt-meta">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
     <p class="receipt-meta">{{ ui.pill(pill_text, pill_kind) }}{% if mode_label %} {{ ui.pill(mode_label, "info") }}{% endif %}</p>
   </div>
   {% if lines %}
@@ -28,20 +28,20 @@
   <div class="receipt-line is-muted">
     <div class="line-main">
       <span class="line-name">{{ line.display }}</span>
-      <span class="line-note muted">{% if line.status == "sold_out" %}Sold out{% else %}not on this shop's list{% endif %}</span>
+      <span class="line-note muted">{% if line.status == "sold_out" %}{{ t('bill.sold_out') }}{% else %}{{ t('bill.not_on_list') }}{% endif %}</span>
     </div>
   </div>
   {% endfor %}
   {% if show_round %}
-  <div class="receipt-round muted"><span>Round off {{ round_off }}</span><span>{{ total_exact | money(shop["currency"]) }} exact</span></div>
+  <div class="receipt-round muted"><span>{{ t('bill.round_off', off=round_off) }}</span><span>{{ t('bill.exact', exact=total_exact | money(shop["currency"])) }}</span></div>
   {% endif %}
   <div class="receipt-total">
-    <span class="muted">{{ lines | length }} item{% if lines | length != 1 %}s{% endif %}</span>
+    <span class="muted">{% if lines | length == 1 %}{{ t('bills.item_one', count=lines | length) }}{% else %}{{ t('bills.item_many', count=lines | length) }}{% endif %}</span>
     <span class="money">{{ total | money(shop["currency"]) }}</span>
   </div>
   {% else %}
-  <p class="muted">No items on this bill.</p>
+  <p class="muted">{{ t('bill.no_items') }}</p>
   {% endif %}
-  <p class="thanks">Thank you, come again!</p>
+  <p class="thanks">{{ t('bpdf.thanks') }}</p>
 </section>
 {% endblock %}

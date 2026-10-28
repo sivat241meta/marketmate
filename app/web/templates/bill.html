@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Bill {{ bill["id"] }} — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="page-head">
-  <p class="back-link"><a href="/e/{{ token }}/bills">← All bills</a></p>
-  <h1>Bill #{{ bill["id"] }}</h1>
+  <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bill.back') }}</a></p>
+  <h1>{{ t('bill.heading', id=bill["id"]) }}</h1>
   <p class="muted">{{ shop["name"] }} · {{ created_label }} · {{ label }}</p>
 </header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <div class="bill-layout">
-  <section class="receipt-card" aria-label="Bill receipt">
+  <section class="receipt-card" aria-label="{{ t('bill.receipt_aria') }}">
     <div class="receipt-head">
       <p class="receipt-shop">{{ shop["name"] }}</p>
-      <p class="receipt-meta">Bill #{{ bill["id"] }} · {{ created_label }}</p>
+      <p class="receipt-meta">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
       <p class="receipt-meta">{{ label }} {{ ui.pill(pill_text, pill_kind) }}{% if mode_label %} {{ ui.pill(mode_label, "info") }}{% endif %}</p>
     </div>
     {% if lines %}
@@ -37,16 +37,16 @@
           {% if line.photo_url %}<img class="line-thumb" src="{{ line.photo_url }}" alt="">{% endif %}
           <div class="line-main">
             <span class="line-name">{{ line.display }}{% if line.name_local %} <span class="name-local" lang="ta">{{ line.name_local }}</span>{% endif %}</span>
-            {% if line.status == "needs_qty" %}<span class="line-note">{{ ui.pill("check quantity", "check") }} <span class="muted">{{ line.note }}</span></span>{% endif %}
+            {% if line.status == "needs_qty" %}<span class="line-note">{{ ui.pill(t('bill.check_qty'), "check") }} <span class="muted">{{ line.note }}</span></span>{% endif %}
             {% if line.status == "priced" and line.note %}<span class="line-note muted">{{ line.note }}</span>{% endif %}
             <span class="line-rate money">{{ line.unit_price | money(shop["currency"]) }}<small class="muted"> / {{ line.per_amount }} {{ line.unit }}</small></span>
             <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
             <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
             <input type="hidden" name="amount_{{ line.index }}" value="">
             <span class="stepper is-compact" data-stepper>
-              <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ line.display }}">−</button>
-              <input type="number" min="0" step="any" name="qty_{{ line.index }}" value="{{ line.qty }}" aria-label="Quantity for {{ line.display }}">
-              <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
+              <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('bill.less_aria', display=line.display) }}">−</button>
+              <input type="number" min="0" step="any" name="qty_{{ line.index }}" value="{{ line.qty }}" aria-label="{{ t('bill.qty_aria', display=line.display) }}">
+              <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('bill.more_aria', display=line.display) }}">+</button>
               <span class="muted">{{ line.unit }}</span>
             </span>
             <span class="muted" data-amount-label hidden></span>
@@ -57,13 +57,13 @@
               <button class="chip" type="button" data-chip="500g">½ kg</button>
               <button class="chip" type="button" data-chip="1000g">1 kg</button>
               <button class="chip" type="button" data-chip="2000g">2 kg</button>
-              <button class="chip" type="button" data-chip="keypad" aria-label="Type exact weight for {{ line.display }}">⌨ weight</button>
+              <button class="chip" type="button" data-chip="keypad" aria-label="{{ t('bill.weight_aria', display=line.display) }}">{{ t('bill.weight_chip') }}</button>
               {% elif line.unit in ("piece", "dozen") %}
               <button class="chip" type="button" data-chip="+1">+1</button>
               <button class="chip" type="button" data-chip="+6">+6</button>
               <button class="chip" type="button" data-chip="+12">+12</button>
               {% endif %}
-              <button class="chip" type="button" data-chip="amount" aria-label="Enter rupee amount for {{ line.display }}">₹ amount</button>
+              <button class="chip" type="button" data-chip="amount" aria-label="{{ t('bill.amount_aria', display=line.display) }}">{{ t('bill.amount_chip') }}</button>
             </div>
           </div>
           <span class="line-amount money" data-amount>{{ line.line_total | money(shop["currency"]) }}</span>
@@ -75,9 +75,9 @@
         <div class="line-main">
           <span class="line-name">{{ line.display }}</span>
           {% if line.status == "sold_out" %}
-          <span class="line-note">{{ ui.pill("Sold out", "soldout") }}</span>
+          <span class="line-note">{{ ui.pill(t('bill.sold_out'), "soldout") }}</span>
           {% else %}
-          <span class="line-note muted">not on this shop's list{% if line.note %} — {{ line.note }}{% endif %}</span>
+          <span class="line-note muted">{{ t('bill.not_on_list') }}{% if line.note %} — {{ line.note }}{% endif %}</span>
           {% endif %}
         </div>
         <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
@@ -86,39 +86,39 @@
       </div>
       {% endfor %}
       {% if show_round %}
-      <div class="receipt-round muted"><span>Round off {{ round_off }}</span><span>{{ total_exact | money(shop["currency"]) }} exact</span></div>
+      <div class="receipt-round muted"><span>{{ t('bill.round_off', off=round_off) }}</span><span>{{ t('bill.exact', exact=total_exact | money(shop["currency"])) }}</span></div>
       {% endif %}
       <div class="receipt-total">
-        <span class="muted">{{ lines | length }} item{% if lines | length != 1 %}s{% endif %}</span>
+        <span class="muted">{% if lines | length == 1 %}{{ t('bills.item_one', count=lines | length) }}{% else %}{{ t('bills.item_many', count=lines | length) }}{% endif %}</span>
         <span class="money" data-total>{{ total | money(shop["currency"]) }}</span>
       </div>
-      <p><button class="btn btn-secondary" type="submit">Update bill</button></p>
+      <p><button class="btn btn-secondary" type="submit">{{ t('bill.update') }}</button></p>
     </form>
     {% for line in lines %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/remove" class="inline-form">
       <input type="hidden" name="index" value="{{ line.index }}">
-      <button class="btn btn-small btn-ghost" type="submit" aria-label="Remove {{ line.display }}">Remove {{ line.display }}</button>
+      <button class="btn btn-small btn-ghost" type="submit" aria-label="{{ t('bill.remove', display=line.display) }}">{{ t('bill.remove', display=line.display) }}</button>
     </form>
     {% endfor %}
     {% else %}
-    <p class="muted">No items on this bill yet. Add one below.</p>
+    <p class="muted">{{ t('bill.no_items') }}</p>
     {% endif %}
   </section>
 
   <aside class="bill-actions" aria-label="Bill actions">
     {% if is_quote %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/accept">
-      <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("check") }}Accept quote</button>
+      <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("check") }}{{ t('bill.accept_quote') }}</button>
     </form>
     {% elif is_billed %}
-    <section class="card" aria-label="Collect payment">
-      <h2>Collect payment</h2>
+    <section class="card" aria-label="{{ t('bill.collect') }}">
+      <h2>{{ t('bill.collect') }}</h2>
       {% if is_inr and upi_qr %}
       <p class="pay-amount money">{{ total | money(shop["currency"]) }}</p>
       <div class="qr-wrap" data-upi-url="{{ upi_url }}">{{ upi_qr | safe }}</div>
-      <p class="muted">Scan with any UPI app</p>
+      <p class="muted">{{ t('bill.scan_upi') }}</p>
       {% elif is_inr %}
-      <p class="muted">Add your UPI ID in <a href="/e/{{ token }}/settings">Settings</a> to collect UPI payments with a QR.</p>
+      <p class="muted">{{ t('bill.add_upi') }} <a href="/e/{{ token }}/settings">{{ t('nav.settings') }}</a></p>
       {% endif %}
       <div class="pay-buttons">
         {% for value, label in pay_modes %}
@@ -129,10 +129,10 @@
         {% endfor %}
       </div>
       <details class="card" open>
-        <summary>Cash helper</summary>
+        <summary>{{ t('bill.cash_helper') }}</summary>
         <div data-cash data-total="{{ total }}">
           <div class="field">
-            <label for="cash-gave">Customer gave</label>
+            <label for="cash-gave">{{ t('bill.customer_gave') }}</label>
             <input id="cash-gave" type="number" min="0" step="any" value="{{ total }}" data-cash-gave inputmode="decimal">
           </div>
           <nav class="chips" aria-label="Cash tendered">
@@ -140,7 +140,7 @@
             <button class="chip" type="button" data-cash-chip="100">₹100</button>
             <button class="chip" type="button" data-cash-chip="200">₹200</button>
             <button class="chip" type="button" data-cash-chip="500">₹500</button>
-            <button class="chip" type="button" data-cash-chip="exact">exact</button>
+            <button class="chip" type="button" data-cash-chip="exact">{{ t('bill.exact_chip') }}</button>
           </nav>
           <div class="keypad-keys is-mini" data-cash-keys>
             <button type="button" data-key="1">1</button>
@@ -156,39 +156,39 @@
             <button type="button" data-key="0">0</button>
             <button type="button" data-key="back">⌫</button>
           </div>
-          <p class="give-back">Give back <strong class="money" data-cash-back>₹0</strong></p>
+          <p class="give-back">{{ t('bill.give_back', amount="") }} <strong class="money" data-cash-back>₹0</strong></p>
         </div>
       </details>
     </section>
     {% elif is_paid %}
-    <p class="paid-state">{{ ui.icon("check") }}Paid{% if mode_label %} by {{ mode_label }}{% endif %}</p>
+    <p class="paid-state">{{ ui.icon("check") }}{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</p>
     {% endif %}
     {% if not is_quote %}
     <section class="card" aria-label="Public bill link">
-      <h2>Customer can scan to get the bill</h2>
+      <h2>{{ t('bill.scan_title') }}</h2>
       <div class="qr-wrap">{{ public_qr | safe }}</div>
       <p><span class="shop-link">{{ public_url }}</span></p>
     </section>
     {% endif %}
-    <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}Share on WhatsApp</a>
-    <a class="btn btn-secondary" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}Print / PDF</a>
+    <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.share_wa') }}</a>
+    <a class="btn btn-secondary" href="/e/{{ token }}/bills/{{ bill["id"] }}/pdf">{{ ui.icon("printer") }}{{ t('bill.print_pdf') }}</a>
     <details class="card">
-      <summary>Customer phone</summary>
+      <summary>{{ t('bill.cust_phone') }}</summary>
       <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/phone">
         <div class="field">
-          <label for="customer-phone">WhatsApp number for the receipt</label>
+          <label for="customer-phone">{{ t('bill.wa_number') }}</label>
           <input id="customer-phone" type="tel" name="customer_phone" value="{{ phone }}" placeholder="+91 …">
-          <span class="help">Leave blank for a walk-in customer.</span>
+          <span class="help">{{ t('bill.walkin_help') }}</span>
         </div>
-        <button class="btn btn-secondary" type="submit">Save phone</button>
+        <button class="btn btn-secondary" type="submit">{{ t('bill.save_phone') }}</button>
       </form>
     </details>
     <details class="card">
-      <summary>Add an item</summary>
+      <summary>{{ t('bill.add_item') }}</summary>
       {% if price_items %}
       <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/add">
         <div class="field">
-          <label for="add-name">Item from today's list</label>
+          <label for="add-name">{{ t('bill.from_list') }}</label>
           <select id="add-name" name="name_en">
             {% for item in price_items %}
             {% if not item.sold_out %}<option value="{{ item.name_en }}">{{ item.display }} — {{ item.summary }}</option>{% endif %}
@@ -196,13 +196,13 @@
           </select>
         </div>
         <div class="field">
-          <label for="add-qty">Quantity</label>
+          <label for="add-qty">{{ t('review.quantity') }}</label>
           <input id="add-qty" type="number" min="0" step="any" name="qty" value="1" required>
         </div>
-        <button class="btn btn-secondary" type="submit">Add item</button>
+        <button class="btn btn-secondary" type="submit">{{ t('bill.add_btn') }}</button>
       </form>
       {% else %}
-      <p class="muted">No price list yet.</p>
+      <p class="muted">{{ t('bill.no_pricelist') }}</p>
       {% endif %}
     </details>
   </aside>
@@ -238,8 +238,8 @@
   </div>
   <div class="keypad-actions">
     <button class="chip" type="button" data-keypad-unit hidden>g</button>
-    <button class="btn btn-secondary" type="button" data-keypad-cancel>Cancel</button>
-    <button class="btn btn-primary" type="button" data-keypad-ok>OK</button>
+    <button class="btn btn-secondary" type="button" data-keypad-cancel>{{ t('bill.cancel') }}</button>
+    <button class="btn btn-primary" type="button" data-keypad-ok>{{ t('bill.ok') }}</button>
   </div>
 </div>
 {% endblock %}

@@ -29,7 +29,10 @@ def make_client(tmp_path):
     from app.web.main import create_app
 
     env = {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")}
-    return TestClient(create_app(load_settings(env)), follow_redirects=False)
+    client = TestClient(create_app(load_settings(env)), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def create_shop(client, name="Close Store", phone="+914400000011",

@@ -45,6 +45,13 @@ from app.pipeline.media import extract_audio
 from app.pipeline.names import keywords_for
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
+from app.web.i18n import (
+    bill_whatsapp_text,
+    get_ui_lang,
+    stage_friendly,
+    stage_label,
+    t_for,
+)
 
 MAX_BILL_PHOTO_BYTES = 10 * 1024 * 1024
 
@@ -80,9 +87,10 @@ def _row_mode(row) -> str | None:
     return text or None
 
 
-def _mode_label(mode: str | None) -> str:
-    return {"cash": "Cash", "upi": "UPI", "card": "Card"}.get(
-        (mode or "").lower(), "")
+def _mode_label(mode: str | None, lang: str = "en") -> str:
+    t = t_for(lang)
+    return {"cash": t("bills.cash"), "upi": t("bills.upi"),
+            "card": t("bills.card")}.get((mode or "").lower(), "")
 
 
 def bill_meta_path(data_dir: Path, session_id: int) -> Path:
@@ -312,11 +320,11 @@ def _row_phone(row) -> str | None:
     return text or None
 
 
-def _customer_label(row) -> str:
-    return _row_phone(row) or "Walk-in"
+def _customer_label(row, lang: str = "en") -> str:
+    return _row_phone(row) or t_for(lang)("bills.walk_in")
 
 
-def _row_time(row, *, now: datetime | None = None) -> str:
+def _row_time(row, *, now: datetime | None = None, lang: str = "en") -> str:
     moment = now if now is not None else datetime.now(UTC)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
@@ -331,19 +339,20 @@ def _row_time(row, *, now: datetime | None = None) -> str:
         return clock
     delta = (today - day).days
     if delta == 1:
-        return f"Yesterday {clock}"
+        return t_for(lang)("bills.time_yesterday", clock=clock)
     return local.strftime("%d %b, ") + clock
 
 
-def _status_pill(row) -> tuple[str, str]:
+def _status_pill(row, lang: str = "en") -> tuple[str, str]:
+    t = t_for(lang)
     if row["kind"] == "quote" and row["status"] == "new":
-        return ("Quote", "quote")
+        return (t("bills.pill_quote"), "quote")
     if row["status"] == "billed":
-        return ("Billed", "billed")
+        return (t("bills.pill_billed"), "billed")
     if row["status"] == "paid":
-        return ("Paid", "paid")
+        return (t("bills.pill_paid"), "paid")
     if row["status"] == "cancelled":
-        return ("Cancelled", "info")
+        return (t("bills.pill_cancelled"), "info")
     return (str(row["status"]).title(), "info")
 
 
@@ -386,23 +395,9 @@ def _bill_lines(raw_lines, photos: dict[str, str] | None = None
     return lines, len(lines)
 
 
-def _bill_text(shop, bill_id: int, raw_lines: list[dict], total: str) -> str:
-    parts = [f"Bill {bill_id} from {shop['name']}"]
-    for raw in raw_lines:
-        name = _display(raw.get("name_en", ""))
-        status = raw.get("status", "")
-        if status in ("priced", "needs_qty") and raw.get("line_total"):
-            qty = _fmt_money(raw.get("qty", ""))
-            unit = raw.get("unit") or ""
-            parts.append(
-                f"{name} {qty} {unit} - Rs.{_fmt_money(raw['line_total'])}"
-                .strip())
-        elif status == "sold_out":
-            parts.append(f"{name} - sold out")
-        else:
-            parts.append(f"{name} - not on list")
-    parts.append(f"Total: Rs.{_fmt_money(total)}")
-    return "\n".join(parts)
+def _bill_text(shop, bill_id: int, raw_lines: list[dict], total: str,
+               lang: str = "en") -> str:
+    return bill_whatsapp_text(shop, bill_id, raw_lines, total, lang)
 
 
 def _whatsapp_link(phone: str | None, text: str) -> str:
@@ -411,25 +406,29 @@ def _whatsapp_link(phone: str | None, text: str) -> str:
     return f"{base}?text={url_quote(text)}"
 
 
-def _price_items(conn, shop_id: int) -> list[dict]:
+def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
     version_id = db.latest_version(conn, shop_id, published_only=True)
     if version_id is None:
         return []
     shop = conn.execute("SELECT currency FROM shops WHERE id = ?",
                         (shop_id,)).fetchone()
     currency = (shop["currency"] if shop else None) or "INR"
+    t = t_for(lang)
     items = []
     for index, item in enumerate(db.version_items(conn, version_id)):
         first = item.price_lines[0] if item.price_lines else None
         if item.sold_out:
-            summary = "Sold out"
+            summary = t("bill.sold_out")
         elif first is not None and first.price is not None:
             amount = first.per_amount if first.per_amount is not None else ""
-            summary = (
-                f"{format_money(first.price, currency)}"
-                f" per {amount} {first.unit or ''}").strip()
+            per = f"{amount} {first.unit or ''}".strip()
+            price = format_money(first.price, currency)
+            if per:
+                summary = f"{price} per {per}" if lang == "en" else f"{price} / {per}"
+            else:
+                summary = price
         else:
-            summary = "No price yet"
+            summary = t("bill.no_price_yet")
         items.append({
             "index": index,
             "name_en": item.name_en,
@@ -596,6 +595,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         conn = db.connect(data_dir)
         try:
             now = datetime.now(UTC)
+            ui_lang = get_ui_lang(request, shop)
             tiles = bills_tiles(conn, shop["id"], now=now)
             rows = _filtered(conn, shop["id"], range_key, status_key, now)
             items = []
@@ -605,7 +605,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 except ValueError:
                     raw = []
                 count = len(raw) if isinstance(raw, list) else 0
-                text, kind = _status_pill(row)
+                text, kind = _status_pill(row, ui_lang)
                 names = [_display(str(entry.get("name_en", "")))
                          for entry in raw
                          if isinstance(entry, dict) and entry.get("name_en")]
@@ -616,14 +616,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     display_total = row["total"]
                 items.append({
                     "id": row["id"],
-                    "label": _customer_label(row),
-                    "time": _row_time(row, now=now),
+                    "label": _customer_label(row, ui_lang),
+                    "time": _row_time(row, now=now, lang=ui_lang),
                     "count": count,
                     "names": names,
                     "total": _fmt_money(display_total),
                     "pill_text": text,
                     "pill_kind": kind,
-                    "mode": _mode_label(_row_mode(row)),
+                    "mode": _mode_label(_row_mode(row), ui_lang),
                 })
             return templates.TemplateResponse(request, "bills.html", {
                 "shop": shop, "token": token, "range": range_key,
@@ -636,6 +636,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "quotes_waiting": tiles["quotes_waiting"],
                 "average_bill": _fmt_money(tiles["average_bill"]),
                 "top": top_items(conn, shop["id"], now=now),
+                "ui_lang": ui_lang,
             })
         finally:
             conn.close()
@@ -644,6 +645,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                       status_code=200):
         from app.outputs.qr import qr_svg
 
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
         try:
             raw_lines = json.loads(bill["lines_json"] or "[]")
         except ValueError:
@@ -652,7 +655,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raw_lines = []
         lines, _ = _bill_lines(
             raw_lines, item_photo_urls(conn, shop["id"]))
-        text, kind = _status_pill(bill)
+        text, kind = _status_pill(bill, ui_lang)
         when = _parse_moment(bill["created_at"])
         created_label = when.astimezone(IST).strftime(
             "%d %b %Y, %H:%M") if when else ""
@@ -679,9 +682,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             paid_at = bill["paid_at"]
         except (KeyError, IndexError, TypeError):
             paid_at = None
-        pay_modes = (("cash", "Paid by cash"), ("upi", "Paid by UPI")
-                     ) if is_inr else (("cash", "Paid by cash"),
-                                       ("card", "Paid by card"))
+        pay_modes = (("cash", t("bill.paid_cash")), ("upi", t("bill.paid_upi"))
+                     ) if is_inr else (("cash", t("bill.paid_cash")),
+                                       ("card", t("bill.paid_card")))
         return templates.TemplateResponse(request, "bill.html", {
             "shop": shop, "token": token, "bill": bill, "lines": lines,
             "total": _fmt_money(rounded),
@@ -690,19 +693,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "show_round": show_round,
             "pill_text": text, "pill_kind": kind,
             "created_label": created_label, "phone": phone or "",
-            "label": _customer_label(bill), "error": error,
-            "price_items": _price_items(conn, shop["id"]),
+            "label": _customer_label(bill, ui_lang), "error": error,
+            "price_items": _price_items(conn, shop["id"], ui_lang),
             "whatsapp_url": _whatsapp_link(
                 phone, _bill_text(shop, bill["id"], raw_lines,
-                                  str(rounded))),
+                                  str(rounded), ui_lang)),
             "is_quote": bill["kind"] == "quote" and bill["status"] == "new",
             "is_billed": bill["kind"] == "bill" and bill["status"] == "billed",
             "is_paid": bill["status"] == "paid",
             "is_inr": is_inr, "upi_id": upi_id, "upi_url": upi_url,
             "upi_qr": upi_qr, "pay_modes": pay_modes,
-            "mode_label": _mode_label(mode), "paid_at": paid_at or "",
+            "mode_label": _mode_label(mode, ui_lang),
+            "paid_at": paid_at or "",
             "bill_token": bill_token, "public_url": public_url,
-            "public_qr": qr_svg(public_url),
+            "public_qr": qr_svg(public_url), "ui_lang": ui_lang,
         }, status_code=status_code)
 
     @app.get("/e/{token}/bills")
@@ -717,9 +721,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/bills/new")
     def bills_new_page(request: Request, token: str, conn: Conn):
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
         return templates.TemplateResponse(request, "bills_new.html", {
             "shop": shop, "token": token,
-            "price_items": _price_items(conn, shop["id"]), "error": None})
+            "price_items": _price_items(conn, shop["id"], ui_lang),
+            "error": None, "ui_lang": ui_lang})
 
     @app.post("/e/{token}/bills/new")
     async def bills_new_post(request: Request, token: str):
@@ -745,12 +751,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return _type_bill(request, shop, token, text, conn)
         return _tap_bill(request, shop, token, form, conn)
 
-    def _guarded(request, shop):
+    def _guarded(request, shop, token=None):
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
+        ctx = {"token": token, "ui_lang": ui_lang} if token else {"ui_lang": ui_lang}
         if not request.app.state.limiter.allow(client_ip(request),
                                                datetime.now(UTC)):
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                {"title": t("error.too_many_title"),
+                 "message": RATE_LIMIT_MESSAGE, **ctx},
                 status_code=429)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
@@ -759,19 +769,21 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except CostCapExceeded:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Demo budget used up",
-                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                {"title": t("error.budget_title"),
+                 "message": BUDGET_EXHAUSTED_MESSAGE, **ctx},
                 status_code=503)
         return None
 
     def _new_error(request, shop, token, conn, message, status_code=400):
+        ui_lang = get_ui_lang(request, shop)
         return templates.TemplateResponse(request, "bills_new.html", {
             "shop": shop, "token": token,
-            "price_items": _price_items(conn, shop["id"]), "error": message},
+            "price_items": _price_items(conn, shop["id"], ui_lang),
+            "error": message, "ui_lang": ui_lang},
             status_code=status_code)
 
     def _start_voice_bill(request, shop, token, audio, conn):
-        denied = _guarded(request, shop)
+        denied = _guarded(request, shop, token)
         if denied is not None:
             return denied
         payload = audio.file.read() if hasattr(audio.file, "read") else b""
@@ -790,9 +802,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                 status_code=303)
 
     def _start_photo_bill(request, shop, token, photo: UploadFile, conn):
-        denied = _guarded(request, shop)
+        denied = _guarded(request, shop, token)
         if denied is not None:
             return denied
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
         payload = photo.file.read()
         if not payload:
             return _new_error(request, shop, token, conn,
@@ -801,9 +815,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             size_mb = len(payload) / (1024 * 1024)
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Photo too big",
+                {"title": t("error.photo_big_title"),
                  "message": (f"That photo is {size_mb:.0f} MB, which is too big"
-                             " to upload. Please choose a photo under 10 MB.")},
+                             " to upload. Please choose a photo under 10 MB."),
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         try:
             with Image.open(io.BytesIO(payload)) as img:
@@ -812,8 +827,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except Exception:  # noqa: BLE001 - any unreadable file is a 400
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Not a photo",
-                 "message": "We could not open that file as a photo."},
+                {"title": t("error.not_photo_title"),
+                 "message": "We could not open that file as a photo.",
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         ext = {"jpeg": ".jpg", "jpg": ".jpg", "png": ".png",
                "webp": ".webp"}.get(photo_format, ".jpg")
@@ -910,29 +926,41 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                               conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
+        ui_lang = get_ui_lang(request, shop)
         meta = read_bill_meta(data_dir, session_id)
         if meta.get("bill_id") and session["status"] in ("review", "approved"):
             return RedirectResponse(f"/e/{token}/bills/{meta['bill_id']}",
                                     status_code=303)
-        progress = db.session_progress(session)
+        raw = db.session_progress(session)
+        kind = session["kind"]
+        steps = [{**step, "label": stage_label(kind, step.get("key", ""),
+                                               ui_lang)}
+                 for step in raw.get("steps", [])]
+        progress = {**raw, "steps": steps}
+        friendly = stage_friendly(kind, raw.get("stage", ""), ui_lang)
         return templates.TemplateResponse(request, "bills_status.html", {
             "shop": shop, "token": token, "session": session,
-            "progress": progress,
-            "friendly": db.stage_friendly(session["kind"],
-                                          progress["stage"])})
+            "progress": progress, "friendly": friendly,
+            "ui_lang": ui_lang})
 
     @app.get("/e/{token}/bills/new/{session_id}/status")
-    def bills_new_status_json(token: str, session_id: int, conn: Conn):
+    def bills_new_status_json(request: Request, token: str, session_id: int,
+                              conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
-        progress = db.session_progress(session)
+        ui_lang = get_ui_lang(request, shop)
+        raw = db.session_progress(session)
+        kind = session["kind"]
+        steps = [{**step, "label": stage_label(kind, step.get("key", ""),
+                                               ui_lang)}
+                 for step in raw.get("steps", [])]
         meta = read_bill_meta(data_dir, session_id)
         return JSONResponse({
             "status": session["status"], "message": session["message"],
-            "stage": progress["stage"], "step": progress["step"],
-            "steps": progress["steps"], "detail": progress["detail"],
-            "elapsed_s": progress["elapsed_s"],
-            "friendly": db.stage_friendly(session["kind"], progress["stage"]),
+            "stage": raw["stage"], "step": raw["step"],
+            "steps": steps, "detail": raw["detail"],
+            "elapsed_s": raw["elapsed_s"],
+            "friendly": stage_friendly(kind, raw.get("stage", ""), ui_lang),
             "bill_id": meta.get("bill_id"),
         })
 
@@ -1077,9 +1105,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return RedirectResponse(f"/e/{token}/bills/{bill_id}", status_code=303)
 
     @app.get("/e/{token}/bills/{bill_id}/pdf")
-    def bill_pdf_route(token: str, bill_id: int, conn: Conn):
+    def bill_pdf_route(request: Request, token: str, bill_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
         bill = _bill_of_shop(conn, shop["id"], bill_id)
+        ui_lang = get_ui_lang(request, shop)
         try:
             raw_lines = json.loads(bill["lines_json"] or "[]")
         except ValueError:
@@ -1091,7 +1120,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         pdf = bill_pdf(shop, bill["id"],
                        raw_lines if isinstance(raw_lines, list) else [],
                        str(totals["rounded"]), created_label,
-                       _row_phone(bill))
+                       _row_phone(bill), lang=ui_lang)
         return Response(pdf, media_type="application/pdf")
 
     @app.get("/b/{bill_token}")
@@ -1114,7 +1143,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         when = _parse_moment(bill["created_at"])
         created_label = when.astimezone(IST).strftime(
             "%d %b %Y, %H:%M") if when else ""
-        text, kind = _status_pill(bill)
+        shop_lang = (shop["language"] or "en").strip().lower()
+        ui_lang = shop_lang if shop_lang in ("ta", "hi") else "en"
+        text, kind = _status_pill(bill, ui_lang)
         return templates.TemplateResponse(request, "bill_public.html", {
             "shop": shop, "bill": bill, "lines": lines,
             "total": _fmt_money(totals["rounded"]),
@@ -1125,5 +1156,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "show_round": bool(totals["enabled"] and totals["off"] != 0),
             "pill_text": text, "pill_kind": kind,
             "created_label": created_label,
-            "mode_label": _mode_label(_row_mode(bill)),
+            "mode_label": _mode_label(_row_mode(bill), ui_lang),
+            "ui_lang": ui_lang,
         })

@@ -10,6 +10,17 @@
   src: url("fonts/NotoSansTamil-Bold.ttf") format("truetype");
   font-display: swap;
 }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("fonts/NotoSansDevanagari-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: 700;
+  src: url("fonts/NotoSansDevanagari-Bold.ttf") format("truetype");
+  font-display: swap;
+}
 
 :root {
   --green: #14532d;
@@ -45,7 +56,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Tamil", system-ui, sans-serif;
+  font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", system-ui, sans-serif;
   color: var(--ink);
   background: var(--cream);
   line-height: 1.5;
@@ -128,6 +139,8 @@ img { max-width: 100%; }
   color: var(--green);
   text-decoration: none;
   white-space: nowrap;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .side-link svg { width: 20px; height: 20px; flex: none; }
 .side-link.is-active { background: var(--ok-bg); }
@@ -163,6 +176,10 @@ img { max-width: 100%; }
   border: 2px solid transparent;
   cursor: pointer;
   text-decoration: none;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
   background: var(--saffron);
   color: var(--ink);
   box-shadow: 0 4px 0 var(--saffron-pressed);
@@ -205,7 +222,7 @@ img { max-width: 100%; }
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  min-height: 88px;
+  min-height: 96px;
   justify-content: center;
   background: var(--card);
   border: 1px solid var(--line);
@@ -216,6 +233,8 @@ img { max-width: 100%; }
   color: var(--green);
   text-decoration: none;
   text-align: center;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .tile svg { width: 24px; height: 24px; }
 .tile.is-disabled { color: var(--muted); }
@@ -888,6 +907,12 @@ a.chip { color: var(--green); text-decoration: none; min-height: var(--tap); dis
     top: 60px;
     align-self: start;
   }
+  body.is-seller .side-link {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    min-height: var(--tap);
+  }
   body.is-seller .content { max-width: 1100px; margin: 0; }
   body:not(.is-seller) .content { max-width: 1000px; }
   .entry-grid { grid-template-columns: repeat(3, 1fr); }
@@ -1379,3 +1404,63 @@ button.chip {
   font-size: 0.95rem;
 }
 .keypad-keys.is-mini button { min-height: 52px; font-size: 1.2rem; }
+
+/* ---- Task 40: seller UI language toggle + Tamil/Hindi wrapping ---- */
+.topbar .lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 3px;
+  flex: none;
+}
+.topbar .lang-toggle button {
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-weight: 800;
+  font-size: 0.82rem;
+  min-height: 40px;
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.topbar .lang-toggle button.is-active {
+  background: var(--green);
+  color: #fff;
+}
+@media (max-width: 560px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar .lang-toggle { order: 3; width: 100%; justify-content: center; }
+  .topbar .lang-toggle button { flex: 1; }
+}
+/* Longer Tamil/Hindi words must not break layout. */
+.topbar-nav a,
+.chip,
+.tile-sub,
+.stat-label,
+.stat-caption,
+.segmented button,
+.opt-btn,
+.vlabel,
+.review-summary-price,
+.list-name,
+.card h1, .card h2,
+.sticky-bar .btn,
+.pay-buttons .btn {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+.chip,
+.opt-btn,
+.vlabel {
+  min-height: 32px;
+}
+.stat-label,
+.tile-sub {
+  text-align: center;
+}

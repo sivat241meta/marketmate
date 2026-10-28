@@ -280,6 +280,8 @@ def _client(tmp_path):
     settings = _settings(tmp_path)
     app = create_app(settings)
     client = TestClient(app, follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
     resp = client.post("/new", data={
         "name": "Live Shop", "phone": "+914400000000", "area": "Koyambedu",
         "language": "ta", "currency": "INR", "type": "vegetable"})
@@ -443,6 +445,7 @@ def test_live_html_renders_with_fallback_and_no_inline_styles(tmp_path):
     settings = _settings(tmp_path)
     app = create_app(settings)
     c = TestClient(app, follow_redirects=False)
+    c.cookies.set("ui_lang", "en")
     resp = c.post("/new", data={
         "name": "S", "phone": "+914400000000", "area": "A",
         "language": "ta", "currency": "INR", "type": "vegetable"})
@@ -461,6 +464,7 @@ def test_dashboard_shows_go_live(tmp_path):
     settings = _settings(tmp_path)
     app = create_app(settings)
     c = TestClient(app, follow_redirects=False)
+    c.cookies.set("ui_lang", "en")
     resp = c.post("/new", data={
         "name": "S", "phone": "+914400000000", "area": "A",
         "language": "ta", "currency": "INR", "type": "vegetable"})

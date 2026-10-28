@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from app import db
 from app.languages import LANGUAGES, all_currencies
 from app.outputs.qr import qr_svg
+from app.web.i18n import get_ui_lang
 
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")
 _UPI_RE = re.compile(r"^[a-zA-Z0-9._\-]{2,}@[a-zA-Z]{2,}[a-zA-Z0-9.\-]*$")
@@ -53,12 +54,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     def _context(request, shop, token, error=None):
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
+        ui_lang = get_ui_lang(request, shop)
         return templates.TemplateResponse(request, "settings.html", {
             "shop": shop, "token": token, "error": error,
             "languages": LANGUAGES, "currencies": all_currencies(),
             "seller_url": seller_url,
             "seller_qr": qr_svg(seller_url),
             "rounding_on": db.shop_rounding_enabled(shop),
+            "ui_lang": ui_lang,
         })
 
     @app.get("/e/{token}/settings")
@@ -95,6 +98,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 upi_id = None
             if error is not None:
                 fresh = _shop_or_404(conn, token)
+                ui_lang = get_ui_lang(request, fresh)
                 return templates.TemplateResponse(
                     request, "settings.html", {
                         "shop": fresh, "token": token, "error": error,
@@ -107,6 +111,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             f"{app.state.settings.public_base_url}"
                             f"/e/{token}"),
                         "rounding_on": db.shop_rounding_enabled(fresh),
+                        "ui_lang": ui_lang,
                     }, status_code=400)
             db.update_shop_settings(
                 conn, shop["id"], name=name, area=area, phone=phone,

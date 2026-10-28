@@ -24,13 +24,16 @@ def _plain(value) -> str:
 
 def bill_pdf(shop: sqlite3.Row | dict, bill_id: int, lines: list[dict],
              total: str, created_label: str,
-             customer_phone: str | None = None) -> bytes:
+             customer_phone: str | None = None, lang: str = "en") -> bytes:
     """Receipt-style seller bill: shop header, bill number, lines, total."""
     from weasyprint import HTML
+
+    from app.web.i18n import t_for
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
     env.filters["money"] = format_money
+    env.globals["t"] = t_for(lang)
     template = env.get_template("bill_pdf.html")
     rows = []
     for line in lines:

@@ -1,47 +1,47 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Stock photos — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('pho.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="page-head">
-  <h1>Stock photos</h1>
-  <p class="muted">{{ shop["name"] }} · counts are estimates, prices come from your voice</p>
+  <h1>{{ t('pho.heading') }}</h1>
+  <p class="muted">{{ t('pho.sub', shop=shop["name"]) }}</p>
 </header>
 
 <section class="card cta-card" id="scan">
-  <h2>Scan a stock photo</h2>
-  <p class="muted">Take a photo of a crate or heap. We count what is visible. Prices only come from what you say.</p>
+  <h2>{{ t('pho.scan_title') }}</h2>
+  <p class="muted">{{ t('pho.scan_desc') }}</p>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label class="drop-zone" for="photo-camera">{{ ui.icon("camera") }}<span>Point the camera at one crate or heap, in good light.</span><strong>Choose photo</strong>
+      <label class="drop-zone" for="photo-camera">{{ ui.icon("camera") }}<span>{{ t('pho.drop_camera') }}</span><strong>{{ t('pho.choose') }}</strong>
         <input id="photo-camera" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
       </label>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}Scan this photo</button>
+    <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}{{ t('pho.scan_btn') }}</button>
   </form>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label class="drop-zone is-small" for="photo-gallery">{{ ui.icon("photo") }}<span>Or choose from gallery</span><strong>Choose photo</strong>
+      <label class="drop-zone is-small" for="photo-gallery">{{ ui.icon("photo") }}<span>{{ t('pho.gallery_label') }}</span><strong>{{ t('pho.choose') }}</strong>
         <input id="photo-gallery" class="file-hidden" type="file" name="photo" accept="image/*">
       </label>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload from gallery</button>
+    <button class="btn btn-secondary" type="submit">{{ t('pho.gallery_btn') }}</button>
   </form>
 </section>
 
-<div class="section-head"><h2>Past checks</h2></div>
+<div class="section-head"><h2>{{ t('pho.past') }}</h2></div>
 {% if checks %}
 <div class="check-grid">
   {% for check in checks %}
@@ -57,6 +57,6 @@
   {% endfor %}
 </div>
 {% else %}
-{{ ui.empty_state("No photo checks yet", "Scan your first stock photo above.", None, None) }}
+{{ ui.empty_state(t('pho.empty_title'), t('pho.empty_text'), None, None) }}
 {% endif %}
 {% endblock %}

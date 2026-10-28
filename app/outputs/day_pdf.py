@@ -27,13 +27,16 @@ def _plain(value) -> str:
 
 
 def day_summary_pdf(shop: sqlite3.Row | dict, day: str, tiles: dict,
-                    items: list[dict]) -> bytes:
+                    items: list[dict], lang: str = "en") -> bytes:
     """One-page day summary: tiles plus per-item sales and stock left."""
     from weasyprint import HTML
+
+    from app.web.i18n import t_for
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
     env.filters["money"] = format_money
+    env.globals["t"] = t_for(lang)
     template = env.get_template("close_pdf.html")
     rows = []
     for entry in items:

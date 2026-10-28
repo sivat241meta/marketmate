@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Live prices — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('live.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>Live prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('nav.live_prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
@@ -19,9 +19,9 @@
   <div class="live-columns">
     <div class="live-main">
       <div class="live-preview">
-        <video class="live-video" data-live-video playsinline muted autoplay aria-label="Camera preview"></video>
+        <video class="live-video" data-live-video playsinline muted autoplay aria-label="{{ t('live.camera_preview') }}"></video>
         <div class="live-topbar">
-          <span class="live-live" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>Live</span>
+          <span class="live-live" data-live-badge hidden><span class="live-dot" aria-hidden="true"></span>{{ t('live.live') }}</span>
           <span class="live-timer" data-live-timer>0:00</span>
         </div>
         <div class="live-captions" aria-live="polite">
@@ -31,46 +31,46 @@
         <canvas data-live-canvas hidden></canvas>
       </div>
       <div class="live-controls">
-        <button class="mic-btn is-big live-mic" type="button" data-live-mic aria-label="Start live prices">{{ ui.icon("mic") }}</button>
-        <p class="muted live-hint" data-live-hint>Tap to start. Point at your stall and say each price.</p>
+        <button class="mic-btn is-big live-mic" type="button" data-live-mic aria-label="{{ t('live.start_aria') }}">{{ ui.icon("mic") }}</button>
+        <p class="muted live-hint" data-live-hint>{{ t('live.tap_start') }}</p>
       </div>
       <div class="alert alert-warn" data-live-error hidden></div>
       <div class="live-finish" data-live-finish hidden>
-        <p><strong>Finishing… checking every price</strong></p>
+        <p><strong>{{ t('live.finishing') }}</strong></p>
         <ol class="vstepper">
-          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">Listening live</span></span></li>
-          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">Finding the items</span></span></li>
-          <li class="vstep is-active"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">Checking every price</span><span class="vfriendly">Checking every price against what you said.</span></span></li>
-          <li class="vstep is-todo"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">Ready to check</span></span></li>
+          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">{{ t('stage.live.listening') }}</span></span></li>
+          <li class="vstep is-done"><span class="vdot" aria-hidden="true">✓</span><span class="vmain"><span class="vlabel">{{ t('stage.live.items') }}</span></span></li>
+          <li class="vstep is-active"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">{{ t('stage.live.checking') }}</span><span class="vfriendly">{{ t('friendly.live.checking') }}</span></span></li>
+          <li class="vstep is-todo"><span class="vdot" aria-hidden="true"></span><span class="vmain"><span class="vlabel">{{ t('stage.live.ready') }}</span></span></li>
         </ol>
       </div>
-      <p class="live-offline" data-live-offline hidden><a class="btn btn-secondary" href="/e/{{ token }}">Upload a video instead</a></p>
+      <p class="live-offline" data-live-offline hidden><a class="btn btn-secondary" href="/e/{{ token }}">{{ t('live.upload_instead') }}</a></p>
     </div>
     <div class="live-cards" data-live-cards>
-      <h2>Prices heard</h2>
-      <p class="muted" data-live-empty>No prices yet — start talking.</p>
+      <h2>{{ t('live.heard') }}</h2>
+      <p class="muted" data-live-empty>{{ t('live.no_prices') }}</p>
     </div>
   </div>
   <div class="live-fallback" data-live-fallback hidden>
-    <div class="alert alert-info">Live mode needs a browser with camera and microphone support. You can still upload a video.</div>
+    <div class="alert alert-info">{{ t('live.no_support') }}</div>
     <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
       <div class="field">
-        <label for="live-clip">Video of your stall</label>
+        <label for="live-clip">{{ t('live.video_label') }}</label>
         <input id="live-clip" type="file" name="video" accept="video/*" capture="environment" required>
-        <span class="help">Up to 3 minutes. Film each item as you say its price.</span>
+        <span class="help">{{ t('live.video_help') }}</span>
       </div>
       <p class="upload-file" data-upload-file hidden></p>
       <p class="form-error" data-upload-error hidden></p>
       <div class="upload-progress" data-upload-progress hidden>
-        <progress class="progress" data-upload-bar max="100" value="0" aria-label="Upload progress"></progress>
+        <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
         <p class="upload-meta" data-upload-meta></p>
-        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>Cancel upload</button>
+        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
       </div>
-      <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}Upload a video instead</button>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}{{ t('live.upload_instead') }}</button>
     </form>
   </div>
   <p class="notice">{{ notice | safe }}</p>
-  <p><a href="/e/{{ token }}">Back to dashboard</a></p>
+  <p><a href="/e/{{ token }}">{{ t('live.back') }}</a></p>
 </div>
 {% endblock %}
 {% block scripts %}

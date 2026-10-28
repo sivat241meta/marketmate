@@ -88,6 +88,10 @@ def create_app(settings: Settings) -> FastAPI:
     templates = Jinja2Templates(directory=str(here / "templates"))
     templates.env.globals["static_url"] = build_static_url(here / "static")
     templates.env.filters["money"] = format_money
+    from app.web.i18n import jinja_flag, jinja_t
+
+    templates.env.globals["t"] = jinja_t
+    templates.env.globals["t_flag"] = jinja_flag
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)
@@ -221,11 +225,12 @@ def create_app(settings: Settings) -> FastAPI:
             "q": q, "heard": heard, "rows": flat, "groups": _group_rows(flat),
             "chips": _chips(query),
             "unknown": list(query.unknown) if query else [],
-            "error": error, "searched": searched, "basket": basket})
+            "error": error, "searched": searched, "basket": basket,
+            "ui_lang": "en"})
 
     @app.get("/")
     def home(request: Request):
-        return templates.TemplateResponse(request, "home.html", {})
+        return templates.TemplateResponse(request, "home.html", {"ui_lang": "en"})
 
     @app.post("/find")
     def find_prices(slug: str = Form(...)):

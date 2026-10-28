@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Check prices{% endblock %}
+{% block title %}{{ t('review.title') }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 <header class="review-head">
-  <h1>Check prices</h1>
-  <p class="muted" data-review-counts data-total="{{ total }}">{{ ok_count }} of {{ total }} look right · {{ need_count }} need you</p>
-  <progress class="progress" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ ok_count }} of {{ total }} prices look right"></progress>
+  <h1>{{ t('review.title') }}</h1>
+  <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
+  <progress class="progress" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>
   <form class="inline-form" method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
-    <button class="btn btn-small btn-ghost" type="submit" title="Run the checks again from your recording">Check again</button>
+    <button class="btn btn-small btn-ghost" type="submit" title="{{ t('review.check_again_title') }}">{{ t('review.check_again') }}</button>
   </form>
 </header>
 <form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve">
@@ -33,7 +33,7 @@
       <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
     </span>
-    {% if card.needs_decision %}{{ ui.pill("Needs you", "check") }}{% else %}<span class="tick" aria-label="Looks right">✓</span>{% endif %}
+    {% if card.needs_decision %}{{ ui.pill(t('review.needs_you'), "check") }}{% else %}<span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>{% endif %}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
@@ -43,7 +43,7 @@
     {% for flag in item.flags %}
       {% if flag.options %}
       <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
-        <div class="alert alert-warn">{{ flag.message }}</div>
+        <div class="alert alert-warn">{{ t_flag(flag) }}</div>
         <div class="choice">
           {% for option in flag.options %}
           <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% else %}{{ option }}{% endif %}</button>
@@ -51,23 +51,23 @@
         </div>
       </div>
       {% elif flag.blocking %}
-      <div class="alert alert-warn flag-blocking">{{ flag.message }}</div>
+      <div class="alert alert-warn flag-blocking">{{ t_flag(flag) }}</div>
       {% else %}
-      <p class="flag-note">{{ flag.message }}</p>
+      <p class="flag-note">{{ t_flag(flag) }}</p>
       {% endif %}
     {% endfor %}
     {% if card.is_board and card.board_thumb_url %}
     <img class="review-photo" src="{{ card.board_thumb_url }}" alt="Your price board">
-    <p class="muted">{{ ui.icon("photo") }}Read from your board</p>
+    <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
-    <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}Play what you said</a></p>
+    <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a></p>
     {% endif %}
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>
     {% for line in item.price_lines %}
     <div class="line">
-      <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
-      <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
-      <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" data-original="{{ line.unit if line.unit is not none }}">
+      <label>{{ t('review.price') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
+      <label>{{ t('review.per') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>{{ t('review.unit') }} <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" data-original="{{ line.unit if line.unit is not none }}">
         {% for u in units %}
         <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
         {% endfor %}
@@ -75,10 +75,10 @@
         <option value="{{ line.unit }}" selected>{{ line.unit }}</option>
         {% endif %}
       </select></label>
-      <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="Remove this price line">✕ Remove</button>
+      <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}"></label>
     {% set ns = namespace(need_confirm=false) %}
     {% for flag in item.flags %}
       {% if flag.blocking %}
@@ -86,12 +86,12 @@
       {% endif %}
     {% endfor %}
     {% if ns.need_confirm %}
-    <p data-edit-note hidden>You changed this from what was heard. Play the clip, then tick I confirm.</p>
-    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+    <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
+    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>
     {% else %}
     <div data-confirm-wrap hidden>
-      <p data-edit-note hidden>You changed this from what was heard. Play the clip, then tick I confirm.</p>
-      <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> I confirm</label>
+      <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
+      <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>
     </div>
     {% endif %}
     <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
@@ -101,7 +101,7 @@
   <p class="form-error" id="approve-error" hidden></p>
   <div class="sticky-bar">
     <p class="muted sticky-count" data-approve-count></p>
-    <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>Approve price list</button>
+    <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>{{ t('review.approve') }}</button>
   </div>
 </form>
 {% endblock %}

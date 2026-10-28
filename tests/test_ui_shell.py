@@ -16,7 +16,10 @@ TOKENS = ["--green", "--saffron", "--cream", "--ink", "--muted", "--line", "--ok
 
 def make_client(tmp_path):
     settings = load_settings({"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")})
-    return TestClient(create_app(settings), follow_redirects=False)
+    client = TestClient(create_app(settings), follow_redirects=False)
+    # Task 40: seller UI defaults to the shop language; these tests pin English.
+    client.cookies.set("ui_lang", "en")
+    return client
 
 
 def create_shop(client):
@@ -73,7 +76,11 @@ def test_seller_dashboard_has_shell_and_actions(tmp_path):
 def test_error_page_has_shell(tmp_path):
     from fastapi.templating import Jinja2Templates
 
+    from app.web.i18n import jinja_flag, jinja_t
+
     templates = Jinja2Templates(directory=str(ROOT / "app" / "web" / "templates"))
+    templates.env.globals["t"] = jinja_t
+    templates.env.globals["t_flag"] = jinja_flag
     scope = {
         "type": "http",
         "method": "GET",

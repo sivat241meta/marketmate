@@ -63,13 +63,16 @@ def _rows(items: list[Item]) -> list[dict]:
 
 
 def price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
-                    shop_url: str) -> bytes:
+                    shop_url: str, lang: str = "en") -> bytes:
     """A4 price board with big prices, Tamil names and a shop QR code."""
     from weasyprint import HTML
+
+    from app.web.i18n import t_for
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
     env.filters["money"] = format_money
+    env.globals["t"] = t_for(lang)
     template = env.get_template("board.html")
     qr_data_uri = ("data:image/png;base64,"
                    + base64.b64encode(qr_png(shop_url)).decode())
@@ -102,13 +105,16 @@ def _tags(items: list[Item]) -> list[dict]:
 
 
 def price_tags_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
-                   shop_url: str) -> bytes:
+                   shop_url: str, lang: str = "en") -> bytes:
     """A4 sheet of per-item price tags, 2 columns x 4 rows (8 per page)."""
     from weasyprint import HTML
+
+    from app.web.i18n import t_for
 
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
                       autoescape=True)
     env.filters["money"] = format_money
+    env.globals["t"] = t_for(lang)
     template = env.get_template("tags.html")
     qr_data_uri = ("data:image/png;base64,"
                    + base64.b64encode(qr_png(shop_url)).decode())

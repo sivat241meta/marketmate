@@ -25,6 +25,7 @@ from app.pipeline.purchase import (
     read_purchase_meta,
     run_purchase_job,
 )
+from app.web.i18n import get_ui_lang, t_for
 
 
 def _today_ist() -> str:
@@ -69,10 +70,12 @@ def _sell_per_unit(item):
     return (None, None)
 
 
-def purchase_rows(conn, shop_id: int, date: str, currency: str) -> list[dict]:
+def purchase_rows(conn, shop_id: int, date: str, currency: str,
+                  lang: str = "en") -> list[dict]:
     """One row per purchase today with cost, margin and stock left."""
     from app import purchases as pur
 
+    t = t_for(lang)
     version_id = db.latest_version(conn, shop_id, published_only=True)
     sell_map: dict[str, object] = {}
     if version_id is not None:
@@ -91,9 +94,14 @@ def purchase_rows(conn, shop_id: int, date: str, currency: str) -> list[dict]:
             sell_per, sell_unit = _sell_per_unit(item)
             if buy_per is not None and sell_per is not None:
                 margin = pur.margin_text(buy_per, buy_unit, sell_per,
-                                         sell_unit, currency=currency)
+                                         sell_unit, currency=currency,
+                                         lang=lang)
         left, left_unit = pur.stock_left(conn, shop_id, purchase.name_en,
                                          date)
+        total_fmt = (format_money(purchase.total_cost, currency)
+                     if purchase.total_cost is not None else "")
+        cost_fmt = (f"{format_money(buy_per, currency)}/{buy_unit}"
+                    if buy_per is not None else "")
         rows.append({
             "id": purchase.id,
             "name_en": purchase.name_en,
@@ -103,10 +111,9 @@ def purchase_rows(conn, shop_id: int, date: str, currency: str) -> list[dict]:
             "qty": (format(purchase.qty.normalize(), "f")
                     if purchase.qty is not None else ""),
             "unit": purchase.unit or "",
-            "total": (format_money(purchase.total_cost, currency)
-                      if purchase.total_cost is not None else ""),
-            "cost_per": (f"{format_money(buy_per, currency)}/{buy_unit}"
-                         if buy_per is not None else ""),
+            "total": total_fmt,
+            "cost_per": cost_fmt,
+            "paid_cost": t("pur.paid_cost", total=total_fmt, cost=cost_fmt),
             "sell_per": (f"{format_money(sell_per, currency)}/{sell_unit}"
                          if sell_per is not None else ""),
             "margin": margin,
@@ -134,6 +141,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         from app import purchases as pur
 
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
         today = _today_ist()
         currency = shop["currency"] or "INR"
         sessions = conn.execute(
@@ -141,24 +149,30 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             " ORDER BY id DESC LIMIT 5", (shop["id"],)).fetchall()
         return templates.TemplateResponse(request, "purchases.html", {
             "shop": shop, "token": token, "today": today,
-            "rows": purchase_rows(conn, shop["id"], today, currency),
+            "rows": purchase_rows(conn, shop["id"], today, currency,
+                                  ui_lang),
             "spent": pur.spent_on(conn, shop["id"], today),
             "currency": currency, "sessions": sessions, "error": None,
             "units": list(UNITS),
             "notice": "Your voice recording is sent to Meta's AI service"
                       " to be transcribed.",
+            "ui_lang": ui_lang,
         })
 
     @app.post("/e/{token}/purchases/voice")
     def purchases_voice(request: Request, token: str, audio: UploadFile,
                         conn: Conn):
         shop = _shop_or_404(conn, token)
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
         if not request.app.state.limiter.allow(client_ip(request),
                                                datetime.now(UTC)):
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                {"title": t("error.too_many_title"),
+                 "message": RATE_LIMIT_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
                 status_code=429)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
@@ -167,15 +181,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except CostCapExceeded:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Demo budget used up",
-                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                {"title": t("error.budget_title"),
+                 "message": BUDGET_EXHAUSTED_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
                 status_code=503)
         payload = audio.file.read()
         if not payload:
             return templates.TemplateResponse(
                 request, "error.html",
-                {"title": "Empty recording",
-                 "message": "That recording was empty. Try again."},
+                {"title": t("error.empty_rec_title"),
+                 "message": "That recording was empty. Try again.",
+                 "token": token, "ui_lang": ui_lang},
                 status_code=400)
         session_id = db.create_session(conn, shop["id"], "purchase")
         uploads = data_dir / "uploads"
@@ -192,6 +208,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         conn: Conn):
         shop = _shop_or_404(conn, token)
         session = _session_of_shop(conn, shop["id"], session_id)
+        ui_lang = get_ui_lang(request, shop)
         if session["status"] != "review":
             return RedirectResponse(f"/e/{token}/s/{session_id}",
                                     status_code=303)
@@ -215,7 +232,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "purchase_review.html", {
             "shop": shop, "token": token, "session": session,
             "cards": cards, "transcript": meta.get("transcript", ""),
-            "currency": shop["currency"] or "INR"})
+            "currency": shop["currency"] or "INR", "ui_lang": ui_lang})
 
     @app.post("/e/{token}/purchases/{session_id}/confirm")
     async def purchase_confirm(request: Request, token: str, session_id: int):

@@ -13,8 +13,17 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Devanagari";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansDevanagari-Bold.ttf");
+}
 @page { size: A4; margin: 15mm 12mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
+body { font-family: "Noto Sans Tamil", "Noto Sans Devanagari", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
 .header { background: #14532d; color: #fbf7ef; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
 .header h1 { font-size: 30pt; margin: 0; }
 .header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }
@@ -38,17 +47,17 @@ td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
   <p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }} · {{ at }}</p>
 </div>
 <table>
-<tr><th>Item</th><th>Price</th></tr>
+<tr><th>{{ t('board.item') }}</th><th>{{ t('board.price') }}</th></tr>
 {% for row in rows %}
 <tr>
   <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-local">{{ row.name_local }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
-  <td>{% if row.sold_out %}<span class="soldout">Sold out</span>{% else %}<span class="price">{{ row.price | money(shop["currency"]) }}</span> <span class="per">per {{ row.per }}</span>{% endif %}</td>
+  <td>{% if row.sold_out %}<span class="soldout">{{ t('board.sold_out') }}</span>{% else %}<span class="price">{{ row.price | money(shop["currency"]) }}</span> <span class="per">{{ t('board.per', per=row.per) }}</span>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
 <div class="footer">
 <img src="{{ qr_data_uri }}" alt="shop QR code">
-<p>Scan for the live price list · {{ shop_url }}</p>
+<p>{{ t('board.scan', url=shop_url) }}</p>
 </div>
 </body>
 </html>

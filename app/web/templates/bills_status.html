@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Making the bill — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t('sess.making_bill_title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block sidebar %}
-<nav class="sidebar" aria-label="Seller">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
-  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>Close day</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
 </nav>
 {% endblock %}
 {% block content %}
 {% if session["status"] == "failed" %}
-<h1>Something went wrong</h1>
+<h1>{{ t('sess.failed_title') }}</h1>
 {{ ui.alert(session["message"], "warn") }}
 <ol class="vstepper">
   {% for step in progress["steps"] %}
@@ -26,11 +26,11 @@
   </li>
   {% endfor %}
 </ol>
-<p><a class="btn btn-primary btn-big" href="/e/{{ token }}/bills/new">Try again</a></p>
-<p><a href="/e/{{ token }}/bills">Back to bills</a></p>
+<p><a class="btn btn-primary btn-big" href="/e/{{ token }}/bills/new">{{ t('sess.try_again') }}</a></p>
+<p><a href="/e/{{ token }}/bills">{{ t('sess.back_bills') }}</a></p>
 {% else %}
-<h1>Making the bill…</h1>
-<p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
+<h1>{{ t('sess.making_bill') }}</h1>
+<p class="muted" data-step-count data-step-tmpl="{{ t('sess.step_of', step='__S__', total='__T__') }}">{{ t('sess.step_of', step=progress["step"], total=progress["steps"] | length) }}</p>
 <ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/bills/new/{{ session["id"] }}/status" data-bills-base="/e/{{ token }}/bills/">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
@@ -45,10 +45,10 @@
   </li>
   {% endfor %}
 </ol>
-<p class="muted" data-elapsed>Elapsed: {{ progress["elapsed_s"] | round | int }} s</p>
+<p class="muted" data-elapsed data-elapsed-s="{{ t('sess.elapsed_s', s='__S__') }}">{{ t('sess.elapsed_s', s=progress["elapsed_s"] | round | int) }}</p>
 <noscript>
 <meta http-equiv="refresh" content="3">
-<p class="muted">Working on it… this page refreshes every 3 s.</p>
+<p class="muted">{{ t('sess.refresh_note') }}</p>
 </noscript>
 {% endif %}
 {% endblock %}
@@ -62,6 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   const url = stepper.dataset.statusUrl;
   const base = stepper.dataset.billsBase;
+  const elapsedEl = document.querySelector("[data-elapsed]");
+  const countEl = document.querySelector("[data-step-count]");
   async function poll() {
     let data;
     try {
@@ -89,6 +91,17 @@ document.addEventListener("DOMContentLoaded", () => {
       item.classList.remove("is-done", "is-active", "is-todo");
       item.classList.add("is-" + step.state);
     });
+    if (elapsedEl) {
+      const tmpl = elapsedEl.dataset.elapsedS;
+      const total = Math.max(0, Math.round(data.elapsed_s || 0));
+      elapsedEl.textContent = tmpl ? tmpl.replace("__S__", String(total)) : "Elapsed: " + total + " s";
+    }
+    if (countEl && data.step) {
+      const tmpl = countEl.dataset.stepTmpl;
+      countEl.textContent = tmpl
+        ? tmpl.replace("__S__", String(data.step)).replace("__T__", String((data.steps || []).length))
+        : "Step " + data.step + " of " + (data.steps || []).length;
+    }
   }
   window.setInterval(poll, 1500);
 });
