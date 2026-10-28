@@ -36,10 +36,15 @@ def parse_sam_text(text: str) -> list[Box]:
                 key, _, value = part.partition("=")
                 fields[key.strip()] = value.strip()
         try:
+            confidence = float(fields["c"]) if "c" in fields else None
+        except ValueError:
+            confidence = None
+        try:
             boxes.append(Box(
                 x1=int(fields["x1"]), y1=int(fields["y1"]),
                 x2=int(fields["x2"]), y2=int(fields["y2"]),
-                w=int(fields["w"]), h=int(fields["h"]), confidence=None))
+                w=int(fields["w"]), h=int(fields["h"]),
+                confidence=confidence))
         except (KeyError, ValueError):
             continue
     return boxes
@@ -57,6 +62,7 @@ def find_boxes(image: Path, noun: str, *, ledger: CostLedger, settings: Settings
     body = {
         "model": SAM_MODEL,
         "stream": True,
+        "metadata": {"include_confidence": "true", "mask_encoding": "one_bit"},
         "input": [{"role": "user", "content": [
             {"type": "input_text", "text": noun},
             {"type": "input_image", "image_url": _data_url(image)},

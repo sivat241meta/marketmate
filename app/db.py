@@ -106,11 +106,21 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             item_id INTEGER NOT NULL REFERENCES items(id),
             price TEXT, per_amount TEXT, unit TEXT, said TEXT NOT NULL DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS photo_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            created_at TEXT NOT NULL, image_path TEXT NOT NULL,
+            report_json TEXT NOT NULL, cost REAL NOT NULL DEFAULT 0
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
         if name not in existing:
             conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {column_type}")
+    item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
+    for name in ("stock_qty", "stock_unit", "stock_source"):
+        if name not in item_columns:
+            conn.execute(f"ALTER TABLE items ADD COLUMN {name} TEXT")
     conn.commit()
     return conn
 
@@ -433,6 +443,37 @@ def set_sold_out(conn, item_id: int, sold_out: bool) -> None:
     conn.execute("UPDATE items SET sold_out = ? WHERE id = ?",
                  (int(sold_out), item_id))
     conn.commit()
+
+
+def set_stock(conn, item_id: int, qty: int | str | None, unit: str | None,
+              source: str | None) -> None:
+    """Store a stock estimate for an item; source is e.g. "photo"."""
+    conn.execute(
+        "UPDATE items SET stock_qty = ?, stock_unit = ?, stock_source = ?"
+        " WHERE id = ?",
+        (str(qty) if qty is not None else None, unit, source, item_id))
+    conn.commit()
+
+
+def save_photo_check(conn, *, shop_id: int, image_path: str | Path,
+                     report_json: str | dict, cost: float) -> int:
+    """Store a photo analysis report; returns the check id."""
+    if not isinstance(report_json, str):
+        report_json = json.dumps(report_json)
+    cursor = conn.execute(
+        "INSERT INTO photo_checks (shop_id, created_at, image_path,"
+        " report_json, cost) VALUES (?, ?, ?, ?, ?)",
+        (shop_id, _now(), str(image_path), report_json, float(cost)),
+    )
+    conn.commit()
+    return cursor.lastrowid
+
+
+def load_photo_checks(conn, shop_id: int) -> list[sqlite3.Row]:
+    """All photo checks for a shop, oldest first."""
+    return conn.execute(
+        "SELECT * FROM photo_checks WHERE shop_id = ? ORDER BY id",
+        (shop_id,)).fetchall()
 
 
 def last_prices(conn, shop_id: int) -> dict[str, PriceLine]:
