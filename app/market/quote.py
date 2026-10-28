@@ -39,6 +39,7 @@ class WantedLine:
     source: str
     amount: Decimal | None = None
     options: list[str] | None = None
+    variety: str | None = None
 
 
 @dataclass
@@ -80,6 +81,47 @@ def _wanted_name(raw: str) -> str:
     if mapped.endswith("s") and mapped[:-1] in CANONICAL_NAMES:
         return mapped[:-1]
     return key
+
+
+def _split_display(option: str) -> tuple[str, str | None]:
+    """Split "banana (poovan)" into ("banana", "poovan")."""
+    text = (option or "").strip()
+    if text.endswith(")") and " (" in text:
+        base, variety = text.rsplit(" (", 1)
+        variety = variety[:-1].strip()
+        if base.strip() and variety:
+            return (base.strip(), variety)
+    return (text, None)
+
+
+def _option_matches(option: str, by_name: dict, shop_items) -> bool:
+    base, variety = _split_display(option)
+    if _canonical(base) not in by_name:
+        return False
+    if variety is None:
+        return True
+    want = variety.strip().lower()
+    for item in shop_items:
+        if _canonical(item.name_en) != _canonical(base):
+            continue
+        if (item.variety or "").strip().lower() == want:
+            return True
+    return False
+
+
+def _match_shop_item(shop_items, by_name: dict, want_name: str,
+                     want_variety: str | None):
+    """Shop item for a wanted name, preferring the wanted variety."""
+    base, from_name = _split_display(want_name)
+    variety = want_variety or from_name
+    if variety:
+        want = variety.strip().lower()
+        for item in shop_items:
+            if _canonical(item.name_en) != _canonical(base):
+                continue
+            if (item.variety or "").strip().lower() == want:
+                return item
+    return by_name.get(_canonical(base))
 
 
 def _positive(value: Decimal | None) -> Decimal | None:
@@ -318,7 +360,7 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
         if item.options and len(item.options) >= 2:
             candidates = sorted(
                 {opt for opt in item.options
-                 if _canonical(opt) in by_name},
+                 if _option_matches(opt, by_name, shop_items)},
                 key=str.lower)
             if len(candidates) >= 2:
                 displays = ", ".join(
@@ -331,11 +373,13 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                     note=f"Which one: {displays}?"))
                 continue
             if len(candidates) == 1:
+                base, variety = _split_display(candidates[0])
                 item = WantedLine(
-                    name_en=candidates[0], qty=item.qty, unit=item.unit,
-                    source=item.source, amount=item.amount)
-        want_key = _canonical(item.name_en)
-        shop_item = by_name.get(want_key)
+                    name_en=base, qty=item.qty, unit=item.unit,
+                    source=item.source, amount=item.amount,
+                    variety=variety or item.variety)
+        shop_item = _match_shop_item(shop_items, by_name, item.name_en,
+                                     item.variety)
         if shop_item is None:
             local = CANONICAL_NAMES.get(_wanted_name(item.name_en), "")
             lines.append(QuoteLine(

@@ -1,0 +1,81 @@
+{
+ "clip": "Real shop data/WhatsApp Video 2026-10-28 at 3.10.34 PM.mp4",
+ "note": "Real fruit stall (bananas), Tamil, 20 s WhatsApp video. Prices are as clearly spoken in the clip (transcript word-perfect); owner confirmation still pending, so use as 'heard' not 'confirmed'.",
+ "confirmed": false,
+ "items": [
+  {
+   "name_en": "banana",
+   "variety": "poovan",
+   "price": 60,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "banana",
+   "variety": "yelakki",
+   "price": 100,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "banana",
+   "variety": "karpooravalli",
+   "price": 80,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING",
+    "SOUND_ALIKE"
+   ]
+  },
+  {
+   "name_en": "banana",
+   "variety": "thenvazhai",
+   "price": 80,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING",
+    "SOUND_ALIKE"
+   ]
+  },
+  {
+   "name_en": "banana",
+   "variety": "red",
+   "price": 100,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "banana",
+   "variety": "green",
+   "price": 40,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  }
+ ]
+}

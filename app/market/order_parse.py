@@ -15,6 +15,7 @@ from app.pipeline.names import (
     CANONICAL_NAMES,
     EN_TO_ROMAN,
     SYNONYMS,
+    VARIETY_ALIASES,
 )
 from app.pipeline.numbers import CURRENCY_WORDS, parse_number
 from app.pipeline.units import normalize_unit
@@ -181,6 +182,37 @@ def _build_canonical_index() -> dict[str, set[str]]:
 _CANONICAL_INDEX = _build_canonical_index()
 
 
+def _build_variety_index() -> dict[str, tuple[str, str]]:
+    """Normalized variety alias -> (name_en, variety), with plurals."""
+    index: dict[str, tuple[str, str]] = {}
+    for alias, pair in VARIETY_ALIASES.items():
+        key = _norm(alias)
+        if not key:
+            continue
+        for variant in _plural_variants(key):
+            index.setdefault(variant, pair)
+    return index
+
+
+_VARIETY_INDEX = _build_variety_index()
+
+
+def _shop_variety(item) -> str | None:
+    raw = _field(item, "variety")
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return text or None
+
+
+def _display_name(item) -> str:
+    name = str(_field(item, "name_en") or "")
+    variety = _shop_variety(item)
+    if variety:
+        return f"{name} ({variety})"
+    return name
+
+
 def _shop_canon(item) -> str:
     """An item's canonical name_en (synonym-aware, normalized)."""
     key = _norm(str(_field(item, "name_en") or ""))
@@ -201,6 +233,32 @@ def _shop_exact(items) -> dict[str, int]:
     return exact
 
 
+def _lookup_variety(key: str, items) -> tuple[str, object]:
+    """Match a variety nickname: ("item", idx), ("choose", [idx]) or none.
+
+    An exact (name_en, variety) hit wins. With no exact hit a lone base
+    item still matches (a "poovan" ask in a one-banana shop bills that
+    banana); otherwise there is no match so the line is never guessed.
+    """
+    hit = _VARIETY_INDEX.get(key)
+    if hit is None:
+        return ("none", None)
+    base, variety = hit
+    want = variety.strip().lower()
+    exact = [idx for idx, item in enumerate(items)
+             if _shop_canon(item) == base
+             and (_shop_variety(item) or "").strip().lower() == want]
+    if len(exact) == 1:
+        return ("item", exact[0])
+    if len(exact) > 1:
+        return ("choose", sorted(exact))
+    lone = [idx for idx, item in enumerate(items)
+            if _shop_canon(item) == base]
+    if len(lone) == 1:
+        return ("item", lone[0])
+    return ("none", None)
+
+
 def _lookup(key: str, exact: dict[str, int], items
             ) -> tuple[str, object]:
     """Match one normalized phrase: ("item", idx), ("choose", [idx]) or None.
@@ -209,8 +267,12 @@ def _lookup(key: str, exact: dict[str, int], items
     then is the shop item found. A generic word shared by several shop
     items picks the item whose name_en is the generic canonical name
     (வெங்காயம் -> "onion"); with no exact one the caller asks "which
-    one?" instead of dropping the line.
+    one?" instead of dropping the line. The same item in several
+    varieties always asks instead of picking one silently.
     """
+    kind, payload = _lookup_variety(key, items)
+    if kind != "none":
+        return (kind, payload)
     idxs: list[int] = []
     if key in exact:
         idxs.append(exact[key])
@@ -224,7 +286,19 @@ def _lookup(key: str, exact: dict[str, int], items
         return ("item", idxs[0])
     names = {_norm(str(_field(items[i], "name_en") or "")) for i in idxs}
     if len(names) == 1:
-        return ("item", idxs[0])
+        varieties = {(_shop_variety(items[i]) or "").strip().lower()
+                     for i in idxs}
+        if len(varieties) == 1:
+            return ("item", idxs[0])
+        unique: list[int] = []
+        seen: set[tuple[str, str]] = set()
+        for idx in sorted(idxs):
+            marker = (_norm(str(_field(items[idx], "name_en") or "")),
+                      (_shop_variety(items[idx]) or "").strip().lower())
+            if marker not in seen:
+                seen.add(marker)
+                unique.append(idx)
+        return ("choose", unique)
     lasts = {_shop_canon(items[i]).split()[-1] for i in idxs}
     if len(lasts) == 1:
         shared = next(iter(lasts))
@@ -232,12 +306,12 @@ def _lookup(key: str, exact: dict[str, int], items
             for idx in idxs:
                 if _shop_canon(items[idx]) == shared:
                     return ("item", idx)
-    unique: list[int] = []
-    seen: set[str] = set()
+    unique = []
+    seen_names: set[str] = set()
     for idx in sorted(idxs):
         name = _norm(str(_field(items[idx], "name_en") or ""))
-        if name not in seen:
-            seen.add(name)
+        if name not in seen_names:
+            seen_names.add(name)
             unique.append(idx)
     return ("choose", unique)
 
@@ -402,14 +476,16 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
     prev_end = 0
     for start, stop, kind, payload in occurrences:
         options: list[str] | None = None
+        variety: str | None = None
         if kind == "choose":
             idxs = [i for i in payload if isinstance(i, int)]  # type: ignore[union-attr]
             item = items[idxs[0]]
             name_en = " ".join(tokens[start:stop])
-            options = [str(_field(items[i], "name_en") or "") for i in idxs]
+            options = [_display_name(items[i]) for i in idxs]
         else:
             item = items[payload]  # type: ignore[index]
             name_en = str(_field(item, "name_en") or "")
+            variety = _shop_variety(item)
         found = _find_number(tokens, prev_end, start, decimal_comma)
         currencies = [k for k in range(prev_end, start)
                       if _is_currency(tokens[k])]
@@ -424,7 +500,8 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             if amount > 0:
                 lines.append(WantedLine(name_en=name_en, qty=None,
                                         unit=None, source="local",
-                                        amount=amount, options=options))
+                                        amount=amount, options=options,
+                                        variety=variety))
             prev_end = stop
             continue
         if found is not None:
@@ -450,7 +527,7 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             if qty > 0:
                 lines.append(WantedLine(name_en=name_en, qty=qty,
                                         unit=unit, source="local",
-                                        options=options))
+                                        options=options, variety=variety))
             prev_end = stop
             continue
         unit_idx = None
@@ -466,14 +543,15 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             consumed.add(unit_idx)  # type: ignore[arg-type]
             lines.append(WantedLine(name_en=name_en, qty=Decimal(1) * factor,
                                     unit=canonical, source="local",
-                                    options=options))
+                                    options=options, variety=variety))
             prev_end = stop
             continue
         for k in range(start, stop):
             consumed.add(k)
         qty, unit = _default_for_single(item)
         lines.append(WantedLine(name_en=name_en, qty=qty, unit=unit,
-                                source="local", options=options))
+                                source="local", options=options,
+                                variety=variety))
         prev_end = stop
     leftover: list[str] = []
     for orig_idx, word in enumerate(display):

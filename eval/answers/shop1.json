@@ -1,0 +1,59 @@
+{
+ "clip": "Real shop data/WhatsApp Video 2026-10-28 at 3.10.31 PM.mp4",
+ "note": "Real vegetable stall, Tamil + English, 18 s WhatsApp video. All 4 prices confirmed correct by the person who filmed it, 28 Oct. The 4th item is brinjal: the seller called it 'Ujala' (a market nickname for the shiny violet brinjal), Krishnagiri variety. Carrot, avarai and brinjal were said without a unit; the true unit is per kg.",
+ "items": [
+  {
+   "name_en": "beans",
+   "variety": null,
+   "price": 120,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING"
+   ]
+  },
+  {
+   "name_en": "carrot",
+   "variety": "ooty",
+   "price": 80,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING",
+    "UNIT_MISSING",
+    "SOUND_ALIKE"
+   ]
+  },
+  {
+   "name_en": "broad beans",
+   "variety": null,
+   "price": 80,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING",
+    "UNIT_MISSING",
+    "SOUND_ALIKE"
+   ]
+  },
+  {
+   "name_en": "brinjal",
+   "variety": "krishnagiri",
+   "price": 60,
+   "per_amount": 1,
+   "unit": "kg",
+   "qty": null,
+   "qty_unit": null,
+   "expect_flags": [
+    "QTY_MISSING",
+    "UNIT_MISSING"
+   ]
+  }
+ ]
+}

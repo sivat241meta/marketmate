@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from app.languages import currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine, Proof, Transcript
-from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.names import CANONICAL_NAMES, resolve_name
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
@@ -211,10 +211,17 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
     for raw in data.get("items") or []:
         raw_name = raw.get("name_en") or "other"
         if isinstance(raw_name, str):
-            name_en = raw_name.strip().lower() or "other"
+            raw_name = raw_name.strip().lower() or "other"
         else:
-            name_en = "other"
+            raw_name = "other"
         name_spoken = raw.get("name_spoken") or ""
+        quote_early = raw.get("quote") or ""
+        raw_variety = raw.get("variety")
+        if not isinstance(raw_variety, str):
+            raw_variety = None
+        extra = f"{name_spoken} {quote_early}".strip() or None
+        name_en, variety = resolve_name(raw_name, raw_variety,
+                                        extra_text=extra)
         price_lines = [
             PriceLine(
                 price=_decimal_or_none(line.get("price")),
@@ -227,9 +234,6 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
         quote = raw.get("quote") or ""
         turn_ids = list(raw.get("turn_ids") or [])
         start_ms, end_ms = _proof_times(quote, turn_ids, transcript)
-        variety = raw.get("variety")
-        if isinstance(variety, str):
-            variety = variety.lower()
         flags = _backfill_units(price_lines)
         for line in price_lines:
             normalize_price_line(line)

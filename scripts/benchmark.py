@@ -146,6 +146,22 @@ def _table(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _clip_exists(clip) -> bool:
+    """True when the answer-key clip file is present.
+
+    The clip path is used verbatim as a Path, so spaces survive. Bare
+    filenames from older keys also resolve under eval/clips/.
+    """
+    if clip is None:
+        return True
+    text = str(clip).strip()
+    if not text:
+        return True
+    if Path(text).exists():
+        return True
+    return Path("eval/clips", Path(text).name).exists()
+
+
 def _rerun_baseten(out_path: Path) -> Path:
     """Rerun extraction through Baseten, with honesty checks, into <stem>.baseten.json."""
     from app import db
@@ -187,6 +203,11 @@ def main() -> None:
     out_dir, answers_dir = Path(args.out_dir), Path(args.answers_dir)
     rows: list[dict] = []
     for key_path in sorted(answers_dir.glob("*.json")):
+        key = json.loads(key_path.read_text())
+        clip = key.get("clip", "")
+        if not _clip_exists(clip):
+            print(f"skip {key_path.name}: clip missing: {clip}")
+            continue
         out_path = out_dir / key_path.name
         if args.provider == "baseten":
             if not out_path.exists():
@@ -196,7 +217,6 @@ def main() -> None:
         if not out_path.exists():
             print(f"skip {key_path.name}: no run output")
             continue
-        key = json.loads(key_path.read_text())
         out = json.loads(out_path.read_text())
         rows.append(compare_clips(key, out))
     print(_table(rows))
