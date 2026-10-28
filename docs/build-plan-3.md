@@ -44,8 +44,8 @@ MarketMate should remove that double work and make billing at the counter as fas
   - Authentication goes in the first JSON frame: `{"authorization":{"accessToken":"Bearer <key>"}, ...}`.
     **The key must never reach the browser**, so our server relays the audio.
   - Price: $0.18 per audio hour, the same as upload.
-- **Exports:** Excel (.xlsx) and a **general POS CSV**. The owner does not want a POS-app-specific
-  format for new exports. The existing POS-app price-list CSV stays as it is.
+- **Exports:** Excel (.xlsx) and a **general POS CSV**. There is exactly one CSV per
+  surface: the price-list CSV and the day-close sales CSV.
 
 ## Tasks
 

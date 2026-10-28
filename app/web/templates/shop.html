@@ -38,7 +38,7 @@
 <div class="grid-products" data-shop-grid>
 {% for row in rows %}
   <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
-    <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
+    <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
     <div class="bd">
       <span class="kk">{% if row.variety %}{{ row.variety }} · {% endif %}{{ t('shop.kicker_fallback', unit=row.unit) }}</span>
       <h3><span class="tname" lang="{{ shop_lang }}">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</h3>

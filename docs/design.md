@@ -54,7 +54,7 @@ workflow for produce sellers, connected to customers.
 6. **Seller outputs:**
    - a printable PDF price board (Tamil + English, with a QR code to the shop page);
    - a public shop page;
-   - a CSV export (generic, plus a POS app import template).
+   - a CSV export (one generic file).
 7. **Next-day voice update:** the seller says "thakkali 22, vengayam sold out" with no video.
    The app shows the changes and the seller confirms them.
 8. Stock value = sum of (confirmed quantity × confirmed price). It only counts items whose units
@@ -175,7 +175,7 @@ Record stall video and speak  ──►  processing (≈1–2 min, progress show
 Review screen: one card per item (photo, fields, quote, ▶ play audio clip, flags)
    seller taps to fix / confirm / delete / add missing item → APPROVE
 Approved list = new dated version ──► three actions:
-   [Print price board PDF]  [Publish today's prices]  [Export CSV / POS app]
+   [Print price board PDF]  [Publish today's prices]  [Export CSV]
 Next day: "Update prices by voice" → transcribe → Muse Spark diff → seller confirms → new version
 ```
 
@@ -237,9 +237,8 @@ Scan QR on a price board or open the market page
 - **Public pages:** `/s/<slug>` (shop page) and `/market` (search, compare, budget).
   Mobile-first. Language toggle Tamil/English; item names are translated once at publish time
   and cached.
-- **CSV:** a generic file (name_en, name_ta, variety, price, unit, qty, updated_at), plus a
-  POS app item-import template. POS app import of CSV/TSV/XLS ≤ 5 MB with field mapping was
-  checked earlier.
+- **CSV:** a single generic file (name_en, name_ta, variety, price, unit, qty, updated_at)
+  that any billing software can import.
 
 ### 4.6 Judges and demo
 - **"Try it" mode:** judges film any fruit or vegetable at home for 30 seconds and say prices
@@ -274,7 +273,7 @@ Scan QR on a price board or open the market page
 | 1 | Wed 28 Oct | **Gate test:** transcribe → extract → checks on the clips; one SAM cut-out. Attend "Agents 102: verifiable agents" (9:30 PM IST) | Measured price accuracy and flag rate. If speech-to-item matching is weak, require "one item per sentence" |
 | 2 | Thu 29 Oct | Pipeline service + checks + tests on recorded transcripts | Pipeline runs from video to draft JSON |
 | 3 | Fri 30 Oct | Frame matching, SAM cut-outs, review screen | Seller can approve a list on phone |
-| 4 | Sat 31 Oct | Versions, stock value, PDF (Tamil), CSV/POS-app, shop page + QR | All three seller actions work |
+| 4 | Sat 31 Oct | Versions, stock value, PDF (Tamil), CSV, shop page + QR | All three seller actions work |
 | 5 | Sun 1 Nov | Voice price update; customer search (text + voice) and compare | Customer can find tomato across shops |
 | 6 | Mon 2 Nov | Budget basket; deploy to Modal; cost caps. Stretch: condition hints, photo mode | Live URL works on a phone |
 | 7 | Tue 3 Nov | Record at real stalls (with consent); seed demo shops; benchmark; bug fixes | Benchmark table with real numbers |
@@ -285,7 +284,7 @@ If behind schedule, cut in this order:
 2. condition hints;
 3. budget basket;
 4. voice search (keep text);
-5. POS-app template (keep generic CSV).
+5. Extra export formats (keep one generic CSV).
 
 Never cut: the proof and checks, the review screen, the PDF, the shop page or the customer
 search.
@@ -312,9 +311,8 @@ search.
 4. Shop location is area text, not GPS distance ("near me" = same area).
 5. Hosting on Modal with SQLite; no custom domain.
 6. Muse Image and Muse Wonder are not used in the MVP.
-7. POS: generic CSV plus a POS app template only. POS app import maps columns during
-   import, so we export clean, named columns. We **only say "works with POS app" if an import
-   is actually tested** in a POS app account; otherwise we say "CSV for any POS".
+7. POS: one generic CSV only. Billing software maps columns during
+   import, so we export clean, named columns labelled "CSV (works with any billing software)".
 8. Prices are stored as "₹X for an amount", with several lines allowed per item; ranges are
    flagged for the seller to pick one number.
 9. Proof (quotes and audio) is shown to the seller only; customers see the real photo and the

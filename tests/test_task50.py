@@ -149,7 +149,7 @@ def test_seller_home_fresh_green(tmp_path):
     # Quick links as ghost pills (Task 52: one grid, each target once).
     for label in ("Update by voice", "Scan stock photo", "Bills",
                   "Purchases", "Print board", "Print price tags",
-                  "Export CSV", "POS-app CSV", "Settings", "Shop QR"):
+                  "CSV", "Settings", "Shop QR"):
         assert label in html, label
     # Install + recovery cards kept, small; old shop-name card gone.
     assert "Install app" in html
@@ -531,7 +531,8 @@ def test_close_page_fresh_green(tmp_path):
     assert "Today in numbers" in html
     assert "close-table" in html
     assert "wastage_" in html
-    for label in ("Excel", "POS CSV", "PDF", "WhatsApp"):
+    for label in ("Excel", "CSV (works with any billing software)",
+                  "PDF", "WhatsApp"):
         assert label in html, label
     assert "wa.me/" in html
 

@@ -116,6 +116,9 @@ def mock_continue(monkeypatch):
     monkeypatch.setattr("app.pipeline.run.pick_best_frame", fake_pick)
     monkeypatch.setattr("app.pipeline.run.make_photo",
                         lambda frame, noun, out, **kwargs: Path(out))
+    monkeypatch.setattr("app.pipeline.run.make_candidates",
+                        lambda frames, picked, noun, out_stem, **kwargs:
+                        [str(out_stem) + "_c0.jpg"])
     monkeypatch.setattr("app.pipeline.run.cut_audio_clip",
                         lambda wav, start, end, out: Path(out))
     monkeypatch.setattr("app.pipeline.extract.chat_json",

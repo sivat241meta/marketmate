@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app import db
 from app.config import load_settings
 from app.models import Item, PriceLine, Proof
-from app.outputs.csv_export import generic_csv, posapp_pos_csv
+from app.outputs.csv_export import generic_csv
 from app.outputs.pdf import price_board_pdf
 from app.outputs.qr import qr_png
 from app.outputs.value import stock_value
@@ -87,15 +87,6 @@ def test_generic_csv_rows_per_line():
     assert rows[1][:8] == ["tomato", "தக்காளி", "bengaluru", "18", "1",
                            "kg", "40", "kg"]
     assert rows[2][3:6] == ["20", "1", "kg"]
-
-
-def test_posapp_csv_first_line_only():
-    goods = [item(variety="bengaluru",
-                  lines=[pl(18, 1, "kg"), pl(20, 1, "kg")])]
-    rows = list(csv.reader(io.StringIO(posapp_pos_csv(goods))))
-    assert rows[0] == ["Item Name", "Selling Price", "Unit", "Description"]
-    assert rows[1] == ["Tomato (Bengaluru)", "18", "kg", "தக்காளி"]
-    assert len(rows) == 2
 
 
 def test_qr_png_bytes():
@@ -221,9 +212,6 @@ def test_output_routes(tmp_path, monkeypatch):
     csv_resp = client.get(base + "/export.csv")
     assert csv_resp.status_code == 200
     assert "name_en,name_local" in csv_resp.text
-    posapp = client.get(base + "/posapp.csv")
-    assert posapp.status_code == 200
-    assert "Item Name" in posapp.text
     assert client.get(f"/e/{token}/v/9999/board.pdf").status_code == 404
 
 

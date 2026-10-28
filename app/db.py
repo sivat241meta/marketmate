@@ -632,7 +632,8 @@ def _draft_to_json(item: DraftItem) -> str:
         "flags": [{"field": flag.field, "code": flag.code, "message": flag.message,
                    "options": flag.options, "blocking": flag.blocking}
                   for flag in item.flags],
-        "photo": item.photo, "condition_hint": item.condition_hint,
+        "photo": item.photo, "photo_candidates": list(item.photo_candidates),
+        "condition_hint": item.condition_hint,
         "confirmed": item.confirmed,
     })
 
@@ -656,7 +657,9 @@ def _draft_from_json(data: str) -> DraftItem:
         flags=[Flag(field=f["field"], code=f["code"], message=f["message"],
                     options=f.get("options", []), blocking=f.get("blocking", True))
                for f in raw["flags"]],
-        photo=raw["photo"], condition_hint=raw["condition_hint"],
+        photo=raw["photo"],
+        photo_candidates=list(raw.get("photo_candidates") or []),
+        condition_hint=raw["condition_hint"],
         confirmed=raw["confirmed"],
     )
 
@@ -986,6 +989,12 @@ def set_published(conn, version_id: int, published: bool) -> None:
 def set_sold_out(conn, item_id: int, sold_out: bool) -> None:
     conn.execute("UPDATE items SET sold_out = ? WHERE id = ?",
                  (int(sold_out), item_id))
+    conn.commit()
+
+
+def set_item_photo(conn, item_id: int, photo: str) -> None:
+    """Swap an item's photo in place; prices and versions are untouched."""
+    conn.execute("UPDATE items SET photo = ? WHERE id = ?", (photo, item_id))
     conn.commit()
 
 
@@ -1639,7 +1648,7 @@ def _delete_shop_files(conn, data_dir: Path, shop_id: int) -> None:
 
 
 def _session_id_of_photo(name: str) -> int | None:
-    match = re.match(r"s(\d+)_\d+\.", name)
+    match = re.match(r"s(\d+)_\d+", name)
     return int(match.group(1)) if match else None
 
 

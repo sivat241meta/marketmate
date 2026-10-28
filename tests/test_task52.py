@@ -353,7 +353,7 @@ def test_seller_home_has_single_quick_links_grid(tmp_path):
     assert html.count("Update by voice") == 1
     assert html.count("Scan stock photo") == 1
     assert html.count("Print price tags") == 1
-    assert html.count("POS-app CSV") == 1
+    assert "/export.csv" in html
     assert "quick-links" in html
     assert 'id="more"' in html
     # Old tile grid and raw file input are gone.

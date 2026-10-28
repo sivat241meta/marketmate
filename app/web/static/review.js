@@ -399,6 +399,54 @@ document.addEventListener("DOMContentLoaded", () => {
       updateApprove(form);
     });
   });
+  form.querySelectorAll("[data-photo-pick]").forEach((row) => {
+    row.addEventListener("click", async (event) => {
+      const picked = event.target.closest("[data-photo-index]");
+      if (!picked) {
+        return;
+      }
+      const response = await fetch(row.dataset.pickUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index: Number(picked.dataset.photoIndex) }),
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      const card = row.closest(".card");
+      const main = card ? card.querySelector("[data-photo-main]") : null;
+      if (main && data.photo_url) {
+        main.src = data.photo_url;
+      }
+      row.querySelectorAll("[data-photo-index]").forEach((other) => {
+        other.classList.toggle("is-on", other === picked);
+      });
+    });
+  });
+  form.querySelectorAll("[data-photo-retake]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      if (!input.files || !input.files[0]) {
+        return;
+      }
+      const body = new FormData();
+      body.append("photo", input.files[0]);
+      const response = await fetch(input.dataset.uploadUrl, {
+        method: "POST",
+        body,
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      const card = input.closest(".card");
+      const main = card ? card.querySelector("[data-photo-main]") : null;
+      if (main && data.photo_url) {
+        main.src = data.photo_url;
+      }
+      input.value = "";
+    });
+  });
   form.querySelectorAll(".line-remove").forEach((button) => {
     button.addEventListener("click", () => {
       const card = button.closest(".card");

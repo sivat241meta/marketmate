@@ -70,6 +70,7 @@ class DraftItem:
     range_said: bool = False
     flags: list[Flag] = field(default_factory=list)
     photo: str | None = None
+    photo_candidates: list[str] = field(default_factory=list)
     condition_hint: str | None = None
     confirmed: bool = False
 

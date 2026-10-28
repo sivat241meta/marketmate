@@ -36,7 +36,7 @@ from app.languages import (
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
-from app.outputs.csv_export import generic_csv, posapp_pos_csv
+from app.outputs.csv_export import generic_csv
 from app.outputs.money import format_money
 from app.outputs.pdf import price_board_pdf, price_tags_pdf
 from app.outputs.qr import qr_png
@@ -50,6 +50,7 @@ from app.pipeline.names import (
     keywords_for,
 )
 from app.pipeline.numbers import parse_number
+from app.pipeline.photos import BadPhotoUpload, save_retake
 from app.pipeline.run import (
     apply_spoken_language,
     friendly_error_message,
@@ -200,6 +201,7 @@ def _draft_from_client(raw: dict, stored=None):
     item.qty_unit = stored.qty_unit
     item.range_said = stored.range_said
     item.photo = stored.photo
+    item.photo_candidates = list(stored.photo_candidates)
     item.proof = stored.proof
     item.condition_hint = stored.condition_hint
     # Keep the heard "said" text per line; the client only edits numbers.
@@ -776,14 +778,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return Response(generic_csv(items, datetime.now(IST)),
                         media_type="text/csv")
 
-    @app.get("/e/{token}/v/{version_id}/posapp.csv")
-    def version_posapp(request: Request, token: str, version_id: int, conn: Conn):
-        _shop, denied = _owner_page(request, conn, token)
-        if denied is not None:
-            return denied
-        _, items = _version_items(conn, token, version_id)
-        return Response(posapp_pos_csv(items), media_type="text/csv")
-
     @app.get("/e/{token}/link-card.pdf")
     def link_card(request: Request, token: str, conn: Conn):
         """Printable "Keep this safe" card with the seller link QR."""
@@ -1038,6 +1032,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "index": index,
                         "item": item,
                         "photo_url": _photo_url(item.photo),
+                        "candidate_urls": [
+                            url for url in
+                            (_photo_url(c)
+                             for c in item.photo_candidates or [])
+                            if url],
                         "board_thumb_url": (
                             _photo_url(item.proof.frame) if is_board else None
                         ),
@@ -1087,6 +1086,66 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if not 0 <= index < len(items) or not items[index].proof.audio_clip:
             raise HTTPException(404, "no such clip")
         return FileResponse(items[index].proof.audio_clip, media_type="audio/mp4")
+
+    @app.post("/e/{token}/s/{session_id}/photo/{index}")
+    def pick_candidate(token: str, session_id: int, index: int, body: dict,
+                       conn: Conn):
+        """Make candidate ``index`` the draft photo. Index only, never a path."""
+        shop = _owner_or_403_exc(conn, token)
+        _session_of_shop(conn, shop["id"], session_id)
+        items = db.load_drafts(conn, session_id)
+        if not 0 <= index < len(items):
+            raise HTTPException(404, "no such item")
+        candidates = items[index].photo_candidates or []
+        want = body.get("index")
+        if (not isinstance(want, int) or isinstance(want, bool)
+                or not 0 <= want < len(candidates)):
+            raise HTTPException(400, "unknown photo choice")
+        items[index].photo = candidates[want]
+        db.save_drafts(conn, session_id, items)
+        return JSONResponse({"photo_url": _photo_url(items[index].photo)})
+
+    @app.post("/e/{token}/s/{session_id}/photo/{index}/upload")
+    async def upload_draft_photo(request: Request, token: str, session_id: int,
+                                 index: int, photo: UploadFile, conn: Conn):
+        """Seller retake for a draft: verified, EXIF-free, cleaned 4:3."""
+        shop = _owner_or_403_exc(conn, token)
+        _session_of_shop(conn, shop["id"], session_id)
+        items = db.load_drafts(conn, session_id)
+        if not 0 <= index < len(items):
+            raise HTTPException(404, "no such item")
+        try:
+            out = save_retake(
+                await photo.read(),
+                data_dir / "photos" / f"s{session_id}_{index}_retake.jpg")
+        except BadPhotoUpload as exc:
+            raise HTTPException(400, str(exc))
+        items[index].photo = str(out)
+        db.save_drafts(conn, session_id, items)
+        return JSONResponse({"photo_url": _photo_url(items[index].photo)})
+
+    @app.post("/e/{token}/item/{item_id}/photo")
+    async def upload_item_photo(request: Request, token: str, item_id: int,
+                                photo: UploadFile, conn: Conn):
+        """Change a published item's photo in place: same prices, same version."""
+        shop = _owner_or_403_exc(conn, token)
+        row = conn.execute(
+            "SELECT items.id AS id FROM items"
+            " JOIN versions ON versions.id = items.version_id"
+            " WHERE items.id = ? AND versions.shop_id = ?",
+            (item_id, shop["id"])).fetchone()
+        if row is None:
+            raise HTTPException(404, "no such item")
+        try:
+            out = save_retake(
+                await photo.read(),
+                data_dir / "photos" / f"item_{item_id}.jpg")
+        except BadPhotoUpload as exc:
+            raise HTTPException(400, str(exc))
+        db.set_item_photo(conn, item_id, str(out))
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(f"/e/{token}", status_code=303)
+        return JSONResponse({"photo_url": _photo_url(str(out))})
 
     @app.post("/e/{token}/s/{session_id}/approve")
     def approve(token: str, session_id: int, body: dict, conn: Conn):

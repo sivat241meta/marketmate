@@ -33,7 +33,18 @@
     {{ ui.pill(t('review.needs_you'), "check") }}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
+    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main>{% endif %}
+    {% if card.candidate_urls %}
+    <p class="muted">{{ t('review.pick_photo') }}</p>
+    <div class="photo-pick" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
+      {% for url in card.candidate_urls %}
+      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
+      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" capture="environment" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
+    </label></p>
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
     {% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}
@@ -118,7 +129,18 @@
     <span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
+    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main>{% endif %}
+    {% if card.candidate_urls %}
+    <p class="muted">{{ t('review.pick_photo') }}</p>
+    <div class="photo-pick" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
+      {% for url in card.candidate_urls %}
+      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
+      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" capture="environment" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
+    </label></p>
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
     {% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}

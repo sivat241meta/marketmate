@@ -90,8 +90,7 @@ Task 21 is stretch.
 **Product copy**
 - Upload page notice: **"Your voice recording is sent to Meta's AI service to be transcribed."**
 - Demo shops show the label **"Demo data"**.
-- Never claim "works with POS app" unless an import was tested. Only measured numbers appear
-  in the README.
+- Only measured numbers appear in the README.
 
 **Repo**
 - Never commit `.env` (commit `.env.example` only).
@@ -720,7 +719,7 @@ Answer key format:
   `--host 0.0.0.0`): upload clip1 and approve.
 - [ ] **Step 5:** `git add -A && git commit -m "task 12: seller flow pages"`
 
-### Task 13: Stock value, CSV, POS-app template, QR, PDF price board
+### Task 13: Stock value, CSV, QR, PDF price board
 
 **Files:**
 - Create: `app/outputs/__init__.py`, `app/outputs/value.py`, `app/outputs/csv_export.py`,
@@ -736,14 +735,11 @@ Answer key format:
   - `generic_csv(items: list[Item], updated_at: datetime) -> str`. Columns:
     `name_en,name_ta,variety,price,per_amount,unit,qty,qty_unit,updated_at`, one row per price
     line.
-  - `posapp_pos_csv(items: list[Item]) -> str`. Columns: `Item Name,Selling Price,Unit,Description`.
-    Uses the first price line; Item Name = `"Tomato (Bengaluru)"`; Description = `name_ta`.
   - `qr_png(url: str) -> bytes`
   - `price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime, shop_url: str) -> bytes`
 - Routes:
   - `GET /e/{token}/v/{vid}/board.pdf`
   - `/e/{token}/v/{vid}/export.csv`
-  - `/e/{token}/v/{vid}/posapp.csv`
   - The seller home shows the stock value and the "left out" list.
 
 - [ ] **Step 1: Write failing tests:**
@@ -998,7 +994,7 @@ Answer key format:
   - a "built during the hackathon" statement;
   - "Built with Muse Code" if true.
 
-  POS wording is "CSV for any POS" unless a POS app import was actually tested.
+  POS wording is "CSV (works with any billing software)".
 
   `docs/architecture.md` is the flow from design §4; `docs/demo-script.md` is the 3-minute
   scene list from design §4.6.

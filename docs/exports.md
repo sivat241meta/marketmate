@@ -77,4 +77,4 @@ tomato,tomato,தக்காளி,kg,1,40,FALSE
 onion,onion,வெங்காயம்,kg,1,30,FALSE
 ```
 
-The existing POS-app price-list CSV is unchanged.
+The existing price-list CSV is unchanged.

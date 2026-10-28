@@ -26,7 +26,7 @@
       <div class="grid-products tap-grid">
         {% for item in price_items %}
         <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
-          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
           <div class="bd tap-main">
             <h3><span class="tname" lang="{{ shop_lang }}">{{ item.name_local or item.display }}</span>{% if item.name_local and item.display %}<small>{{ item.display }}</small>{% endif %}<small class="line-rate">{{ item.summary }}</small></h3>
             {% if not item.sold_out %}

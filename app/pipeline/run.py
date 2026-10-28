@@ -19,10 +19,11 @@ from app.pipeline.media import (
     cut_audio_clip,
     extract_audio,
     extract_frames,
+    extract_window_frames,
     has_video_stream,
 )
 from app.pipeline.names import keywords_for
-from app.pipeline.photos import make_photo
+from app.pipeline.photos import make_candidates, make_photo, window_frames
 from app.pipeline.scripts import script_mismatch
 
 #: At most this many guard re-transcriptions per session; then the last
@@ -172,7 +173,8 @@ def live_frame_for_item(item, frames_by_turn, turns=None):
 
 def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                   wav_path, *, settings, ledger, language: str = "ta",
-                  all_frames: list[Frame] | None = None):
+                  all_frames: list[Frame] | None = None,
+                  video: Path | None = None):
     """Shared final steps after transcription for the video and live paths.
 
     ``turns`` are the completed turns. ``frames_by_turn`` maps turn id to
@@ -240,6 +242,35 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 item, frames_for_window(all_frames or [], start_ms, end_ms),
                 ledger=ledger, settings=settings)
             matched.append(matches)
+            pool = list(all_frames or [])
+            near = sum(1 for f in pool if abs(f.t_ms - frame.t_ms) <= 1000)
+            if video is not None and near < 3:
+                try:
+                    dense = extract_window_frames(
+                        Path(video), frame.t_ms,
+                        session_dir / "frames" / f"dense_{index}")
+                except Exception:  # noqa: BLE001 - dense frames are optional
+                    dense = []
+                pool = pool + dense
+            ranked = window_frames(pool, frame)
+            saved = make_candidates(
+                pool, frame, item.name_en,
+                photo_dir / f"s{session_id}_{index}",
+                ledger=ledger, settings=settings)
+            if saved:
+                item.photo = saved[0]
+                item.photo_candidates = list(saved)
+            else:  # pragma: no cover - window_frames always keeps picked
+                item.photo = str(make_photo(
+                    frame, item.name_en,
+                    photo_dir / f"s{session_id}_{index}.jpg",
+                    ledger=ledger, settings=settings))
+            item.proof.frame = str(ranked[0].path) if ranked else str(frame.path)
+            clip = cut_audio_clip(wav_path, item.proof.start_ms,
+                                  item.proof.end_ms,
+                                  clip_dir / f"item_{index}.m4a")
+            item.proof.audio_clip = str(clip)
+            continue
         item.photo = str(make_photo(
             frame, item.name_en, photo_dir / f"s{session_id}_{index}.jpg",
             ledger=ledger, settings=settings))
@@ -264,10 +295,10 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
 
 def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[Frame],
                     wav: Path, session_dir: Path, *, settings, ledger,
-                    language: str = "ta") -> None:
+                    language: str = "ta", video: Path | None = None) -> None:
     process_turns(conn, session_id, transcript.turns, None, wav,
                   settings=settings, ledger=ledger, language=language,
-                  all_frames=frames)
+                  all_frames=frames, video=video)
 
 
 def process_video_session(conn, session_id: int, video: Path, *,
@@ -307,7 +338,8 @@ def process_video_session(conn, session_id: int, video: Path, *,
                 return
             _progress(conn, session_id, "Extracting items...")
             _finish_session(conn, session_id, transcript, frames, wav, session_dir,
-                            settings=settings, ledger=ledger, language=language)
+                            settings=settings, ledger=ledger, language=language,
+                            video=video)
         video.unlink(missing_ok=True)
     except CostCapExceeded:
         db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)

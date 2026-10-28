@@ -88,6 +88,34 @@ def extract_frames(video: Path, out_dir: Path, fps: float = 2.0) -> list[Frame]:
     return sorted(frames, key=lambda f: f.t_ms)
 
 
+def extract_window_frames(video: Path, center_ms: int, out_dir: Path,
+                        radius_ms: int = 1000, fps: float = 6.0) -> list[Frame]:
+    """Full-resolution frames within ±``radius_ms`` of ``center_ms``.
+
+    Used to hunt a sharper neighbour of the frame the picker chose; the
+    files are named f_<t_ms>.jpg like the base frames.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    start_s = max(0.0, (center_ms - radius_ms) / 1000)
+    end_s = (center_ms + radius_ms) / 1000
+    _run(
+        "ffmpeg",
+        "-y", "-ss", str(start_s), "-to", str(end_s), "-i", str(video),
+        "-vf", f"fps={fps}",
+        "-q:v", "2",
+        str(out_dir / "dense_%03d.jpg"),
+    )
+    frames = []
+    for i, raw in enumerate(sorted(out_dir.glob("dense_*.jpg"))):
+        t_ms = round(center_ms - radius_ms + i * 1000 / fps)
+        dest = out_dir / f"f_{t_ms}.jpg"
+        if dest.exists():
+            dest = out_dir / f"f_{t_ms}_{i}.jpg"
+        raw.rename(dest)
+        frames.append(Frame(path=dest, t_ms=t_ms))
+    return sorted(frames, key=lambda f: f.t_ms)
+
+
 def cut_audio_clip(
     wav: Path, start_ms: int, end_ms: int, out: Path, pad_ms: int = 300
 ) -> Path:

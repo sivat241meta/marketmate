@@ -15,28 +15,29 @@ def test_crop_union_padded(tmp_path):
     boxes = [Box(100, 100, 200, 200, 640, 480, None),
              Box(300, 100, 400, 200, 640, 480, None)]
     crop_to_boxes(image, boxes, out)
-    assert Image.open(out).size == (316, 116)
+    assert Image.open(out).size == (480, 360)
 
 
-def test_crop_uses_six_largest(tmp_path):
+def test_crop_uses_three_largest(tmp_path):
     image = make_image(tmp_path / "in.jpg")
     out = tmp_path / "out.jpg"
     boxes = [Box(100, 100, 200, 200, 640, 480, None),
              Box(300, 100, 400, 200, 640, 480, None),
+             Box(500, 300, 600, 400, 640, 480, None),
+             # Fourth-largest: must not stretch the union.
+             Box(0, 0, 50, 50, 640, 480, None),
              Box(120, 120, 130, 130, 640, 480, None),
              Box(140, 120, 150, 130, 640, 480, None),
-             Box(160, 120, 170, 130, 640, 480, None),
-             Box(180, 120, 190, 130, 640, 480, None),
              Box(600, 400, 605, 405, 640, 480, None)]
     crop_to_boxes(image, boxes, out)
-    assert Image.open(out).size == (316, 116)
+    assert Image.open(out).size == (536, 402)
 
 
 def test_crop_no_boxes_centre(tmp_path):
     image = make_image(tmp_path / "in.jpg")
     out = tmp_path / "out.jpg"
     crop_to_boxes(image, [], out)
-    assert Image.open(out).size == (512, 384)
+    assert Image.open(out).size == (480, 360)
 
 
 def test_make_photo_wires_find_boxes(monkeypatch, tmp_path):
