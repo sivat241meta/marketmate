@@ -1,23 +1,47 @@
 {% extends "base.html" %}
-{% block title %}MarketMate{% endblock %}
+{% import "_ui.html" as ui %}
+{% block title %}MarketMate — say your prices{% endblock %}
 {% block content %}
-<h1>MarketMate</h1>
-<div class="choice">
-  <h2>Seller</h2>
-  <p>Film your stall, check prices, print your board.</p>
-  <p><a class="btn" href="/new">Start as seller</a></p>
+<section class="hero">
+  <h1>Say your prices. Get a price board, a shop page and a market listing.</h1>
+  <p>Film your stall, speak each price, check what was heard. MarketMate does the rest.</p>
+  <p><a class="btn btn-primary" href="/new">Start as seller</a></p>
+</section>
+
+<div class="entry-grid">
+  <section class="card entry-card">
+    {{ ui.icon("home") }}
+    <h2>Seller: start your shop</h2>
+    <p class="muted">Film your stall, check prices, print your board.</p>
+    <p><a class="btn btn-secondary" href="/new">Start as seller</a></p>
+  </section>
+  <section class="card entry-card">
+    {{ ui.icon("tag") }}
+    <h2>Customer: find prices</h2>
+    <p class="muted">Enter a shop name to see today's prices, or search the market.</p>
+    <form method="post" action="/find">
+      <div class="field">
+        <label for="find-slug">Shop name</label>
+        <input id="find-slug" name="slug" placeholder="shop-name" required>
+      </div>
+      <button class="btn btn-secondary" type="submit">Find</button>
+    </form>
+    <p><a href="/market">Search the market</a></p>
+  </section>
+  <section class="card entry-card">
+    {{ ui.icon("check") }}
+    <h2>Judges: try the demo</h2>
+    <p class="muted">Create a demo shop and run a clip end to end.</p>
+    <p><a class="btn btn-secondary" href="/try">Try the demo</a></p>
+  </section>
 </div>
-<div class="choice">
-  <h2>Find prices</h2>
-  <p>Customer? Enter a shop name to see today's prices.</p>
-  <form method="post" action="/find">
-    <input name="slug" placeholder="shop-name" required>
-    <button class="btn" type="submit">Find</button>
-  </form>
-</div>
-<div class="choice">
-  <h2>Try it</h2>
-  <p>Judges: create a demo shop and run a clip end to end.</p>
-  <p><a class="btn" href="/try">Try the demo</a></p>
-</div>
+
+<h2>How it works</h2>
+<ol class="steps">
+  <li>{{ ui.icon("camera") }}<div><b>Film and speak</b><small>Walk past your stall and say each price out loud.</small></div></li>
+  <li>{{ ui.icon("check") }}<div><b>Check every price</b><small>Listen to your own voice and confirm each card.</small></div></li>
+  <li>{{ ui.icon("share") }}<div><b>Share board, page and QR</b><small>Print the board, share the shop page and QR.</small></div></li>
+</ol>
+
+<p class="honesty">Every price comes from the seller's own voice. Nothing is guessed.</p>
 {% endblock %}

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketMate · Fresh Market UI reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e7e2; font-family: Inter, system-ui, sans-serif; color: #111; }
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 32px 28px 60px; }
+  .intro h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+  .intro p { margin: 0; color: #555; max-width: 900px; line-height: 1.5; }
+  .dir { margin-top: 40px; }
+  .dir-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .dir-head h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+  .dir-head .tag { font-size: 13px; color: #555; }
+  .swatches { display: flex; gap: 6px; margin-left: auto; }
+  .swatches i { width: 22px; height: 22px; border-radius: 6px; display: block; border: 1px solid rgba(0,0,0,.1); }
+  .row { display: flex; gap: 26px; overflow-x: auto; padding-bottom: 10px; }
+  .shot { flex: 0 0 auto; }
+  .shot .cap { font-size: 13px; color: #444; margin: 0 0 8px 6px; font-weight: 600; }
+  .phone { width: 350px; height: 740px; border-radius: 38px; background: #111; padding: 10px; box-shadow: 0 20px 40px rgba(0,0,0,.18); }
+  .screen { width: 100%; height: 100%; border-radius: 30px; overflow: hidden; overflow-y: auto; position: relative; scrollbar-width: none; }
+  .screen::-webkit-scrollbar { display: none; }
+  .ta { font-family: "Noto Sans Tamil", sans-serif; }
+  .note { font-size: 12px; color: #666; margin-top: 10px; }
+
+  /* ============ A · FRESH MARKET ============ */
+  .A { font-family: "Plus Jakarta Sans", sans-serif; background: #fbf7ef; color: #1c1917; min-height: 100%; }
+  .A .top { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 8px; }
+  .A .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: #14532d; letter-spacing: -0.02em; }
+  .A .logo svg { width: 26px; height: 26px; }
+  .A .avatar { width: 32px; height: 32px; border-radius: 50%; background: #14532d; color: #fbf7ef; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  .A .pad { padding: 0 18px; }
+  .A .shopcard { background: #14532d; color: #fbf7ef; border-radius: 22px; padding: 18px; margin: 8px 0 14px; position: relative; overflow: hidden; }
+  .A .shopcard::after { content: ""; position: absolute; right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%; background: rgba(245,158,11,.25); }
+  .A .shopcard h3 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+  .A .shopcard .sub { opacity: .8; font-size: 13px; margin-top: 2px; }
+  .A .live { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.14); padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; margin-top: 12px; }
+  .A .live b { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: block; }
+  .A .linkrow { display: flex; gap: 8px; margin-top: 12px; }
+  .A .linkrow span { flex: 1; background: rgba(255,255,255,.1); border-radius: 12px; padding: 8px 10px; font-size: 11.5px; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .A .ibtn { background: #f59e0b; color: #1c1917; border-radius: 12px; padding: 8px 12px; font-size: 12px; font-weight: 800; }
+  .A .cta { display: flex; align-items: center; gap: 14px; background: #f59e0b; border-radius: 20px; padding: 16px; color: #1c1917; box-shadow: 0 6px 0 #c77c06; }
+  .A .cta .ic { width: 46px; height: 46px; border-radius: 14px; background: #1c1917; display: grid; place-items: center; }
+  .A .cta b { font-size: 16px; display: block; }
+  .A .cta small { font-size: 12px; opacity: .8; }
+  .A .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+  .A .tile { background: #fff; border-radius: 16px; padding: 12px 8px; text-align: center; font-size: 11.5px; font-weight: 700; color: #14532d; border: 1px solid #efe8d8; }
+  .A .tile svg { width: 22px; height: 22px; display: block; margin: 0 auto 6px; }
+  .A h4 { margin: 6px 0 10px; font-size: 14px; display: flex; justify-content: space-between; }
+  .A h4 a { color: #b45309; font-size: 12px; text-decoration: none; }
+  .A .li { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 16px; padding: 8px; margin-bottom: 8px; border: 1px solid #efe8d8; }
+  .A .li img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; }
+  .A .li .n { flex: 1; }
+  .A .li .n b { display: block; font-size: 13.5px; }
+  .A .li .n small { color: #78716c; font-size: 11.5px; }
+  .A .li .p { text-align: right; font-weight: 800; font-size: 15px; }
+  .A .li .p small { display: block; font-weight: 500; font-size: 11px; color: #78716c; }
+  .A .heard { color: #15803d; font-size: 11px; font-weight: 700; }
+  .A .foot { text-align: center; font-size: 11.5px; color: #78716c; padding: 14px 0 26px; }
+
+  .A .rtop { padding: 18px; }
+  .A .rtop h3 { margin: 0; font-size: 19px; }
+  .A .bar { height: 8px; background: #efe8d8; border-radius: 9px; margin-top: 12px; overflow: hidden; }
+  .A .bar i { display: block; height: 100%; width: 80%; background: #14532d; border-radius: 9px; }
+  .A .rcard { background: #fff; margin: 0 14px 14px; border-radius: 22px; overflow: hidden; border: 2px solid #f59e0b; }
+  .A .rcard img { width: 100%; height: 170px; object-fit: cover; display: block; }
+  .A .rcard .body { padding: 14px; }
+  .A .rcard h5 { margin: 0; font-size: 18px; }
+  .A .alert { background: #fff7e6; border-radius: 14px; padding: 12px; margin-top: 12px; font-size: 13px; }
+  .A .alert b { display: block; font-size: 14px; margin-bottom: 2px; }
+  .A .choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .A .choice div { background: #fff; border: 2px solid #e7dcc5; border-radius: 14px; text-align: center; padding: 12px 0; font-size: 20px; font-weight: 800; }
+  .A .choice div.on { border-color: #14532d; background: #ecfdf3; color: #14532d; }
+  .A .play { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #1c1917; color: #fff; border-radius: 14px; padding: 10px 12px; font-size: 13px; font-weight: 700; }
+  .A .play .wave { flex: 1; display: flex; gap: 2px; align-items: center; height: 22px; }
+  .A .play .wave i { flex: 1; background: #f59e0b; border-radius: 2px; }
+  .A .quote { font-size: 12.5px; color: #57534e; margin-top: 10px; background: #f5f0e6; border-radius: 10px; padding: 8px 10px; }
+  .A .quote mark { background: #fde68a; border-radius: 4px; padding: 0 2px; }
+  .A .okrow { display: flex; align-items: center; gap: 10px; margin: 0 14px 8px; background: #fff; border-radius: 14px; padding: 8px; border: 1px solid #efe8d8; font-size: 13px; }
+  .A .okrow img { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; }
+  .A .okrow .n { flex: 1; font-weight: 700; }
+  .A .okrow .tick { width: 22px; height: 22px; border-radius: 50%; background: #15803d; color: #fff; display: grid; place-items: center; font-size: 13px; }
+  .A .sticky { position: sticky; bottom: 0; padding: 14px; background: linear-gradient(transparent, #fbf7ef 30%); }
+  .A .bigbtn { background: #14532d; color: #fff; text-align: center; border-radius: 16px; padding: 15px; font-weight: 800; font-size: 15px; }
+
+  .A .hero { background: #14532d; color: #fbf7ef; padding: 22px 18px 54px; position: relative; }
+  .A .hero .lang { position: absolute; right: 16px; top: 18px; background: rgba(255,255,255,.12); border-radius: 99px; padding: 3px; display: flex; font-size: 12px; font-weight: 700; }
+  .A .hero .lang span { padding: 4px 10px; border-radius: 99px; }
+  .A .hero .lang .on { background: #fbf7ef; color: #14532d; }
+  .A .hero h3 { margin: 26px 0 2px; font-size: 24px; letter-spacing: -0.02em; }
+  .A .hero .sub { opacity: .8; font-size: 13px; }
+  .A .trust { margin: -36px 16px 0; background: #fff; border-radius: 18px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 8px 20px rgba(20,83,45,.12); position: relative; font-size: 12.5px; }
+  .A .trust svg { width: 28px; height: 28px; flex: none; }
+  .A .contact { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 16px; }
+  .A .contact div { border-radius: 14px; padding: 11px; text-align: center; font-weight: 800; font-size: 13.5px; }
+  .A .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 18px; }
+  .A .g { background: #fff; border-radius: 18px; overflow: hidden; border: 1px solid #efe8d8; position: relative; }
+  .A .g img { width: 100%; height: 108px; object-fit: cover; display: block; }
+  .A .g .t { padding: 9px 10px 11px; }
+  .A .g .t b { font-size: 13px; display: block; }
+  .A .g .t small { font-size: 11px; color: #78716c; }
+  .A .g .pr { font-size: 18px; font-weight: 800; color: #14532d; margin-top: 4px; }
+  .A .g .pr small { font-size: 11px; color: #78716c; font-weight: 600; }
+  .A .g.out img { filter: grayscale(1); opacity: .5; }
+  .A .g .so { position: absolute; top: 8px; left: 8px; background: #1c1917; color: #fff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 99px; }
+
+  .A .search { margin: 6px 16px 12px; background: #fff; border-radius: 18px; display: flex; align-items: center; padding: 6px 6px 6px 14px; border: 2px solid #14532d; }
+  .A .search span { flex: 1; font-size: 14px; }
+  .A .search .mic { width: 40px; height: 40px; border-radius: 13px; background: #f59e0b; display: grid; place-items: center; }
+  .A .chips { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
+  .A .chips span { background: #fff; border: 1px solid #e7dcc5; border-radius: 99px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+  .A .res { background: #fff; margin: 0 16px 10px; border-radius: 18px; padding: 12px; border: 1px solid #efe8d8; }
+  .A .res .h { display: flex; align-items: center; gap: 10px; }
+  .A .res .h img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; }
+  .A .res .h b { flex: 1; font-size: 14px; }
+  .A .opt { display: flex; justify-content: space-between; align-items: center; padding: 9px 2px 0; font-size: 13px; }
+  .A .opt .best { background: #dcfce7; color: #15803d; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 99px; margin-left: 6px; }
+  .A .basket { margin: 6px 16px 22px; background: #1c1917; color: #fff; border-radius: 20px; padding: 16px; }
+  .A .basket .tot { font-size: 26px; font-weight: 800; color: #fbbf24; }
+  .A .basket .ln { display: flex; justify-content: space-between; font-size: 12.5px; opacity: .85; padding-top: 6px; }
+
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>MarketMate · Fresh Market UI reference</h1>
+    <p>Reference for the Fresh Market look (phase 2). Photo boxes are placeholders; real pages show item photos. "Sample shop" rows are illustrative only.</p>
+  </div>
+
+  <!-- ===================== A ===================== -->
+  <section class="dir">
+    <div class="dir-head">
+      <h2>A · Fresh Market</h2><span class="tag">Warm and friendly, big photos, Tamil first, built for sellers at the stall</span>
+      <div class="swatches"><i style="background:#14532d"></i><i style="background:#f59e0b"></i><i style="background:#fbf7ef"></i><i style="background:#1c1917"></i></div>
+    </div>
+    <div class="row">
+      <!-- A1 seller home -->
+      <div class="shot"><p class="cap">1 · Seller home</p><div class="phone"><div class="screen A">
+        <div class="top"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#14532d"/><path d="M5 19l8-8" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>MarketMate</div><div class="avatar">KS</div></div>
+        <div class="pad">
+          <div class="shopcard"><h3>Kitchen Test Stall</h3><div class="sub">Chennai · Vegetables</div>
+            <div class="live"><b></b>Live · 5 prices</div>
+            <div class="linkrow"><span>Your shop link · /s/kitchen-test-stall</span><div class="ibtn">Share</div><div class="ibtn">QR</div></div>
+          </div>
+          <div class="cta"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3z"/></svg></div><div><b>Record today's prices</b><small>Walk past your stall and say each price</small></div></div>
+          <div class="tiles">
+            <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="#14532d" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>Update by voice</div>
+            <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="#14532d" stroke-width="2"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>Print board</div>
+            <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="#14532d" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>Export CSV</div>
+          </div>
+          <h4>Today's list <a href="#">Edit</a></h4>
+          <div class="li"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="n"><b class="ta">சின்ன வெங்காயம்</b><small>Small onion</small></div><div class="p">₹15<small>per ½ kg</small></div></div>
+          <div class="li"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="n"><b class="ta">பெரிய வெங்காயம்</b><small>Onion</small></div><div class="p">₹20<small>per kg</small></div></div>
+          <div class="li"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="n"><b class="ta">உருளைக்கிழங்கு</b><small>Potato</small></div><div class="p">₹5<small>per kg</small></div></div>
+          <div class="li"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="n"><b class="ta">இஞ்சி</b><small>Ginger</small></div><div class="p">₹150<small>per kg</small></div></div>
+          <div class="li"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="n"><b class="ta">பூண்டு</b><small>Garlic</small></div><div class="p">₹90<small>per kg</small></div></div>
+          <div class="foot"><span class="heard">✓ Every price heard in your recording</span><br>Checked today, 08:45</div>
+        </div>
+      </div></div></div>
+
+      <!-- A2 review -->
+      <div class="shot"><p class="cap">2 · Check prices</p><div class="phone"><div class="screen A">
+        <div class="rtop"><h3>Check prices</h3><div style="font-size:13px;color:#78716c;margin-top:2px">4 of 5 look right · 1 needs you</div><div class="bar"><i></i></div></div>
+        <div class="rcard"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>">
+          <div class="body"><h5><span class="ta">இஞ்சி</span> · Ginger</h5>
+            <div class="alert"><b>Did you say 150 or 180?</b>In Tamil, 50 and 80 sound alike. Listen and tap the right one.</div>
+            <div class="choice"><div class="on">₹150</div><div>₹180</div></div>
+            <div class="play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><path d="M6 4l14 8-14 8z"/></svg>You said<div class="wave"><i style="height:30%"></i><i style="height:60%"></i><i style="height:90%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:40%"></i><i style="height:85%"></i><i style="height:55%"></i><i style="height:30%"></i><i style="height:65%"></i><i style="height:45%"></i><i style="height:75%"></i></div>0:03</div>
+            <div class="quote ta">…ஒரு கிலோ <mark>நூற்றி எம்பது</mark> ரூபாய்</div>
+          </div>
+        </div>
+        <div class="okrow"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><span class="n">Small onion · ₹15 / ½ kg</span><span class="tick">✓</span></div>
+        <div class="okrow"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><span class="n">Onion · ₹20 / kg</span><span class="tick">✓</span></div>
+        <div class="okrow"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><span class="n">Potato · ₹5 / kg</span><span class="tick">✓</span></div>
+        <div class="okrow"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><span class="n">Garlic · ₹90 / kg</span><span class="tick">✓</span></div>
+        <div class="sticky"><div class="bigbtn">Approve price list</div></div>
+      </div></div></div>
+
+      <!-- A3 customer shop -->
+      <div class="shot"><p class="cap">3 · Customer shop page</p><div class="phone"><div class="screen A">
+        <div class="hero"><div class="lang"><span class="on ta">தமிழ்</span><span>EN</span></div><h3>Kitchen Test Stall</h3><div class="sub">Chennai · Vegetables</div></div>
+        <div class="trust"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#dcfce7"/><path d="M7 12.5l3 3 7-7" stroke="#15803d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b>Prices set by the seller</b><br><span style="color:#78716c">Spoken and checked today, 08:45</span></div></div>
+        <div class="contact"><div style="background:#fff;border:2px solid #14532d;color:#14532d">Call</div><div style="background:#16a34a;color:#fff">WhatsApp</div></div>
+        <div class="grid">
+          <div class="g"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="t"><b class="ta">சின்ன வெங்காயம்</b><small>Small onion</small><div class="pr">₹15 <small>/ ½ kg</small></div></div></div>
+          <div class="g"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="t"><b class="ta">பெரிய வெங்காயம்</b><small>Onion</small><div class="pr">₹20 <small>/ kg</small></div></div></div>
+          <div class="g"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="t"><b class="ta">உருளைக்கிழங்கு</b><small>Potato</small><div class="pr">₹5 <small>/ kg</small></div></div></div>
+          <div class="g"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="t"><b class="ta">இஞ்சி</b><small>Ginger</small><div class="pr">₹150 <small>/ kg</small></div></div></div>
+          <div class="g out"><span class="so">Sold out</span><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><div class="t"><b class="ta">பூண்டு</b><small>Garlic</small><div class="pr" style="color:#a8a29e">₹90 <small>/ kg</small></div></div></div>
+        </div>
+        <div class="foot">"Sold out" on garlic only shows how that state looks<br>Made with MarketMate</div>
+      </div></div></div>
+
+      <!-- A4 market -->
+      <div class="shot"><p class="cap">4 · Market search</p><div class="phone"><div class="screen A">
+        <div class="top"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#14532d"/><path d="M5 19l8-8" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>Market</div></div>
+        <div class="search"><span>onion, potato 2 kg, budget ₹100</span><div class="mic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c1917" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></div></div>
+        <div class="chips"><span>Onion</span><span>Potato · 2 kg</span><span>Budget ₹100</span></div>
+        <div class="res"><div class="h"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><b>Onion</b><small style="color:#78716c">2 shops</small></div>
+          <div class="opt"><span>Kitchen Test Stall<span class="best">Lowest</span></span><b>₹20/kg</b></div>
+          <div class="opt" style="color:#78716c"><span>Sample shop</span><b>₹24/kg</b></div></div>
+        <div class="res"><div class="h"><img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='3'><rect width='4' height='3' fill='%23d9cfb8'/></svg>"><b>Potato</b><small style="color:#78716c">2 shops</small></div>
+          <div class="opt"><span>Kitchen Test Stall<span class="best">Lowest</span></span><b>₹5/kg</b></div>
+          <div class="opt" style="color:#78716c"><span>Sample shop</span><b>₹28/kg</b></div></div>
+        <div class="basket"><div style="font-size:12px;opacity:.7">Best basket within ₹100</div><div class="tot">₹30</div>
+          <div class="ln"><span>Onion 1 kg · Kitchen Test Stall</span><span>₹20</span></div>
+          <div class="ln"><span>Potato 2 kg · Kitchen Test Stall</span><span>₹10</span></div>
+          <div class="ln" style="opacity:.6"><span>One shop, so one stop</span><span></span></div></div>
+      </div></div></div>
+    </div>
+  </section>
+  <p class="note">These are static mockups for choosing a look. Nothing here is wired to the app yet.</p>
+</div>
+</body>
+</html>

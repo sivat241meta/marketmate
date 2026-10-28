@@ -6,10 +6,26 @@
 <title>{% block title %}MarketMate{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
 </head>
-<body>
-<main class="page">
+<body class="{% block body_class %}{% endblock %}">
+<header class="topbar">
+  <a class="brand" href="/" aria-label="MarketMate home">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#14532d"/><path d="M5 19l8-8" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>MarketMate</span>
+  </a>
+  <nav class="topbar-nav" aria-label="Main">
+    <a href="/market">Find prices</a>
+    <a href="/new">Start selling</a>
+  </nav>
+</header>
+<div class="shell">
+{% block sidebar %}{% endblock %}
+<main class="content">
 {% block content %}{% endblock %}
 </main>
+</div>
+<footer class="footer">
+  <p>MarketMate · Every price comes from the seller's own voice. Nothing is guessed.</p>
+</footer>
 {% block scripts %}{% endblock %}
 </body>
 </html>

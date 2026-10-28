@@ -27,6 +27,7 @@ from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
 from app.outputs.pdf import price_board_pdf
+from app.outputs.qr import qr_png
 from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
@@ -191,16 +192,39 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "SELECT * FROM versions WHERE shop_id = ? ORDER BY id DESC", (shop["id"],)
         ).fetchall()
         stock = None
+        items = []
         if versions:
-            total, left_out = stock_value(
-                db.version_items(conn, versions[0]["id"]))
+            latest_items = db.version_items(conn, versions[0]["id"])
+            total, left_out = stock_value(latest_items)
             stock = {"total": total, "left_out": left_out,
                      "version_id": versions[0]["id"]}
+            for item in latest_items:
+                items.append({
+                    "id": item.id,
+                    "name_ta": item.name_ta,
+                    "name_en": item.name_en,
+                    "variety": item.variety,
+                    "photo_url": _photo_url(item.photo),
+                    "sold_out": item.sold_out,
+                    "lines": [{"price": str(line.price),
+                               "per": f"{line.per_amount} {line.unit}"}
+                              for line in item.price_lines],
+                })
+        live = False
+        live_count = 0
+        published_id = db.latest_version(conn, shop["id"], published_only=True)
+        if published_id is not None:
+            live = True
+            live_count = sum(
+                len(item.price_lines)
+                for item in db.version_items(conn, published_id))
         return templates.TemplateResponse(
             request,
             "seller.html",
             {"shop": shop, "sessions": sessions, "versions": versions,
-             "notice": NOTICE, "stock": stock, "token": token},
+             "notice": NOTICE, "stock": stock, "token": token,
+             "items": items, "live": live, "live_count": live_count,
+             "shop_url": f"/s/{shop['slug']}"},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -590,6 +614,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         digits = re.sub(r"\D", "", shop["phone"] or "")
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits})
+
+    @app.get("/s/{slug}/qr.png")
+    def shop_qr(slug: str, conn: Conn):
+        shop = conn.execute("SELECT * FROM shops WHERE slug = ?",
+                            (slug,)).fetchone()
+        if shop is None:
+            raise HTTPException(404, "unknown shop")
+        png = qr_png(f"{app.state.settings.public_base_url}/s/{slug}")
+        return Response(png, media_type="image/png")
 
     @app.get("/m/{path:path}")
     def public_photo(path: str):

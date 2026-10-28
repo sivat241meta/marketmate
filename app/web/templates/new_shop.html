@@ -1,23 +1,45 @@
 {% extends "base.html" %}
-{% block title %}New shop{% endblock %}
+{% block title %}New shop — MarketMate{% endblock %}
 {% block content %}
-<h1>New shop</h1>
+<h1>Open your shop</h1>
+<p class="muted">Two minutes now, then just film and speak every morning.</p>
+<section class="card">
 <form method="post" action="/new">
-  <label>Shop name <input name="name" required></label>
-  <label>Phone <input name="phone" placeholder="+91..." required></label>
-  <label>Area <input name="area" required></label>
-  <label>Language
-    <select name="language">
+  <div class="field">
+    <label for="shop-name">Shop name</label>
+    <input id="shop-name" name="name" required autocomplete="organization">
+    <span class="help">Shown on your price board and shop page.</span>
+  </div>
+  <div class="field">
+    <label for="shop-phone">Phone</label>
+    <input id="shop-phone" name="phone" placeholder="+91..." required inputmode="tel">
+    <span class="help">Customers call or WhatsApp this number. 7–15 digits, optional leading +.</span>
+  </div>
+  <div class="field">
+    <label for="shop-area">Area</label>
+    <input id="shop-area" name="area" required autocomplete="address-level2">
+    <span class="help">Your market or neighbourhood, e.g. Koyambedu.</span>
+  </div>
+  <div class="field">
+    <label for="shop-language">Language</label>
+    <select id="shop-language" name="language">
       <option value="ta">Tamil</option>
       <option value="en">English</option>
     </select>
-  </label>
-  <label>Currency
-    <select name="currency">
+    <span class="help">The language you speak your prices in.</span>
+  </div>
+  <div class="field">
+    <label for="shop-currency">Currency</label>
+    <select id="shop-currency" name="currency">
       <option value="INR">INR</option>
     </select>
-  </label>
-  <label>Shop type <input name="type" value="vegetable" required></label>
-  <button class="btn" type="submit">Create shop</button>
+  </div>
+  <div class="field">
+    <label for="shop-type">Shop type</label>
+    <input id="shop-type" name="type" value="vegetable" required>
+    <span class="help">What you sell, e.g. vegetable.</span>
+  </div>
+  <button class="btn btn-primary btn-big" type="submit">Create shop</button>
 </form>
+</section>
 {% endblock %}
