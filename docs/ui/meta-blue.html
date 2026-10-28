@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketMate · v4 quick-commerce study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Baloo+Thambi+2:wght@500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0}
+body.gal{font-family:Inter,system-ui,sans-serif;background:#ecebf0;color:#111;padding:26px 30px 80px}
+.gh{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.gh h1{font:800 26px Inter;margin:0 0 4px;letter-spacing:-.02em}
+.gh p{margin:0;color:#555;font-size:14px;max-width:780px;line-height:1.5}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap}
+.seg-g{display:inline-flex;background:#fff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg-g button{border:0;background:none;padding:7px 14px;border-radius:999px;font:600 13px Inter;cursor:pointer;color:#444}
+.seg-g button.on{background:#111;color:#fff}
+.themes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:6px 0 10px}
+.tcard{border-radius:18px;padding:16px 18px;cursor:pointer;border:2.5px solid transparent;color:#fff;position:relative;overflow:hidden;min-height:118px}
+.tcard.on{border-color:#111;box-shadow:0 10px 24px -12px rgba(0,0,0,.45)}
+.tcard b{font:800 18px Outfit;display:block}
+.tcard small{display:block;font-size:12.5px;line-height:1.45;opacity:.92;margin-top:4px;max-width:92%}
+.tcard .sw{display:flex;gap:5px;margin-top:10px}.tcard .sw i{width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,.6)}
+.why{background:#fff;border-radius:16px;padding:14px 18px;margin:12px 0 4px;font-size:13px;line-height:1.5;color:#333;display:grid;grid-template-columns:repeat(4,1fr);gap:8px 20px}
+.why b{display:block;color:#111}
+.sec{font:700 12.5px Inter;text-transform:uppercase;letter-spacing:.08em;color:#666;margin:24px 0 12px}
+.phones{display:flex;flex-wrap:wrap;gap:22px}
+.fr{display:flex;flex-direction:column;gap:8px}
+.fr .lab{font:600 12.5px Inter;color:#333}.fr .lab span{color:#999;font-weight:500}
+.phone{width:360px;height:760px;border-radius:40px;background:#0b0b0c;padding:9px;box-shadow:0 22px 44px -20px rgba(0,0,0,.4)}
+.phone>.screen{width:100%;height:100%;border-radius:32px;overflow:hidden;position:relative}
+.deskwrap{width:704px;height:440px;border-radius:14px;overflow:hidden;background:#0b0b0c;position:relative;box-shadow:0 22px 44px -20px rgba(0,0,0,.4)}
+.deskwrap .bar{height:22px;background:#2a2a2e;display:flex;gap:6px;align-items:center;padding:0 10px}.deskwrap .bar i{width:8px;height:8px;border-radius:50%;background:#555}
+.deskwrap .screen{width:1280px;height:763px;transform:scale(.55);transform-origin:0 0;position:absolute;top:22px;left:0}
+
+/* ============ APP ============ */
+.app{height:100%;overflow:auto;overflow-anchor:none;background:var(--bg);color:var(--ink);font:500 14px/1.4 Outfit,"Noto Sans Tamil",sans-serif;container-type:inline-size;position:relative;scrollbar-width:none;display:flex;flex-direction:column}
+.app::-webkit-scrollbar{display:none}
+.app>*{flex-shrink:0}
+.app .ta,.app [lang=ta]{font-family:"Baloo Thambi 2","Noto Sans Tamil",Outfit,sans-serif}
+.app b{font-weight:700}
+:where(.app) a{color:inherit;text-decoration:none}
+.ic{width:18px;height:18px;flex:none}
+.pad{padding:0 14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:var(--muted)}
+.h2{font:800 18px Outfit,"Baloo Thambi 2",sans-serif;letter-spacing:-.01em;margin:0}
+.h2 small{font:600 12.5px Outfit;color:var(--muted);margin-left:6px}
+.link{font:700 13px Outfit;color:var(--link)}
+/* hero header */
+.hero{background:var(--hero);color:var(--hero-ink);padding:14px 14px 16px;position:relative;overflow:hidden;border-radius:0 0 26px 26px}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:var(--hero-blob);pointer-events:none}
+.hero::before{width:220px;height:220px;right:-70px;top:-90px}
+.hero::after{width:140px;height:140px;left:-50px;bottom:-70px}
+.hero>*{position:relative;z-index:1}
+.eta{font:900 22px/1 Outfit;letter-spacing:-.02em;display:flex;align-items:center;gap:6px}
+.eta .bolt{width:26px;height:26px;border-radius:9px;background:var(--pop);color:var(--pop-ink);display:grid;place-items:center}
+.eta .bolt .ic{width:16px;height:16px}
+.loc{font:600 12.5px Outfit;opacity:.9;display:flex;gap:4px;align-items:center;margin-top:5px}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--hero-chip);display:grid;place-items:center;font:800 14px Outfit;border:2px solid rgba(255,255,255,.35)}
+.search{display:flex;align-items:center;gap:9px;background:#fff;color:#6b6b76;border-radius:14px;padding:12px 12px;margin-top:12px;box-shadow:0 6px 18px -10px rgba(0,0,0,.35);font:500 14px Outfit}
+.search .ph{flex:1}
+.search .ph b{color:#222;font-weight:700}
+.search .mic{width:30px;height:30px;border-radius:10px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center}
+.search .mic .ic{width:16px;height:16px}
+.hchips{display:flex;gap:8px;margin-top:12px;overflow:hidden}
+.hchip{display:flex;flex-direction:column;align-items:center;gap:4px;font:700 11.5px Outfit;min-width:62px;color:var(--hero-ink);opacity:.85;padding-bottom:6px;border-bottom:3px solid transparent}
+.hchip.on{opacity:1;border-color:var(--pop)}
+.hchip img,.hchip .em{width:40px;height:40px;border-radius:12px;object-fit:cover;background:var(--hero-chip);display:grid;place-items:center;font-size:20px}
+/* categories */
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font:700 11.5px/1.2 Outfit}
+.cat .ci{width:100%;aspect-ratio:1;border-radius:18px;background:var(--t,#eee);display:grid;place-items:end center;overflow:hidden;position:relative}
+.cat .ci img{width:78%;height:78%;object-fit:cover;border-radius:50% 50% 14px 14px;box-shadow:0 6px 14px -6px rgba(0,0,0,.4)}
+.cat .ta{font-size:12.5px;font-weight:700;line-height:1.15}
+/* banner */
+.banner{border-radius:22px;padding:16px;background:var(--banner);color:var(--banner-ink);position:relative;overflow:hidden;min-height:146px}
+.banner .kick{font:800 11px Outfit;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.banner .big{font:900 24px/1.05 Outfit,"Baloo Thambi 2";letter-spacing:-.02em;margin:6px 0 8px;max-width:60%}
+.banner .btn{background:var(--banner-btn);color:var(--banner-btn-ink)}
+.banner .imgs{position:absolute;right:-14px;bottom:-14px;width:150px;height:150px}
+.banner .imgs img{position:absolute;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,.9);box-shadow:0 10px 20px -8px rgba(0,0,0,.45)}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}.dots i{width:6px;height:6px;border-radius:9px;background:#cfcfd6}.dots i.on{width:18px;background:var(--brand)}
+/* product cards */
+.rail{display:flex;gap:10px;overflow:hidden;padding-bottom:4px}
+.pc{width:132px;flex:none;display:flex;flex-direction:column}
+.grid2 .pc,.grid3 .pc{width:auto}
+.pc .pi{position:relative;border-radius:16px;background:var(--t,#f2f2f5);aspect-ratio:1;overflow:visible}
+.pc .pi img{width:100%;height:100%;object-fit:cover;border-radius:16px;display:block}
+.pc .pi .em{width:100%;height:100%;display:grid;place-items:center;font-size:44px;border-radius:16px}
+.pc .badge{position:absolute;top:7px;left:7px;font:800 10px Outfit;padding:3px 7px;border-radius:7px;background:var(--badge-bg);color:var(--badge-ink);letter-spacing:.02em}
+.pc .badge.drop{background:var(--drop-bg);color:var(--drop-ink)}
+.pc .add{position:absolute;right:6px;bottom:-12px;min-width:66px;height:32px;border-radius:10px;background:#fff;border:1.5px solid var(--add);color:var(--add);font:800 13px Outfit;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 4px 10px -4px rgba(0,0,0,.25);letter-spacing:.04em}
+.pc .add.in{background:var(--add);color:#fff;justify-content:space-between;padding:0 9px;min-width:84px}
+.pc .add small{position:absolute;bottom:-14px;font-size:9px;color:var(--muted);font-weight:600;letter-spacing:0}
+.pc .unit{display:inline-block;margin-top:18px;font:700 10.5px Outfit;color:var(--muted);background:var(--chip);padding:2px 7px;border-radius:6px;align-self:flex-start}
+.pc .nm{font:700 13.5px/1.2 "Baloo Thambi 2","Noto Sans Tamil";margin-top:5px;min-height:2.4em}
+.pc .en{font:600 11px Outfit;color:var(--muted)}
+.pc .pr{font:900 17px Outfit;margin-top:3px;letter-spacing:-.01em}
+.pc .pr s{font:600 11.5px Outfit;color:var(--muted);margin-left:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px 9px}
+.grid3 .pc .add{min-width:56px;height:28px;font-size:12px}
+.grid3 .pc .add.in{min-width:72px}
+.grid3 .pc .nm{font-size:12.5px}
+.grid3 .pc .pr{font-size:15px}
+/* floating cart */
+.cartbar{position:sticky;bottom:12px;margin:10px 12px 12px;z-index:8;background:var(--cart);color:var(--cart-ink);border-radius:18px;padding:9px 10px 9px 9px;display:flex;align-items:center;gap:10px;box-shadow:0 14px 28px -12px var(--cart-shadow);animation:pop .6s ease}
+.cartbar .th{display:flex}.cartbar .th img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--cart);margin-left:-10px}.cartbar .th img:first-child{margin-left:0}
+.cartbar .tx{flex:1;line-height:1.15}.cartbar .tx b{font:800 15px Outfit;display:block}.cartbar .tx small{font:600 11.5px Outfit;opacity:.85}
+.cartbar .go{font:800 14px Outfit;display:flex;align-items:center;gap:4px;background:var(--cart-go);color:var(--cart-go-ink);padding:9px 12px;border-radius:12px}
+@keyframes pop{0%{transform:translateY(30px);opacity:0}70%{transform:translateY(-4px)}100%{transform:none;opacity:1}}
+/* generic */
+.card{background:var(--surface);border-radius:20px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.03),0 6px 18px -12px rgba(0,0,0,.18)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:14px;padding:12px 16px;font:800 14px Outfit,"Noto Sans Tamil";cursor:pointer;background:var(--surface2);color:var(--ink);white-space:nowrap}
+.btn.brand{background:var(--brand);color:var(--brand-ink);box-shadow:0 10px 20px -12px var(--cart-shadow)}
+.btn.pop{background:var(--pop);color:var(--pop-ink)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.btn.big{padding:15px 18px;font-size:15.5px;border-radius:16px}
+.btn.block{width:100%}
+.pill{display:inline-flex;align-items:center;gap:5px;font:800 11px Outfit;padding:4px 9px;border-radius:999px;background:var(--chip);color:var(--ink)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-ink)}
+.pill.live{background:var(--pop);color:var(--pop-ink)}
+.pill.live i{width:7px;height:7px;border-radius:50%;background:currentColor;animation:bl 1.2s infinite}
+@keyframes bl{50%{opacity:.2}}
+.chips{display:flex;gap:7px;overflow:hidden;flex-wrap:nowrap}
+.chip{font:700 12.5px Outfit,"Noto Sans Tamil";padding:8px 12px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);white-space:nowrap}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.li{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.li:last-child{border-bottom:0}
+.li img{width:46px;height:46px;border-radius:12px;object-fit:cover;flex:none}
+.li .n{flex:1;min-width:0}.li .n b{display:block;font:700 14.5px "Baloo Thambi 2","Noto Sans Tamil"}.li .n small{color:var(--muted);font:600 11.5px Outfit}
+.stepper{display:flex;align-items:center;background:var(--add);color:#fff;border-radius:10px;font:800 13px Outfit;height:32px}
+.stepper span{padding:0 9px}
+.amt{font:800 15px Outfit;min-width:56px;text-align:right}
+.sumrow{display:flex;justify-content:space-between;padding:5px 0;font:600 13.5px Outfit}
+.sumrow.tot{font:900 17px Outfit;border-top:1.5px dashed var(--line);margin-top:6px;padding-top:10px}
+.qr{display:block}
+/* seller header */
+.shead{background:var(--hero);color:var(--hero-ink);padding:14px 14px 18px;border-radius:0 0 26px 26px;position:relative;overflow:hidden}
+.shead::before{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:var(--hero-blob);right:-60px;top:-80px}
+.shead>*{position:relative}
+.toggle{display:flex;align-items:center;gap:8px;background:var(--hero-chip);padding:5px 6px 5px 11px;border-radius:999px;font:800 12px Outfit}
+.toggle i{width:38px;height:22px;border-radius:99px;background:#2bd27a;position:relative}.toggle i::after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.earn{margin-top:14px;display:flex;align-items:flex-end;justify-content:space-between}
+.earn .v{font:900 36px/1 Outfit;letter-spacing:-.03em}
+.earn small{font:600 12px Outfit;opacity:.85}
+.minis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.mini{background:var(--hero-chip);border-radius:14px;padding:8px 10px;font:600 11px Outfit}
+.mini b{display:block;font:800 16px Outfit}
+.golive{display:flex;align-items:center;gap:12px;padding:14px;border-radius:22px;background:var(--live-bg);color:var(--live-ink);position:relative;overflow:hidden}
+.golive .mc{width:54px;height:54px;border-radius:50%;background:var(--pop);color:var(--pop-ink);display:grid;place-items:center;flex:none;box-shadow:0 0 0 7px var(--live-ring),0 0 0 14px var(--live-ring2);animation:ring 2s infinite}
+@keyframes ring{50%{box-shadow:0 0 0 10px var(--live-ring),0 0 0 20px var(--live-ring2)}}
+.golive .mc .ic{width:24px;height:24px}
+.golive b{display:block;font:800 16px Outfit,"Baloo Thambi 2"}
+.golive small{opacity:.85;font:600 12px Outfit}
+.tabs{display:flex;gap:6px;background:var(--surface2);padding:4px;border-radius:14px}
+.tabs span{flex:1;text-align:center;font:800 12.5px Outfit;padding:8px 4px;border-radius:11px;color:var(--muted)}
+.tabs span.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 6px -3px rgba(0,0,0,.25)}
+.tabs span em{font-style:normal;background:var(--pop);color:var(--pop-ink);border-radius:999px;padding:1px 6px;margin-left:4px;font-size:10.5px}
+.ocard{background:var(--surface);border-radius:18px;padding:12px;box-shadow:0 6px 18px -12px rgba(0,0,0,.2);border-left:5px solid var(--olc,var(--brand))}
+.ocard .top{display:flex;justify-content:space-between;align-items:center}
+.ocard .tm{font:800 11px Outfit;background:var(--warn-bg);color:var(--warn-ink);padding:3px 8px;border-radius:7px}
+.ocard .its{display:flex;gap:4px;margin:9px 0}
+.ocard .its img{width:34px;height:34px;border-radius:9px;object-fit:cover}
+.ocard .its .more{width:34px;height:34px;border-radius:9px;background:var(--surface2);display:grid;place-items:center;font:800 11px Outfit}
+.tabbar{position:sticky;bottom:0;z-index:7;margin-top:auto;display:flex;justify-content:space-around;background:var(--surface);padding:7px 4px 10px;box-shadow:0 -8px 20px -16px rgba(0,0,0,.35)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;font:700 10.5px Outfit,"Noto Sans Tamil";color:var(--muted);min-width:56px}
+.tabbar a .ic{width:22px;height:22px}
+.tabbar a.on{color:var(--brand)}
+.tabbar a.fab{margin-top:-24px}
+.tabbar a.fab span.f{width:52px;height:52px;border-radius:18px;background:var(--pop);color:var(--pop-ink);display:grid;place-items:center;box-shadow:0 10px 18px -8px var(--cart-shadow)}
+.tabbar a.fab .ic{width:24px;height:24px}
+/* live AR */
+.cam{position:relative;height:100%;background:#000;color:#fff;display:flex;flex-direction:column}
+.cam>img.bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 22%,transparent 55%,rgba(0,0,0,.75) 100%)}
+.cam .ct{position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px}
+.rec{background:#ff3b30;color:#fff;font:800 12px Outfit;padding:6px 10px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.rec i{width:7px;height:7px;background:#fff;border-radius:50%;animation:bl 1s infinite}
+.stk{position:absolute;background:#fff;color:#111;border-radius:14px;padding:6px 10px 6px 6px;display:flex;align-items:center;gap:7px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);font:700 12px Outfit;animation:pop .5s ease}
+.stk img{width:30px;height:30px;border-radius:9px;object-fit:cover}
+.stk b{display:block;font:900 15px Outfit}
+.stk .ok{width:18px;height:18px;border-radius:50%;background:#2bd27a;color:#fff;display:grid;place-items:center}
+.stk .ok .ic{width:11px;height:11px}
+.stk.ask{background:var(--pop);color:var(--pop-ink)}
+.stk::after{content:"";position:absolute;left:18px;bottom:-7px;border:7px solid transparent;border-top-color:#fff;border-bottom:0}
+.stk.ask::after{border-top-color:var(--pop)}
+.cam .cb{position:relative;margin-top:auto;padding:14px}
+.capt{background:rgba(255,255,255,.14);backdrop-filter:blur(10px);border-radius:16px;padding:10px 12px;font:600 15px "Noto Sans Tamil"}
+.capt small{display:block;font:700 10.5px Outfit;opacity:.7;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.capt mark{background:var(--pop);color:var(--pop-ink);border-radius:5px;padding:0 4px}
+.wave{display:flex;gap:3px;align-items:center;height:22px;margin-top:6px}.wave i{width:3px;border-radius:3px;background:#fff;opacity:.85;animation:wv 1s infinite ease-in-out}
+@keyframes wv{50%{transform:scaleY(.4)}}
+.stopb{width:66px;height:66px;border-radius:50%;background:#fff;display:grid;place-items:center;margin:12px auto 0;box-shadow:0 0 0 6px rgba(255,255,255,.25)}
+.stopb i{width:24px;height:24px;border-radius:6px;background:#ff3b30}
+/* swipe review */
+.deck{position:relative;height:430px;margin-top:6px}
+.sc{position:absolute;inset:0;background:var(--surface);border-radius:26px;box-shadow:0 18px 40px -20px rgba(0,0,0,.4);overflow:hidden;display:flex;flex-direction:column}
+.sc.b1{transform:translateY(14px) scale(.94);opacity:.6}.sc.b2{transform:translateY(26px) scale(.88);opacity:.35}
+.sc .im{height:180px;position:relative}.sc .im img{width:100%;height:100%;object-fit:cover}
+.sc .im .tag{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.6);color:#fff;font:700 12px Outfit;padding:5px 9px;border-radius:9px;backdrop-filter:blur(6px)}
+.sc .bd{padding:14px;display:flex;flex-direction:column;gap:10px}
+.qn{font:900 21px/1.15 Outfit,"Baloo Thambi 2";letter-spacing:-.02em}
+.qn small{display:block;font:600 12.5px Outfit;color:var(--muted);letter-spacing:0;margin-top:4px}
+.chs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chs button{font:900 26px Outfit;padding:14px 0;border-radius:18px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.chs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.clip{display:flex;gap:9px;align-items:center;background:var(--surface2);border-radius:14px;padding:8px 10px;font:600 13px "Noto Sans Tamil"}
+.clip .pl{width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;flex:none}
+.clip mark{background:var(--pop);color:var(--pop-ink);border-radius:4px;padding:0 3px}
+.prog{display:flex;gap:4px}.prog i{flex:1;height:5px;border-radius:9px;background:var(--line)}.prog i.d{background:var(--ok)}.prog i.c{background:var(--pop)}
+/* scale */
+.scale{background:#0d110f;border-radius:16px;padding:8px;display:grid;grid-template-columns:1.1fr 1fr 1.2fr;gap:6px}
+.scale .w{background:#060807;border-radius:10px;padding:5px 8px;text-align:right;color:#93a59b}
+.scale .w small{display:block;text-align:left;font:800 9px Outfit;letter-spacing:.1em}
+.scale .w b{font:400 22px/1.1 "Share Tech Mono",monospace;color:#7CFF6B;text-shadow:0 0 10px rgba(124,255,107,.5)}
+.scale .w.t b{color:#FFC542;text-shadow:0 0 10px rgba(255,197,66,.5)}
+/* standee */
+.payscreen{background:var(--hero);padding:16px 14px 18px;border-radius:0 0 28px 28px;color:var(--hero-ink)}
+.standee{background:#fff;color:#111;border-radius:22px;overflow:hidden;text-align:center;box-shadow:0 20px 40px -18px rgba(0,0,0,.55);margin-top:12px}
+.standee .sb{background:#111;color:#fff;font:800 12.5px Outfit;padding:9px;letter-spacing:.02em}
+.standee .qr{width:178px;height:178px;margin:14px auto 4px}
+.standee .a{font:900 34px Outfit;letter-spacing:-.02em}
+.standee .p{font:600 12.5px Outfit;color:#555;margin-bottom:10px}
+.standee .apps{border-top:1.5px dashed #e3e3e3;padding:9px;font:800 10.5px Outfit;color:#777;letter-spacing:.04em}
+.change{display:flex;justify-content:space-between;align-items:center;background:var(--ok-bg);color:var(--ok);border-radius:16px;padding:12px 14px}
+.change b{font:900 30px Outfit}
+/* track */
+.ring{width:140px;height:140px;border-radius:50%;margin:8px auto 4px;background:conic-gradient(var(--pop) 0 62%,rgba(255,255,255,.18) 62% 100%);display:grid;place-items:center;position:relative}
+.ring::before{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--ring-in)}
+.ring div{position:relative;text-align:center;font:900 30px/1 Outfit}.ring small{display:block;font:700 11px Outfit;opacity:.8;margin-top:4px}
+.tl{display:flex;flex-direction:column;gap:0}
+.tl .s{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:14px}
+.tl .s:not(:last-child)::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line)}
+.tl .s.d:not(:last-child)::before{background:var(--ok)}
+.tl .s i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);color:var(--muted);flex:none;font-style:normal}
+.tl .s.d i{background:var(--ok);color:#fff}.tl .s.n i{background:var(--pop);color:var(--pop-ink);box-shadow:0 0 0 5px var(--live-ring)}
+.tl .s i .ic{width:14px;height:14px}
+.tl .s b{display:block;font:800 14px Outfit}.tl .s small{color:var(--muted);font:600 12px Outfit}
+/* story (day close) */
+.story{height:100%;background:var(--story);color:#fff;display:flex;flex-direction:column;padding:12px 16px 16px;position:relative;overflow:hidden}
+.story .bars{display:flex;gap:4px}.story .bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35)}.story .bars i.d{background:#fff}
+.story .conf{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.5) 1.5px,transparent 2px),radial-gradient(circle,var(--pop) 2px,transparent 2.5px);background-size:46px 46px,70px 70px;background-position:0 0,20px 30px;opacity:.5}
+.story .kick{font:800 12px Outfit;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin-top:22px}
+.story .huge{font:900 58px/1 Outfit;letter-spacing:-.04em;margin:8px 0 2px}
+.story .sub{font:600 15px Outfit;opacity:.9}
+.story .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;position:relative}
+.story .tl2{background:rgba(255,255,255,.14);border-radius:18px;padding:12px;backdrop-filter:blur(6px)}
+.story .tl2 b{display:block;font:900 22px Outfit}.story .tl2 small{font:600 11.5px Outfit;opacity:.85}
+.story .top1{display:flex;align-items:center;gap:12px;background:#fff;color:#111;border-radius:20px;padding:10px;margin-top:14px;position:relative}
+.story .top1 img{width:62px;height:62px;border-radius:14px;object-fit:cover}
+.story .top1 b{display:block;font:900 18px Outfit,"Baloo Thambi 2"}.story .top1 small{color:#666;font:600 12px Outfit}
+.story .acts{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
+/* tags */
+.tagsheet{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#fff;padding:10px;border-radius:18px}
+.tg{border-radius:14px;overflow:hidden;border:1.5px solid #eee;background:#fff;color:#111;display:flex;flex-direction:column;min-width:0}
+.tg .tb{background:var(--hero);color:var(--hero-ink);padding:7px 9px;font:800 13px/1.15 "Baloo Thambi 2","Noto Sans Tamil";overflow-wrap:anywhere}
+.tg .tb small{display:block;font:600 10px Outfit;opacity:.85}
+.tg .tp{padding:6px 9px 8px;display:flex;justify-content:space-between;align-items:flex-end}
+.tg .tp b{font:900 26px Outfit;letter-spacing:-.02em;color:var(--tagp)}
+.tg .tp small{font:700 10px Outfit;color:#666;display:block}
+.tg .qr{width:34px;height:34px}
+/* voice sheet */
+.dim{position:absolute;inset:0;background:rgba(10,8,20,.55);z-index:9}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-radius:28px 28px 0 0;padding:10px 16px 16px;box-shadow:0 -20px 40px -20px rgba(0,0,0,.5)}
+.sheet .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+.bigmic{width:84px;height:84px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;margin:4px auto 8px;box-shadow:0 0 0 10px var(--live-ring),0 0 0 22px var(--live-ring2);animation:ring 2s infinite}
+.bigmic .ic{width:34px;height:34px}
+.heard{font:600 16px/1.5 "Noto Sans Tamil";text-align:center;padding:4px 6px 10px}
+.heard u{text-decoration:none;background:var(--hl);border-radius:5px;padding:0 3px}
+.got{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+.got span{display:inline-flex;gap:6px;align-items:center;background:var(--ok-bg);color:var(--ok);font:800 12.5px Outfit,"Noto Sans Tamil";padding:7px 10px;border-radius:12px}
+.got span.q{background:var(--warn-bg);color:var(--warn-ink)}
+/* landing */
+.land{background:var(--hero);color:var(--hero-ink);padding:18px 16px 26px;position:relative;overflow:hidden}
+.land::before{content:"";position:absolute;width:300px;height:300px;border-radius:50%;background:var(--hero-blob);right:-120px;top:-60px}
+.land>*{position:relative}
+.land h1{font:900 38px/1 Outfit,"Baloo Thambi 2";letter-spacing:-.035em;margin:18px 0 10px}
+.land h1 em{font-style:normal;color:var(--pop);display:block}
+.land p{font:500 15px/1.5 Outfit;opacity:.92;margin:0 0 14px}
+.floaty{position:relative;height:210px;margin-top:10px}
+.floaty .ph{position:absolute;left:50%;transform:translateX(-50%);width:150px;height:210px;border-radius:24px;overflow:hidden;border:5px solid #fff;box-shadow:0 20px 40px -16px rgba(0,0,0,.6)}
+.floaty .ph img{width:100%;height:100%;object-fit:cover}
+.floaty .stk{animation:none}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat div{background:var(--surface);border-radius:18px;padding:12px;font:600 12px Outfit;color:var(--muted)}
+.feat b{display:block;color:var(--ink);font:800 14px Outfit;margin:6px 0 2px}
+.feat .fi{width:34px;height:34px;border-radius:11px;background:var(--t);display:grid;place-items:center;color:var(--ink)}
+.compare{display:flex;flex-direction:column;gap:10px}
+.shopc{background:var(--surface);border-radius:20px;padding:12px;display:flex;gap:11px;align-items:center;box-shadow:0 6px 18px -12px rgba(0,0,0,.2)}
+.shopc.best{outline:2.5px solid var(--brand)}
+.shopc .av{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font:900 18px Outfit;color:#fff;flex:none}
+.shopc .n{flex:1}.shopc .n b{display:block;font:800 15px Outfit}.shopc .n small{color:var(--muted);font:600 12px Outfit}
+.shopc .p{text-align:right}.shopc .p b{display:block;font:900 20px Outfit}.shopc .p small{font:800 11px Outfit;color:var(--ok)}
+
+/* desktop */
+.desk-only{display:none}
+@container (min-width: 900px){
+  .desk-only{display:block}.mob-only{display:none!important}
+  .dshell{display:grid;grid-template-columns:240px 1fr;min-height:100%}
+  .dside{background:var(--hero);color:var(--hero-ink);padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  .dside a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;font:700 14px Outfit;opacity:.85}
+  .dside a.on{background:var(--hero-chip);opacity:1}
+  .dmain{padding:24px 28px;display:flex;flex-direction:column;gap:18px}
+  .kan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .kcol{background:var(--surface2);border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .kcol h4{margin:2px 4px;font:800 14px Outfit;display:flex;justify-content:space-between}
+  .dgrid{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 12px}
+  .grid5 .pc{width:auto}
+  .tabbar,.cartbar{display:none}
+}
+
+/* ============ THEMES ============ */
+.t-brinjal{--hero:linear-gradient(155deg,#240640 0%,#4E1679 48%,#7E2BC4 100%);--hero-ink:#fff;--hero-blob:rgba(198,244,50,.16);--hero-chip:rgba(255,255,255,.14);
+ --brand:#5B1A8B;--brand-ink:#fff;--pop:#C6F432;--pop-ink:#1A0B2E;--add:#5B1A8B;--cart:#5B1A8B;--cart-ink:#fff;--cart-go:#C6F432;--cart-go-ink:#1A0B2E;--cart-shadow:rgba(91,26,139,.7);
+ --bg:#F6F3FA;--surface:#fff;--surface2:#EFE9F6;--ink:#1A0B2E;--muted:#6A5F7C;--line:#E4DCEE;--chip:#F1EBF8;--link:#5B1A8B;
+ --badge-bg:#1A0B2E;--badge-ink:#C6F432;--drop-bg:#E9FBC4;--drop-ink:#2F5B00;--ok:#1F8A4C;--ok-bg:#E3F6EA;--warn-bg:#FFF0C7;--warn-ink:#7A4D00;
+ --banner:linear-gradient(120deg,#C6F432 0%,#9BE15D 100%);--banner-ink:#1A0B2E;--banner-btn:#1A0B2E;--banner-btn-ink:#C6F432;
+ --live-bg:linear-gradient(135deg,#2A0A4A,#5B1A8B);--live-ink:#fff;--live-ring:rgba(198,244,50,.25);--live-ring2:rgba(198,244,50,.1);--hl:#E9FBC4;
+ --ring-in:#3B0F63;--story:linear-gradient(170deg,#3B0F63 0%,#7E2BC4 60%,#B04BE0 100%);--tagp:#5B1A8B;
+ --t1:#F3E8FF;--t2:#EAFBD0;--t3:#FFE4EC;--t4:#E4EEFF}
+.t-mango{--hero:linear-gradient(170deg,#FFE066 0%,#FFC93C 55%,#FFB703 100%);--hero-ink:#1B1B1B;--hero-blob:rgba(255,255,255,.35);--hero-chip:rgba(0,0,0,.08);
+ --brand:#0B6B3A;--brand-ink:#fff;--pop:#0B6B3A;--pop-ink:#fff;--add:#0B6B3A;--cart:#0B6B3A;--cart-ink:#fff;--cart-go:#FFD23F;--cart-go-ink:#1B1B1B;--cart-shadow:rgba(11,107,58,.6);
+ --bg:#FFFBEF;--surface:#fff;--surface2:#FFF3CF;--ink:#161616;--muted:#5C5A52;--line:#EFE6C9;--chip:#FFF3CF;--link:#0B6B3A;
+ --badge-bg:#FF5A36;--badge-ink:#fff;--drop-bg:#DFF3E6;--drop-ink:#0B6B3A;--ok:#0B6B3A;--ok-bg:#DFF3E6;--warn-bg:#FFE7D6;--warn-ink:#8A3A00;
+ --banner:linear-gradient(120deg,#0B6B3A 0%,#13924F 100%);--banner-ink:#fff;--banner-btn:#FFD23F;--banner-btn-ink:#161616;
+ --live-bg:linear-gradient(135deg,#0B6B3A,#0E8A4C);--live-ink:#fff;--live-ring:rgba(255,210,63,.35);--live-ring2:rgba(255,210,63,.14);--hl:#FFF0B3;
+ --ring-in:#E8A800;--story:linear-gradient(170deg,#0B6B3A 0%,#13924F 55%,#FFB703 140%);--tagp:#0B6B3A;
+ --t1:#FFF4CC;--t2:#E2F5E8;--t3:#FFE7DA;--t4:#EAF2FF}
+.t-mango .pill.live{background:#161616;color:#FFD23F}
+.t-mango .golive .mc{background:#FFD23F;color:#161616}
+.t-carrot{--hero:linear-gradient(155deg,#FF8A1F 0%,#FF5A1F 55%,#E8381C 100%);--hero-ink:#fff;--hero-blob:rgba(255,228,92,.22);--hero-chip:rgba(255,255,255,.18);
+ --brand:#0E7C66;--brand-ink:#fff;--pop:#FFE45C;--pop-ink:#3A1A08;--add:#0E7C66;--cart:#0E7C66;--cart-ink:#fff;--cart-go:#FFE45C;--cart-go-ink:#3A1A08;--cart-shadow:rgba(14,124,102,.6);
+ --bg:#FFF7F2;--surface:#fff;--surface2:#FFEDE2;--ink:#1E1410;--muted:#6E5D55;--line:#F3DFD3;--chip:#FFEDE2;--link:#0E7C66;
+ --badge-bg:#1E1410;--badge-ink:#FFE45C;--drop-bg:#DDF5EE;--drop-ink:#0B5E4D;--ok:#0E7C66;--ok-bg:#DDF5EE;--warn-bg:#FFF2BF;--warn-ink:#7A4A00;
+ --banner:linear-gradient(120deg,#0E7C66 0%,#16A085 100%);--banner-ink:#fff;--banner-btn:#FFE45C;--banner-btn-ink:#3A1A08;
+ --live-bg:linear-gradient(135deg,#FF7A1A,#E8381C);--live-ink:#fff;--live-ring:rgba(255,228,92,.35);--live-ring2:rgba(255,228,92,.14);--hl:#FFF2BF;
+ --ring-in:#C9381A;--story:linear-gradient(170deg,#E8381C 0%,#FF7A1A 55%,#FFB547 100%);--tagp:#E8381C;
+ --t1:#FFEDE0;--t2:#DDF5EE;--t3:#FFF6CC;--t4:#F1E8FF}
+
+/* Meta Blue — Meta's own brand blue (#0866FF / #0064E0), Facebook greys, green only for "done/paid" */
+.t-meta{--hero:linear-gradient(155deg,#0050C8 0%,#0064E0 45%,#0866FF 100%);--hero-ink:#fff;--hero-blob:rgba(255,255,255,.10);--hero-chip:rgba(255,255,255,.16);
+ --brand:#0866FF;--brand-ink:#fff;--pop:#0866FF;--pop-ink:#fff;--add:#0866FF;--cart:#0866FF;--cart-ink:#fff;--cart-go:#fff;--cart-go-ink:#0866FF;--cart-shadow:rgba(8,102,255,.55);
+ --bg:#F0F2F5;--surface:#fff;--surface2:#E4E6EB;--ink:#1C2B33;--muted:#65676B;--line:#DADDE1;--chip:#F0F2F5;--link:#0866FF;
+ --badge-bg:#1C2B33;--badge-ink:#fff;--drop-bg:#E6F4EA;--drop-ink:#1E7E34;--ok:#1E7E34;--ok-bg:#E6F4EA;--warn-bg:#E7F0FF;--warn-ink:#0050C8;
+ --banner:linear-gradient(120deg,#E7F0FF 0%,#D6E6FF 100%);--banner-ink:#0A2A66;--banner-btn:#0866FF;--banner-btn-ink:#fff;
+ --live-bg:linear-gradient(135deg,#0064E0,#0866FF);--live-ink:#fff;--live-ring:rgba(255,255,255,.25);--live-ring2:rgba(255,255,255,.1);--hl:#DCE8FF;
+ --ring-in:#0050C8;--story:linear-gradient(170deg,#003B9E 0%,#0064E0 55%,#0866FF 100%);--tagp:#0866FF;
+ --t1:#EAF1FF;--t2:#EEF3F9;--t3:#E9F0FB;--t4:#F0F2F5}
+.t-meta .eta .bolt{background:#fff;color:#0866FF}
+.t-meta .hchip.on{border-color:#fff}
+.t-meta .golive .mc{background:#fff;color:#0866FF}
+.t-meta .pill.live{background:#E7F0FF;color:#0050C8}
+.t-meta .land h1 em{color:#BFD7FF}
+.t-meta .land .btn.pop{background:#fff;color:#0866FF}
+.t-meta .land .stk.ask{background:#fff;color:#0866FF;outline:2px solid #0866FF}.t-meta .land .stk.ask::after{border-top-color:#fff}
+.t-meta .stk .ok{background:#1E7E34}
+.t-meta .capt mark{background:#fff;color:#1C2B33}
+.t-meta .clip mark{background:#DCE8FF;color:#0050C8}
+.t-meta .ring{background:conic-gradient(#fff 0 62%,rgba(255,255,255,.25) 62% 100%)}
+.t-meta .story .conf{opacity:.25}
+.t-meta .story .acts .btn.pop{background:#fff;color:#0866FF}
+.t-meta .tl .s.n i{box-shadow:0 0 0 5px #DCE8FF}
+.t-meta .scale{background:#0B1B3A}.t-meta .scale .w{background:#06112A}
+.t-meta .scale .w b{color:#7FB2FF;text-shadow:0 0 10px rgba(127,178,255,.5)}.t-meta .scale .w.t b{color:#fff;text-shadow:none}
+.t-meta .standee .sb{background:#0064E0}
+.t-meta .shopc .av{background:#0866FF!important}
+.t-meta .banner .kick{color:#0050C8;opacity:1}
+</style>
+</head>
+<body class="gal">
+<div class="gh">
+ <div><h1>MarketMate · v4, quick-commerce study (now with Meta Blue)</h1>
+ <p>The energy of quick-commerce apps (gradient headers, photo tiles, ADD buttons sitting on the photo, a floating cart, rails), applied to a real stall. 3 original palettes named after vegetables. <b>All product photos and most prices come from your 2 real shop videos and the kitchen video.</b> Orders and earnings are sample data.</p></div>
+ <div class="ctrl"><div class="seg-g" id="view"><button data-v="all" class="on">All screens</button><button data-v="compare">Compare</button></div><div class="seg-g" id="lang"><button data-l="en" class="on">EN</button><button data-l="ta">தமிழ்</button></div></div>
+</div>
+<div class="themes" id="themes"></div>
+<div class="why">
+ <div><b>Feels like apps they use</b>Gradient header, a 4-across category grid, an ADD button on the photo, a floating cart: the same muscle memory as instant-delivery apps. Every colour and shape here is our own.</div>
+ <div><b>Camera with price stickers</b>Live mode pins each heard price onto the produce in the camera view, like a sticker. Prices it isn't sure about get a yellow "?" sticker to check after.</div>
+ <div><b>Swipe to check</b>Unclear prices come as a card deck: one big question with two huge answers. Faster than a form, and works with one thumb at the stall.</div>
+ <div><b>Your day, as a story</b>Day close is a story-style recap ("₹6,420 today, beans sold most") that the owner can share on WhatsApp. Excel is one tap away.</div>
+</div>
+<div id="stage"></div>
+<script>
+const P='p/';
+const THEMES=[
+ {id:'meta',name:'Meta Blue',desc:'Meta\'s own blue (#0866FF) with Facebook-style light greys. One blue for everything you tap; green only for paid and done. Clean, trusted and familiar.',bg:'linear-gradient(135deg,#0050C8,#0866FF)',sw:['#0866FF','#0064E0','#F0F2F5','#1E7E34']},
+ {id:'brinjal',name:'Brinjal',desc:'Deep brinjal purple with its lime-green stem. The boldest and most "instant app" look. Lime ADD and highlights, purple cart.',bg:'linear-gradient(135deg,#240640,#7E2BC4)',sw:['#4E1679','#C6F432','#F6F3FA','#1A0B2E']},
+ {id:'mango',name:'Mango',desc:'Sunny mango-yellow header with leaf-green buttons and cart. Bright, friendly and easy to read in daylight.',bg:'linear-gradient(135deg,#FFC93C,#FFB703)',ink:'#1b1b1b',sw:['#FFC93C','#0B6B3A','#FFFBEF','#FF5A36']},
+ {id:'carrot',name:'Carrot',desc:'Carrot-orange sunset header with the teal of carrot leaves for buttons. Warm, energetic and a little festive.',bg:'linear-gradient(135deg,#FF8A1F,#E8381C)',sw:['#FF5A1F','#0E7C66','#FFE45C','#FFF7F2']},
+];
+const SCREENS=[
+ ['landing','Home page','for judges and new sellers'],
+ ['store','Customer · shop home','storefront with rails'],
+ ['bananas','Customer · bananas','your real shop 2, 6 kinds'],
+ ['voice','Customer · order by voice','speak, items get added'],
+ ['cart','Customer · cart & bill','bill details, pick-up'],
+ ['track','Customer · order status','packing ring + timeline'],
+ ['compare','Customer · best basket','nearby shops'],
+ ['partner','Seller · home','open toggle, earnings, orders'],
+ ['live','Seller · live prices','camera with price stickers'],
+ ['swipe','Seller · check prices','swipe deck'],
+ ['counter','Seller · counter bill','scale + tiles + bill bar'],
+ ['pay','Seller · get paid','UPI standee + change'],
+ ['orders','Seller · orders','new · packing · ready'],
+ ['story','Seller · day close','story-style recap'],
+ ['tags','Seller · price tags','print for the stall'],
+];
+const DESK=['partnerDesk','counterDesk'];
+const L=(en,ta)=>`<span data-en="${en.replace(/"/g,'&quot;')}" data-ta="${ta.replace(/"/g,'&quot;')}">${en}</span>`;
+const IC={search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/>',pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',down:'<path d="m6 9 6 6 6-6"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',home:'<path d="M3 10.5 12 3l9 7.5V21H3z"/>',bag:'<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/>',receipt:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',chart:'<path d="M4 20V11M10 20V5M16 20v-8M21 20H3"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',play:'<path d="M8 5v14l11-7z" fill="currentColor"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',chat:'<path d="M4 20l1.4-3.6A8 8 0 1 1 8 19.2z"/>',box:'<path d="M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4z"/><path d="M3.5 7.5 12 11.5l8.5-4M12 11.5v9"/>',tag:'<path d="M3 12V3h9l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.2"/>',print:'<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/>',download:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4.5 20h15"/>',plus:'<path d="M12 5v14M5 12h14"/>',clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',star:'<path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z" fill="currentColor"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',camera:'<path d="M4 7.5h3.2L9 5h6l1.8 2.5H20V19H4z"/><circle cx="12" cy="13" r="3.5"/>',flash:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',wallet:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/>',leaf:'<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19 13 11"/>'};
+const icon=n=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+const IT={
+ beans:{ta:'பீன்ஸ்',en:'Beans',p:120,u:'1 kg',img:'beans',t:'--t2'},
+ carrot:{ta:'ஊட்டி கேரட்',en:'Ooty carrot',p:80,u:'1 kg',img:'carrot',t:'--t3'},
+ avarai:{ta:'அவரைக்காய்',en:'Broad beans',p:80,u:'1 kg',img:'avarai',t:'--t2'},
+ brinjal:{ta:'கத்திரிக்காய்',en:'Brinjal · Krishnagiri',p:60,u:'1 kg',img:'brinjal',t:'--t1'},
+ poovan:{ta:'பூவன் பழம்',en:'Poovan banana',p:60,u:'1 kg',img:'poovan',t:'--t3'},
+ yelakki:{ta:'ஏலக்கி',en:'Yelakki banana',p:100,u:'1 kg',img:'yelakki',t:'--t3'},
+ karpoor:{ta:'கற்பூரவள்ளி',en:'Karpooravalli',p:80,u:'1 kg',img:'karpooravalli',t:'--t2'},
+ then:{ta:'தேன்வாழை',en:'Thenvazhai',p:80,u:'1 kg',img:'poovan',t:'--t3'},
+ sev:{ta:'செவ்வாழை',en:'Red banana',p:100,u:'1 kg',img:'redbanana',t:'--t1'},
+ pachai:{ta:'பச்சை வாழை',en:'Green banana',p:40,u:'1 kg',img:'greenbanana',t:'--t2'},
+ lime:{ta:'சாத்துக்குடி',en:'Sweet lime',p:36,u:'1 kg',img:'sweetlime',t:'--t4'},
+ sonion:{ta:'சின்ன வெங்காயம்',en:'Small onion',p:15,u:'½ kg',img:'s1_0',t:'--t1'},
+ onion:{ta:'பெரிய வெங்காயம்',en:'Onion',p:20,u:'1 kg',img:'s1_1',t:'--t3'},
+ ginger:{ta:'இஞ்சி',en:'Ginger',p:150,u:'1 kg',img:'s1_3',t:'--t4'},
+ garlic:{ta:'பூண்டு',en:'Garlic',p:90,u:'1 kg',img:'s1_4',t:'--t4'},
+};
+const im=k=>`${P}${IT[k].img}.jpg`;
+function pc(k,o={}){const it=IT[k];return `<div class="pc"><div class="pi" style="background:var(${it.t})"><img src="${im(k)}" alt="">${o.badge?`<span class="badge ${o.drop?'drop':''}">${o.badge}</span>`:''}${o.q?`<div class="add in"><span>−</span>${o.q}<span>+</span></div>`:`<div class="add">${L('ADD','சேர்')}</div>`}</div><span class="unit">${it.u}</span><div class="nm" lang="ta">${it.ta}</div><div class="en">${it.en}</div><div class="pr">₹${it.p}${o.was?`<s>₹${o.was}</s>`:''}</div></div>`;}
+function qr(seed=7,n=25){let s=seed;const r=()=>(s=(s*9301+49297)%233280)/233280;let d='';for(let y=0;y<n;y++)for(let x=0;x<n;x++){if((x<8&&y<8)||(x>=n-8&&y<8)||(x<8&&y>=n-8))continue;if(r()>.5)d+=`M${x},${y}h1v1h-1z`;}const f=(x,y)=>`M${x},${y}h7v7h-7zM${x+1},${y+1}v5h5v-5zM${x+2},${y+2}h3v3h-3z`;return `<svg class="qr" viewBox="-2 -2 ${n+4} ${n+4}"><rect x="-2" y="-2" width="${n+4}" height="${n+4}" fill="#fff"/><path fill-rule="evenodd" d="${f(0,0)}${f(n-7,0)}${f(0,n-7)}${d}"/></svg>`;}
+const wave=n=>`<div class="wave">${Array.from({length:n},(_,i)=>`<i style="height:${6+Math.abs(Math.sin(i*1.3))*16}px;animation-delay:${(i%7)*.08}s"></i>`).join('')}</div>`;
+const cart=(n,amt,ks,go)=>`<div class="cartbar"><div class="th">${ks.map(k=>`<img src="${im(k)}">`).join('')}</div><div class="tx"><b>${n} ${n===1?L('item','பொருள்'):L('items','பொருள்')} · ₹${amt}</b><small>${L('Ready to pick up in 10 min','10 நிமிடத்தில் எடுக்கலாம்')}</small></div><span class="go">${go}${icon('arrow')}</span></div>`;
+const tabsC=on=>`<nav class="tabbar">${[['home','Shop','கடை'],['search','Search','தேடு'],['bag','Orders','ஆர்டர்'],['user','Me','நான்']].map((t,i)=>`<a class="${i===on?'on':''}">${icon(t[0])}${L(t[1],t[2])}</a>`).join('')}</nav>`;
+const tabsS=on=>`<nav class="tabbar">${[['home','Home','முகப்பு'],['receipt','Bills','பில்'],['mic','Live','நேரலை','fab'],['box','Orders','ஆர்டர்'],['chart','Day','கணக்கு']].map((t,i)=>t[3]?`<a class="fab"><span class="f">${icon(t[0])}</span>${L(t[1],t[2])}</a>`:`<a class="${i===on?'on':''}">${icon(t[0])}${L(t[1],t[2])}</a>`).join('')}</nav>`;
+const S={};
+
+S.landing=()=>`<div class="app"><div class="land">
+ <div class="between"><div class="row" style="font:900 18px Outfit">${icon('leaf')} MarketMate</div><span class="pill" style="background:var(--hero-chip);color:inherit">தமிழ் · EN</span></div>
+ <h1>${L('Say it.','சொல்லுங்கள்.')}<em>${L('Sell it.','விற்றுவிடுங்கள்.')}</em></h1>
+ <p>${L('Walk your stall and speak your prices. In seconds you have a shop page, bills, UPI and price tags.','கடையைச் சுற்றி விலை சொல்லுங்கள். நொடியில் கடைப் பக்கம், பில், UPI, விலைச் சீட்டு.')}</p>
+ <div class="row" style="gap:8px"><a class="btn pop big">${icon('mic')}${L('Start selling','விற்கத் தொடங்கு')}</a><a class="btn big" style="background:var(--hero-chip);color:inherit">${L('Find prices','விலை தேடு')}</a></div>
+ <div class="floaty"><div class="ph"><img src="${P}carrot.jpg"></div>
+  <div class="stk" style="left:8px;top:30px"><img src="${P}carrot.jpg"><div><b>₹80</b>${L('carrot / kg','கேரட் / கிலோ')}</div><span class="ok">${icon('check')}</span></div>
+  <div class="stk" style="right:6px;top:96px"><img src="${P}beans.jpg"><div><b>₹120</b>${L('beans / kg','பீன்ஸ் / கிலோ')}</div><span class="ok">${icon('check')}</span></div>
+  <div class="stk ask" style="left:20px;bottom:12px"><img src="${P}brinjal.jpg"><div><b>₹60?</b>${L('tap to check','தொட்டுப் பார்')}</div></div></div>
+ </div>
+ <div class="pad stack" style="padding-top:16px;padding-bottom:20px">
+  <div class="feat">
+   <div><span class="fi" style="background:var(--t1)">${icon('mic')}</span><b>${L('Speak prices','விலை சொல்லு')}</b>${L('25 languages, live','25 மொழி, நேரலை')}</div>
+   <div><span class="fi" style="background:var(--t2)">${icon('check')}</span><b>${L('Nothing guessed','யூகம் இல்லை')}</b>${L('Unclear? You tap.','சந்தேகம்? நீங்கள் தொடுங்கள்.')}</div>
+   <div><span class="fi" style="background:var(--t3)">${icon('receipt')}</span><b>${L('Bill by voice','பேசி பில்')}</b>${L('UPI QR + change','UPI QR + மீதி')}</div>
+   <div><span class="fi" style="background:var(--t4)">${icon('chart')}</span><b>${L('Close the day','நாள் கணக்கு')}</b>${L('Excel + POS file','Excel + POS')}</div>
+  </div>
+  <div class="muted" style="font:600 12px Outfit;text-align:center">${L('Built with Meta Muse Spark + Muse Voice','Meta Muse Spark + Muse Voice கொண்டு')}</div>
+ </div></div>`;
+
+S.store=()=>`<div class="app"><div class="hero">
+ <div class="between"><div><div class="eta"><span class="bolt">${icon('bolt')}</span>${L('Ready in 10 min','10 நிமிடத்தில் தயார்')}</div><div class="loc">${icon('pin')}Lakshmi Fruits &amp; Veg · Velachery ${icon('down')}</div></div><div class="avatar">LF</div></div>
+ <div class="search">${icon('search')}<span class="ph">${L('Search','தேடு')} <b lang="ta">"கேரட்"</b></span><span class="mic">${icon('mic')}</span></div>
+ <div class="hchips"><div class="hchip on"><span class="em">🧺</span>${L('All','எல்லாம்')}</div><div class="hchip"><img src="${P}beans.jpg">${L('Veggies','காய்')}</div><div class="hchip"><img src="${P}poovan.jpg">${L('Bananas','வாழை')}</div><div class="hchip"><img src="${P}sweetlime.jpg">${L('Fruits','பழம்')}</div><div class="hchip"><img src="${P}s1_0.jpg">${L('Onions','வெங்காயம்')}</div></div>
+ </div>
+ <div class="pad stack" style="padding-top:14px">
+  <div><div class="banner"><div class="kick">${L("Today's prices · said by the seller 6:10 AM",'இன்றைய விலை · காலை 6:10')}</div><div class="big">${L('Ooty carrot ₹80 a kilo','ஊட்டி கேரட் கிலோ ₹80')}</div><a class="btn">${L('Shop now','வாங்கு')}</a><div class="imgs"><img src="${P}carrot.jpg" style="width:104px;height:104px;right:10px;bottom:16px"><img src="${P}beans.jpg" style="width:66px;height:66px;right:96px;bottom:6px"></div></div><div class="dots"><i class="on"></i><i></i><i></i></div></div>
+  <div class="between"><h3 class="h2">${L('Shop by category','வகைகள்')}</h3></div>
+  <div class="cats">
+   <div class="cat"><div class="ci" style="--t:var(--t2)"><img src="${P}beans.jpg"></div><span lang="ta">காய்கறி</span></div>
+   <div class="cat"><div class="ci" style="--t:var(--t3)"><img src="${P}poovan.jpg"></div><span lang="ta">வாழைப்பழம்</span></div>
+   <div class="cat"><div class="ci" style="--t:var(--t1)"><img src="${P}s1_0.jpg"></div><span lang="ta">வெங்காயம்</span></div>
+   <div class="cat"><div class="ci" style="--t:var(--t4)"><img src="${P}sweetlime.jpg"></div><span lang="ta">பழங்கள்</span></div>
+  </div>
+  <div class="between"><h3 class="h2">${L('Fresh this morning','இன்று காலை வந்தது')}</h3><a class="link">${L('See all','எல்லாம்')} ›</a></div>
+  <div class="rail">${pc('carrot',{badge:L('BESTSELLER','அதிகம் விற்பது'),q:'1 kg'})}${pc('beans',{badge:L('₹10 LESS','₹10 குறைவு'),drop:1,was:130})}${pc('brinjal')}${pc('avarai')}</div>
+  <div class="between"><h3 class="h2">${L('6 kinds of banana','6 வகை வாழை')}</h3><a class="link">${L('See all','எல்லாம்')} ›</a></div>
+  <div class="rail">${pc('poovan')}${pc('yelakki')}${pc('sev')}${pc('pachai')}</div>
+ </div>
+ ${cart(2,'200',['carrot','beans'],L('View cart','கார்ட்'))}${tabsC(0)}</div>`;
+
+S.bananas=()=>`<div class="app"><div class="hero" style="padding-bottom:14px">
+ <div class="row"><span style="font-size:20px">‹</span><div style="flex:1"><div style="font:900 20px Outfit,'Baloo Thambi 2'">${L('Bananas','வாழைப்பழம்')}</div><div class="loc" style="margin:0">${L('6 kinds · prices said today 3:10 PM','6 வகை · இன்று 3:10 சொன்ன விலை')}</div></div>${icon('search')}</div>
+ <div class="hchips"><div class="hchip on"><img src="${P}poovan.jpg">${L('All','எல்லாம்')}</div><div class="hchip"><img src="${P}yelakki.jpg">${L('Small','சிறியது')}</div><div class="hchip"><img src="${P}redbanana.jpg">${L('Red','சிவப்பு')}</div><div class="hchip"><img src="${P}greenbanana.jpg">${L('Cooking','சமையல்')}</div></div></div>
+ <div class="pad" style="padding-top:12px"><div class="chips" style="margin-bottom:14px"><span class="chip on">${L('Price: low to high','விலை: குறைவு முதல்')}</span><span class="chip">${L('Per kg','கிலோவுக்கு')}</span><span class="chip">${L('In stock','இருப்பில்')}</span></div>
+ <div class="grid2">${pc('pachai',{badge:L('LOWEST','குறைந்தது'),drop:1})}${pc('poovan',{q:'1 kg'})}${pc('karpoor')}${pc('then')}${pc('yelakki',{badge:L('BESTSELLER','அதிகம் விற்பது')})}${pc('sev')}</div></div>
+ ${cart(1,'60',['poovan'],L('View cart','கார்ட்'))}</div>`;
+
+S.voice=()=>`<div class="app">${S.store().replace(/^<div class="app">/,'').replace(/<\/div>$/,'')}<div class="dim"></div><div class="sheet"><div class="grab"></div>
+ <div class="between"><b style="font:900 18px Outfit">${L('Say your order','ஆர்டரைச் சொல்லுங்கள்')}</b><span class="pill live"><i></i>${L('Listening','கேட்கிறது')}</span></div>
+ <div class="bigmic">${icon('mic')}</div>
+ <div class="heard" lang="ta"><u>ரெண்டு கிலோ கேரட்</u>, <u>அரை கிலோ பீன்ஸ்</u>, <u>ஒரு கிலோ பூவன் பழம்</u>, கொத்தமல்லி…</div>
+ <div class="got"><span>${icon('check')}${L('Carrot 2 kg · ₹160','கேரட் 2 கி · ₹160')}</span><span>${icon('check')}${L('Beans ½ kg · ₹60','பீன்ஸ் ½ கி · ₹60')}</span><span>${icon('check')}${L('Poovan 1 kg · ₹60','பூவன் 1 கி · ₹60')}</span><span class="q">? ${L('Coriander: not on the list today','கொத்தமல்லி: இன்று இல்லை')}</span></div>
+ <a class="btn brand big block" style="margin-top:14px">${L('Add 3 items · ₹280','3 பொருள் சேர் · ₹280')}</a></div></div>`;
+
+S.cart=()=>`<div class="app"><div class="pad stack" style="padding-top:14px;padding-bottom:14px">
+ <div class="row"><span style="font-size:22px">‹</span><div><div style="font:900 20px Outfit">${L('Your cart','உங்கள் கார்ட்')}</div><div class="muted" style="font:600 12px Outfit">Lakshmi Fruits &amp; Veg · ${L('pick up at the shop','கடையில் வாங்கலாம்')}</div></div></div>
+ <div class="card" style="padding:12px 14px"><div class="row" style="gap:8px;margin-bottom:6px"><span class="eta" style="font-size:16px"><span class="bolt" style="width:22px;height:22px">${icon('bolt')}</span>${L('Ready in 10 min','10 நிமிடத்தில் தயார்')}</span></div>
+  ${[['carrot','2 kg','₹160'],['beans','½ kg','₹60'],['poovan','1 kg','₹60']].map(r=>`<div class="li"><img src="${im(r[0])}"><div class="n"><b>${IT[r[0]].ta}</b><small>${IT[r[0]].en} · ₹${IT[r[0]].p}/kg</small></div><div class="stepper"><span>−</span>${r[1]}<span>+</span></div><span class="amt">${r[2]}</span></div>`).join('')}
+  <a class="link" style="display:block;margin-top:8px">+ ${L('Add more items','மேலும் சேர்')}</a></div>
+ <div class="card"><b style="font:800 15px Outfit">${L('Bill details','பில் விவரம்')}</b>
+  <div class="sumrow" style="margin-top:6px"><span>${L('Items total','பொருள் மொத்தம்')}</span><span>₹280</span></div>
+  <div class="sumrow"><span>${L('Packing','பேக்கிங்')}</span><span style="color:var(--ok)">${L('FREE','இலவசம்')}</span></div>
+  <div class="sumrow tot"><span>${L('To pay at shop','கடையில் செலுத்த')}</span><span>₹280</span></div></div>
+ <div class="card row" style="gap:12px"><span class="pill ok">${icon('check')}</span><div style="font:600 12.5px Outfit;color:var(--muted)">${L("Prices from the shop's own list today, 3:10 PM. Nothing is guessed.",'கடையின் இன்றைய பட்டியல் விலை. யூகம் இல்லை.')}</div></div>
+ <div class="grid2" style="gap:8px"><div class="card" style="padding:11px;outline:2px solid var(--brand)"><b style="font:800 13.5px Outfit">${L('UPI at pick-up','எடுக்கும்போது UPI')}</b><div class="muted" style="font:600 11.5px Outfit">${L('scan the shop QR','கடை QR')}</div></div><div class="card" style="padding:11px"><b style="font:800 13.5px Outfit">${L('Cash','ரொக்கம்')}</b><div class="muted" style="font:600 11.5px Outfit">${L('pay at the counter','கவுண்டரில்')}</div></div></div>
+ </div><div class="cartbar" style="margin-top:auto"><div class="tx"><b>₹280</b><small>${L('3 items · pick up','3 பொருள் · கடையில்')}</small></div><span class="go">${L('Send order','ஆர்டர் அனுப்பு')}${icon('arrow')}</span></div></div>`;
+
+S.track=()=>`<div class="app"><div class="hero" style="text-align:center;padding-bottom:22px">
+ <div class="between"><span style="font-size:22px">‹</span><span class="pill" style="background:var(--hero-chip);color:inherit">${L('Order','ஆர்டர்')} #33</span></div>
+ <div class="ring"><div>8<small>${L('MIN','நிமிடம்')}</small></div></div>
+ <div style="font:900 22px Outfit,'Baloo Thambi 2'">${L('Packing your order','உங்கள் ஆர்டர் பேக் ஆகிறது')}</div>
+ <div class="loc" style="justify-content:center">Lakshmi Fruits &amp; Veg · ${L('Velachery','வேளச்சேரி')}</div></div>
+ <div class="pad stack" style="padding-top:16px">
+ <div class="card"><div class="tl">
+  <div class="s d"><i>${icon('check')}</i><div><b>${L('Order sent','ஆர்டர் அனுப்பப்பட்டது')}</b><small>3:21 PM · ${L('3 items · ₹280','3 பொருள் · ₹280')}</small></div></div>
+  <div class="s d"><i>${icon('check')}</i><div><b>${L('Seller accepted','கடைக்காரர் ஏற்றார்')}</b><small>3:22 PM</small></div></div>
+  <div class="s n"><i>${icon('box')}</i><div><b>${L('Packing','பேக்கிங்')}</b><small>${L('Lakshmi is weighing your carrots','லட்சுமி கேரட் எடை போடுகிறார்')}</small></div></div>
+  <div class="s"><i>${icon('bag')}</i><div><b>${L('Ready to pick up','எடுக்கத் தயார்')}</b><small>${L("We'll ring when it's ready",'தயாரானதும் சொல்வோம்')}</small></div></div></div></div>
+ <div class="grid2" style="gap:8px"><a class="btn big">${icon('phone')}${L('Call','அழை')}</a><a class="btn brand big">${icon('chat')}WhatsApp</a></div></div></div>`;
+
+S.compare=()=>`<div class="app"><div class="hero"><div style="font:900 20px Outfit">${L('Best basket near you','அருகில் சிறந்த விலை')}</div>
+ <div class="search"><span class="ph" lang="ta" style="color:#222;font-weight:600">கேரட் 1 கிலோ, பீன்ஸ் ½ கிலோ, ₹150</span><span class="mic">${icon('mic')}</span></div></div>
+ <div class="pad stack" style="padding-top:14px"><div class="chips"><span class="chip">${L('Carrot 1 kg','கேரட் 1 கி')}</span><span class="chip">${L('Beans ½ kg','பீன்ஸ் ½ கி')}</span><span class="chip">${L('Budget ₹150','₹150 வரை')}</span></div>
+ <div class="compare">
+  <div class="shopc best"><span class="av" style="background:#0E7C66">L</span><div class="n"><b>Lakshmi Fruits &amp; Veg</b><small>0.4 km · ${L('open till 9 pm','இரவு 9 வரை')}</small></div><div class="p"><b>₹140</b><small>${L('₹10 under budget','₹10 மிச்சம்')}</small></div></div>
+  <div class="shopc"><span class="av" style="background:#7E2BC4">M</span><div class="n"><b>Murugan Vegetables</b><small>1.1 km</small></div><div class="p"><b>₹146</b><small style="color:var(--muted)">+₹6</small></div></div>
+  <div class="shopc"><span class="av" style="background:#E8381C">S</span><div class="n"><b>Selvi Stores</b><small>1.6 km</small></div><div class="p"><b>₹152</b><small style="color:#c0392b">${L('over budget','அதிகம்')}</small></div></div></div>
+ <div class="card row" style="gap:10px"><span class="pill ok">${icon('check')}</span><span class="muted" style="font:600 12.5px Outfit">${L('Only prices the sellers said themselves today.','கடைக்காரர்கள் இன்று சொன்ன விலை மட்டும்.')}</span></div></div>${tabsC(1)}</div>`;
+
+S.partner=()=>`<div class="app"><div class="shead">
+ <div class="between"><div><div style="font:900 18px Outfit">Lakshmi Fruits &amp; Veg</div><div class="loc" style="margin-top:2px">${icon('pin')}Velachery</div></div><span class="toggle">${L('OPEN','திறந்துள்ளது')}<i></i></span></div>
+ <div class="earn"><div><small>${L("Today's sales",'இன்றைய விற்பனை')}</small><div class="v">₹4,280</div><small>${L('32 bills · month ₹1,28,640','32 பில் · மாதம் ₹1,28,640')}</small></div><svg width="110" height="44" viewBox="0 0 110 44"><polyline fill="none" stroke="var(--pop)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="0,38 18,30 36,34 54,18 72,24 90,8 110,12"/></svg></div>
+ <div class="minis"><div class="mini"><b>₹2,910</b>${L('Cash','ரொக்கம்')}</div><div class="mini"><b>₹1,370</b>UPI</div><div class="mini"><b>3</b>${L('Orders','ஆர்டர்')}</div></div></div>
+ <div class="pad stack" style="padding-top:14px;padding-bottom:12px">
+  <a class="golive"><span class="mc">${icon('mic')}</span><div style="flex:1"><b>${L("Say today's prices",'இன்றைய விலை சொல்லுங்கள்')}</b><small>${L('Last said 6:10 AM · 12 prices','காலை 6:10 · 12 விலை')}</small></div>${icon('arrow')}</a>
+  <div class="card row" style="background:var(--warn-bg);box-shadow:none"><b style="font:900 22px Outfit;color:var(--warn-ink)">2</b><div style="flex:1;color:var(--warn-ink);font:700 13px Outfit">${L('prices need one tap','விலைகள் ஒரு தொடுதலுக்கு காத்திருக்கின்றன')}</div><a class="btn" style="padding:8px 12px;background:#fff">${L('Check','பார்')}</a></div>
+  <div class="between"><h3 class="h2">${L('New orders','புது ஆர்டர்கள்')}</h3><a class="link">${L('All','எல்லாம்')} ›</a></div>
+  <div class="ocard"><div class="top"><b style="font:800 15px Outfit">Kavitha · #33</b><span class="tm">${icon('clock')} 2 ${L('min','நிமி')}</span></div><div class="its"><img src="${P}carrot.jpg"><img src="${P}beans.jpg"><img src="${P}poovan.jpg"></div><div class="between"><b style="font:900 18px Outfit">₹280</b><a class="btn brand">${L('Start packing','பேக் செய்')}</a></div></div>
+  <div class="between"><h3 class="h2">${L('Running low','குறைகிறது')}</h3></div>
+  <div class="rail">${pc('beans',{badge:L('2 KG LEFT','2 கி மீதம்')})}${pc('sev',{badge:L('3 KG LEFT','3 கி மீதம்')})}${pc('carrot')}</div>
+ </div>${tabsS(0)}</div>`;
+
+S.live=()=>`<div class="app" style="background:#000"><div class="cam"><img class="bgimg" src="${P}carrot.jpg"><div class="shade"></div>
+ <div class="ct"><span class="rec"><i></i>LIVE 01:42</span><span class="pill" style="background:rgba(255,255,255,.18);color:#fff">${L('4 prices','4 விலை')}</span><span class="pill" style="background:rgba(255,255,255,.18);color:#fff">தமிழ்</span></div>
+ <div class="stk" style="left:22px;top:120px"><img src="${P}beans.jpg"><div><b>₹120</b>${L('beans / kg','பீன்ஸ் / கிலோ')}</div><span class="ok">${icon('check')}</span></div>
+ <div class="stk" style="right:18px;top:210px"><img src="${P}carrot.jpg"><div><b>₹80</b>${L('Ooty carrot / kg','ஊட்டி கேரட் / கிலோ')}</div><span class="ok">${icon('check')}</span></div>
+ <div class="stk ask" style="left:40px;top:330px"><img src="${P}avarai.jpg"><div><b>₹80 ?</b>${L('per kg? check after','கிலோவா? பிறகு பார்')}</div></div>
+ <div class="cb"><div class="capt"><small>${L('Hearing now','இப்போது கேட்கிறது')}</small><span lang="ta">…ஊட்டி கேரட் வந்து <mark>எண்பது ரூபா</mark></span>${wave(36)}</div><div class="stopb"><i></i></div><div style="text-align:center;font:700 12px Outfit;opacity:.8;margin-top:6px">${L('Tap to stop and check','நிறுத்திப் பார்க்கத் தொடு')}</div></div></div></div>`;
+
+S.swipe=()=>`<div class="app"><div class="pad stack" style="padding-top:14px">
+ <div class="between"><div style="font:900 20px Outfit">${L('Check prices','விலை சரிபார்')}</div><span class="pill">2 ${L('of','இல்')} 4</span></div>
+ <div class="prog"><i class="d"></i><i class="c"></i><i></i><i></i></div>
+ <div class="deck"><div class="sc b2"></div><div class="sc b1"></div><div class="sc">
+  <div class="im"><img src="${P}carrot.jpg"><span class="tag" lang="ta">ஊட்டி கேரட் · Ooty carrot</span></div>
+  <div class="bd"><div class="qn">${L('Did you say ₹50 or ₹80?','₹50-ஆ ₹80-ஆ?')}<small>${L('ஐம்பது and எண்பது sound alike. Listen, then tap.','ஐம்பது, எண்பது ஒன்றுபோல் கேட்கும். கேட்டுத் தொடுங்கள்.')}</small></div>
+  <div class="clip"><span class="pl">${icon('play')}</span><span lang="ta">…கேரட் வந்து <mark>எண்பது ரூபா</mark></span></div>
+  <div class="chs"><button>₹50</button><button class="on">₹80</button></div>
+  <div class="row" style="gap:6px"><span class="muted" style="font:700 12px Outfit">${L('Per','அளவு')}:</span><span class="chip on">1 kg</span><span class="chip">½ kg</span><span class="chip">${L('piece','ஒன்று')}</span></div></div></div></div>
+ <div class="grid2" style="gap:8px;margin-top:22px"><a class="btn big">${L('Later','பிறகு')}</a><a class="btn brand big">${L('Next','அடுத்து')} ${icon('arrow')}</a></div></div></div>`;
+
+S.counter=()=>`<div class="app"><div class="pad stack" style="padding-top:14px">
+ <div class="between"><div style="font:900 20px Outfit">${L('New bill','புது பில்')}</div><div class="row" style="gap:6px"><span class="pill">${L('Walk-in','நேரடி')}</span><span class="btn" style="padding:8px 10px;background:var(--brand);color:#fff">${icon('mic')}</span></div></div>
+ <div class="scale"><div class="w"><small>${L('WEIGHT kg','எடை கி')}</small><b>2.000</b></div><div class="w"><small>${L('RATE ₹','விலை ₹')}</small><b>80</b></div><div class="w t"><small>${L('AMOUNT ₹','தொகை ₹')}</small><b>160.00</b></div></div>
+ <div class="chips"><span class="chip">250 g</span><span class="chip">½ kg</span><span class="chip">1 kg</span><span class="chip on">2 kg</span><span class="chip">₹ ${L('amount','தொகை')}</span></div>
+ <div class="grid3">${pc('carrot',{q:'2 kg'})}${pc('beans',{q:'½ kg'})}${pc('brinjal')}${pc('avarai')}${pc('poovan',{q:'1 kg'})}${pc('sev')}</div>
+ </div><div class="cartbar" style="margin-top:auto"><div class="th"><img src="${P}carrot.jpg"><img src="${P}beans.jpg"><img src="${P}poovan.jpg"></div><div class="tx"><b>${L('Bill','பில்')} · ₹280</b><small>${L('3 items','3 பொருள்')}</small></div><span class="go">${L('Get paid','பணம் வாங்கு')}${icon('arrow')}</span></div></div>`;
+
+S.pay=()=>`<div class="app"><div class="payscreen">
+ <div class="between"><span style="font-size:22px">‹</span><b style="font:900 17px Outfit">${L('Bill','பில்')} #34</b><span class="pill" style="background:var(--hero-chip);color:inherit">3 ${L('items','பொருள்')}</span></div>
+ <div class="standee"><div class="sb">${L('SCAN & PAY WITH ANY UPI APP','எந்த UPI app-லும் ஸ்கேன் செய்யுங்கள்')}</div>${qr(11)}<div class="a">₹280</div><div class="p">Lakshmi Stores · lakshmi.test@upi</div><div class="apps">GPay · PhonePe · Paytm · BHIM · ${L('any bank','எந்த வங்கி')}</div></div></div>
+ <div class="pad stack" style="padding-top:14px;padding-bottom:16px">
+ <div class="card"><b style="font:800 14px Outfit">${L('Cash? Customer gave','ரொக்கமா? கொடுத்தது')}</b><div class="chips" style="margin:10px 0"><span class="chip">₹280</span><span class="chip">₹300</span><span class="chip on">₹500</span><span class="chip">₹2000</span></div><div class="change"><span style="font:800 14px Outfit">${L('Give back','மீதி கொடு')}</span><b>₹220</b></div></div>
+ <div class="grid2" style="gap:8px"><a class="btn brand big">${icon('check')}${L('Paid','பணம் வந்தது')}</a><a class="btn big">${icon('chat')}${L('Send bill','பில் அனுப்பு')}</a></div></div></div>`;
+
+S.orders=()=>`<div class="app"><div class="pad stack" style="padding-top:14px">
+ <div class="between"><div style="font:900 20px Outfit">${L('Orders','ஆர்டர்கள்')}</div><span class="toggle" style="background:var(--surface2)">${L('OPEN','திறந்துள்ளது')}<i></i></span></div>
+ <div class="tabs"><span class="on">${L('New','புது')}<em>2</em></span><span>${L('Packing','பேக்கிங்')}<em>1</em></span><span>${L('Ready','தயார்')}<em>1</em></span></div>
+ <div class="ocard"><div class="top"><b style="font:800 15px Outfit">Kavitha · #33</b><span class="tm">2 ${L('min','நிமி')}</span></div><div class="its"><img src="${P}carrot.jpg"><img src="${P}beans.jpg"><img src="${P}poovan.jpg"></div><div class="muted" style="font:600 12.5px Outfit;margin-bottom:8px" lang="ta">கேரட் 2 கி · பீன்ஸ் ½ கி · பூவன் 1 கி</div><div class="between"><b style="font:900 18px Outfit">₹280</b><a class="btn brand">${L('Start packing','பேக் செய்')}</a></div></div>
+ <div class="ocard" style="--olc:var(--pop)"><div class="top"><b style="font:800 15px Outfit">Suresh · #34</b><span class="tm">6 ${L('min','நிமி')}</span></div><div class="its"><img src="${P}yelakki.jpg"><img src="${P}sweetlime.jpg"><img src="${P}s1_1.jpg"><span class="more">+2</span></div><div class="between"><b style="font:900 18px Outfit">₹412</b><a class="btn brand">${L('Start packing','பேக் செய்')}</a></div></div>
+ <div class="card row" style="gap:10px"><span class="pill ok">${icon('chat')}</span><span class="muted" style="font:600 12.5px Outfit">${L('When an order is ready, one tap tells the customer on WhatsApp.','தயாரானதும் ஒரு தொடுதலில் WhatsApp-ல் சொல்லலாம்.')}</span></div>
+ </div>${tabsS(3)}</div>`;
+
+S.story=()=>`<div class="app"><div class="story"><div class="conf"></div><div class="bars"><i class="d"></i><i></i><i></i><i></i></div>
+ <div class="between" style="margin-top:10px;position:relative"><b style="font:800 13px Outfit">${L('Your day · Wed 28 Oct','உங்கள் நாள் · புதன் 28 அக்')}</b>${icon('x')}</div>
+ <div class="kick">${L('You sold','இன்று விற்றது')}</div><div class="huge">₹6,420</div><div class="sub">${L('41 bills · ₹410 more than Tuesday','41 பில் · செவ்வாயை விட ₹410 அதிகம்')}</div>
+ <div class="top1"><img src="${P}beans.jpg"><div><small>${L('Top seller','அதிகம் விற்றது')}</small><b lang="ta">பீன்ஸ் · 18 kg</b><small>₹2,160 · ${L('sold out by 7 pm','இரவு 7-க்குள் தீர்ந்தது')}</small></div></div>
+ <div class="tiles"><div class="tl2"><small>${L('Margin','லாபம்')}</small><b>₹2,180</b><small>34%</small></div><div class="tl2"><small>${L('Best hour','சிறந்த நேரம்')}</small><b>8–9 AM</b><small>₹1,140</small></div><div class="tl2"><small>${L('Cash in drawer','பெட்டியில் ரொக்கம்')}</small><b>₹4,100</b><small>${L('count it','எண்ணுங்கள்')}</small></div><div class="tl2"><small>UPI</small><b>₹2,320</b><small>18 ${L('payments','முறை')}</small></div></div>
+ <div class="acts"><a class="btn pop big">${icon('chat')}${L('Share','பகிர்')}</a><a class="btn big" style="background:rgba(255,255,255,.18);color:#fff">${icon('download')}Excel</a></div></div></div>`;
+
+S.tags=()=>`<div class="app"><div class="pad stack" style="padding-top:14px">
+ <div class="between"><div style="font:900 20px Outfit">${L('Price tags','விலைச் சீட்டு')}</div><a class="btn brand">${icon('print')}${L('Print','அச்சிடு')}</a></div>
+ <div class="chips"><span class="chip on">${L('Big tags','பெரியது')}</span><span class="chip">${L('Labels','சிறியது')}</span><span class="chip">${L('Board poster','போர்டு')}</span></div>
+ <div class="tagsheet">${['beans','carrot','avarai','brinjal','poovan','sev'].map((k,i)=>`<div class="tg"><div class="tb">${IT[k].ta}<small>${IT[k].en}</small></div><div class="tp"><div><b>₹${IT[k].p}</b><small>/ ${IT[k].u}</small></div>${qr(40+i,21)}</div></div>`).join('')}</div>
+ <div class="muted" style="font:600 12.5px Outfit">${L('Each tag has a QR. Customers scan it and order by voice.','ஒவ்வொரு சீட்டிலும் QR. ஸ்கேன் செய்து பேசி ஆர்டர்.')}</div></div>${tabsS(-1)}</div>`;
+
+S.partnerDesk=()=>`<div class="app"><div class="dshell"><aside class="dside"><div style="font:900 20px Outfit;margin:0 8px 16px" class="row">${icon('leaf')}MarketMate</div>
+ ${[['home','Home','முகப்பு',1],['mic','Live prices','நேரலை விலை'],['receipt','Bills','பில்கள்'],['box','Orders','ஆர்டர்கள்'],['tag','Price tags','விலைச் சீட்டு'],['chart','Close day','நாள் முடி']].map(a=>`<a class="${a[3]?'on':''}">${icon(a[0])}${L(a[1],a[2])}</a>`).join('')}</aside>
+ <main class="dmain"><div class="between"><div><div style="font:900 26px Outfit">${L('Good afternoon, Lakshmi','வணக்கம், லட்சுமி')}</div><div class="muted" style="font:600 13px Outfit">${L('Wednesday · shop is open','புதன் · கடை திறந்துள்ளது')}</div></div><a class="btn pop big">${icon('mic')}${L("Say today's prices",'இன்றைய விலை சொல்லு')}</a></div>
+ <div class="shead" style="border-radius:24px"><div class="earn" style="margin:0"><div><small>${L("Today's sales",'இன்றைய விற்பனை')}</small><div class="v">₹4,280</div><small>${L('32 bills · month ₹1,28,640','32 பில் · மாதம் ₹1,28,640')}</small></div><div class="minis" style="width:420px;margin:0"><div class="mini"><b>₹2,910</b>${L('Cash','ரொக்கம்')}</div><div class="mini"><b>₹1,370</b>UPI</div><div class="mini"><b>2</b>${L('to check','சரிபார்க்க')}</div></div></div></div>
+ <div class="kan"><div class="kcol"><h4>${L('New','புது')}<span class="pill live">2</span></h4>
+  <div class="ocard"><div class="top"><b style="font:800 15px Outfit">Kavitha · #33</b><span class="tm">2 min</span></div><div class="its"><img src="${P}carrot.jpg"><img src="${P}beans.jpg"><img src="${P}poovan.jpg"></div><div class="between"><b style="font:900 18px Outfit">₹280</b><a class="btn brand">${L('Start packing','பேக் செய்')}</a></div></div>
+  <div class="ocard"><div class="top"><b style="font:800 15px Outfit">Suresh · #34</b><span class="tm">6 min</span></div><div class="its"><img src="${P}yelakki.jpg"><img src="${P}sweetlime.jpg"><span class="more">+3</span></div><div class="between"><b style="font:900 18px Outfit">₹412</b><a class="btn brand">${L('Start packing','பேக் செய்')}</a></div></div></div>
+  <div class="kcol"><h4>${L('Packing','பேக்கிங்')}<span class="pill">1</span></h4><div class="ocard" style="--olc:var(--pop)"><div class="top"><b style="font:800 15px Outfit">Anand · #31</b><span class="tm">11 min</span></div><div class="its"><img src="${P}brinjal.jpg"><img src="${P}s1_0.jpg"></div><div class="between"><b style="font:900 18px Outfit">₹150</b><a class="btn">${L('Mark ready','தயார்')}</a></div></div></div>
+  <div class="kcol"><h4>${L('Ready','தயார்')}<span class="pill ok">1</span></h4><div class="ocard" style="--olc:var(--ok)"><div class="top"><b style="font:800 15px Outfit">Priya · #30</b><span class="pill ok">${L('told on WhatsApp','WhatsApp-ல் சொன்னது')}</span></div><div class="its"><img src="${P}redbanana.jpg"></div><div class="between"><b style="font:900 18px Outfit">₹100</b><a class="btn">${L('Collected','பெற்றார்')}</a></div></div></div></div>
+ </main></div></div>`;
+
+S.counterDesk=()=>`<div class="app"><div class="dshell"><aside class="dside"><div style="font:900 20px Outfit;margin:0 8px 16px" class="row">${icon('leaf')}MarketMate</div>
+ ${[['home','Home','முகப்பு'],['mic','Live prices','நேரலை விலை'],['receipt','Bills','பில்கள்',1],['box','Orders','ஆர்டர்கள்'],['tag','Price tags','விலைச் சீட்டு'],['chart','Close day','நாள் முடி']].map(a=>`<a class="${a[3]?'on':''}">${icon(a[0])}${L(a[1],a[2])}</a>`).join('')}</aside>
+ <main class="dmain"><div class="dgrid"><div class="stack"><div class="between"><div style="font:900 26px Outfit">${L('New bill','புது பில்')}</div><div class="search" style="margin:0;width:420px">${icon('search')}<span class="ph">${L('Search or say an item','பொருளைத் தேடு அல்லது சொல்லு')}</span><span class="mic">${icon('mic')}</span></div></div>
+ <div class="chips"><span class="chip on">${L('All','எல்லாம்')}</span><span class="chip">${L('Vegetables','காய்கறி')}</span><span class="chip">${L('Bananas','வாழை')}</span><span class="chip">${L('Fruits','பழம்')}</span><span class="chip">${L('Onions','வெங்காயம்')}</span></div>
+ <div class="grid5">${pc('carrot',{q:'2 kg'})}${pc('beans',{q:'½ kg'})}${pc('brinjal')}${pc('avarai')}${pc('poovan',{q:'1 kg'})}${pc('yelakki')}${pc('sev')}${pc('pachai')}${pc('karpoor')}${pc('lime')}</div></div>
+ <div class="stack"><div class="scale"><div class="w"><small>WEIGHT kg</small><b>2.000</b></div><div class="w"><small>RATE ₹</small><b>80</b></div><div class="w t"><small>AMOUNT ₹</small><b>160.00</b></div></div>
+ <div class="card">${[['carrot','2 kg','₹160'],['beans','½ kg','₹60'],['poovan','1 kg','₹60']].map(r=>`<div class="li"><img src="${im(r[0])}"><div class="n"><b>${IT[r[0]].ta}</b><small>${IT[r[0]].en}</small></div><div class="stepper"><span>−</span>${r[1]}<span>+</span></div><span class="amt">${r[2]}</span></div>`).join('')}
+ <div class="sumrow tot"><span>${L('Total','மொத்தம்')}</span><span>₹280</span></div><a class="btn brand big block" style="margin-top:10px">${L('Get paid','பணம் வாங்கு')} ${icon('arrow')}</a></div></div></div></main></div></div>`;
+
+let theme='meta',view='all',lang='en',cmp='partner';
+function applyLang(){document.querySelectorAll('[data-en]').forEach(e=>e.textContent=e.dataset[lang]);}
+const lab=id=>{const s=SCREENS.find(x=>x[0]===id);return s?`${s[1]} <span>· ${s[2]}</span>`:{partnerDesk:'Seller · home <span>· laptop</span>',counterDesk:'Seller · counter bill <span>· laptop</span>'}[id];};
+const phone=(id,t)=>`<div class="fr"><div class="lab">${lab(id)}</div><div class="phone"><div class="screen t-${t}">${S[id]()}</div></div></div>`;
+const desk=(id,t)=>`<div class="fr"><div class="lab">${lab(id)}</div><div class="deskwrap"><div class="bar"><i></i><i></i><i></i></div><div class="screen t-${t}">${S[id]()}</div></div></div>`;
+function render(){
+ document.getElementById('themes').innerHTML=THEMES.map(t=>`<div class="tcard ${t.id===theme&&view==='all'?'on':''}" data-t="${t.id}" style="background:${t.bg};color:${t.ink||'#fff'}"><b>${t.name}</b><small>${t.desc}</small><div class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</div></div>`).join('');
+ const st=document.getElementById('stage');
+ if(view==='all'){const t=THEMES.find(x=>x.id===theme);st.innerHTML=`<div class="sec">${t.name} · phone — ${SCREENS.length} screens</div><div class="phones">${SCREENS.map(s=>phone(s[0],theme)).join('')}</div><div class="sec">${t.name} · laptop</div><div class="phones">${DESK.map(d=>desk(d,theme)).join('')}</div>`;}
+ else{st.innerHTML=`<div class="sec">Compare one screen</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${SCREENS.map(s=>`<button data-c="${s[0]}" style="cursor:pointer;border:1px solid #ccc;border-radius:999px;padding:7px 11px;font:600 12.5px Inter;background:${s[0]===cmp?'#111':'#fff'};color:${s[0]===cmp?'#fff':'#333'}">${s[1]}</button>`).join('')}</div><div class="phones">${THEMES.map(t=>`<div class="fr"><div class="lab">${t.name}</div><div class="phone"><div class="screen t-${t.id}">${S[cmp]()}</div></div></div>`).join('')}</div>`;}
+ applyLang();
+ requestAnimationFrame(()=>document.querySelectorAll('.app').forEach(a=>a.scrollTop=0));
+}
+function sync(){document.querySelectorAll('#view button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){theme=t.dataset.t;view='all';sync();render();return;}const v=e.target.closest('[data-v]');if(v){view=v.dataset.v;sync();render();return;}const l=e.target.closest('[data-l]');if(l){lang=l.dataset.l;sync();applyLang();return;}const c=e.target.closest('[data-c]');if(c){cmp=c.dataset.c;render();}});
+const q=new URLSearchParams(location.search);if(q.get('t'))theme=q.get('t');if(q.get('v'))view=q.get('v');if(q.get('c'))cmp=q.get('c');if(q.get('l'))lang=q.get('l');sync();render();
+</script>
+</body>
+</html>

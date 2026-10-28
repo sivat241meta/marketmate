@@ -234,8 +234,8 @@ def create_app(settings: Settings) -> FastAPI:
             {
                 "name": "MarketMate",
                 "short_name": "MarketMate",
-                "theme_color": "#14532d",
-                "background_color": "#fbf7ef",
+                "theme_color": "#0866FF",
+                "background_color": "#F0F2F5",
                 "display": "standalone",
                 "start_url": "/",
                 "icons": [

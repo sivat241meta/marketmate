@@ -126,6 +126,12 @@ def _actor_or_404(conn, token: str):
     return shop, role, helper, created_by_for(role, helper)
 
 
+def _is_staff(conn, token: str) -> bool:
+    """True when the token belongs to a billing-only helper."""
+    _shop, role, _helper = resolve_or_404(conn, token)
+    return role == "staff"
+
+
 def _bill_of_shop(conn, shop_id: int, bill_id: int):
     try:
         key = int(bill_id)
@@ -705,7 +711,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "quotes_waiting": tiles["quotes_waiting"],
                 "average_bill": _fmt_money(tiles["average_bill"]),
                 "top": top_items(conn, shop["id"], now=now),
-                "ui_lang": ui_lang,
+                "ui_lang": ui_lang, "is_staff": _is_staff(conn, token),
             })
         finally:
             conn.close()
@@ -787,6 +793,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "order_actions": order_actions,
             "ready_wa_url": ready_wa_url,
             "price_changed": _row_price_changed(bill),
+            "is_staff": _is_staff(conn, token),
             "made_by": _row_created_by(bill),
             "not_understood": row_not_understood(bill),
         }, status_code=status_code)
@@ -839,7 +846,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "price_items": _price_items(conn, shop["id"], ui_lang),
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
-            "error": None, "ui_lang": ui_lang})
+            "error": None, "ui_lang": ui_lang,
+            "is_staff": _is_staff(conn, token)})
 
     @app.post("/e/{token}/bills/new")
     async def bills_new_post(request: Request, token: str):
@@ -897,7 +905,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "price_items": _price_items(conn, shop["id"], ui_lang),
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
-            "error": message, "ui_lang": ui_lang},
+            "error": message, "ui_lang": ui_lang,
+            "is_staff": _is_staff(conn, token)},
             status_code=status_code)
 
     def _start_voice_bill(request, shop, token, audio, conn, made_by="owner"):
@@ -1062,7 +1071,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "bills_status.html", {
             "shop": shop, "token": token, "session": session,
             "progress": progress, "friendly": friendly,
-            "ui_lang": ui_lang})
+            "ui_lang": ui_lang, "is_staff": _is_staff(conn, token)})
 
     @app.get("/e/{token}/bills/new/{session_id}/status")
     def bills_new_status_json(request: Request, token: str, session_id: int,

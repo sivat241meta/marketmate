@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CSS = ROOT / "app" / "web" / "static" / "app.css"
 BASE = ROOT / "app" / "web" / "templates" / "base.html"
 
-TOKENS = ["--green", "--saffron", "--cream", "--ink", "--muted", "--line", "--ok"]
+TOKENS = ["--brand", "--bg", "--surface", "--surface2", "--ink", "--muted", "--line", "--ok"]
 
 
 def make_client(tmp_path):

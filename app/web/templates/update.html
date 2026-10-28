@@ -2,18 +2,6 @@
 {% import "_ui.html" as ui %}
 {% block title %}{% if mode == "confirm" %}{{ t('upd.confirm_title') }}{% else %}{{ t('upd.record_title') }}{% endif %}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
-{% block sidebar %}
-<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
-  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
-  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
-  <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
-  <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
-  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
-  <a class="side-link" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
-  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
-  <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
-</nav>
-{% endblock %}
 {% block content %}
 {% if mode == "confirm" %}
 <header class="update-confirm-head">

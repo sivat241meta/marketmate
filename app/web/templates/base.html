@@ -1,3 +1,4 @@
+{% import "_ui.html" as ui %}
 <!doctype html>
 <html lang="{{ ui_lang|default('en') }}">
 <head>
@@ -7,12 +8,14 @@
 <link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-<meta name="theme-color" content="#14532d">
+<meta name="theme-color" content="#0866FF">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+{% set _is_seller = request is defined and request.url.path.startswith("/e/") and shop is defined and token is defined %}
+{% set _staff = is_staff|default(false) %}
 <header class="topbar">
   <a class="brand" href="/" aria-label="MarketMate home">
-    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#14532d"/><path d="M5 19l8-8" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/></svg>
+    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#0866FF"/><path d="M5 19l8-8" stroke="#0050C8" stroke-width="2" stroke-linecap="round"/></svg>
     <span>MarketMate</span>
   </a>
   {% if request is defined and request.url.path.startswith("/e/") %}
@@ -27,24 +30,90 @@
     <a href="/new">{{ t('top.start_selling') }}</a>
   </nav>
 </header>
+{% if _is_seller %}
+{% set _home = "/e/" ~ token %}
+{% set _path = request.url.path %}
+{% set _here = _path == _home %}
+{% set _bills_sub = _path == _home ~ "/bills" or _path.startswith(_home ~ "/bills/") %}
+{% set _on_orders = _path == _home ~ "/bills" and request.query_params.get("status") == "waiting" %}
+{% set _on_bills = _bills_sub and not _on_orders %}
+{% set _on_live = _path == _home ~ "/live" or _path.startswith(_home ~ "/live/") %}
+{% set _on_close = _path == _home ~ "/close" or _path.startswith(_home ~ "/close") %}
+<header class="seller-hero">
+  <div class="seller-hero-top">
+    <div class="seller-id">
+      <strong>{{ shop["name"] }}</strong>
+      <span>{{ shop["area"] }}</span>
+    </div>
+    <a class="seller-more" href="/e/{{ token }}#more">{{ t('nav.more') }}</a>
+  </div>
+  <div class="lang-toggle" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}is-active{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}is-active{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}is-active{% endif %}">हिन्दी</button>
+  </div>
+</header>
+{% endif %}
 <div class="shell">
-{% block sidebar %}{% endblock %}
+{% block sidebar %}
+{% if _is_seller %}
+{% set _home = "/e/" ~ token %}
+{% set _path = request.url.path %}
+{% set _sec_update = _path == _home ~ "/update" or _path.startswith(_home ~ "/update/") or _path.startswith(_home ~ "/s/") %}
+{% set _sec_live = _path == _home ~ "/live" or _path.startswith(_home ~ "/live/") %}
+{% set _sec_photos = _path == _home ~ "/photos" or _path.startswith(_home ~ "/photos/") %}
+{% set _sec_bills = _path == _home ~ "/bills" or _path.startswith(_home ~ "/bills/") %}
+{% set _sec_purchases = _path == _home ~ "/purchases" or _path.startswith(_home ~ "/purchases/") %}
+{% set _sec_close = _path == _home ~ "/close" or _path.startswith(_home ~ "/close") %}
+{% set _sec_settings = _path == _home ~ "/settings" %}
+<nav class="sidebar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="side-link{% if _path == _home %} is-active{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.dashboard') }}</span></a>
+  {% if not _staff %}
+  <a class="side-link{% if _sec_update %} is-active{% endif %}" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="side-link{% if _sec_live %} is-active{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("camera") }}<span>{{ t('nav.live_prices') }}</span></a>
+  <a class="side-link{% if _sec_photos %} is-active{% endif %}" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>{{ t('nav.photos') }}</span></a>
+  {% endif %}
+  <a class="side-link{% if _sec_bills %} is-active{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  {% if not _staff %}
+  <a class="side-link{% if _sec_purchases %} is-active{% endif %}" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>{{ t('nav.purchases') }}</span></a>
+  <a class="side-link{% if _sec_close %} is-active{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("check") }}<span>{{ t('nav.close') }}</span></a>
+  {% endif %}
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>{{ t('nav.shop_page') }}</span></a>
+  {% if not _staff %}
+  <a class="side-link{% if _sec_settings %} is-active{% endif %}" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
+  {% endif %}
+</nav>
+{% endif %}
+{% endblock %}
 <main class="content">
 {% block content %}{% endblock %}
 </main>
 </div>
+{% if _is_seller %}
+<nav class="tabbar" aria-label="{{ t('nav.seller_label') }}">
+  <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.home') }}</span></a>
+  <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  {% if not _staff %}
+  <a class="fab{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live"><span class="f">{{ ui.icon("mic") }}</span><span>{{ t('nav.live') }}</span></a>
+  {% endif %}
+  <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.icon("box") }}<span>{{ t('nav.orders') }}</span></a>
+  {% if not _staff %}
+  <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.day') }}</span></a>
+  {% endif %}
+</nav>
+{% endif %}
 <footer class="footer">
   <p>{{ t('top.footer') }}</p>
 </footer>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const toggle = document.querySelector("[data-ui-toggle]");
-  if (!toggle) { return; }
-  toggle.querySelectorAll("[data-ui-lang]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const lang = btn.getAttribute("data-ui-lang") || "en";
-      document.cookie = "ui_lang=" + encodeURIComponent(lang) + "; path=/; max-age=31536000; SameSite=Lax";
-      window.location.reload();
+  document.querySelectorAll("[data-ui-toggle]").forEach((toggle) => {
+    toggle.querySelectorAll("[data-ui-lang]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const lang = btn.getAttribute("data-ui-lang") || "en";
+        document.cookie = "ui_lang=" + encodeURIComponent(lang) + "; path=/; max-age=31536000; SameSite=Lax";
+        window.location.reload();
+      });
     });
   });
 });

@@ -1,9 +1,13 @@
-# Noto font sources (Task 44)
+# Font sources (Tasks 44, 48)
 
-Static hinted TTFs from the official Noto project:
+Static hinted Noto TTFs from the official Noto project:
 https://github.com/notofonts/notofonts.github.io
 
-All files are SIL Open Font License 1.1 (see OFL.txt, which covers all Noto fonts).
+Meta Blue variable TTFs (web pages only; PDFs keep the Noto fonts) from the
+official Google Fonts repository:
+https://github.com/google/fonts
+
+All files are SIL Open Font License 1.1 (see OFL.txt).
 
 | File | Source URL | SHA-256 |
 | --- | --- | --- |
@@ -19,3 +23,5 @@ All files are SIL Open Font License 1.1 (see OFL.txt, which covers all Noto font
 | NotoSansTamil-Regular.ttf | https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansTamil/hinted/ttf/NotoSansTamil-Regular.ttf | `0d36491d4b3b945d1b4d1258755e79b67cc6fffd9614531bf17fbfe532bd55f8` |
 | NotoSansTelugu-Bold.ttf | https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansTelugu/hinted/ttf/NotoSansTelugu-Bold.ttf | `ec98c4f82abfe52ebe00be298d39c469deb86cf027929987759ba1eab361fbb4` |
 | NotoSansTelugu-Regular.ttf | https://raw.githubusercontent.com/notofonts/notofonts.github.io/main/fonts/NotoSansTelugu/hinted/ttf/NotoSansTelugu-Regular.ttf | `b274780b69d1d23fe84b55e809a152cb2ac5306d33864b1f87622f6971871aae` |
+| Outfit-Variable.ttf | https://raw.githubusercontent.com/google/fonts/main/ofl/outfit/Outfit%5Bwght%5D.ttf | `fc7287273e66929776e2ba54f144fe699080bec29f61bf649d70d871468aeade` |
+| BalooThambi2-Variable.ttf | https://raw.githubusercontent.com/google/fonts/main/ofl/baloothambi2/BalooThambi2%5Bwght%5D.ttf | `6739a11d3557b7426f0f43ce3a22ff6fbfee2d3be56ffb4df093d35d3460bf73` |

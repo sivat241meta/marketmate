@@ -229,7 +229,7 @@ def test_sticky_bar_has_solid_background_and_page_padding():
     assert block, "missing .sticky-bar rule"
     body = block.group(1)
     assert "linear-gradient" not in body
-    assert re.search(r"background:\s*var\(--cream\)", body)
+    assert re.search(r"background:\s*var\(--(surface|bg|cream)\)", body)
     assert re.search(r"border-top:\s*1px solid var\(--line\)", body)
     assert "box-shadow" in body
     assert "padding-bottom" in css.split(".sticky-bar", 1)[1][:900]
