@@ -8,6 +8,7 @@
   <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
@@ -53,12 +54,15 @@
   {{ ui.tile("mic", "Update by voice", "/e/" ~ token ~ "/update") }}
   {{ ui.tile("photo", "Scan stock photo", "/e/" ~ token ~ "/photos") }}
   <a class="tile" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span><span class="tile-sub">{{ bills.sales_today | money(shop["currency"]) }} today · {{ bills.quotes_waiting }} waiting</span></a>
+  <a class="tile" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span><span class="tile-sub">Spent today {{ spent_today | money(shop["currency"]) }}</span></a>
   {% if versions %}
   {{ ui.tile("printer", "Print board", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/board.pdf") }}
+  {{ ui.tile("tag", "Print price tags", "/e/" ~ token ~ "/tags.pdf") }}
   {{ ui.tile("download", "Export CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/export.csv") }}
   {{ ui.tile("download", "POS-app CSV", "/e/" ~ token ~ "/v/" ~ versions[0]["id"] ~ "/posapp.csv") }}
   {% else %}
   {{ ui.tile("printer", "Print board") }}
+  {{ ui.tile("tag", "Print price tags") }}
   {{ ui.tile("download", "Export CSV") }}
   {{ ui.tile("download", "POS-app CSV") }}
   {% endif %}
@@ -83,6 +87,7 @@
     <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
     <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
     {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
+    {% if item.margin_chip %}<span class="list-sub">{{ item.margin_chip }}</span>{% endif %}
     {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
   </div>
   <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>per {{ line.per }}</small>{% endfor %}</div>

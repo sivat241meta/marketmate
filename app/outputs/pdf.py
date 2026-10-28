@@ -77,3 +77,44 @@ def price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
         shop=shop, rows=_rows(items), at=at.strftime("%d %b %Y, %H:%M"),
         shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI)
     return HTML(string=html).write_pdf()
+
+
+def _tags(items: list[Item]) -> list[dict]:
+    """One tag per published item; sold-out items are skipped."""
+    tags = []
+    for item in items:
+        if item.sold_out:
+            continue
+        line = next((line for line in item.price_lines
+                     if line.price is not None), None)
+        if line is None:
+            continue
+        amount = line.per_amount if line.per_amount is not None else ""
+        per = f"{amount} {line.unit or ''}".strip() or (line.unit or "")
+        tags.append({
+            "name_local": item.name_local,
+            "name_en": item.name_en,
+            "variety": item.variety,
+            "price": _plain(line.price),
+            "per": per,
+        })
+    return tags
+
+
+def price_tags_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
+                   shop_url: str) -> bytes:
+    """A4 sheet of per-item price tags, 2 columns x 4 rows (8 per page)."""
+    from weasyprint import HTML
+
+    env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+                      autoescape=True)
+    env.filters["money"] = format_money
+    template = env.get_template("tags.html")
+    qr_data_uri = ("data:image/png;base64,"
+                   + base64.b64encode(qr_png(shop_url)).decode())
+    tags = _tags(items)
+    pages = [tags[index:index + 8] for index in range(0, len(tags), 8)] or [[]]
+    html = template.render(
+        shop=shop, pages=pages, at=at.strftime("%d %b %Y"),
+        shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI)
+    return HTML(string=html).write_pdf()

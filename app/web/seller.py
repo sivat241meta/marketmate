@@ -4,6 +4,7 @@ import re
 import sqlite3
 import subprocess
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Annotated
 
@@ -29,7 +30,7 @@ from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv, posapp_pos_csv
 from app.outputs.money import format_money
-from app.outputs.pdf import price_board_pdf
+from app.outputs.pdf import price_board_pdf, price_tags_pdf
 from app.outputs.qr import qr_png
 from app.outputs.time import format_relative
 from app.outputs.value import stock_value
@@ -125,11 +126,31 @@ def _draft_from_client(raw: dict):
             "end_ms": 0,
             "frame": None,
             "audio_clip": None,
+            "source": None,
         },
     }
     merged = dict(defaults, **raw)
     merged["proof"] = dict(defaults["proof"], **(raw.get("proof") or {}))
     return db._draft_from_json(json.dumps(merged))
+
+
+def _board_flags(item):
+    """Blocking flags for a board-photo draft: confirm or type the price."""
+    from app.pipeline.board import BOARD_CONFIRM_MESSAGE, NOT_READ_MESSAGE
+
+    flags = []
+    for line in item.price_lines:
+        if line.price is None:
+            flags.append(db.Flag(
+                field="price", code="NOT_READ",
+                message=f"{item.name_en} {NOT_READ_MESSAGE}".strip(),
+                options=[], blocking=True))
+        else:
+            flags.append(db.Flag(
+                field="price", code="BOARD_CONFIRM",
+                message=BOARD_CONFIRM_MESSAGE,
+                options=[str(line.price)], blocking=True))
+    return flags
 
 
 def _update_path(data_dir: Path, session_id: int) -> Path:
@@ -280,6 +301,33 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         from app.web.bills import bills_tiles
 
         bills = bills_tiles(conn, shop["id"])
+        from app import purchases as pur
+
+        today = datetime.now(UTC).astimezone(IST).date().isoformat()
+        spent = pur.spent_on(conn, shop["id"], today)
+        currency = shop["currency"] or "INR"
+        buy_map: dict[str, object] = {}
+        for purchase in pur.list_purchases(conn, shop["id"], today):
+            key = purchase.name_en.strip().lower()
+            if key and key not in buy_map:
+                buy_map[key] = purchase
+        for entry, item in zip(items, db.version_items(conn, versions[0]["id"])
+                               if versions else []):
+            margin_chip = ""
+            purchase = buy_map.get(item.name_en.strip().lower())
+            if purchase is not None and item.price_lines:
+                buy_per, buy_unit = pur.cost_per_unit(
+                    purchase.qty, purchase.unit, purchase.total_cost)
+                line = next((line for line in item.price_lines
+                             if line.price is not None and line.per_amount
+                             and line.unit), None)
+                if buy_per is not None and line is not None:
+                    sell_per = (line.price / line.per_amount).quantize(
+                        Decimal("0.01"))
+                    margin_chip = pur.margin_text(
+                        buy_per, buy_unit, sell_per, line.unit,
+                        currency=currency)
+            entry["margin_chip"] = margin_chip
         return templates.TemplateResponse(
             request,
             "seller.html",
@@ -288,7 +336,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "items": items, "live": live, "live_count": live_count,
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
-             "bills": bills, "shop_lang": shop["language"]},
+             "bills": bills, "shop_lang": shop["language"],
+             "spent_today": spent},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -308,6 +357,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def version_board(token: str, version_id: int, conn: Conn):
         shop, items = _version_items(conn, token, version_id)
         pdf = price_board_pdf(
+            shop, items, datetime.now(IST),
+            f"{app.state.settings.public_base_url}/s/{shop['slug']}")
+        return Response(pdf, media_type="application/pdf")
+
+    @app.get("/e/{token}/tags.pdf")
+    def shop_tags(token: str, conn: Conn):
+        shop = _shop_or_404(conn, token)
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        if version_id is None:
+            raise HTTPException(404, "no published price list yet")
+        items = db.version_items(conn, version_id)
+        pdf = price_tags_pdf(
             shop, items, datetime.now(IST),
             f"{app.state.settings.public_base_url}/s/{shop['slug']}")
         return Response(pdf, media_type="application/pdf")
@@ -369,6 +430,68 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         jobs.submit(_run_session_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
+    @app.post("/e/{token}/board")
+    def board_upload(request: Request, token: str, photo: UploadFile,
+                     conn: Conn):
+        import io
+        import secrets
+
+        from PIL import Image
+
+        from app.pipeline.board import run_board_job, write_board_meta
+
+        shop = _shop_or_404(conn, token)
+        db.purge_expired(conn, data_dir, datetime.now(UTC))
+        if not request.app.state.limiter.allow(client_ip(request),
+                                               datetime.now(UTC)):
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Too many uploads", "message": RATE_LIMIT_MESSAGE},
+                status_code=429)
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        try:
+            ledger.check()
+        except CostCapExceeded:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Demo budget used up",
+                 "message": BUDGET_EXHAUSTED_MESSAGE},
+                status_code=503)
+        payload = photo.file.read()
+        if not payload:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "No photo chosen",
+                 "message": "Choose a photo of your price board first."},
+                status_code=400)
+        if len(payload) > 10 * 1024 * 1024:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Photo too big",
+                 "message": "That photo is too big. Choose one under 10 MB."},
+                status_code=400)
+        try:
+            with Image.open(io.BytesIO(payload)) as img:
+                img.load()
+                photo_format = (img.format or "").lower()
+        except Exception:  # noqa: BLE001 - any unreadable file is a 400
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": "Not a photo",
+                 "message": "We could not open that file as a photo."},
+                status_code=400)
+        ext = {"jpeg": ".jpg", "jpg": ".jpg", "png": ".png",
+               "webp": ".webp"}.get(photo_format, ".jpg")
+        session_id = db.create_session(conn, shop["id"], "board")
+        photo_dir = data_dir / "photos"
+        photo_dir.mkdir(parents=True, exist_ok=True)
+        saved = photo_dir / f"b{session_id}_{secrets.token_hex(4)}{ext}"
+        saved.write_bytes(payload)
+        write_board_meta(data_dir, session_id, {"image": str(saved)})
+        jobs.submit(run_board_job, settings, session_id, str(saved))
+        return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
+
     @app.get("/e/{token}/s/{session_id}")
     def session_page(request: Request, token: str, session_id: int, conn: Conn):
         shop = _shop_or_404(conn, token)
@@ -378,12 +501,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if meta.get("check_id") is not None:
                 return RedirectResponse(
                     f"/e/{token}/photos/{meta['check_id']}", status_code=303)
+        if session["kind"] == "purchase" and session["status"] == "review":
+            return RedirectResponse(f"/e/{token}/purchases/{session_id}",
+                                    status_code=303)
         progress = db.session_progress(session)
         context = {"shop": shop, "session": session, "token": token,
                    "progress": progress, "shop_lang": shop["language"],
                    "friendly": db.stage_friendly(session["kind"],
                                                 progress["stage"])}
-        if session["status"] == "review" and session["kind"] in ("video", "live"):
+        if session["status"] == "review" and session["kind"] in (
+                "video", "live", "board"):
             items = db.load_drafts(conn, session_id)
             cards = []
             for index, item in enumerate(items):
@@ -394,12 +521,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "end_ms": item.proof.end_ms,
                     "frame": item.proof.frame,
                     "audio_clip": item.proof.audio_clip,
+                    "source": item.proof.source,
                 }
+                is_board = item.proof.source == "board_photo"
                 cards.append(
                     {
                         "index": index,
                         "item": item,
                         "photo_url": _photo_url(item.photo),
+                        "board_thumb_url": (
+                            _photo_url(item.proof.frame) if is_board else None
+                        ),
+                        "is_board": is_board,
                         "clip_url": (
                             f"/e/{token}/s/{session_id}/clip/{index}"
                             if item.proof.audio_clip
@@ -455,9 +588,19 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         items = []
         for index, raw in enumerate(raw_items):
             item = _draft_from_client(raw)
-            item.flags = check_item(item, previous, language=shop["language"],
-                                    ledger=ledger,
-                                    settings=app.state.settings)
+            if item.proof.source == "board_photo":
+                kept = [
+                    flag for flag in check_item(
+                        item, previous, language=shop["language"],
+                        ledger=ledger, settings=app.state.settings)
+                    if flag.code not in ("NOT_HEARD", "NO_PRICE",
+                                          "UNIT_MISSING", "NUMBER_CHECK",
+                                          "UNCLEAR_NUMBER")]
+                item.flags = kept + _board_flags(item)
+            else:
+                item.flags = check_item(item, previous, language=shop["language"],
+                                        ledger=ledger,
+                                        settings=app.state.settings)
             item.confirmed = index in confirmed
             items.append(item)
         try:
@@ -483,6 +626,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             db.set_session_status(conn, session_id, "processing",
                                   "Trying again...")
             jobs.submit(run_photo_job, settings, session_id,
+                        str(meta["image"]))
+            return RedirectResponse(f"/e/{token}/s/{session_id}",
+                                    status_code=303)
+        if session["kind"] == "board":
+            from app.pipeline.board import read_board_meta, run_board_job
+
+            meta = read_board_meta(data_dir, session_id)
+            if not meta.get("image"):
+                raise HTTPException(400, "this photo is gone; take it again")
+            db.set_session_status(conn, session_id, "processing",
+                                  "Trying again...")
+            jobs.submit(run_board_job, settings, session_id,
                         str(meta["image"]))
             return RedirectResponse(f"/e/{token}/s/{session_id}",
                                     status_code=303)

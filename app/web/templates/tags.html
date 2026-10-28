@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<title>{{ shop["name"] }} — price tags</title>
+<style>
+@font-face {
+  font-family: "Noto Sans Tamil";
+  src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Tamil";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
+}
+@page { size: A4; margin: 10mm 12mm; }
+body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; margin: 0; }
+.page { page-break-after: always; }
+.page:last-child { page-break-after: avoid; }
+/* 2 columns x 4 rows = 8 tags per page. */
+.sheet { display: flex; flex-wrap: wrap; gap: 4mm; }
+.tag {
+  position: relative;
+  width: 88mm; height: 62mm;
+  border: 0.5pt dashed #78716c;
+  border-radius: 3mm;
+  padding: 4mm 5mm;
+  box-sizing: border-box;
+  page-break-inside: avoid;
+}
+.tag-local { font-size: 22pt; font-weight: bold; line-height: 1.1; padding-right: 16mm; }
+.tag-en { font-size: 10pt; color: #57534e; margin-top: 1mm; }
+.tag-price { font-size: 34pt; font-weight: bold; color: #14532d; margin-top: 2mm; white-space: nowrap; }
+.tag-per { font-size: 12pt; color: #57534e; font-weight: normal; }
+.tag-qr { position: absolute; top: 3mm; right: 3mm; width: 14mm; }
+.tag-date { position: absolute; bottom: 3mm; right: 4mm; font-size: 8pt; color: #78716c; }
+.tag-shop { position: absolute; bottom: 3mm; left: 4mm; font-size: 8pt; color: #78716c; }
+</style>
+</head>
+<body>
+{% for page in pages %}
+<div class="page">
+<div class="sheet">
+{% for tag in page %}
+<div class="tag">
+  <img class="tag-qr" src="{{ qr_data_uri }}" alt="shop QR code">
+  <div class="tag-local">{{ tag.name_local }}</div>
+  <div class="tag-en">{{ tag.name_en }}{% if tag.variety %} ({{ tag.variety }}){% endif %}</div>
+  <div class="tag-price">{{ tag.price | money(shop["currency"]) }} <span class="tag-per">/ {{ tag.per }}</span></div>
+  <div class="tag-shop">{{ shop["name"] }}</div>
+  <div class="tag-date">Today, {{ at }}</div>
+</div>
+{% endfor %}
+</div>
+</div>
+{% endfor %}
+</body>
+</html>

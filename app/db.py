@@ -14,7 +14,7 @@ from app.models import DraftItem, Flag, Item, PriceLine, Proof
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
 _SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo",
-                  "bill_voice", "bill_photo", "live"}
+                  "bill_voice", "bill_photo", "live", "board", "purchase"}
 
 STAGES: list[tuple[str, str]] = [
     ("uploaded", "Video received"),
@@ -80,6 +80,36 @@ LIVE_STAGE_FRIENDLY = {
     "checking": "Checking every price against what you said.",
     "ready": "Ready for you to check.",
 }
+BOARD_STAGES = ["uploaded", "looking", "items", "checking", "ready"]
+BOARD_STAGE_LABELS = {
+    "uploaded": "Photo received",
+    "looking": "Reading your board",
+    "items": "Finding the items",
+    "checking": "Checking every price",
+    "ready": "Ready to check",
+}
+BOARD_STAGE_FRIENDLY = {
+    "uploaded": "Your board photo arrived safely.",
+    "looking": "Muse Spark is reading your price board.",
+    "items": "Finding the items and prices on your board.",
+    "checking": "Checking every price from your board.",
+    "ready": "Ready for you to check.",
+}
+PURCHASE_STAGES = ["uploaded", "listening", "items", "checking", "ready"]
+PURCHASE_STAGE_LABELS = {
+    "uploaded": "Recording received",
+    "listening": "Listening to your purchases",
+    "items": "Finding the items",
+    "checking": "Checking every number",
+    "ready": "Ready to check",
+}
+PURCHASE_STAGE_FRIENDLY = {
+    "uploaded": "Your recording arrived safely.",
+    "listening": "Meta Muse Voice is turning your speech into text.",
+    "items": "Muse Spark is finding what you bought.",
+    "checking": "Checking every number against what you said.",
+    "ready": "Ready for you to check.",
+}
 _STAGE_COLUMNS = (
     ("stage", "TEXT"),
     ("stage_detail", "TEXT"),
@@ -100,6 +130,10 @@ def stages_for_kind(kind: str) -> list[str]:
         return list(QUOTE_PHOTO_STAGES)
     if kind == "live":
         return list(LIVE_STAGES)
+    if kind == "board":
+        return list(BOARD_STAGES)
+    if kind == "purchase":
+        return list(PURCHASE_STAGES)
     return [key for key, _ in STAGES]
 
 
@@ -111,6 +145,10 @@ def stage_label(kind: str, key: str) -> str:
         return QUOTE_STAGE_LABELS.get(key, key)
     if kind == "live":
         return LIVE_STAGE_LABELS.get(key, STAGE_LABELS.get(key, key))
+    if kind == "board":
+        return BOARD_STAGE_LABELS.get(key, STAGE_LABELS.get(key, key))
+    if kind == "purchase":
+        return PURCHASE_STAGE_LABELS.get(key, STAGE_LABELS.get(key, key))
     return STAGE_LABELS.get(key, key)
 
 
@@ -122,6 +160,10 @@ def stage_friendly(kind: str, key: str) -> str:
         return QUOTE_STAGE_FRIENDLY.get(key, "")
     if kind == "live":
         return LIVE_STAGE_FRIENDLY.get(key, STAGE_FRIENDLY.get(key, ""))
+    if kind == "board":
+        return BOARD_STAGE_FRIENDLY.get(key, STAGE_FRIENDLY.get(key, ""))
+    if kind == "purchase":
+        return PURCHASE_STAGE_FRIENDLY.get(key, STAGE_FRIENDLY.get(key, ""))
     return STAGE_FRIENDLY.get(key, "")
 
 
@@ -199,6 +241,15 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             updated_at TEXT NOT NULL, customer_phone TEXT,
             payment_mode TEXT, paid_at TEXT, total_exact TEXT,
             bill_token TEXT
+        );
+        CREATE TABLE IF NOT EXISTS purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            date TEXT NOT NULL, name_en TEXT NOT NULL,
+            name_local TEXT NOT NULL DEFAULT '',
+            qty TEXT, unit TEXT, total_cost TEXT,
+            source TEXT NOT NULL DEFAULT 'typed',
+            created_at TEXT NOT NULL
         );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
@@ -519,14 +570,16 @@ def _proof_to_json(proof: Proof) -> dict:
     return {"quote": proof.quote, "turn_ids": proof.turn_ids,
             "start_ms": proof.start_ms, "end_ms": proof.end_ms,
             "frame": proof.frame, "audio_clip": proof.audio_clip,
-            "number_check": proof.number_check}
+            "number_check": proof.number_check,
+            "source": proof.source}
 
 
 def _proof_from_json(proof: dict) -> Proof:
     return Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
                 start_ms=proof["start_ms"], end_ms=proof["end_ms"],
                 frame=proof.get("frame"), audio_clip=proof.get("audio_clip"),
-                number_check=proof.get("number_check"))
+                number_check=proof.get("number_check"),
+                source=proof.get("source"))
 
 
 def _draft_to_json(item: DraftItem) -> str:

@@ -45,6 +45,7 @@ class Proof:
     frame: str | None = None
     audio_clip: str | None = None
     number_check: str | None = None
+    source: str | None = None
 
 
 @dataclass
@@ -100,3 +101,29 @@ class Box:
     w: int
     h: int
     confidence: float | None
+
+
+@dataclass
+class Purchase:
+    id: int
+    shop_id: int
+    date: str
+    name_en: str
+    name_local: str
+    qty: Decimal | None
+    unit: str | None
+    total_cost: Decimal | None
+    source: str
+
+
+@dataclass
+class PurchaseDraft:
+    name_spoken: str
+    name_local: str
+    name_en: str
+    qty: Decimal | None
+    unit: str | None
+    total_cost: Decimal | None
+    proof: Proof
+    flags: list[Flag] = field(default_factory=list)
+    confirmed: bool = False

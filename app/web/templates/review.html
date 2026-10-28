@@ -8,6 +8,7 @@
   <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
@@ -54,7 +55,10 @@
       <p class="flag-note">{{ flag.message }}</p>
       {% endif %}
     {% endfor %}
-    {% if card.clip_url %}
+    {% if card.is_board and card.board_thumb_url %}
+    <img class="review-photo" src="{{ card.board_thumb_url }}" alt="Your price board">
+    <p class="muted">{{ ui.icon("photo") }}Read from your board</p>
+    {% elif card.clip_url %}
     <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}Play what you said</a></p>
     {% endif %}
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>

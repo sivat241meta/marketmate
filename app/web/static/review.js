@@ -66,6 +66,7 @@ function collectCards(form) {
         quote: proof.quote || "", turn_ids: proof.turn_ids || [],
         start_ms: proof.start_ms || 0, end_ms: proof.end_ms || 0,
         frame: proof.frame || null, audio_clip: proof.audio_clip || null,
+        source: proof.source || null,
       },
       flags: [], photo: null, condition_hint: null, confirmed: false,
     };

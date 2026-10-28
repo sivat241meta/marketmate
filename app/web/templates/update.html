@@ -8,6 +8,7 @@
   <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
@@ -113,6 +114,18 @@
     <button class="btn btn-secondary" type="submit">Upload and check</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
+</section>
+<section class="card">
+  {{ ui.icon("photo") }}
+  <h2>Photo of your price board</h2>
+  <p class="muted">Take a photo of your handwritten or printed board. We read each price — you tap every price to confirm before anything is published.</p>
+  <form method="post" action="/e/{{ token }}/board" enctype="multipart/form-data">
+    <div class="field">
+      <label for="board-photo">Choose a photo of your board</label>
+      <input id="board-photo" type="file" name="photo" accept="image/*" capture="environment" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload board and check</button>
+  </form>
 </section>
 {% if items %}
 <h2>Current prices</h2>

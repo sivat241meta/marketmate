@@ -8,6 +8,7 @@
   <a class="side-link" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
   <a class="side-link" href="/e/{{ token }}/photos">{{ ui.icon("photo") }}<span>Photos</span></a>
   <a class="side-link" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>Bills</span></a>
+  <a class="side-link" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}<span>Purchases</span></a>
   <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
   <a class="side-link" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}<span>Settings</span></a>
 </nav>
@@ -41,7 +42,7 @@
 <p>These changes are waiting on the confirm page. If you closed it, record the update again.</p>
 <p><a class="btn" href="/e/{{ token }}/update">Update prices by voice</a></p>
 {% else %}
-<h1>{% if session["kind"] == "photo" %}Working on your photo…{% else %}Working on your video…{% endif %}</h1>
+<h1>{% if session["kind"] == "photo" %}Working on your photo…{% elif session["kind"] == "board" %}Reading your price board…{% elif session["kind"] == "purchase" %}Working on your purchases…{% else %}Working on your video…{% endif %}</h1>
 <p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
 <ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/s/{{ session["id"] }}/status">
   {% for step in progress["steps"] %}

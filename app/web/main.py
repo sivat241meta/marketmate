@@ -29,6 +29,7 @@ from app.pipeline.names import PRODUCE_KEYWORDS
 from app.web import bills as bills_routes
 from app.web import live as live_routes
 from app.web import photos as photo_routes
+from app.web import purchases as purchases_routes
 from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
 from app.web import settings as settings_routes
@@ -93,6 +94,7 @@ def create_app(settings: Settings) -> FastAPI:
     bills_routes.register(app, settings, templates)
     live_routes.register(app, settings, templates)
     settings_routes.register(app, settings, templates)
+    purchases_routes.register(app, settings, templates)
 
     def get_conn():
         conn = db.connect(data_dir)
