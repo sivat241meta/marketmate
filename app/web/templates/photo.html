@@ -13,81 +13,94 @@
 </nav>
 {% endblock %}
 {% block content %}
-<p><a href="/e/{{ token }}/photos">← All photo checks</a></p>
-<h1>Photo check</h1>
-<p class="muted">{{ rel }}</p>
+<header class="page-head">
+  <p class="back-link"><a href="/e/{{ token }}/photos">← All photo checks</a></p>
+  <h1>Photo check</h1>
+  <p class="muted">{{ shop["name"] }} · {{ rel }}</p>
+</header>
 
-<div class="photo-frame" data-photo-frame>
-  {% if image_url %}<img src="{{ image_url }}" alt="Scanned stock photo">{% endif %}
-  <svg class="boxes" data-boxes viewBox="0 0 {{ width }} {{ height }}" role="img" aria-label="Counted items">
+<div class="photo-layout">
+  <div class="photo-left">
+    <div class="photo-frame" data-photo-frame>
+      {% if image_url %}<img src="{{ image_url }}" alt="Scanned stock photo">{% endif %}
+      <svg class="icon boxes" data-boxes viewBox="0 0 {{ width }} {{ height }}" role="img" aria-label="Counted items">
+        {% for product in products %}
+        {% for box in product.boxes %}
+        <g class="box-g">
+          <rect class="box-c{{ product.colour }}" x="{{ box.x1 }}" y="{{ box.y1 }}" width="{{ box.x2 - box.x1 }}" height="{{ box.y2 - box.y1 }}"/>
+          <text class="box-badge box-badge-c{{ product.colour }}" x="{{ box.x1 + 3 }}" y="{{ box.y1 + 13 }}">{{ loop.index }}</text>
+        </g>
+        {% endfor %}
+        {% endfor %}
+      </svg>
+    </div>
+    <p><label class="box-toggle" for="show-boxes"><input type="checkbox" id="show-boxes" checked> Show boxes</label></p>
+  </div>
+
+  <div class="photo-right">
+    <div class="section-head"><h2>What we see</h2></div>
     {% for product in products %}
-    {% for box in product.boxes %}
-    <rect class="box-c{{ product.colour }}" x="{{ box.x1 }}" y="{{ box.y1 }}" width="{{ box.x2 - box.x1 }}" height="{{ box.y2 - box.y1 }}"/>
+    <section class="card product-card-line">
+      <div class="product-head">
+        <span class="swatch swatch-c{{ product.colour }}" aria-hidden="true"></span>
+        <h3>{{ product.display }}{% if product.name_local %} <span class="name-local" lang="ta">{{ product.name_local }}</span>{% endif %}</h3>
+      </div>
+      {% if not product.countable %}
+      <p class="muted">Sold by weight - no count</p>
+      {% elif product.needs_check %}
+      <p>{{ ui.pill(product.count_text, "check") }}</p>
+      <div class="stepper" data-stepper>
+        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
+        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
+        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
+      </div>
+      {% else %}
+      <p><strong>{{ product.count_text }}</strong></p>
+      <div class="stepper" data-stepper>
+        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
+        <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
+        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
+      </div>
+      {% endif %}
+    </section>
     {% endfor %}
-    {% endfor %}
-  </svg>
-</div>
-<p><label class="box-toggle" for="show-boxes"><input type="checkbox" id="show-boxes" checked> Show boxes</label></p>
 
-<div class="section-head"><h2>Suggestions</h2></div>
-{% if suggestions %}
-{% for suggestion in suggestions %}
-<section class="card suggestion">
-  {{ ui.icon(suggestion.icon) }}
-  <p>{{ suggestion.text }}</p>
-  {% if suggestion.is_link %}
-  <a class="btn btn-secondary" href="/e/{{ token }}/photos#scan">{{ suggestion.button }}</a>
-  {% else %}
-  <form method="post" action="/e/{{ token }}/photos/{{ check["id"] }}/apply">
-    <input type="hidden" name="action" value="{{ suggestion.action }}">
-    <input type="hidden" name="item" value="{{ suggestion.item_name }}">
-    {% if suggestion.action == "set_stock" %}
-    <input type="hidden" name="qty" value="{{ suggestion.qty if suggestion.qty is not none }}" data-qty-for="{{ suggestion.item_name }}">
+    <div class="section-head"><h2>Suggestions</h2></div>
+    {% if suggestions %}
+    {% for suggestion in suggestions %}
+    <section class="card suggestion">
+      <span class="suggestion-icon">{{ ui.icon(suggestion.icon) }}</span>
+      <p class="suggestion-text">{{ suggestion.text }}</p>
+      <span class="suggestion-action">
+        {% if suggestion.is_link %}
+        <a class="btn btn-secondary" href="/e/{{ token }}/photos#scan">{{ suggestion.button }}</a>
+        {% else %}
+        <form method="post" action="/e/{{ token }}/photos/{{ check["id"] }}/apply">
+          <input type="hidden" name="action" value="{{ suggestion.action }}">
+          <input type="hidden" name="item" value="{{ suggestion.item_name }}">
+          {% if suggestion.action == "set_stock" %}
+          <input type="hidden" name="qty" value="{{ suggestion.qty if suggestion.qty is not none }}" data-qty-for="{{ suggestion.item_name }}">
+          {% endif %}
+          <button class="btn btn-primary" type="submit">{{ suggestion.button }}</button>
+        </form>
+        {% endif %}
+      </span>
+    </section>
+    {% endfor %}
+    {% else %}
+    <p class="muted">Nothing to suggest for this photo.</p>
     {% endif %}
-    <button class="btn btn-primary" type="submit">{{ suggestion.button }}</button>
-  </form>
-  {% endif %}
-</section>
-{% endfor %}
-{% else %}
-<p class="muted">Nothing to suggest for this photo.</p>
-{% endif %}
 
-<div class="section-head"><h2>What we see</h2></div>
-{% for product in products %}
-<section class="card">
-  <div class="product-head">
-    <span class="swatch swatch-c{{ product.colour }}" aria-hidden="true"></span>
-    <h3>{{ product.display }}{% if product.name_local %} <span class="name-local" lang="ta">{{ product.name_local }}</span>{% endif %}</h3>
-  </div>
-  {% if not product.countable %}
-  <p class="muted">Sold by weight - no count</p>
-  {% elif product.needs_check %}
-  <p>{{ ui.pill(product.count_text, "check") }}</p>
-  <div class="stepper" data-stepper>
-    <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
-    <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
-    <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
-  </div>
-  {% else %}
-  <p><strong>{{ product.count_text }}</strong></p>
-  <div class="stepper" data-stepper>
-    <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="Count one less">−</button>
-    <input type="number" min="0" step="1" value="{{ product.default_qty }}" data-count-for="{{ product.name_en }}" aria-label="Count for {{ product.display }}">
-    <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="Count one more">+</button>
-  </div>
-  {% endif %}
-</section>
-{% endfor %}
+    {% if conditions %}
+    <div class="section-head"><h2>Notes for you</h2></div>
+    {% for name, note in conditions %}
+    <p class="muted seller-note">{{ ui.icon("lock") }} Seller only: {{ name }} — {{ note }}</p>
+    {% endfor %}
+    {% endif %}
 
-{% if conditions %}
-<div class="section-head"><h2>Notes for you</h2></div>
-{% for name, note in conditions %}
-<p class="muted seller-note">{{ ui.icon("lock") }} Seller only: {{ name }} — {{ note }}</p>
-{% endfor %}
-{% endif %}
-
-<p class="honesty">Counts are estimates from the photo. Prices only come from what you say.</p>
+    <p class="honesty">Counts are estimates from the photo. Prices only come from what you say.</p>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('photo.js') if static_url is defined else '/static/photo.js' }}"></script>

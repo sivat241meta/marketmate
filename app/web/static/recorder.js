@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = new FormData();
     form.append("audio", blob, `update.${ext}`);
     startBtn.disabled = true;
+    startBtn.classList.remove("is-recording");
     stopBtn.disabled = true;
     try {
       const response = await fetch(uploadUrl, {
@@ -63,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       recorder.start();
       startBtn.disabled = true;
+      startBtn.classList.add("is-recording");
       stopBtn.disabled = false;
       status.textContent = recPrompt;
     } catch (err) {

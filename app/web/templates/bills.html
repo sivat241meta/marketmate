@@ -13,7 +13,10 @@
 </nav>
 {% endblock %}
 {% block content %}
-<h1>Bills</h1>
+<header class="page-head">
+  <h1>Bills</h1>
+  <p class="muted">{{ shop["name"] }} · today's sales at a glance</p>
+</header>
 <nav class="chips" aria-label="Date range">
   <a class="chip{% if range == "today" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status={{ status }}">Today</a>
   <a class="chip{% if range == "yesterday" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=yesterday&amp;status={{ status }}">Yesterday</a>
@@ -21,10 +24,10 @@
 </nav>
 
 <div class="stat-grid">
-  <div class="stat"><span class="stat-num">{{ bills_today }}</span><span class="stat-label">Bills today</span></div>
-  <div class="stat"><span class="stat-num">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">Sales today</span></div>
-  <div class="stat"><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">Quotes waiting</span></div>
-  <div class="stat"><span class="stat-num">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">Average bill</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.icon("receipt") }}</span><span class="stat-num">{{ bills_today }}</span><span class="stat-label">Bills today</span><span class="stat-caption">billed and paid</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.icon("tag") }}</span><span class="stat-num money">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">Sales today</span><span class="stat-caption">total billed</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.icon("share") }}</span><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">Quotes waiting</span><span class="stat-caption">from customers</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.icon("check") }}</span><span class="stat-num money">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">Average bill</span><span class="stat-caption">per bill today</span></div>
 </div>
 
 <p>{{ ui.button("New bill", href="/e/" ~ token ~ "/bills/new", kind="primary", icon_name="receipt") }}</p>
@@ -41,14 +44,17 @@
 <a class="bill-row" href="/e/{{ token }}/bills/{{ row.id }}">
   <span class="row-main">
     <span class="list-name">{{ row.label }}</span>
+    {% if row.names %}<span class="list-sub">{{ row.names[:2] | join(", ") }}{% if row.names | length > 2 %} +{{ row.names | length - 2 }}{% endif %}</span>{% endif %}
     <span class="list-sub">{{ row.time }} · {{ row.count }} item{% if row.count != 1 %}s{% endif %}</span>
   </span>
-  <span class="bill-total">{{ row.total | money(shop["currency"]) }}</span>
-  {{ ui.pill(row.pill_text, row.pill_kind) }}
+  <span class="bill-right">
+    <span class="bill-total money">{{ row.total | money(shop["currency"]) }}</span>
+    {{ ui.pill(row.pill_text, row.pill_kind) }}
+  </span>
 </a>
 {% endfor %}
 {% else %}
-{{ ui.empty_state("No bills here yet", "Bills you make today will show up here. Tap New bill to start one.", None, None, "receipt") }}
+{{ ui.empty_state("No bills here yet", "Bills you make today will show up here. Tap New bill to start one.", "/e/" ~ token ~ "/bills/new", "New bill", "receipt") }}
 {% endif %}
 
 <div class="section-head"><h2>Top items today</h2></div>
@@ -56,11 +62,11 @@
 {% for entry in top %}
 <div class="top-row">
   <div class="row-main"><strong>{{ entry.display }}</strong> <span class="muted">{{ entry.qty }}{% if entry.unit %} {{ entry.unit }}{% endif %} sold</span></div>
-  <div class="list-price">{{ entry.amount | money(shop["currency"]) }}</div>
-  <progress class="progress" value="{{ entry.width }}" max="100" aria-label="{{ entry.display }} share of sales">{{ entry.width }}%</progress>
+  <progress class="progress top-bar" value="{{ entry.width }}" max="100" aria-label="{{ entry.display }} share of sales">{{ entry.width }}%</progress>
+  <div class="list-price money">{{ entry.amount | money(shop["currency"]) }}</div>
 </div>
 {% endfor %}
 {% else %}
-<p class="muted">Nothing billed today yet. Your best sellers will show up here.</p>
+{{ ui.empty_state("Nothing billed yet", "Your best sellers will show up here once you bill today.", None, None, "tag") }}
 {% endif %}
 {% endblock %}

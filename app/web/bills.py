@@ -287,8 +287,23 @@ def _status_pill(row) -> tuple[str, str]:
     return (str(row["status"]).title(), "info")
 
 
-def _bill_lines(raw_lines) -> tuple[list[dict], int]:
+def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
+    """Map lower-cased item name to its public photo URL (display only)."""
+    urls: dict[str, str] = {}
+    version_id = db.latest_version(conn, shop_id, published_only=True)
+    if version_id is None:
+        return urls
+    for item in db.version_items(conn, version_id):
+        if item.photo and item.name_en:
+            urls[item.name_en.strip().lower()] = (
+                "/m/" + Path(item.photo).name)
+    return urls
+
+
+def _bill_lines(raw_lines, photos: dict[str, str] | None = None
+                ) -> tuple[list[dict], int]:
     lines = []
+    photos = photos or {}
     for index, raw in enumerate(raw_lines if isinstance(raw_lines, list)
                                else []):
         if not isinstance(raw, dict):
@@ -298,6 +313,8 @@ def _bill_lines(raw_lines) -> tuple[list[dict], int]:
             "name_en": raw.get("name_en", ""),
             "display": _display(raw.get("name_en", "")),
             "name_local": raw.get("name_local", ""),
+            "photo_url": photos.get(
+                str(raw.get("name_en", "")).strip().lower()),
             "qty": _fmt_money(raw.get("qty", "")),
             "unit": raw.get("unit") or "",
             "unit_price": _fmt_money(raw.get("unit_price")),
@@ -361,6 +378,12 @@ def _price_items(conn, shop_id: int) -> list[dict]:
             "unit": first.unit if first is not None else "",
             "summary": summary,
             "sold_out": item.sold_out,
+            # Display only: live totals in JS, server recomputes on post.
+            "unit_price": _fmt_money(first.price) if first is not None else "",
+            "per_amount": _fmt_money(first.per_amount)
+            if first is not None else "",
+            "photo_url": ("/m/" + Path(item.photo).name
+                          if item.photo else None),
         })
     return items
 
@@ -523,11 +546,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     raw = []
                 count = len(raw) if isinstance(raw, list) else 0
                 text, kind = _status_pill(row)
+                names = [_display(str(entry.get("name_en", "")))
+                         for entry in raw
+                         if isinstance(entry, dict) and entry.get("name_en")]
                 items.append({
                     "id": row["id"],
                     "label": _customer_label(row),
                     "time": _row_time(row, now=now),
                     "count": count,
+                    "names": names,
                     "total": _fmt_money(row["total"]),
                     "pill_text": text,
                     "pill_kind": kind,
@@ -551,7 +578,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raw_lines = []
         if not isinstance(raw_lines, list):
             raw_lines = []
-        lines, _ = _bill_lines(raw_lines)
+        lines, _ = _bill_lines(
+            raw_lines, item_photo_urls(conn, shop["id"]))
         text, kind = _status_pill(bill)
         when = _parse_moment(bill["created_at"])
         created_label = when.astimezone(IST).strftime(

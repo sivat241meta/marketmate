@@ -13,23 +13,27 @@
 </nav>
 {% endblock %}
 {% block content %}
-<h1>Stock photos</h1>
+<header class="page-head">
+  <h1>Stock photos</h1>
+  <p class="muted">{{ shop["name"] }} · counts are estimates, prices come from your voice</p>
+</header>
 
 <section class="card cta-card" id="scan">
   <h2>Scan a stock photo</h2>
   <p class="muted">Take a photo of a crate or heap. We count what is visible. Prices only come from what you say.</p>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label for="photo-camera">Take a photo</label>
-      <input id="photo-camera" type="file" name="photo" accept="image/*" capture="environment" required>
-      <span class="help">Point the camera at one crate or heap, in good light.</span>
+      <label class="drop-zone" for="photo-camera">{{ ui.icon("camera") }}<span>Point the camera at one crate or heap, in good light.</span><strong>Choose photo</strong>
+        <input id="photo-camera" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
+      </label>
     </div>
     <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}Scan this photo</button>
   </form>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label for="photo-gallery">Or choose from gallery</label>
-      <input id="photo-gallery" type="file" name="photo" accept="image/*">
+      <label class="drop-zone is-small" for="photo-gallery">{{ ui.icon("photo") }}<span>Or choose from gallery</span><strong>Choose photo</strong>
+        <input id="photo-gallery" class="file-hidden" type="file" name="photo" accept="image/*">
+      </label>
     </div>
     <button class="btn btn-secondary" type="submit">Upload from gallery</button>
   </form>
@@ -37,17 +41,19 @@
 
 <div class="section-head"><h2>Past checks</h2></div>
 {% if checks %}
-{% for check in checks %}
-<a class="check-row" href="/e/{{ token }}/photos/{{ check.id }}">
-  {% if check.thumb_url %}<img class="list-thumb" src="{{ check.thumb_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
-  <span class="row-main">
-    <span class="list-name">{{ check.rel or "Photo check" }}</span>
-    <span class="chips">
-      {% for chip in check.chips %}<span class="chip">{{ chip }}</span>{% endfor %}
+<div class="check-grid">
+  {% for check in checks %}
+  <a class="check-card" href="/e/{{ token }}/photos/{{ check.id }}">
+    {% if check.thumb_url %}<img class="check-thumb" src="{{ check.thumb_url }}" alt="">{% else %}<span class="check-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    <span class="check-meta">
+      <span class="check-chips">
+        {% for chip in check.chips %}<span class="chip">{{ chip }}</span>{% endfor %}
+      </span>
+      <span class="muted">{{ check.rel }}</span>
     </span>
-  </span>
-</a>
-{% endfor %}
+  </a>
+  {% endfor %}
+</div>
 {% else %}
 {{ ui.empty_state("No photo checks yet", "Scan your first stock photo above.", None, None) }}
 {% endif %}

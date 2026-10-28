@@ -13,35 +13,48 @@
 </nav>
 {% endblock %}
 {% block content %}
-<p><a href="/e/{{ token }}/bills">← All bills</a></p>
-<h1>New bill</h1>
-<p class="muted">{{ shop["name"] }} · prices from today's list</p>
+<header class="page-head">
+  <p class="back-link"><a href="/e/{{ token }}/bills">← All bills</a></p>
+  <h1>New bill</h1>
+  <p class="muted">{{ shop["name"] }} · prices from today's list</p>
+</header>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
-<section class="card">
+<div class="segmented" data-methods role="group" aria-label="Bill method">
+  <button type="button" data-method="tap" aria-pressed="true">{{ ui.icon("tag") }}Tap items</button>
+  <button type="button" data-method="speak" aria-pressed="false">{{ ui.icon("mic") }}Speak</button>
+  <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("receipt") }}Type</button>
+  <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
+</div>
+
+<section class="card method-panel" data-panel="tap">
   <h2>{{ ui.icon("tag") }} Tap items</h2>
   <p class="muted">Fastest: tap + for each item. No AI, totals from your list.</p>
   {% if price_items %}
-  <form method="post" action="/e/{{ token }}/bills/new">
-    {% for item in price_items %}
-    <div class="list-row">
-      <div class="list-main">
-        <span class="list-name">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span>
-        <span class="list-sub">{{ item.summary }}</span>
-        {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+  <form method="post" action="/e/{{ token }}/bills/new" data-tap-form data-zero="{{ 0 | money(shop["currency"]) }}">
+    <div class="receipt-lines">
+      {% for item in price_items %}
+      <div class="receipt-line" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
+        {% if item.photo_url %}<img class="line-thumb" src="{{ item.photo_url }}" alt="">{% else %}<span class="line-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+        <div class="line-main">
+          <span class="line-name">{{ item.display }}{% if item.name_local %} <span class="name-local" lang="ta">{{ item.name_local }}</span>{% endif %}</span>
+          <span class="line-rate muted">{{ item.summary }}</span>
+          {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+        </div>
+        {% if not item.sold_out %}
+        <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
+        <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
+        <span class="stepper is-compact" data-stepper>
+          <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ item.display }}">−</button>
+          <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="Quantity for {{ item.display }}">
+          <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ item.display }}">+</button>
+        </span>
+        {% endif %}
       </div>
-      {% if not item.sold_out %}
-      <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
-      <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
-      <div class="stepper" data-stepper>
-        <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ item.display }}">−</button>
-        <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="Quantity for {{ item.display }}">
-        <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ item.display }}">+</button>
-      </div>
-      {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
-    <div class="sticky-bar">
+    <div class="sticky-bar tap-bar">
+      <span class="sticky-total" data-tap-summary>Pick items with +</span>
       <button class="btn btn-primary btn-big" type="submit">Make bill</button>
     </div>
   </form>
@@ -50,25 +63,29 @@
   {% endif %}
 </section>
 
-<section class="card">
+<section class="card method-panel" data-panel="speak">
   <h2>{{ ui.icon("mic") }} Speak the order</h2>
   <p class="muted">Say the order, e.g. “2 kilo tomato, 1 dozen banana”.</p>
   <div class="record-actions">
-    <button class="mic-btn" type="button" id="rec-start" data-upload-url="/e/{{ token }}/bills/new" data-rec-prompt="Recording… say the order.">{{ ui.icon("mic") }}<span>Speak</span></button>
-    <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
+    <div class="mic-wrap">
+      <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/e/{{ token }}/bills/new" data-rec-prompt="Recording… say the order." aria-label="Speak">{{ ui.icon("mic") }}</button>
+      <span class="mic-label">Speak</span>
+    </div>
+    <button class="btn btn-secondary" type="button" id="rec-stop" disabled>Stop</button>
   </div>
   <p class="muted" id="rec-status">Tap Speak and say the order.</p>
   <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
     <div class="field">
-      <label for="bill-audio">Or upload a recording</label>
-      <input id="bill-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+      <label class="drop-zone" for="bill-audio">{{ ui.icon("mic") }}<span>Or upload a recording</span><strong>Choose recording</strong>
+        <input id="bill-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+      </label>
     </div>
     <button class="btn btn-secondary" type="submit">Upload and bill</button>
   </form>
   <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 </section>
 
-<section class="card">
+<section class="card method-panel" data-panel="type">
   <h2>{{ ui.icon("receipt") }} Type it</h2>
   <form method="post" action="/e/{{ token }}/bills/new">
     <div class="field">
@@ -79,13 +96,14 @@
   </form>
 </section>
 
-<section class="card">
+<section class="card method-panel" data-panel="photo">
   <h2>{{ ui.icon("photo") }} Photo the basket</h2>
   <p class="muted">A photo of the customer's basket. We count and price from your list.</p>
   <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
     <div class="field">
-      <label for="bill-photo">Choose a photo</label>
-      <input id="bill-photo" type="file" name="photo" accept="image/*" capture="environment" required>
+      <label class="drop-zone" for="bill-photo">{{ ui.icon("photo") }}<span>Choose a photo of the basket</span><strong>Choose photo</strong>
+        <input id="bill-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
+      </label>
     </div>
     <button class="btn btn-secondary" type="submit">Upload photo and bill</button>
   </form>
@@ -94,4 +112,5 @@
 {% block scripts %}
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+<script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 {% endblock %}

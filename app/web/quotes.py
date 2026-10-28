@@ -105,9 +105,12 @@ def _display(name: str) -> str:
     return name[:1].upper() + name[1:] if name else name
 
 
-def _quote_lines_context(raw_lines: list[dict]) -> tuple[list[dict], int, int]:
+def _quote_lines_context(raw_lines: list[dict],
+                         photos: dict[str, str] | None = None
+                         ) -> tuple[list[dict], int, int]:
     lines = []
     priced = 0
+    photos = photos or {}
     for index, raw in enumerate(raw_lines):
         status = raw.get("status", "")
         if status == "priced":
@@ -117,6 +120,8 @@ def _quote_lines_context(raw_lines: list[dict]) -> tuple[list[dict], int, int]:
             "name_en": raw.get("name_en", ""),
             "display": _display(raw.get("name_en", "")),
             "name_local": raw.get("name_local", ""),
+            "photo_url": photos.get(
+                str(raw.get("name_en", "")).strip().lower()),
             "qty": _fmt_money(raw.get("qty", "")),
             "unit": raw.get("unit") or "",
             "unit_price": _fmt_money(raw.get("unit_price")),
@@ -271,7 +276,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raw_lines = []
         language = _customer_lang(shop, lang)
         strings = get_strings(language)
-        lines, priced_count, unpriced_count = _quote_lines_context(raw_lines)
+        from app.web.bills import item_photo_urls
+
+        lines, priced_count, unpriced_count = _quote_lines_context(
+            raw_lines, item_photo_urls(conn, shop["id"]))
         rel = ""
         published_id = db.latest_version(conn, shop["id"], published_only=True)
         if published_id is not None:

@@ -906,3 +906,274 @@ a.chip { color: var(--green); text-decoration: none; min-height: var(--tap); dis
   .btn:active { transform: none; }
   .vstep.is-active .vdot { animation: none; }
 }
+
+/* ---- Task 32: receipt polish, method tabs, photo two-column ---- */
+.money,
+.list-price,
+.product-price,
+.basket-total,
+.stat-num,
+.bill-total,
+.line-amount,
+.sticky-total,
+.quote-total-value,
+.receipt-total {
+  font-variant-numeric: tabular-nums;
+}
+
+.page-head { margin-bottom: var(--space-3); }
+.page-head h1 { margin-bottom: var(--space-1); }
+.page-head .muted { margin: 0; }
+.back-link { margin: 0 0 var(--space-2); }
+
+/* Receipt card + action panel */
+.bill-layout { display: grid; gap: var(--space-4); }
+.receipt-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+}
+.receipt-head { text-align: center; padding-bottom: var(--space-3); }
+.receipt-shop { font-weight: 800; font-size: 1.2rem; margin: 0; }
+.receipt-meta { color: var(--muted); font-size: 0.9rem; margin: var(--space-1) 0 0; }
+.receipt-lines { border-top: 2px dashed var(--line); border-bottom: 2px dashed var(--line); }
+.receipt-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed var(--line);
+}
+.receipt-line:last-child { border-bottom: 0; }
+.receipt-line.is-muted { opacity: 0.75; }
+.line-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.line-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.line-name { font-weight: 700; overflow-wrap: anywhere; }
+.line-rate { font-weight: 700; }
+.line-rate small { font-weight: 500; }
+.line-note { font-size: 0.85rem; }
+.line-amount { font-weight: 800; text-align: right; white-space: nowrap; }
+.stepper.is-compact { gap: var(--space-1); flex-wrap: wrap; }
+.stepper.is-compact input[type="number"] { width: 4.5rem; }
+.receipt-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--green);
+}
+.is-muted-list { background: #f5f0e6; border-style: dashed; }
+
+.bill-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.bill-actions .btn { width: 100%; }
+.bill-actions details.card { margin: 0; }
+.bill-actions summary {
+  font-weight: 800;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.paid-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--ok);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border-radius: var(--radius-btn);
+  min-height: 52px;
+  margin: 0;
+}
+
+/* Quote total card + sticky bars */
+.quote-total { text-align: center; }
+.quote-total-label { display: block; font-weight: 700; color: var(--muted); }
+.quote-total-value { display: block; font-size: 2.2rem; font-weight: 800; color: var(--green); }
+.sticky-bar.bill-bar,
+.sticky-bar.quote-bar,
+.sticky-bar.tap-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.sticky-bar.bill-bar form { flex: 1; min-width: 0; }
+.sticky-bar.bill-bar .btn,
+.sticky-bar.quote-bar .btn,
+.sticky-bar.tap-bar .btn { width: auto; flex: 1 1 auto; min-width: 0; }
+.sticky-total { font-size: 1.4rem; font-weight: 800; white-space: nowrap; }
+
+/* Segmented method control */
+.segmented {
+  display: flex;
+  gap: 4px;
+  background: var(--line);
+  border-radius: 14px;
+  padding: 4px;
+  margin: var(--space-3) 0 var(--space-4);
+  overflow-x: auto;
+}
+.segmented button {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segmented button.is-active { background: var(--card); color: var(--green); box-shadow: var(--shadow-card); }
+.method-panel[hidden] { display: none; }
+
+/* Big round mic button + drop zones */
+.mic-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.mic-btn.is-big {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  padding: 0;
+}
+.mic-btn.is-big .icon { width: 30px; height: 30px; }
+.mic-label { font-weight: 800; font-size: 0.9rem; }
+.mic-btn.is-recording { animation: micpulse 1.4s ease-in-out infinite; }
+@keyframes micpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+  50% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+}
+
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  border: 2px dashed #a8a29e;
+  border-radius: var(--radius-btn);
+  padding: var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  font-weight: 400;
+}
+.drop-zone .icon { width: 32px; height: 32px; color: var(--green); }
+.drop-zone span { color: var(--muted); font-size: 0.9rem; }
+.drop-zone strong { color: var(--green); }
+.drop-zone:focus-within { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.drop-zone.is-small { padding: var(--space-3); }
+
+/* Photo two-column + badges */
+.photo-layout { display: grid; gap: var(--space-4); }
+.photo-frame img { max-height: 80vh; object-fit: contain; background: var(--ink); }
+svg.boxes text.box-badge {
+  font-size: 13px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+}
+.box-badge-c0 { fill: #dc2626; }
+.box-badge-c1 { fill: #2563eb; }
+.box-badge-c2 { fill: #16a34a; }
+.box-badge-c3 { fill: #d97706; }
+.box-badge-c4 { fill: #9333ea; }
+.box-badge-c5 { fill: #db2777; }
+
+.suggestion { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.suggestion-icon { flex: none; }
+.suggestion-icon .icon { width: 28px; height: 28px; color: var(--green); }
+.suggestion-text { flex: 1 1 160px; }
+.suggestion-action { flex: none; margin-left: auto; }
+.suggestion-action form { margin: 0; }
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+.check-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+.check-thumb {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  background: var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.check-meta { padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: 4px; }
+.check-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.check-chips .chip { font-size: 0.75rem; padding: 2px 8px; }
+
+/* Bills dashboard polish */
+.stat-icon .icon { width: 22px; height: 22px; color: var(--green); }
+.stat-caption { color: var(--muted); font-size: 0.78rem; }
+.bill-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}
+.bill-right .bill-total { text-align: right; }
+.top-row { display: flex; align-items: center; gap: var(--space-3); }
+.top-row .row-main { flex: 1 1 auto; }
+.top-row .top-bar { flex: 2 1 120px; }
+.top-row .list-price { flex: none; }
+
+/* Shop empty state */
+.empty-shop { text-align: center; }
+.empty-shop > .icon { width: 44px; height: 44px; color: var(--green); }
+.empty-shop h2 { margin-top: var(--space-2); }
+
+@media (min-width: 900px) {
+  .bill-layout { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }
+  .bill-actions { position: sticky; top: 76px; }
+  .sticky-bar.bill-bar { display: none; }
+  .photo-layout { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .photo-left { position: sticky; top: 76px; }
+  .check-grid { grid-template-columns: repeat(4, 1fr); }
+  .segmented { max-width: 640px; }
+}
