@@ -23,12 +23,18 @@ from PIL import Image
 from app import db, jobs
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
+    IST,
     CostCapExceeded,
     CostLedger,
 )
 from app.languages import get_language, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
-from app.market.quote import build_quote, wanted_from_photo, wanted_from_text
+from app.market.quote import (
+    WantedLine,
+    build_quote,
+    wanted_from_photo,
+    wanted_from_text,
+)
 from app.meta.spark import SparkError
 from app.meta.transcribe import transcribe_wav
 from app.outputs.quote_pdf import quote_pdf
@@ -268,10 +274,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         lines, priced_count, unpriced_count = _quote_lines_context(
             raw_lines, item_photo_urls(conn, shop["id"]))
         rel = ""
+        prices_time = ""
         published_id = db.latest_version(conn, shop["id"], published_only=True)
         if published_id is not None:
-            rel = format_relative(db.version_time(conn, published_id),
-                                  datetime.now(UTC))
+            when = db.version_time(conn, published_id)
+            rel = format_relative(when, datetime.now(UTC))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            prices_time = when.astimezone(IST).strftime("%H:%M")
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
         steps = []
         for key in db.ORDER_STEPS:
@@ -286,11 +296,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         from app.web.bills import row_not_understood
 
         return templates.TemplateResponse(request, "quote.html", {
-            "shop": shop, "token": row["token"], "lines": lines,
+            "shop": shop, "token": row["token"], "order_id": row["id"],
+            "lines": lines,
             "total": _fmt_money(row["total"]),
             "priced_count": priced_count, "unpriced_count": unpriced_count,
             "not_understood": row_not_understood(row),
-            "rel": rel, "error": error, "lang": language, "t": strings,
+            "rel": rel, "prices_time": prices_time,
+            "digits": re.sub(r"\D", "", shop["phone"] or ""),
+            "error": error, "lang": language, "t": strings,
             "shop_lang": shop["language"] or "en",
             "ui_lang": language if language in ("ta", "hi", "en") else "en",
             "subtitle": strings["quote_subtitle"].format(
@@ -329,6 +342,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     async def _quote_submit_impl(request: Request, slug: str, conn):
         shop = _shop_or_404(conn, slug)
         language = _customer_lang(shop, request.query_params.get("lang"))
+        if "application/json" in request.headers.get("content-type", ""):
+            return await _quote_submit_cart(request, shop, conn, language)
         form = await request.form()
         items = form.get("items")
         audio = form.get("audio")
@@ -362,6 +377,43 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote)
         return RedirectResponse(f"/q/{token}{_lang_suffix(language)}",
                                 status_code=303)
+
+    async def _quote_submit_cart(request: Request, shop, conn, language: str):
+        """Cart submit from the shop page: lines only, priced from published.
+
+        The client preview (totals, per-line prices) is ignored entirely;
+        build_quote recomputes every price from the published version.
+        """
+        try:
+            payload = await request.json()
+        except ValueError:
+            return JSONResponse({"error": "invalid JSON"}, status_code=400)
+        raw_lines = payload.get("lines") if isinstance(payload, dict) else None
+        if not raw_lines:
+            return JSONResponse({"error": "empty cart"}, status_code=400)
+        wanted: list[WantedLine] = []
+        for entry in raw_lines:
+            if not isinstance(entry, dict):
+                continue
+            name = str(entry.get("name_en") or "").strip()
+            if not name:
+                continue
+            try:
+                qty = Decimal(str(entry.get("qty", "1")))
+            except (InvalidOperation, ValueError, TypeError):
+                continue
+            if qty <= 0:
+                continue
+            unit = entry.get("unit") or None
+            wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
+                                     source="cart"))
+        if not wanted:
+            return JSONResponse({"error": "empty cart"}, status_code=400)
+        quote = build_quote(conn, shop["id"], wanted)
+        token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
+                                source="customer")
+        url = f"/q/{token}{_lang_suffix(language)}"
+        return JSONResponse({"token": token, "url": url})
 
     def _guarded(request, shop, conn):
         if not request.app.state.limiter.allow(client_ip(request),

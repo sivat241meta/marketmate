@@ -2,88 +2,107 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ t.get_quote }} — {{ shop["name"] }}{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t.get_quote }}</h1>
-  <p class="muted">{{ shop["name"] }} · {{ shop["area"] }}</p>
-</header>
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+<div class="sheet-wrap">
+  <a class="sheet-backdrop" href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t.back_to }} {{ shop["name"] }}"></a>
+  <div class="sheet" role="dialog" aria-label="{{ t.get_quote }}">
+    <div class="grab" aria-hidden="true"></div>
+    <p class="kick">{{ shop["name"] }}</p>
+    <h2 class="h2s">{{ t('shell.order_voice') }}</h2>
+    <p class="lead">{{ shop["area"] }}</p>
+    {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
-<div class="segmented" data-methods role="group" aria-label="{{ t.get_quote }}">
-  <button type="button" data-method="speak" aria-pressed="true">{{ ui.icon("mic") }}Speak</button>
-  <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("tag") }}Type</button>
-  <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
-</div>
+    <div class="segmented" data-methods role="group" aria-label="{{ t.get_quote }}">
+      <button type="button" data-method="speak" aria-pressed="true">{{ ui.icon("mic") }}Speak</button>
+      <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("tag") }}Type</button>
+      <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
+    </div>
 
-<section class="card method-panel" data-panel="speak" data-needs-internet>
-  <h2>{{ ui.icon("mic") }} {{ t.speak_list }}</h2>
-  <p class="muted" data-needs-internet-hint hidden>needs internet</p>
-  <p class="muted">{{ t.speak_help }}</p>
-  <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
-    <div class="live-captions" aria-live="polite">
-      <p class="live-last" data-live-order-last></p>
-      <p class="live-partial" data-live-order-partial></p>
-    </div>
-    <div class="live-controls">
-      <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
-      <p class="muted live-hint" data-live-order-hint>{{ t.tap_speak }}</p>
-    </div>
-    <div class="alert alert-warn" data-live-order-error hidden></div>
-    <div data-live-order-lines hidden>
-      <h3>{{ t.total }}</h3>
-      <div data-live-order-list></div>
-      <p>Total: <strong class="money" data-live-order-total></strong></p>
-    </div>
-    <p><button class="btn btn-primary btn-big" type="button" data-live-order-done hidden>Done</button></p>
+    <section class="method-panel" data-panel="speak" data-needs-internet>
+      <h3>{{ ui.icon("mic") }} {{ t.speak_list }}</h3>
+      <p class="muted" data-needs-internet-hint hidden>needs internet</p>
+      <p class="muted">{{ t.speak_help }}</p>
+      <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
+        <div class="live-captions" aria-live="polite">
+          <p class="live-last" data-live-order-last></p>
+          <p class="live-partial" data-live-order-partial></p>
+        </div>
+        <div class="live-controls">
+          <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
+          <p class="muted live-hint" data-live-order-hint>{{ t.tap_speak }}</p>
+        </div>
+        <div class="alert alert-warn" data-live-order-error hidden></div>
+        <div data-live-order-lines hidden>
+          <h3>{{ t.total }}</h3>
+          <div data-live-order-list></div>
+          <p>Total: <strong class="money" data-live-order-total></strong></p>
+        </div>
+        <p><button class="pill dark big" type="button" data-live-order-done hidden>Done</button></p>
+      </div>
+      <details class="card">
+        <summary>{{ t.upload_recording }}</summary>
+        <div class="record-actions">
+          <div class="mic-wrap">
+            <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" data-rec-prompt="Recording… say your shopping list." aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
+            <span class="mic-label">{{ t.speak }}</span>
+          </div>
+          <button class="pill ghost" type="button" id="rec-stop" disabled>{{ t.stop }}</button>
+        </div>
+        <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
+        <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
+          <div class="field">
+            <label class="drop-zone" for="quote-audio">{{ ui.icon("mic") }}<span>{{ t.upload_recording }}</span><strong>Choose recording</strong>
+              <input id="quote-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+            </label>
+          </div>
+          <button class="pill ghost" type="submit">{{ t.upload_and_quote }}</button>
+        </form>
+      </details>
+      <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+    </section>
+
+    <section class="method-panel" data-panel="type">
+      <h3>{{ ui.icon("tag") }} {{ t.type_list }}</h3>
+      <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
+        <div class="field">
+          <label for="quote-items">{{ t.what_need }}</label>
+          <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
+        </div>
+        <button class="pill dark big" type="submit">{{ t.get_quote_short }}</button>
+      </form>
+    </section>
+
+    <section class="method-panel" data-panel="photo">
+      <h3>{{ ui.icon("photo") }} {{ t.photo_list }}</h3>
+      <p class="muted">{{ t.photo_help }}</p>
+      <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
+        <div class="field">
+          <label class="drop-zone" for="quote-photo">{{ ui.icon("photo") }}<span>{{ t.choose_photo }}</span><strong>Choose photo</strong>
+            <input id="quote-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
+          </label>
+        </div>
+        <button class="pill ghost" type="submit">{{ t.upload_photo_quote }}</button>
+      </form>
+    </section>
   </div>
-  <details class="card">
-    <summary>{{ t.upload_recording }}</summary>
-    <div class="record-actions">
-      <div class="mic-wrap">
-        <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" data-rec-prompt="Recording… say your shopping list." aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
-        <span class="mic-label">{{ t.speak }}</span>
-      </div>
-      <button class="btn btn-secondary" type="button" id="rec-stop" disabled>{{ t.stop }}</button>
-    </div>
-    <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
-    <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
-      <div class="field">
-        <label class="drop-zone" for="quote-audio">{{ ui.icon("mic") }}<span>{{ t.upload_recording }}</span><strong>Choose recording</strong>
-          <input id="quote-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-        </label>
-      </div>
-      <button class="btn btn-secondary" type="submit">{{ t.upload_and_quote }}</button>
-    </form>
-  </details>
-  <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
-</section>
-
-<section class="card method-panel" data-panel="type">
-  <h2>{{ ui.icon("tag") }} {{ t.type_list }}</h2>
-  <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
-    <div class="field">
-      <label for="quote-items">{{ t.what_need }}</label>
-      <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
-    </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ t.get_quote_short }}</button>
-  </form>
-</section>
-
-<section class="card method-panel" data-panel="photo">
-  <h2>{{ ui.icon("photo") }} {{ t.photo_list }}</h2>
-  <p class="muted">{{ t.photo_help }}</p>
-  <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
-    <div class="field">
-      <label class="drop-zone" for="quote-photo">{{ ui.icon("photo") }}<span>{{ t.choose_photo }}</span><strong>Choose photo</strong>
-        <input id="quote-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
-      </label>
-    </div>
-    <button class="btn btn-secondary" type="submit">{{ t.upload_photo_quote }}</button>
-  </form>
-</section>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const list = document.querySelector("[data-live-order-list]");
+  if (!list) return;
+  const tag = () => {
+    list.querySelectorAll(".list-row").forEach((row) => {
+      const sub = row.querySelector(".list-sub");
+      row.classList.toggle("is-unknown", !!sub && sub.textContent.trim() === "not on list");
+    });
+  };
+  new MutationObserver(tag).observe(list, { childList: true, subtree: true });
+  tag();
+});
+</script>
 {% endblock %}

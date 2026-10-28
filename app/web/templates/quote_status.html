@@ -2,9 +2,11 @@
 {% import "_ui.html" as ui %}
 {% block title %}Working on your quote — {{ shop["name"] }}{% endblock %}
 {% block content %}
+<p class="kick">{{ shop["name"] }}</p>
 {% if session["status"] == "failed" %}
-<h1>Something went wrong</h1>
+<h1 class="big">Something went wrong.</h1>
 {{ ui.alert(session["message"], "warn") }}
+<div class="rcpt">
 <ol class="vstepper">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}">
@@ -13,11 +15,13 @@
   </li>
   {% endfor %}
 </ol>
-<p><a class="btn btn-primary btn-big" href="/s/{{ shop["slug"] }}/quote">Try again</a></p>
+</div>
+<p><a class="pill dark big" href="/s/{{ shop["slug"] }}/quote">Try again</a></p>
 <p><a href="/s/{{ shop["slug"] }}">Back to {{ shop["name"] }}</a></p>
 {% else %}
-<h1>Working on your quote…</h1>
+<h1 class="big">Working on <em>your quote…</em></h1>
 <p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
+<div class="rcpt">
 <ol class="vstepper" data-stepper data-status-url="/s/{{ shop["slug"] }}/quote/{{ session["id"] }}/status">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
@@ -32,6 +36,7 @@
   </li>
   {% endfor %}
 </ol>
+</div>
 <p class="muted" data-elapsed>Elapsed: {{ progress["elapsed_s"] | round | int }} s</p>
 <noscript>
 <meta http-equiv="refresh" content="3">

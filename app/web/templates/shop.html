@@ -2,42 +2,78 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ shop["name"] }}{% endblock %}
 {% block content %}
-<section class="shop-hero">
-  <div class="shop-hero-top">
-    <div>
-      <h1>{{ shop["name"] }}</h1>
-      <p class="shop-area">{{ shop["area"] }}</p>
+<div class="hero2">
+  <div class="hero-copy">
+    <p class="kick">{{ shop["name"] }}</p>
+    <h1 class="big">{{ t('shop.headline_a') }}<br><em>{{ t('shop.headline_b') }}</em></h1>
+    {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
+    <div class="trio">
+      <div class="tri"><span class="tile m">{{ ui.icon("mic") }}</span><b>{{ t('shop.trio_prices', n=rows | length) }}</b><small>{{ t('shop.trio_prices_sub') }}</small></div>
+      <div class="tri"><span class="tile y">{{ ui.icon("bag") }}</span><b>{{ t('shop.trio_pay') }}</b><small>{{ t('shop.trio_pay_sub') }}</small></div>
+      <div class="tri"><span class="tile s">{{ ui.icon("qr") }}</span><b>{% if has_upi %}{{ t('shop.trio_upi') }}{% else %}{{ t('shop.trio_cash') }}{% endif %}</b><small>{{ t('shop.trio_upi_sub') }}</small></div>
+    </div>
+    <div class="hero-cta">
+      <a class="pill dark big btn-primary" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.get_quote }} {{ ui.icon("mic") }}</a>
+      <a class="pill ghost big" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
+      <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
     </div>
   </div>
-  {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
-</section>
+  {% if hero_photo %}
+  <div class="desk-only hero-photo"><img src="{{ hero_photo }}" alt=""></div>
+  {% endif %}
+</div>
 
 {% if rows %}
-<section class="trust-card">
-  {{ ui.icon("check") }}
-  <div><strong>{{ t.prices_set_by_seller }}</strong><br><span class="muted">{{ t.spoken_and_checked }} {{ rel }}</span></div>
-</section>
-<p><a class="btn btn-primary btn-big" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ ui.icon("tag") }}{{ t.get_quote }}</a></p>
-<div class="contact-grid">
-  <a class="btn btn-secondary" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
-  <a class="btn btn-green" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
+<p class="kick">{{ t('shell.todays_prices') }}</p>
+<h2 class="h2s">{{ t('shop.summary', n=rows | length, min=summary_min, max=summary_max) }}</h2>
+<div class="search">
+  {{ ui.icon("tag") }}
+  <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length) }}</label>
+  <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
 </div>
-<div class="grid-products">
+<div class="chips"><span class="chip on">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
+<p class="notice">{{ ui.icon("check") }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
+
+<div class="grid-products" data-shop-grid>
 {% for row in rows %}
-  <article class="product-card{% if row.sold_out %} is-out{% endif %}">
-    {% if row.sold_out %}{{ ui.pill(t.sold_out, "soldout") }}{% endif %}
-    {% if row.photo_url %}<img src="{{ row.photo_url }}" alt="">{% endif %}
-    <div class="product-info">
-      <b lang="{{ shop_lang }}">{{ row.name_local }}</b>
-      {% if row.name_en != row.name_local %}<small>{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</small>{% elif row.variety %}<small>({{ row.variety }})</small>{% endif %}
+  <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ row.name_local) | lower }}">
+    <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ row.name_local[:1] }}</span>{% endif %}</div>
+    <div class="bd">
+      <span class="kk">{% if row.variety %}{{ row.variety }} · {% endif %}{{ t('shop.kicker_fallback', unit=row.unit) }}</span>
+      <h3><span class="tname" lang="{{ shop_lang }}">{{ row.name_local }}</span>{% if row.name_en != row.name_local %}<small>{{ row.name_en }}</small>{% endif %}</h3>
       {% if not row.sold_out %}
-      {% for line in row.lines %}
-      <div class="product-price">{{ line.price | money(shop["currency"]) }} <small>/ {{ line.per }}</small></div>
-      {% endfor %}
+      <div class="sizes" data-sizes>
+        {% if row.unit == "kg" %}
+        <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+        {% else %}
+        <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+        {% endif %}
+      </div>
+      <div class="pr">
+        <div><b>{{ row.price | money(shop["currency"]) }}</b><small>{{ row.price | money(shop["currency"]) }} / {{ row.lines[0].per if row.lines else row.unit }}</small></div>
+        <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
+        <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
+      </div>
+      {% else %}
+      <div class="pr">
+        <div><b>{{ row.price | money(shop["currency"]) }}</b><small>{{ row.price | money(shop["currency"]) }} / {{ row.lines[0].per if row.lines else row.unit }}</small></div>
+        <span class="pill sm ghost">{{ t.sold_out }}</span>
+      </div>
       {% endif %}
     </div>
   </article>
 {% endfor %}
+</div>
+
+<div class="float shop-float" data-cart-bar hidden>
+  <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
+  <button type="button" class="pill gold" data-cart-submit>{{ t('shop.view_order') }}</button>
+</div>
+<div class="rcpt desk-only" data-cart-summary hidden>
+  <p class="kick">{{ t('shop.cart_title') }}</p>
+  <div data-cart-lines></div>
+  <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
+  <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
 </div>
 {% else %}
 <section class="card empty-shop">
@@ -45,9 +81,119 @@
   <h2>{{ t.no_prices_title }}</h2>
   <p class="muted">{{ t.no_prices }} {{ t.call }} or {{ t.whatsapp }} the seller for today's prices.</p>
   <div class="contact-grid">
-    <a class="btn btn-secondary" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
-    <a class="btn btn-green" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
+    <a class="pill ghost" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
+    <a class="pill cta" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
   </div>
 </section>
 {% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const grid = document.querySelector("[data-shop-grid]");
+  if (!grid) return;
+  const search = document.querySelector("[data-shop-search]");
+  const bar = document.querySelector("[data-cart-bar]");
+  const summary = document.querySelector("[data-cart-summary]");
+  const cart = new Map();
+  const fmt = (n) => "₹" + (Math.round(n * 100) / 100).toString().replace(/\.0+$/, "").replace(/(\.\d)0$/, "$1");
+
+  function cardQty(card) {
+    const on = card.querySelector("[data-sizes] .sz.on");
+    return on ? parseFloat(on.dataset.qty || "1") : 1;
+  }
+  function cardRate(card) {
+    const price = parseFloat(card.dataset.price || "0");
+    const per = parseFloat(card.dataset.per || "1") || 1;
+    return price / per;
+  }
+  function refresh() {
+    let count = 0, total = 0;
+    const lines = [];
+    cart.forEach((entry) => {
+      count += 1;
+      const line = entry.rate * entry.qty;
+      total += line;
+      lines.push(`<div class="rl"><div><b>${entry.local}</b><small>${entry.qty} ${entry.unit} × ${fmt(entry.rate)}</small></div><b>${fmt(line)}</b></div>`);
+    });
+    const label = `${count} items · ${fmt(total)}`;
+    bar.querySelector("[data-cart-label]").textContent = label;
+    bar.hidden = count === 0;
+    summary.hidden = count === 0;
+    summary.querySelector("[data-cart-lines]").innerHTML = lines.join("");
+    summary.querySelector("[data-cart-total]").textContent = fmt(total);
+  }
+  grid.querySelectorAll("[data-card]").forEach((card) => {
+    const name = card.dataset.nameEn;
+    if (!name || card.classList.contains("out")) return;
+    const add = card.querySelector("[data-add]");
+    const step = card.querySelector("[data-step]");
+    const qtyEl = card.querySelector("[data-step-qty]");
+    card.querySelectorAll("[data-sizes] .sz").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        card.querySelectorAll("[data-sizes] .sz").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        if (cart.has(name)) {
+          cart.get(name).qty = cardQty(card);
+          qtyEl.textContent = cardQty(card);
+          refresh();
+        }
+      });
+    });
+    add.addEventListener("click", () => {
+      cart.set(name, { qty: cardQty(card), unit: card.dataset.unit, rate: cardRate(card),
+        local: card.querySelector(".tname").textContent, name });
+      qtyEl.textContent = cardQty(card);
+      add.hidden = true;
+      step.hidden = false;
+      refresh();
+    });
+    card.querySelector("[data-inc]").addEventListener("click", () => {
+      const entry = cart.get(name);
+      entry.qty = Math.round((entry.qty + cardQty(card)) * 100) / 100;
+      qtyEl.textContent = entry.qty;
+      refresh();
+    });
+    card.querySelector("[data-dec]").addEventListener("click", () => {
+      const entry = cart.get(name);
+      entry.qty = Math.round((entry.qty - cardQty(card)) * 100) / 100;
+      if (entry.qty <= 0) {
+        cart.delete(name);
+        add.hidden = false;
+        step.hidden = true;
+      } else {
+        qtyEl.textContent = entry.qty;
+      }
+      refresh();
+    });
+  });
+  document.querySelectorAll("[data-cart-submit]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const lines = [];
+      cart.forEach((entry) => lines.push({ name_en: entry.name, qty: entry.qty, unit: entry.unit }));
+      if (!lines.length) return;
+      btn.disabled = true;
+      try {
+        const resp = await fetch(window.location.pathname + "/quote", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lines }),
+        });
+        const data = await resp.json();
+        if (resp.ok && data.url) window.location.href = data.url;
+        else btn.disabled = false;
+      } catch (err) {
+        btn.disabled = false;
+      }
+    });
+  });
+  if (search) {
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      grid.querySelectorAll("[data-card]").forEach((card) => {
+        card.hidden = q !== "" && !(card.dataset.search || "").includes(q);
+      });
+    });
+  }
+});
+</script>
 {% endblock %}

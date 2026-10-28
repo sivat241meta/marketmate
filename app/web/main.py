@@ -178,6 +178,12 @@ def create_app(settings: Settings) -> FastAPI:
 
     def _basket_dict(plans, budget, explanation):
         plan_dicts = []
+        best_total = None
+        for plan in plans:
+            if (plan.kind in ("single_shop", "partial_shop")
+                    and not plan.missing
+                    and (best_total is None or plan.total < best_total)):
+                best_total = plan.total
         for plan in plans:
             lines = []
             for line in plan.lines:
@@ -198,6 +204,9 @@ def create_app(settings: Settings) -> FastAPI:
                     "currency": line.listing.currency,
                 })
             plan_currency = (lines[0]["currency"] if lines else "INR")
+            saved = ""
+            if budget is not None and plan.total < budget:
+                saved = _fmt_rate(budget - plan.total)
             plan_dicts.append({
                 "kind": plan.kind,
                 "shop": plan.shop,
@@ -205,6 +214,12 @@ def create_app(settings: Settings) -> FastAPI:
                 "currency": plan_currency,
                 "lines": lines,
                 "missing": list(plan.missing),
+                "saved": saved,
+                "best": bool(best_total is not None
+                             and plan.total == best_total
+                             and plan.kind in ("single_shop",
+                                               "partial_shop")
+                             and not plan.missing),
             })
         return {
             "budget": _fmt_rate(budget) if budget is not None else "",
@@ -268,7 +283,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/")
     def home(request: Request):
-        return templates.TemplateResponse(request, "home.html", {"ui_lang": "en"})
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "home.html", {"ui_lang": get_ui_lang(request)})
 
     @app.post("/find")
     def find_prices(slug: str = Form(...)):

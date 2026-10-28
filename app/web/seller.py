@@ -1082,27 +1082,61 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         rows = []
         rel = ""
+        prices_time = ""
+        hero_photo = None
+        min_price: Decimal | None = None
+        max_price: Decimal | None = None
         if version_id is not None:
             for item in db.version_items(conn, version_id):
                 name = item.name_local if language == shop_lang else item.name_en
+                photo_url = _photo_url(item.photo)
+                if photo_url and hero_photo is None and not item.sold_out:
+                    hero_photo = photo_url
+                first = item.price_lines[0] if item.price_lines else None
+                unit = (first.unit or "") if first else ""
+                price = first.price if first else None
+                per_amount = first.per_amount if first else None
+                if price is not None and not item.sold_out:
+                    if min_price is None or price < min_price:
+                        min_price = price
+                    if max_price is None or price > max_price:
+                        max_price = price
                 rows.append({
                     "name": f"{name} ({item.variety})" if item.variety else name,
                     "name_local": item.name_local,
                     "name_en": item.name_en,
                     "variety": item.variety,
-                    "photo_url": _photo_url(item.photo),
+                    "photo_url": photo_url,
                     "sold_out": item.sold_out,
+                    "unit": unit,
+                    "price": str(price) if price is not None else "",
+                    "per_amount": (str(per_amount)
+                                   if per_amount is not None else ""),
                     "lines": [{"price": str(line.price),
                                "per": f"{line.per_amount} {line.unit}"}
                               for line in item.price_lines],
                 })
-            rel = format_relative(db.version_time(conn, version_id),
-                                    datetime.now(UTC))
+            when = db.version_time(conn, version_id)
+            rel = format_relative(when, datetime.now(UTC))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            prices_time = when.astimezone(IST).strftime("%H:%M")
+        if hero_photo is None:
+            for row in rows:
+                if row["photo_url"]:
+                    hero_photo = row["photo_url"]
+                    break
+        currency = shop["currency"] or "INR"
+        summary_min = format_money(min_price, currency) if min_price else ""
+        summary_max = format_money(max_price, currency) if max_price else ""
         digits = re.sub(r"\D", "", shop["phone"] or "")
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
             "lang": language, "shop_lang": shop_lang,
             "shop_native": shop_native, "t": get_strings(language),
+            "prices_time": prices_time, "hero_photo": hero_photo,
+            "summary_min": summary_min, "summary_max": summary_max,
+            "has_upi": bool(db.shop_upi_id(shop)),
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
 
     @app.get("/s/{slug}/qr.png")

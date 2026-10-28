@@ -1,19 +1,45 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}MarketMate — say your prices{% endblock %}
+{% block title %}MarketMate — Say your prices. Get a price board, a shop page and a market listing.{% endblock %}
 {% block content %}
-<section class="hero">
-  <h1>Say your prices. Get a price board, a shop page and a market listing.</h1>
-  <p>Film your stall, speak each price, check what was heard. MarketMate does the rest.</p>
-  <p><a class="btn btn-primary" href="/new">Start as seller</a></p>
-</section>
+<h1 class="big">{{ t('home.headline_a') }}<br><em>{{ t('home.headline_b') }}</em></h1>
+<p class="lead">{{ t('home.hero_sub') }}</p>
+
+<div class="trio">
+  <div class="tri"><span class="tile m">{{ ui.icon("mic") }}</span><b>{{ t('home.trio_lang') }}</b><small>{{ t('home.trio_lang_sub') }}</small></div>
+  <div class="tri"><span class="tile y">{{ ui.icon("check") }}</span><b>{{ t('home.trio_honest') }}</b><small>{{ t('home.trio_honest_sub') }}</small></div>
+  <div class="tri"><span class="tile s">{{ ui.icon("receipt") }}</span><b>{{ t('home.trio_bills') }}</b><small>{{ t('home.trio_bills_sub') }}</small></div>
+</div>
+
+<div class="hero-cta">
+  <a class="pill dark big" href="/new">{{ t('top.start_selling') }}</a>
+  <a class="pill ghost big" href="/market">{{ t('top.find_prices') }}</a>
+</div>
+
+<div class="entry-grid">
+  <section class="card entry-card">
+    {{ ui.icon("camera") }}
+    <h2>{{ t('home.f1_t') }}</h2>
+    <p class="muted">{{ t('home.f1_d') }}</p>
+  </section>
+  <section class="card entry-card">
+    {{ ui.icon("check") }}
+    <h2>{{ t('home.f2_t') }}</h2>
+    <p class="muted">{{ t('home.f2_d') }}</p>
+  </section>
+  <section class="card entry-card">
+    {{ ui.icon("share") }}
+    <h2>{{ t('home.f3_t') }}</h2>
+    <p class="muted">{{ t('home.f3_d') }}</p>
+  </section>
+</div>
 
 <div class="entry-grid">
   <section class="card entry-card">
     {{ ui.icon("home") }}
     <h2>Seller: start your shop</h2>
     <p class="muted">Film your stall, check prices, print your board.</p>
-    <p><a class="btn btn-secondary" href="/new">Start as seller</a></p>
+    <p><a class="pill dark" href="/new">Start as seller</a></p>
   </section>
   <section class="card entry-card">
     {{ ui.icon("tag") }}
@@ -24,7 +50,7 @@
         <label for="find-slug">Shop name</label>
         <input id="find-slug" name="slug" placeholder="shop-name" required>
       </div>
-      <button class="btn btn-secondary" type="submit">Find</button>
+      <button class="pill ghost" type="submit">Find</button>
     </form>
     <p><a href="/market">Search the market</a></p>
   </section>
@@ -32,22 +58,17 @@
     {{ ui.icon("check") }}
     <h2>Judges: try the demo</h2>
     <p class="muted">Create a demo shop and run a clip end to end.</p>
-    <p><a class="btn btn-secondary" href="/try">Try the demo</a></p>
+    <p><a class="pill ghost" href="/try">Try the demo</a></p>
   </section>
 </div>
 
-<h2>How it works</h2>
-<ol class="steps">
-  <li>{{ ui.icon("camera") }}<div><b>Film and speak</b><small>Walk past your stall and say each price out loud.</small></div></li>
-  <li>{{ ui.icon("check") }}<div><b>Check every price</b><small>Listen to your own voice and confirm each card.</small></div></li>
-  <li>{{ ui.icon("share") }}<div><b>Share board, page and QR</b><small>Print the board, share the shop page and QR.</small></div></li>
-</ol>
-
-<p class="honesty">Every price comes from the seller's own voice. Nothing is guessed.</p>
+<p class="notice">{{ ui.icon("check") }}<span>Every price comes from the seller's own voice. Nothing is guessed.</span></p>
 
 <section class="card entry-card">
-  <h2>Lost your link?</h2>
-  <p class="muted">Your seller link is the only way back into your shop. There are no passwords and no SMS codes, so MarketMate cannot send you the link.</p>
-  <p class="muted">You can only find it again in the WhatsApp message you sent to yourself from your dashboard or Settings ("Send my link to my WhatsApp"), or on the printed "Keep this safe" card. Keep one of them safe.</p>
+  <h2>{{ t('home.lost_title') }}</h2>
+  <p class="muted">{{ t('home.lost_p1') }}</p>
+  <p class="muted">{{ t('home.lost_p2') }}</p>
 </section>
+
+<p class="muted">{{ t('home.built_with') }}</p>
 {% endblock %}

@@ -2,28 +2,36 @@
 {% import "_ui.html" as ui %}
 {% block title %}Find prices — MarketMate{% endblock %}
 {% block content %}
-<h1>Find prices</h1>
-<form method="get" action="/market" class="search-bar">
+<p class="kick">{{ t('market.kick') }}</p>
+<h1 class="big">{{ t('market.headline_a') }} <em>{{ t('market.headline_b') }}</em></h1>
+
+<form method="get" action="/market" class="search">
+  {{ ui.icon("tag") }}
   <label class="visually-hidden" for="market-q">What do you need?</label>
   <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="tomato, potato 2 kg, budget ₹100" required>
-  <button class="btn btn-green btn-small" type="submit">Search</button>
-  <button class="mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25.">{{ ui.icon("mic") }}<span>Speak</span></button>
-  <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
+  <button class="pill cta sm" type="submit">Search</button>
+  <button class="mic mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25." aria-label="Speak">{{ ui.icon("mic") }}</button>
 </form>
-<p class="muted" id="rec-status">Tap Speak and say what you need.</p>
-<form method="post" action="/market/voice" enctype="multipart/form-data">
-  <div class="field">
-    <label for="market-audio">Or upload a recording</label>
-    <input id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-  </div>
-  <button class="btn btn-secondary" type="submit">Upload and search</button>
-</form>
+<div class="hero-cta">
+  <button class="pill ghost sm" type="button" id="rec-stop" disabled>Stop</button>
+  <span class="muted" id="rec-status">Tap Speak and say what you need.</span>
+</div>
+<details class="card">
+  <summary>Or upload a recording</summary>
+  <form method="post" action="/market/voice" enctype="multipart/form-data">
+    <div class="field">
+      <label for="market-audio">Or upload a recording</label>
+      <input id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+    </div>
+    <button class="pill ghost" type="submit">Upload and search</button>
+  </form>
+</details>
 <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if heard %}<p class="muted">Heard: {{ heard }}</p>{% endif %}
 {% if chips %}
-<p class="muted">Understood:</p>
+<p class="kick">{{ t('market.understood') }}</p>
 <div class="chips">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}</div>
 {% endif %}
 {% if unknown %}
@@ -33,42 +41,41 @@
 {% if basket %}
 <section aria-label="Basket">
   {% if basket.budget %}
-  <h2>Budget basket — {{ basket.budget | money("INR") }}</h2>
+  <h2 class="h2s">Budget basket — {{ basket.budget | money("INR") }}</h2>
   {% else %}
-  <h2>Your basket</h2>
+  <h2 class="h2s">Your basket</h2>
   {% endif %}
-  <p>{{ basket.explanation }}</p>
+  <p class="lead">{{ basket.explanation }}</p>
+  <div class="results-grid">
   {% for plan in basket.plans %}
-  <div class="basket">
-    {% if plan.kind == "split" %}
-    <div class="basket-title">Cheapest split</div>
-    {% elif plan.kind == "partial_shop" %}
-    <div class="basket-title">{{ plan.shop }} (partial)</div>
-    {% else %}
-    <div class="basket-title">{{ plan.shop }} alone</div>
-    {% endif %}
-    <div class="basket-total">{{ plan.total | money(plan.currency) }}</div>
-    {% if plan.lines %}
-    <ul class="basket-lines">
-      {% for line in plan.lines %}
-      <li>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-    {% if plan.missing %}
-    {% if plan.kind == "partial_shop" %}
-    <p>missing: {{ plan.missing | join(", ") }}</p>
-    {% else %}
-    <p>No fresh prices for: {{ plan.missing | join(", ") }}</p>
-    {% endif %}
-    {% endif %}
+  <div class="basket card">
+    <div class="bd">
+      <span class="kk">{% if plan.kind == "split" %}Cheapest split{% elif plan.kind == "partial_shop" %}{{ plan.shop }} · partial{% else %}{{ plan.shop }} · one shop{% endif %}</span>
+      <h3>{% if plan.kind == "split" %}Cheapest split{% else %}{{ plan.shop }}{% endif %}{% if plan.best %} <span class="tag g inline">{{ t('market.best') }}</span>{% endif %}</h3>
+      {% if plan.lines %}
+      <div class="rl"><div>
+        {% for line in plan.lines %}
+        <small>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</small>
+        {% endfor %}
+      </div><b>{{ plan.total | money(plan.currency) }}</b></div>
+      {% endif %}
+      {% if plan.saved %}<p class="leaf-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
+      {% if plan.missing %}
+      {% if plan.kind == "partial_shop" %}
+      <p class="muted"><small>missing: {{ plan.missing | join(", ") }}</small></p>
+      {% else %}
+      <p class="muted"><small>No fresh prices for: {{ plan.missing | join(", ") }}</small></p>
+      {% endif %}
+      {% endif %}
+    </div>
   </div>
   {% endfor %}
+  </div>
 </section>
 {% endif %}
 
 {% if searched and not groups and not error and not basket %}
-<p class="muted">No shops have what you asked for today.</p>
+<p class="muted">{{ t('market.no_results') }}</p>
 {% endif %}
 <div class="results-grid">
 {% for group in groups %}
@@ -76,7 +83,7 @@
   <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
   {% for row in group.rows %}
   <div class="shop-row">
-    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %}<span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a></span>
+    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a></span>
     <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
   </div>
   <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>

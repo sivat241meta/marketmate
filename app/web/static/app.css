@@ -692,6 +692,154 @@ button.chip {
 }
 .card.out { opacity: 0.55; }
 
+/* ---- Task 49 customer pages: hero, shop cards, cart, sheets ---- */
+[hidden] { display: none !important; }
+.hero2 { display: flex; flex-direction: column; gap: 14px; }
+.hero-copy { display: flex; flex-direction: column; gap: 14px; }
+.hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero-photo img {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+  border-radius: 200px 200px 28px 28px;
+  display: block;
+}
+.search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+  min-width: 0;
+  min-height: 44px;
+}
+.search input:focus { outline: none; }
+.search:focus-within { border-color: var(--leaf); }
+.chip { min-height: 44px; display: inline-flex; align-items: center; }
+button.chip { font: inherit; cursor: pointer; }
+.card .ph .nophoto {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--leaf);
+}
+.card .bd h3 { overflow-wrap: anywhere; }
+.card .bd h3 .tname {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card button.sz {
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.card .add { min-height: 44px; }
+.card .step button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.card .step [data-step-qty] { padding: 0 4px; }
+.search .mic { width: 44px; height: 44px; border: 0; cursor: pointer; font: inherit; padding: 0; }
+.leaf-ink { color: var(--leaf-ink); }
+.card .tag.inline { position: static; display: inline-block; vertical-align: middle; }
+.bill-qr { text-align: center; }
+.bill-qr img { width: 120px; height: 120px; }
+.bill-qr small { display: block; margin-top: 6px; }
+div.desk-only[hidden] { display: none !important; }
+.sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 63, 42, 0.45);
+}
+.sheet {
+  position: relative;
+  background: var(--bg);
+  width: 100%;
+  max-width: 720px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow: auto;
+  border-radius: 26px 26px 0 0;
+  padding: 12px 16px 32px;
+  box-shadow: 0 -18px 40px -18px rgba(23, 63, 42, 0.5);
+}
+.sheet .grab {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line-2);
+  margin: 0 auto 12px;
+}
+.sheet .live-captions { min-height: 48px; }
+.sheet .live-last {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--forest);
+  margin: 0 0 4px;
+}
+.sheet .live-partial { color: var(--muted); margin: 0 0 8px; }
+.sheet .live-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.sheet [data-live-order-list] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.sheet [data-live-order-list] .list-row {
+  background: var(--mint);
+  border: 1.5px solid var(--leaf);
+  border-radius: 999px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  border-bottom-width: 1.5px;
+}
+.sheet [data-live-order-list] .list-row::before {
+  content: "✓";
+  font-weight: 800;
+  color: var(--leaf-ink);
+}
+.sheet [data-live-order-list] .list-row.is-unknown {
+  background: var(--gold);
+  border-color: var(--forest);
+}
+.sheet [data-live-order-list] .list-row.is-unknown::before {
+  content: "?";
+  color: var(--forest);
+}
+.sheet [data-live-order-list] .list-main { flex: none; }
+.sheet [data-live-order-list] .list-sub { display: inline; margin-left: 6px; }
+.sheet [data-live-order-list] .list-price { font-size: 14px; }
+
 /* Guide floating bar (cart / bill). */
 .float {
   position: sticky;
@@ -2073,6 +2221,10 @@ svg.boxes text.box-badge {
   .mob-only { display: none !important; }
   .bnav { display: none; }
   .content { max-width: 1100px; }
+  .hero2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+  .float.shop-float { display: none; }
+  .sheet-wrap { align-items: center; padding: 24px; }
+  .sheet { border-radius: 26px; }
   .entry-grid { grid-template-columns: repeat(3, 1fr); }
   .steps { grid-template-columns: repeat(3, 1fr); }
   .grid-products { grid-template-columns: repeat(4, 1fr); }
