@@ -70,3 +70,18 @@ PRODUCE_KEYWORDS: list[str] = sorted(
     | {name_ta for _, name_ta, _ in _ITEMS}
     | {roman for _, _, roman in _ITEMS}
 )
+
+_ENGLISH_KEYWORDS: list[str] = sorted({name_en for name_en, _, _ in _ITEMS})
+
+
+def keywords_for(language_code: str | None) -> list[str]:
+    """Voice Transcribe keywords for a shop language.
+
+    Tamil shops get the full list (English + Tamil script + romanised
+    Tamil). Every other language gets only the English names: Tamil
+    script in the keywords biases the speech model into writing Tamil
+    inside other languages' transcripts.
+    """
+    if language_code == "ta":
+        return list(PRODUCE_KEYWORDS)
+    return list(_ENGLISH_KEYWORDS)

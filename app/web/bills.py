@@ -41,7 +41,7 @@ from app.meta.transcribe import transcribe_wav
 from app.outputs.bill_pdf import bill_pdf
 from app.outputs.money import format_money
 from app.pipeline.media import extract_audio
-from app.pipeline.names import PRODUCE_KEYWORDS
+from app.pipeline.names import keywords_for
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 
@@ -405,8 +405,8 @@ def process_bill_voice_session(conn, session_id: int, audio: Path, *,
         session_dir.mkdir(parents=True, exist_ok=True)
         wav = extract_audio(Path(audio), session_dir / "audio.wav")
         transcript = transcribe_wav(
-            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings,
-            languages=shop_bias(shop_lang))
+            wav, keywords=keywords_for(shop_lang), ledger=ledger,
+            settings=settings, languages=shop_bias(shop_lang))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
                                   settings=settings)

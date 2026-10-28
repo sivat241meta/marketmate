@@ -6,6 +6,7 @@ from app.languages import currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine, Proof, Transcript
 from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
     "You extract a produce seller's spoken items and prices into JSON. "
@@ -17,6 +18,8 @@ _SYSTEM_PROMPT = (
     "a spoken range sets range_said true and price null; "
     "name_en is the lower-case English name and must be a key of the "
     'canonical list, or "other"; '
+    "unit and qty_unit use only the canonical set: kg, g, l, ml, piece, "
+    "dozen, bunch, packet; "
     "name_local is the same item's name in the shop language's script; "
     "never estimate quantities; "
     "variety is written in English letters, lower case, as spoken "
@@ -137,14 +140,18 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
         if isinstance(variety, str):
             variety = variety.lower()
         flags = _backfill_units(price_lines)
+        for line in price_lines:
+            normalize_price_line(line)
+        qty_unit, qty = normalize_qty_unit(raw.get("qty_unit"),
+                                           _decimal_or_none(raw.get("qty")))
         items.append(DraftItem(
             name_spoken=name_spoken,
             name_local=_local_name(raw, name_en, name_spoken, language),
             name_en=name_en,
             variety=variety,
             price_lines=price_lines,
-            qty=_decimal_or_none(raw.get("qty")),
-            qty_unit=raw.get("qty_unit"),
+            qty=qty,
+            qty_unit=qty_unit,
             proof=Proof(quote=quote, turn_ids=turn_ids,
                         start_ms=start_ms, end_ms=end_ms),
             range_said=bool(raw.get("range_said", False)),

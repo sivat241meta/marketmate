@@ -10,6 +10,7 @@ from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, Item, PriceLine, Proof, Transcript
 from app.pipeline.checks import check_item
 from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 ACTIONS = ("set_price", "sold_out", "in_stock", "set_qty")
 
@@ -18,6 +19,8 @@ _SYSTEM_PROMPT = (
     "Rules: use only what was said, null when it wasn't said; "
     "quote must be copied exactly from one or more turn texts; "
     "name_en must be a key of the canonical list, or \"other\"; "
+    "unit and qty_unit use only the canonical set: kg, g, l, ml, piece, "
+    "dozen, bunch, packet; "
     "action is set_price when a new price is said, sold_out when the item ran "
     "out, in_stock when it is available again, set_qty when only a quantity "
     "is said; never estimate quantities."
@@ -170,12 +173,16 @@ def parse_update_json(data: dict, transcript: Transcript,
         quote = raw.get("quote") or ""
         turn_ids = list(raw.get("turn_ids") or [])
         start_ms, end_ms = _proof_times(quote, turn_ids, transcript)
+        for line in price_lines:
+            normalize_price_line(line)
+        qty_unit, qty = normalize_qty_unit(raw.get("qty_unit"),
+                                           _decimal_or_none(raw.get("qty")))
         change = Change(
             name_en=name_en,
             action=action,
             price_lines=price_lines,
-            qty=_decimal_or_none(raw.get("qty")),
-            qty_unit=raw.get("qty_unit"),
+            qty=qty,
+            qty_unit=qty_unit,
             proof=Proof(quote=quote, turn_ids=turn_ids,
                         start_ms=start_ms, end_ms=end_ms),
         )

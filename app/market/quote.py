@@ -15,10 +15,9 @@ from pathlib import Path
 
 from app.market.search import SYNONYMS, parse_query
 from app.meta.spark import chat_json, image_part
-from app.models import UNITS
 from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.names import CANONICAL_NAMES
-from app.pipeline.units import convert, normalise_unit
+from app.pipeline.units import convert, normalize_unit
 from app.pipeline.vision import analyse_photo
 
 __all__ = [
@@ -125,21 +124,11 @@ _LIST_KINDS = {"shopping_list", "shopping-list", "list",
 
 
 def _photo_unit(raw) -> str | None:
+    """Canonical unit for a shopping-list photo line, or None if unknown."""
     if raw is None:
         return None
-    text = str(raw).strip().lower()
-    if not text:
-        return None
-    if text in UNITS:
-        return text
-    found = normalise_unit(text)
-    if found is not None:
-        return found
-    if text.endswith("s"):
-        found = normalise_unit(text[:-1])
-        if found is not None:
-            return found
-    return None
+    canonical, _ = normalize_unit(str(raw))
+    return canonical
 
 
 def _decimal_or_none(value) -> Decimal | None:
@@ -187,10 +176,14 @@ def wanted_from_photo(image: Path | str, *, ledger, settings
             name = str(raw.get("name") or "").strip()
             if not name:
                 continue
+            qty = _decimal_or_none(raw.get("qty"))
+            canonical, factor = normalize_unit(raw.get("unit"))
+            if qty is not None and factor != 1:
+                qty = _positive(qty * factor)
             wanted.append(WantedLine(
                 name_en=_wanted_name(name),
-                qty=_decimal_or_none(raw.get("qty")),
-                unit=_photo_unit(raw.get("unit")),
+                qty=qty,
+                unit=canonical,
                 source="photo_list",
             ))
         return wanted
@@ -285,6 +278,12 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
                 exact = [line for line in priced if line.unit == item.unit]
                 convertible = [line for line in priced
                                if line.unit in ("kg", "g")]
+                picked = exact[0] if exact else (
+                    convertible[0] if convertible else None)
+            elif item.unit in ("l", "ml"):
+                exact = [line for line in priced if line.unit == item.unit]
+                convertible = [line for line in priced
+                               if line.unit in ("l", "ml")]
                 picked = exact[0] if exact else (
                     convertible[0] if convertible else None)
             elif item.unit in ("piece", "dozen", "bunch", "packet"):

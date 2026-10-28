@@ -37,7 +37,7 @@
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
-    {% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
+    {% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}
     {% for flag in item.flags %}
       {% if flag.options %}
       <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">

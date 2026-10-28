@@ -9,9 +9,9 @@ from decimal import Decimal, InvalidOperation
 
 from app import db
 from app.meta.spark import chat_json
-from app.models import UNITS, PriceLine
+from app.models import PriceLine
 from app.pipeline.names import CANONICAL_NAMES
-from app.pipeline.units import rate
+from app.pipeline.units import normalize_unit, rate
 
 STALE_AFTER_HOURS = 24
 
@@ -132,12 +132,14 @@ def parse_query_json(data: dict) -> Query:
         if canonical is None:
             unknown.append(name)
             continue
-        unit = raw.get("unit")
-        unit = unit if unit in UNITS else None
+        canonical_unit, factor = normalize_unit(raw.get("unit"))
+        amount = _decimal_or_none(raw.get("amount"))
+        if amount is not None and factor != 1:
+            amount = amount * factor
         wants.append(Want(
             name_en=canonical,
-            amount=_decimal_or_none(raw.get("amount")),
-            unit=unit,
+            amount=amount,
+            unit=canonical_unit,
             max_rate=_decimal_or_none(raw.get("max_rate")),
         ))
     area = data.get("area")

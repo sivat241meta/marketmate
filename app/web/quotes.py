@@ -34,7 +34,7 @@ from app.meta.transcribe import transcribe_wav
 from app.outputs.quote_pdf import quote_pdf
 from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
-from app.pipeline.names import PRODUCE_KEYWORDS
+from app.pipeline.names import keywords_for
 from app.pipeline.run import friendly_error_message
 from app.web.i18n import get_strings
 
@@ -168,9 +168,10 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
         session_dir = Path(settings.data_dir) / "sessions" / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
         wav = extract_audio(Path(audio), session_dir / "audio.wav")
+        shop_lang = _shop_language(conn, shop_id)
         transcript = transcribe_wav(
-            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings,
-            languages=shop_bias(_shop_language(conn, shop_id)))
+            wav, keywords=keywords_for(shop_lang), ledger=ledger,
+            settings=settings, languages=shop_bias(shop_lang))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
                                   settings=settings)

@@ -26,7 +26,7 @@ from app.costs import CostLedger
 from app.models import PriceLine
 from app.pipeline.extract import extract_items
 from app.pipeline.run import _transcript_from_json
-from app.pipeline.units import rate
+from app.pipeline.units import normalize_unit, rate
 
 _CANONICAL_VARIETY = {"bangalore": "bengaluru", "bengaluru": "bengaluru"}
 
@@ -51,7 +51,11 @@ def _decimal(value) -> Decimal | None:
 
 
 def price_rate(price, per_amount, unit) -> tuple[Decimal, str] | None:
-    return rate(PriceLine(_decimal(price), _decimal(per_amount), unit))
+    canonical, factor = normalize_unit(unit)
+    amount = _decimal(per_amount)
+    if amount is not None:
+        amount = amount * factor
+    return rate(PriceLine(_decimal(price), amount, canonical))
 
 
 def _out_first_rate(out_item) -> tuple[Decimal, str] | None:
@@ -72,6 +76,20 @@ def _match_item(out_items: list[dict], name: str, variety: str | None):
         return (plain or candidates or [None])[0]
     return next((item for item in candidates
                  if normalize_variety(item.get("variety")) == variety), None)
+
+
+def score_item(key_item: dict, out_item: dict | None) -> str:
+    """Verdict for one answer-key item: exact, flagged, unflagged, missed."""
+    if out_item is None:
+        return "missed"
+    want = price_rate(key_item.get("price"), key_item.get("per_amount"),
+                      key_item.get("unit"))
+    got = _out_first_rate(out_item)
+    if want is not None and got is not None and want == got:
+        return "exact"
+    if any(f.get("blocking", True) for f in out_item.get("flags", [])):
+        return "flagged"
+    return "unflagged"
 
 
 def compare_clips(key: dict, out: dict) -> dict:
@@ -96,15 +114,9 @@ def compare_clips(key: dict, out: dict) -> dict:
                 row["raised"][code] = row["raised"].get(code, 0) + 1
             else:
                 row["missed"][code] = row["missed"].get(code, 0) + 1
-        want = price_rate(key_item.get("price"), key_item.get("per_amount"),
-                          key_item.get("unit"))
-        got = _out_first_rate(out_item)
-        if want is not None and got is not None and want == got:
-            row["exact"] += 1
-        elif any(f.get("blocking", True) for f in out_item.get("flags", [])):
-            row["flagged"] += 1
-        else:
-            row["unflagged"] += 1
+        verdict = score_item(key_item, out_item)
+        if verdict in ("exact", "flagged", "unflagged"):
+            row[verdict] += 1
     return row
 
 

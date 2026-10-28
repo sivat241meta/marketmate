@@ -35,7 +35,7 @@ from app.outputs.time import format_relative
 from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
-from app.pipeline.names import CANONICAL_NAMES, PRODUCE_KEYWORDS
+from app.pipeline.names import CANONICAL_NAMES, keywords_for
 from app.pipeline.numbers import parse_number
 from app.pipeline.run import (
     friendly_error_message,
@@ -585,7 +585,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             db.set_stage(conn, session_id, "listening")
             wav = extract_audio(saved, session_dir / "audio.wav")
             transcript = transcribe_wav(
-                wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
+                wav, keywords=keywords_for(shop["language"]), ledger=ledger,
                 settings=app.state.settings,
                 languages=shop_bias(shop["language"]))
             db.set_stage(conn, session_id, "items")

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
 
-UNITS = ("kg", "g", "piece", "dozen", "bunch", "packet")
+UNITS = ("kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet")
 
 
 @dataclass

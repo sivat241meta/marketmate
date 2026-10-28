@@ -20,7 +20,7 @@
 </header>
 <form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm">
 {% for card in cards %}
-{% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
+{% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}
 <section class="card review-card needs" data-card="{{ card.index }}">
   <div class="review-body">
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}

@@ -10,6 +10,7 @@ _DIGIT_SPAN_RE = re.compile(r"\d[\d,.\u066B\u066C \u00A0\u2009\u202F]*\d|\d")
 _ASCII_RUN_RE = re.compile(r"[A-Za-z]+")
 _TAMIL_RUN_RE = re.compile(r"[\u0B80-\u0BFF]+")
 _DEVANAGARI_RUN_RE = re.compile(r"[\u0900-\u097F]+")
+_BENGALI_RUN_RE = re.compile(r"[\u0980-\u09FF]+")
 _INTER_DIGIT_SPACE_RE = re.compile(r"(?<=\d)[ \u00A0\u2009\u202F]+(?=\d)")
 
 # Non-ASCII decimal digits, mapped to 0-9: Devanagari, Bengali, Tamil,
@@ -237,6 +238,15 @@ _HINDI_WORDS = (
     | set(_HINDI_FRACTIONS) | _HINDI_SAWA | _HINDI_PAUNE
 )
 
+# Bengali sound-alike pair only (ষাট/shaat 60 vs সাত/saat 7): the full
+# language is cross-checked, but this pair needs local parsing so the
+# SOUND_ALIKE check can offer both values. saat/sat already parse as 7
+# through the Hindi table.
+_BENGALI: dict[str, int] = {
+    "ষাট": 60, "সাত": 7, "shaat": 60, "shat": 60,
+}
+_BENGALI_WORDS = set(_BENGALI)
+
 _TENS_VALUES = {20, 30, 40, 50, 60, 70, 80, 90}
 _HUNDRED_VALUES = {100, 200, 300, 400, 500}
 
@@ -400,6 +410,8 @@ def _single_value(word: str) -> tuple[int | Decimal, str] | None:
     hindi = _hindi_single(word)
     if hindi is not None:
         return (hindi, "hindi")
+    if word in _BENGALI:
+        return (_BENGALI[word], "bengali")
     return _split_joined(word)
 
 
@@ -500,7 +512,8 @@ def _words_value(words: list[str]) -> int | Decimal | None:
 
 
 def parse_number(token: str, decimal_comma: bool = False) -> Decimal | None:
-    """Parse digits (any supported script), English, Tamil or Hindi words."""
+    """Parse digits (any supported script), English, Tamil, Hindi words,
+    and the Bengali sixty/seven sound-alike pair."""
     text = token.strip().lower().strip(_STRIP_CHARS)
     if not text:
         return None
@@ -551,6 +564,8 @@ def _span_kind(span: list[str]) -> str:
         return "english"
     if all(w in _HINDI_WORDS for w in span):
         return "hindi"
+    if all(w in _BENGALI_WORDS for w in span):
+        return "bengali"
     return "tamil"
 
 
@@ -594,6 +609,24 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
             value = _words_value(span)
             if value is not None and all(w in _HINDI_WORDS for w in span):
                 hits.append((deva_words[i][1], value, "hindi"))
+                i += width
+                matched = True
+                break
+        if not matched:
+            i += 1
+    benga_words = [
+        (m.group(0).strip(_DEVANAGARI_STRIP).lower(), base + m.start())
+        for m in _BENGALI_RUN_RE.finditer(seg)
+    ]
+    benga_words = [(w, pos) for w, pos in benga_words if w]
+    i = 0
+    while i < len(benga_words):
+        matched = False
+        for width in range(min(4, len(benga_words) - i), 0, -1):
+            span = [w for w, _ in benga_words[i:i + width]]
+            value = _words_value(span)
+            if value is not None and all(w in _BENGALI_WORDS for w in span):
+                hits.append((benga_words[i][1], value, "bengali"))
                 i += width
                 matched = True
                 break

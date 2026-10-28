@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import re
 from decimal import Decimal, InvalidOperation
 
-from app.languages import currency_words_for, get_language
+from app.languages import by_api_name, currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
 from app.pipeline.numbers import find_numbers, parse_number
-from app.pipeline.units import normalise_unit, rate
+from app.pipeline.units import CANONICAL_UNITS, normalise_unit, rate
 
 SOUND_ALIKE_PAIRS = {13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90}
 
@@ -53,6 +54,25 @@ HINDI_SEVEN_WORDS = frozenset({
     "saat", "sat",
 })
 
+# Marathi uses the same Devanagari words as Hindi (साठ/सात); the pair
+# below is shared, with a Marathi label for Marathi shops.
+BENGALI_SIXTY_WORDS = frozenset({
+    "ষাট",
+    "shaat", "shat",
+})
+
+BENGALI_SEVEN_WORDS = frozenset({
+    "সাত",
+    "saat", "sat",
+})
+
+# Confusable unit words: Mandarin 一打 (dozen) heard as 一扎, Thai โหล
+# (dozen) heard as โล (also short for kilo). Fires a unit SOUND_ALIKE.
+_ZH_DOZEN_WORD = "一打"
+_ZH_BUNCH_HEARD = "一扎"
+_TH_DOZEN_WORD = "โหล"
+_TH_KILO_SHORT_RE = re.compile(r"(?<!กิ)โล")
+
 CORRECTION_MARKERS = (
     "illa illa", "illai", "sorry", "no no", "wait", "correction", "இல்ல", "இல்லை",
 )
@@ -69,26 +89,41 @@ _PARSED_CURRENCY_WORDS = frozenset(
 )
 
 _CROSS_CHECK_SYSTEM = (
-    "You turn one spoken number phrase into digits. "
-    'Return only JSON shaped like {"value": 25}.'
+    "You read one spoken price phrase and return only the money amount. "
+    'Return only JSON shaped like {"price": 25}.'
 )
+
+
+def _cross_check_currency_hint(language_name: str) -> str:
+    try:
+        words = by_api_name(language_name).currency_words
+    except KeyError:
+        return ""
+    if not words:
+        return ""
+    return f" Currency words in {language_name}: {', '.join(words)}."
 
 
 def cross_check_number(phrase: str, language_name: str, *,
                        ledger, settings) -> Decimal | None:
-    """Independently turn a quoted number phrase into digits.
+    """Independently turn a quoted price phrase into digits.
 
-    The model sees only the phrase and the language name, never the price
-    the first pass extracted. Baseten's open-weights Spark answers when a
-    key is set, else Meta. Returns None when the model fails or disagrees
-    with itself; the cost is logged via the ledger.
+    The model sees only the phrase, the language name and its currency
+    words, never the price the first pass extracted. It must return the
+    money amount only: the phrase may also hold a quantity or unit word
+    (dozen, kilo, piece, bunch, packet, ...) that is NOT the price.
+    Baseten's open-weights Spark answers when a key is set, else Meta.
+    Returns None when the model fails; the cost is logged via the ledger.
     """
     provider = "baseten" if settings.baseten_api_key else "meta"
     messages = [
         {"role": "system", "content": _CROSS_CHECK_SYSTEM},
         {"role": "user", "content": (
             f"Language: {language_name}\nPhrase: \"{phrase}\"\n"
-            'Return only JSON shaped like {"value": 25}.'
+            "The phrase may also contain a quantity or unit word (such as "
+            "dozen, kilo, piece, bunch or packet) that is NOT the price."
+            f"{_cross_check_currency_hint(language_name)}\n"
+            'Return only the money amount as JSON shaped like {"price": 25}.'
         )},
     ]
     try:
@@ -98,7 +133,8 @@ def cross_check_number(phrase: str, language_name: str, *,
         return None
     if not isinstance(data, dict):
         return None
-    raw = data.get("value", data.get("number", data.get("digits")))
+    raw = data.get("price", data.get("value", data.get("number",
+                                                       data.get("digits"))))
     if raw is None or isinstance(raw, bool):
         return None
     try:
@@ -234,8 +270,12 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
     has_eighty = _has_word(quote_tokens, TAMIL_EIGHTY_WORDS)
     has_half = _has_word(quote_tokens, TAMIL_HALF_WORDS)
     has_six = _has_word(quote_tokens, TAMIL_SIX_WORDS)
-    has_sixty = _has_exact_word(quote_tokens, HINDI_SIXTY_WORDS)
-    has_seven = _has_exact_word(quote_tokens, HINDI_SEVEN_WORDS)
+    has_sixty = _has_exact_word(quote_tokens, HINDI_SIXTY_WORDS.union(
+        BENGALI_SIXTY_WORDS))
+    has_seven = _has_exact_word(quote_tokens, HINDI_SEVEN_WORDS.union(
+        BENGALI_SEVEN_WORDS))
+    has_bengali_script = any(token in ("ষাট", "সাত")
+                             for token in quote_tokens)
     alternatives = _sound_alike_alternatives(heard, has_fifty, has_eighty,
                                              has_sixty, has_seven)
     api_name = _api_name_for(language)
@@ -341,8 +381,14 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
                 if line.price == ivalue or line.price == alt_value:
                     pair = sorted([ivalue, alt_value])
                     other = pair[1] if pair[0] == int(line.price) else pair[0]
+                    if has_bengali_script or language == "bn":
+                        pair_note = ("shaat and saat sound alike in Bengali")
+                    elif language == "mr":
+                        pair_note = ("saath and saat sound alike in Marathi")
+                    else:
+                        pair_note = ("saath and saat sound alike in Hindi")
                     message = (f"did you say {pair[0]} or {pair[1]}?"
-                               " (saath and saat sound alike in Hindi)")
+                               f" ({pair_note})")
                     blocking = True
                     heard_rate, alt_rate, prev_rate = _sound_alike_rates(
                         item, line, other, previous)
@@ -383,6 +429,25 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
             field="per_amount", code="SOUND_ALIKE", message=message,
             options=["0.5", "6"], blocking=blocking))
 
+    zh_confused = (_ZH_BUNCH_HEARD in quote and _ZH_DOZEN_WORD not in quote)
+    th_confused = (_TH_DOZEN_WORD not in quote
+                   and _TH_KILO_SHORT_RE.search(quote) is not None)
+    if zh_confused or th_confused:
+        for line in item.price_lines:
+            if zh_confused and line.unit in ("dozen", "bunch"):
+                flags.append(Flag(
+                    field="unit", code="SOUND_ALIKE",
+                    message=("did you say dozen or bunch?"
+                             f" ({_ZH_DOZEN_WORD} and {_ZH_BUNCH_HEARD}"
+                             " sound alike in Mandarin)"),
+                    options=["dozen", "bunch"]))
+            if th_confused and line.unit in ("dozen", "kg"):
+                flags.append(Flag(
+                    field="unit", code="SOUND_ALIKE",
+                    message=("did you say dozen or kg?"
+                             f" ({_TH_DOZEN_WORD} and โล sound alike in Thai)"),
+                    options=["dozen", "kg"]))
+
     if item.qty is not None and item.qty not in heard_values:
         flags.append(Flag(field="qty", code="NOT_HEARD",
                           message=f"quantity {item.qty} not heard in quote"))
@@ -422,6 +487,10 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
             flags.append(Flag(
                 field="unit", code="UNIT_ODD",
                 message=f"{item.name_en} is usually sold by weight, not per piece"))
+        if line.unit is not None and line.unit not in CANONICAL_UNITS:
+            flags.append(Flag(field="unit", code="UNIT_CHECK",
+                              message="please check the unit",
+                              blocking=False))
 
     prev_line = (previous or {}).get(item.name_en)
     if prev_line is not None:

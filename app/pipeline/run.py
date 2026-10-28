@@ -20,7 +20,7 @@ from app.pipeline.media import (
     extract_audio,
     extract_frames,
 )
-from app.pipeline.names import PRODUCE_KEYWORDS
+from app.pipeline.names import keywords_for
 from app.pipeline.photos import make_photo
 
 
@@ -150,7 +150,7 @@ def process_video_session(conn, session_id: int, video: Path, *,
         _progress(conn, session_id, "Transcribing...")
         db.set_stage(conn, session_id, "listening")
         language = _shop_language(conn, session_id)
-        transcript = transcribe_wav(wav, keywords=PRODUCE_KEYWORDS,
+        transcript = transcribe_wav(wav, keywords=keywords_for(language),
                                     ledger=ledger, settings=settings,
                                     languages=shop_bias(language))
         (session_dir / "transcript.json").write_text(
