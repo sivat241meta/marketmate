@@ -489,7 +489,7 @@ def test_check_page_headline_counts(tmp_path):
     html = client.get(f"/e/{token}/s/{session_id}").text
     assert "Check prices" in html
     assert "1 prices need one tap." in html
-    assert "two prices for the same amount" in html
+    assert "Two prices for the same amount" in html
     assert "₹50" in html and "₹80" in html
     for needle in ("data-card", "opt-btn", "data-target-field",
                    "data-card-confirm", "data-msg-need-one",

@@ -372,7 +372,7 @@ def test_review_page_fresh_green_needs_first(tmp_path):
     html = client.get(f"/e/{token}/s/{session_id}").text
     assert 'data-card="0"' in html
     assert 'class="question"' in html
-    assert "two prices for the same amount" in html
+    assert "Two prices for the same amount" in html
     assert "₹50" in html and "₹80" in html
     assert "opt-btn" in html
     assert "Approve" in html or "approve" in html

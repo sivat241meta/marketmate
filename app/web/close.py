@@ -27,7 +27,7 @@ from app.outputs.money import format_money
 from app.outputs.pos_csv import pos_csv, pricelist_csv
 from app.pipeline.names import qualified_name
 from app.web.auth import owner_or_403, resolve_or_404
-from app.web.i18n import get_ui_lang, summary_whatsapp_text
+from app.web.i18n import get_ui_lang, local_date_label, summary_whatsapp_text
 
 
 def _shop_or_404(conn, token: str):
@@ -135,8 +135,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "wastage": _fmt(entry["wastage_qty"]),
                 "unit": entry["unit"] or entry["opening_unit"] or "kg",
             })
+        try:
+            day_label = local_date_label(
+                ui_lang, datetime.strptime(day, "%Y-%m-%d").date())
+        except (TypeError, ValueError):
+            day_label = day
         return templates.TemplateResponse(request, "close.html", {
-            "shop": shop, "token": token, "day": day,
+            "shop": shop, "token": token, "day": day, "day_label": day_label,
             "sales": _fmt_money(tiles["sales"], currency),
             "bills_count": tiles["bills_count"],
             "cash": _fmt_money(tiles["cash"], currency),

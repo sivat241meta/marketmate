@@ -368,14 +368,25 @@ def display_name_en(name_en: str | None, variety: str | None = None) -> str:
 
 def display_name_local(name_local: str | None,
                        variety: str | None = None) -> str:
-    """Local display name: "வாழைப்பழம் (பூவன்)", or the plain name."""
+    """Local display name: "வாழைப்பழம் (பூவன்)", or the plain name.
+
+    When the local name already contains the variety's local word
+    ("பூவன் பழம்" holds "பூவன்"), it is returned as-is, never doubled.
+    """
     base = (name_local or "").strip()
     if not base:
         return ""
     text = str(variety or "").strip()
     if not text:
         return base
-    return f"{base} ({variety_local_name(text) or _title(text)})"
+    local_word = variety_local_name(text)
+    if local_word:
+        if local_word in base:
+            return base
+        return f"{base} ({local_word})"
+    if text.casefold() in base.casefold():
+        return base
+    return f"{base} ({_title(text)})"
 
 
 def qualified_name(name_en: str | None, variety: str | None = None) -> str:

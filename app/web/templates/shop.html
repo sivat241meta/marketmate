@@ -33,7 +33,7 @@
   <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
 </div>
 <div class="chips"><span class="chip on">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
-<p class="notice">{{ ui.icon("check") }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
+<p class="notice">{{ ui.icon("check") }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
 
 <div class="grid-products" data-shop-grid>
 {% for row in rows %}

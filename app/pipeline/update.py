@@ -251,11 +251,12 @@ def _insert_item(conn, version_id: int, name_local: str, name_en: str,
 
 
 def apply_changes(conn, shop_id: int, base_version_id: int,
-                  changes: list[Change]) -> int:
+                  changes: list[Change], *, source: str = "voice") -> int:
     """Copy the base version, apply the changes, return the new version id.
 
     The new version is unpublished; the caller publishes after the seller
     confirms. A new price clears sold-out; untouched items keep everything.
+    Voice changes on a differently-sourced base mark the version "mixed".
     """
     row = conn.execute("SELECT shop_id FROM versions WHERE id = ?",
                        (base_version_id,)).fetchone()
@@ -295,9 +296,13 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
             entry["sold_out"] = False
         elif change.action == "set_qty" and change.qty is not None:
             entry["qty"], entry["qty_unit"] = change.qty, change.qty_unit
+    base_source = db.version_source(conn, base_version_id)
+    if base_source and base_source != source:
+        source = "mixed"
     cursor = conn.execute(
-        "INSERT INTO versions (shop_id, created_at, published) VALUES (?, ?, 0)",
-        (shop_id, datetime.now(UTC).isoformat()),
+        "INSERT INTO versions (shop_id, created_at, published, source)"
+        " VALUES (?, ?, 0, ?)",
+        (shop_id, datetime.now(UTC).isoformat(), source),
     )
     new_id = cursor.lastrowid
     for entry in working:

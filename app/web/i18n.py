@@ -292,34 +292,34 @@ _ENGLISH: dict[str, str] = {
     "review.approve_failed": "Approve failed.",
     "review.board_photo_alt": "Your price board",
     # --- flags ---
-    "flag.sound_alike": "did you say {a} or {b}?",
-    "flag.sound_alike_ta": "did you say {a} or {b}? ({x} and {y} sound alike in Tamil)",
-    "flag.sound_alike_hi": "did you say {a} or {b}? ({x} and {y} sound alike in Hindi)",
-    "flag.sound_alike_mr": "did you say {a} or {b}? ({x} and {y} sound alike in Marathi)",
-    "flag.sound_alike_bn": "did you say {a} or {b}? ({x} and {y} sound alike in Bengali)",
-    "flag.sound_alike_half": "did you say half a {unit} or 6 {unit}? (arai and aaru sound alike in Tamil)",
-    "flag.sound_alike_zh": "did you say dozen or bunch? ({x} and {y} sound alike in Mandarin)",
-    "flag.sound_alike_th": "did you say dozen or kg? ({x} and {y} sound alike in Thai)",
+    "flag.sound_alike": "Did you say {a} or {b}?",
+    "flag.sound_alike_ta": "Did you say {a} or {b}? ({x} and {y} sound alike in Tamil)",
+    "flag.sound_alike_hi": "Did you say {a} or {b}? ({x} and {y} sound alike in Hindi)",
+    "flag.sound_alike_mr": "Did you say {a} or {b}? ({x} and {y} sound alike in Marathi)",
+    "flag.sound_alike_bn": "Did you say {a} or {b}? ({x} and {y} sound alike in Bengali)",
+    "flag.sound_alike_half": "Did you say half a {unit} or 6 {unit}? (arai and aaru sound alike in Tamil)",
+    "flag.sound_alike_zh": "Did you say dozen or bunch? ({x} and {y} sound alike in Mandarin)",
+    "flag.sound_alike_th": "Did you say dozen or kg? ({x} and {y} sound alike in Thai)",
     "flag.matches_previous": "{price} matches the previous price ({rate} per {unit})",
-    "flag.not_heard_price": "price {price} not heard in quote",
-    "flag.not_heard_qty": "quantity {qty} not heard in quote",
-    "flag.not_heard_total": "total {total} not heard in quote",
-    "flag.number_check": "we are not sure about this number - please listen",
-    "flag.unit_missing": "price is missing its unit",
-    "flag.unit_missing_qty": "quantity is missing its unit",
-    "flag.unit_odd": "usually sold by weight - is per piece right?",
-    "flag.unit_check": "please check the unit",
-    "flag.unit_from_earlier": "unit was taken from the current price",
-    "flag.jump": "price jumped from {old} to {current} per {unit} (last confirmed)",
-    "flag.range": "seller said a range, pick one number",
-    "flag.two_prices": "two prices for the same amount",
-    "flag.no_price": "no price at all",
-    "flag.no_total": "no total paid heard",
-    "flag.qty_missing": "no quantity",
-    "flag.qty_missing_heard": "no quantity heard",
-    "flag.correction": "seller corrected themselves (\"{marker}\")",
-    "flag.unclear_number": "unclear number \"{before}\" before currency",
-    "flag.board_confirm": "read from your board – tap to confirm",
+    "flag.not_heard_price": "Price {price} not heard in quote",
+    "flag.not_heard_qty": "Quantity {qty} not heard in quote",
+    "flag.not_heard_total": "Total {total} not heard in quote",
+    "flag.number_check": "We are not sure about this number - please listen",
+    "flag.unit_missing": "Price is missing its unit",
+    "flag.unit_missing_qty": "Quantity is missing its unit",
+    "flag.unit_odd": "Usually sold by weight - is per piece right?",
+    "flag.unit_check": "Please check the unit",
+    "flag.unit_from_earlier": "Unit was taken from the current price",
+    "flag.jump": "Price jumped from {old} to {current} per {unit} (last confirmed)",
+    "flag.range": "Seller said a range, pick one number",
+    "flag.two_prices": "Two prices for the same amount",
+    "flag.no_price": "No price at all",
+    "flag.no_total": "No total paid heard",
+    "flag.qty_missing": "No quantity",
+    "flag.qty_missing_heard": "No quantity heard",
+    "flag.correction": "Seller corrected themselves (\"{marker}\")",
+    "flag.unclear_number": "Unclear number \"{before}\" before currency",
+    "flag.board_confirm": "Read from your board – tap to confirm",
     "flag.not_read": "{name} could not be read from your board – type the price",
     "flag.new_item": "{name} is not in the current price list",
     # --- voice update ---
@@ -377,6 +377,7 @@ _ENGLISH: dict[str, str] = {
     "langcheck.heard_label": "What we heard",
     "langcheck.more": "More",
     "langcheck.go": "Continue",
+    "langcheck.choose": "Choose another language",
     # --- photos list ---
     "pho.title": "Stock photos — {shop}",
     "pho.heading": "Stock photos",
@@ -776,7 +777,12 @@ _ENGLISH: dict[str, str] = {
     "shop.summary": "{n} items, from {min} to {max}",
     "shop.search_ph": "Search {n} items",
     "shop.all": "All",
-    "shop.notice": "Every price here was said by the seller in today's video at {time} and checked by them",
+    "shop.notice": "Every price here was said by the seller {source} at {time} and checked by them",
+    "shop.src_video": "in today's video",
+    "shop.src_voice": "in today's voice note",
+    "shop.src_live": "in today's live prices",
+    "shop.src_board": "in today's board photo",
+    "shop.src_mixed": "in today's recording",
     "shop.add": "Add",
     "shop.view_order": "View order",
     "shop.cart_summary": "{n} items · {total}",
@@ -820,6 +826,38 @@ _ENGLISH: dict[str, str] = {
     # --- prices-live success (Task 56) ---
     "prices_live.title": "Your prices are live",
     "prices_live.subtitle": "Customers can see today's list now.",
+    # --- localised dates (Task 57): ISO weekday 1=Monday ---
+    "date.full": "{weekday}, {day} {month}",
+    "date.day_1": "Monday",
+    "date.day_2": "Tuesday",
+    "date.day_3": "Wednesday",
+    "date.day_4": "Thursday",
+    "date.day_5": "Friday",
+    "date.day_6": "Saturday",
+    "date.day_7": "Sunday",
+    "date.month_1": "January",
+    "date.month_2": "February",
+    "date.month_3": "March",
+    "date.month_4": "April",
+    "date.month_5": "May",
+    "date.month_6": "June",
+    "date.month_7": "July",
+    "date.month_8": "August",
+    "date.month_9": "September",
+    "date.month_10": "October",
+    "date.month_11": "November",
+    "date.month_12": "December",
+    # --- first-run Get started card (Task 57) ---
+    "gs.kick": "Get started",
+    "gs.title": "Three steps to your first sale",
+    "gs.step1_t": "Save your link",
+    "gs.step1_d": "Send it to your own WhatsApp or print the safe card — it is the only way back in.",
+    "gs.step2_t": "Say today's prices",
+    "gs.step2_d": "Go live, or upload a video or voice note.",
+    "gs.step2_upload": "Upload instead",
+    "gs.step3_t": "Share your shop",
+    "gs.step3_d": "Send customers your shop page or its QR.",
+    "gs.step3_view": "Open your shop page",
 }
 
 
@@ -1184,6 +1222,7 @@ _TAMIL: dict[str, str] = {
     "langcheck.heard_label": "நாங்கள் கேட்டது",
     "langcheck.more": "மேலும்",
     "langcheck.go": "தொடர்க",
+    "langcheck.choose": "வேறு மொழியை தேர்வு செய்க",
     # --- photos list ---
     "pho.title": "ஸ்டாக் போட்டோ — {shop}",
     "pho.heading": "ஸ்டாக் போட்டோ",
@@ -1582,7 +1621,12 @@ _TAMIL: dict[str, str] = {
     "shop.summary": "{n} பொருட்கள், {min} முதல் {max} வரை",
     "shop.search_ph": "{n} பொருட்களில் தேடு",
     "shop.all": "அனைத்தும்",
-    "shop.notice": "இங்குள்ள ஒவ்வொரு விலையும் விற்பனையாளர் இன்றைய வீடியோவில் {time} மணிக்கு சொன்னது, அவரே சரிபார்த்தது",
+    "shop.notice": "இங்குள்ள ஒவ்வொரு விலையும் விற்பனையாளர் {source} {time} மணிக்கு சொன்னது, அவரே சரிபார்த்தது",
+    "shop.src_video": "இன்றைய வீடியோவில்",
+    "shop.src_voice": "இன்றைய குரல் பதிவில்",
+    "shop.src_live": "இன்றைய நேரலையில்",
+    "shop.src_board": "இன்றைய போர்டு புகைப்படத்தில்",
+    "shop.src_mixed": "இன்றைய பதிவில்",
     "shop.add": "சேர்",
     "shop.view_order": "ஆர்டரை பார்",
     "shop.cart_summary": "{n} பொருட்கள் · {total}",
@@ -1626,6 +1670,36 @@ _TAMIL: dict[str, str] = {
     # --- prices-live success (Task 56) ---
     "prices_live.title": "உங்கள் விலைகள் நேரலையில் உள்ளன",
     "prices_live.subtitle": "வாடிக்கையாளர்கள் இன்றைய பட்டியலை இப்போது பார்க்கலாம்.",
+    "date.full": "{weekday}, {day} {month}",
+    "date.day_1": "திங்கள்",
+    "date.day_2": "செவ்வாய்",
+    "date.day_3": "புதன்",
+    "date.day_4": "வியாழன்",
+    "date.day_5": "வெள்ளி",
+    "date.day_6": "சனி",
+    "date.day_7": "ஞாயிறு",
+    "date.month_1": "ஜனவரி",
+    "date.month_2": "பிப்ரவரி",
+    "date.month_3": "மார்ச்",
+    "date.month_4": "ஏப்ரல்",
+    "date.month_5": "மே",
+    "date.month_6": "ஜூன்",
+    "date.month_7": "ஜூலை",
+    "date.month_8": "ஆகஸ்ட்",
+    "date.month_9": "செப்டம்பர்",
+    "date.month_10": "அக்டோபர்",
+    "date.month_11": "நவம்பர்",
+    "date.month_12": "டிசம்பர்",
+    "gs.kick": "தொடங்குங்கள்",
+    "gs.title": "முதல் விற்பனைக்கு மூன்று படிகள்",
+    "gs.step1_t": "உங்கள் லிங்க்கை சேமியுங்கள்",
+    "gs.step1_d": "உங்கள் வாட்ஸ்அப்புக்கு அனுப்புங்கள் அல்லது safe அட்டையை அச்சிடுங்கள் — திரும்ப வர ஒரே வழி இதுதான்.",
+    "gs.step2_t": "இன்றைய விலைகளை சொல்லுங்கள்",
+    "gs.step2_d": "நேரலையில் சொல்லுங்கள், அல்லது வீடியோ/குரல் பதிவை பதிவேற்றுங்கள்.",
+    "gs.step2_upload": "பதிவேற்றுக",
+    "gs.step3_t": "கடையை பகிருங்கள்",
+    "gs.step3_d": "வாடிக்கையாளர்களுக்கு கடை பக்கம் அல்லது QR அனுப்புங்கள்.",
+    "gs.step3_view": "கடை பக்கத்தை திற",
 }
 
 
@@ -1990,6 +2064,7 @@ _HINDI: dict[str, str] = {
     "langcheck.heard_label": "हमने यह सुना",
     "langcheck.more": "और",
     "langcheck.go": "आगे बढ़ें",
+    "langcheck.choose": "कोई और भाषा चुनें",
     # --- photos list ---
     "pho.title": "स्टॉक फोटो — {shop}",
     "pho.heading": "स्टॉक फोटो",
@@ -2388,7 +2463,12 @@ _HINDI: dict[str, str] = {
     "shop.summary": "{n} सामान, {min} से {max} तक",
     "shop.search_ph": "{n} सामान में खोजें",
     "shop.all": "सभी",
-    "shop.notice": "यहाँ हर कीमत विक्रेता ने आज के वीडियो में {time} बजे बताई और खुद जाँची है",
+    "shop.notice": "यहाँ हर कीमत विक्रेता ने {source} {time} बजे बताई और खुद जाँची है",
+    "shop.src_video": "आज के वीडियो में",
+    "shop.src_voice": "आज के वॉइस नोट में",
+    "shop.src_live": "आज के लाइव भाव में",
+    "shop.src_board": "आज की बोर्ड फोटो में",
+    "shop.src_mixed": "आज की रिकॉर्डिंग में",
     "shop.add": "जोड़ें",
     "shop.view_order": "ऑर्डर देखें",
     "shop.cart_summary": "{n} सामान · {total}",
@@ -2432,6 +2512,36 @@ _HINDI: dict[str, str] = {
     # --- prices-live success (Task 56) ---
     "prices_live.title": "आपके भाव लाइव हैं",
     "prices_live.subtitle": "ग्राहक आज की सूची अब देख सकते हैं।",
+    "date.full": "{weekday}, {day} {month}",
+    "date.day_1": "सोमवार",
+    "date.day_2": "मंगलवार",
+    "date.day_3": "बुधवार",
+    "date.day_4": "गुरुवार",
+    "date.day_5": "शुक्रवार",
+    "date.day_6": "शनिवार",
+    "date.day_7": "रविवार",
+    "date.month_1": "जनवरी",
+    "date.month_2": "फरवरी",
+    "date.month_3": "मार्च",
+    "date.month_4": "अप्रैल",
+    "date.month_5": "मई",
+    "date.month_6": "जून",
+    "date.month_7": "जुलाई",
+    "date.month_8": "अगस्त",
+    "date.month_9": "सितंबर",
+    "date.month_10": "अक्टूबर",
+    "date.month_11": "नवंबर",
+    "date.month_12": "दिसंबर",
+    "gs.kick": "शुरू करें",
+    "gs.title": "पहली बिक्री तक तीन कदम",
+    "gs.step1_t": "अपना लिंक सहेजें",
+    "gs.step1_d": "इसे अपने WhatsApp पर भेजें या safe कार्ड छपवाएँ — वापस आने का यही एकमात्र रास्ता है।",
+    "gs.step2_t": "आज के भाव बोलें",
+    "gs.step2_d": "लाइव बोलें, या वीडियो या वॉइस नोट अपलोड करें।",
+    "gs.step2_upload": "अपलोड करें",
+    "gs.step3_t": "अपनी दुकान साझा करें",
+    "gs.step3_d": "ग्राहकों को दुकान पेज या उसका QR भेजें।",
+    "gs.step3_view": "दुकान पेज खोलें",
 }
 
 
@@ -2541,6 +2651,20 @@ def get_ui_lang(request: Any, shop: Any = None) -> str:
     return ui_lang_from_parts(cookie_val, _shop_lang_of(shop))
 
 
+def local_date_label(lang: str, day) -> str:
+    """'Thursday, 29 October' with weekday/month names in en/ta/hi.
+
+    ``day`` is a date or datetime; digits stay ASCII in every language.
+    """
+    t = t_for(lang)
+    return t(
+        "date.full",
+        weekday=t(f"date.day_{day.isoweekday()}"),
+        day=f"{day.day:02d}",
+        month=t(f"date.month_{day.month}"),
+    )
+
+
 def missing_keys() -> dict[str, list[str]]:
     """Languages mapped to sorted English keys they still lack (for tests)."""
     en_keys = set(_ENGLISH)
@@ -2638,6 +2762,13 @@ def _paren_note(message: str) -> str:
 
 def flag_text(flag: Any, lang: str = "en") -> str:
     """Translate a Flag for display; the stored ``flag.message`` stays English."""
+    text = _flag_text_inner(flag, lang)
+    if _normalize_lang(lang) == "en" and text[:1].islower():
+        return text[:1].upper() + text[1:]
+    return text
+
+
+def _flag_text_inner(flag: Any, lang: str = "en") -> str:
     code = getattr(flag, "code", "") or ""
     field = getattr(flag, "field", "") or ""
     message = getattr(flag, "message", "") or ""

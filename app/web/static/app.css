@@ -125,6 +125,8 @@
   --space-5: 24px;
   --space-6: 32px;
   --tap: 48px;
+  /* Measured seller bottom-nav height (~83px, wrapped labels) + notch. */
+  --bnav-h: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 
 * { box-sizing: border-box; }
@@ -285,6 +287,7 @@ img { max-width: 100%; }
   bottom: 0;
   z-index: 7;
   margin-top: auto;
+  min-height: var(--bnav-h);
   background: #fff;
   border-top: 1px solid var(--line-2);
   display: flex;
@@ -1231,6 +1234,8 @@ input[type="file"] { padding: var(--space-2); }
 .shopcard .pill-live::before { background: #7BD15A; }
 .shopcard .btn { background: var(--gold); color: var(--gold-ink); border-color: transparent; }
 .linkrow { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+/* Long public links (bill QR card) wrap instead of overflowing. */
+.shop-link { overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
 .linkrow .shop-link {
   flex: 1;
   min-width: 0;
@@ -2276,6 +2281,21 @@ button.pill { font: inherit; cursor: pointer; }
 .card.compact h2 { font-size: 1rem; }
 .card.compact p { margin-bottom: var(--space-2); }
 
+/* First-run Get started card: numbered steps, ✓ when done. */
+.start-card { margin: var(--space-4) 0; }
+.gsteps { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.gstep { display: flex; gap: var(--space-3); align-items: flex-start; }
+.gnum { width: 30px; height: 30px; border-radius: 50%; background: var(--mint); color: var(--forest); font-weight: 800; display: grid; place-items: center; flex: none; }
+.gstep.is-done .gnum { background: var(--leaf); color: #fff; }
+.gstep.is-done .gnum::before { content: "✓"; }
+.gstep.is-done .gnum span { display: none; }
+.gstep h3 { margin: 0 0 2px; font-size: 1rem; }
+.gstep p { margin: 0 0 var(--space-2); color: var(--muted); font-size: 0.9rem; }
+.gstep .hero-cta { margin: 0; }
+
+/* Home credit line under the lost-link card. */
+.built-with { text-align: center; color: var(--muted); font-size: 0.9rem; margin: var(--space-4) 0 0; }
+
 /* Live: camera card, stop button, heard rows. */
 .live-kick-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
 .live-kick-row .kick { margin: 0; }
@@ -2353,8 +2373,8 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
 @media (max-width: 899.98px) {
   body:has(.bnav) .float,
   body:has(.bnav) .sticky-bar {
-    /* bnav height (68px) + notch safe area + 8px gap, above bnav z 7. */
-    bottom: calc(68px + env(safe-area-inset-bottom, 0px) + 8px);
+    /* Shared nav height + 8px gap, above bnav z 7. */
+    bottom: calc(var(--bnav-h) + 8px);
     z-index: 8;
   }
   body:has(.bnav) .content:has(.sticky-bar, .float) {

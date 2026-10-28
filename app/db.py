@@ -211,7 +211,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS versions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             shop_id INTEGER NOT NULL REFERENCES shops(id),
-            created_at TEXT NOT NULL, published INTEGER NOT NULL DEFAULT 0
+            created_at TEXT NOT NULL, published INTEGER NOT NULL DEFAULT 0,
+            source TEXT
         );
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -302,6 +303,10 @@ def connect(data_dir: Path) -> sqlite3.Connection:
                               ("round_bills", "INTEGER")):
         if name not in shop_columns:
             conn.execute(f"ALTER TABLE shops ADD COLUMN {name} {column_type}")
+    version_columns = {row[1] for row in conn.execute(
+        "PRAGMA table_info(versions)")}
+    if "source" not in version_columns:
+        conn.execute("ALTER TABLE versions ADD COLUMN source TEXT")
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_bill_token"
         " ON quotes(bill_token) WHERE bill_token IS NOT NULL")
@@ -674,6 +679,10 @@ def load_drafts(conn, session_id: int) -> list[DraftItem]:
 
 _MERGE_KINDS = {"video", "live", "board"}
 
+#: Session kind -> price-source word stored on each approved version.
+_SESSION_SOURCE = {"video": "video", "live": "live", "board": "board",
+                   "voice_update": "voice"}
+
 
 def session_speak_lang(conn, session_id: int) -> str | None:
     """Spoken-language code the seller picked, else None (use the shop)."""
@@ -875,12 +884,14 @@ def approve(conn, session_id: int, items: list[DraftItem],
     shop_id = row["shop_id"] if row else None
     kind = row["kind"] if row else "video"
     kept: list = []
+    merge_base: int | None = None
     if shop_id is not None and kind in _MERGE_KINDS:
         base_id = session_base_version(conn, session_id)
         if base_id is not None:
             brow = conn.execute("SELECT shop_id FROM versions WHERE id = ?",
                                 (base_id,)).fetchone()
             if brow is not None and brow["shop_id"] == shop_id:
+                merge_base = base_id
                 base_items = version_items(conn, base_id)
                 carried = carried_from_base(items, base_items)
                 if carried_ids is None:
@@ -899,9 +910,15 @@ def approve(conn, session_id: int, items: list[DraftItem],
     if shop_id is None:
         shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                                (session_id,)).fetchone()["shop_id"]
+    source = _SESSION_SOURCE.get(kind)
+    if kept and source and merge_base is not None:
+        base_source = version_source(conn, merge_base)
+        if base_source and base_source != source:
+            source = "mixed"
     cursor = conn.execute(
-        "INSERT INTO versions (shop_id, created_at, published) VALUES (?, ?, 0)",
-        (shop_id, _now()),
+        "INSERT INTO versions (shop_id, created_at, published, source)"
+        " VALUES (?, ?, 0, ?)",
+        (shop_id, _now(), source),
     )
     version_id = cursor.lastrowid
     for item in items:
@@ -1521,6 +1538,18 @@ def version_time(conn, version_id: int) -> datetime:
     row = conn.execute("SELECT created_at FROM versions WHERE id = ?",
                        (version_id,)).fetchone()
     return datetime.fromisoformat(row["created_at"])
+
+
+def version_source(conn, version_id: int) -> str | None:
+    """Price source of a version: video/live/board/voice/mixed, else None."""
+    row = conn.execute("SELECT source FROM versions WHERE id = ?",
+                       (version_id,)).fetchone()
+    if row is None:
+        return None
+    try:
+        return row["source"]
+    except (KeyError, IndexError, TypeError):
+        return None
 
 
 def _as_utc(moment: datetime) -> datetime:

@@ -58,6 +58,7 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
 
     from app import db as _db
     from app.dayclose import bills_for_range, day_tiles, list_days, local_day_of, shop_tz
+    from app.pipeline.names import display_name_en
 
     tz = shop_tz(shop)
     book = Workbook()
@@ -137,10 +138,13 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
             name_en = str(line.get("name_en") or "").strip()
             if not name_en:
                 continue
+            variety = str(line.get("variety") or "").strip() or None
+            item_name = (display_name_en(name_en, variety) if variety
+                         else name_en)
             line_row = lines_ws.max_row + 1
             lines_ws.cell(row=line_row, column=1, value=row["id"])
             lines_ws.cell(row=line_row, column=2, value=day)
-            lines_ws.cell(row=line_row, column=3, value=name_en)
+            lines_ws.cell(row=line_row, column=3, value=item_name)
             # Tamil kept as text.
             lines_ws.cell(row=line_row, column=4,
                           value=str(line.get("name_local") or ""))
@@ -176,8 +180,10 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
             name_en = str(line.get("name_en") or "").strip()
             if not name_en:
                 continue
-            key = name_en.lower()
+            variety = str(line.get("variety") or "").strip() or None
+            key = (name_en.lower(), (variety or "").lower())
             entry = agg.setdefault(key, {"name": name_en,
+                                         "variety": variety,
                                          "qty": Decimal(0),
                                          "amount": Decimal("0.00"),
                                          "unit": line.get("unit")})
@@ -197,7 +203,10 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
             entry["amount"] += _decimal(line.get("line_total"), "0")
     for key in sorted(agg):
         entry = agg[key]
-        display = entry["name"][:1].upper() + entry["name"][1:]
+        if entry["variety"]:
+            display = display_name_en(entry["name"], entry["variety"])
+        else:
+            display = entry["name"][:1].upper() + entry["name"][1:]
         row_no = items_ws.max_row + 1
         items_ws.cell(row=row_no, column=1, value=display)
         _number(items_ws.cell(row=row_no, column=2), entry["qty"])

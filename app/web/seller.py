@@ -70,6 +70,7 @@ from app.web.i18n import (
     get_strings,
     get_ui_lang,
     link_self_whatsapp_url,
+    local_date_label,
     stage_friendly,
     stage_label,
     t_for,
@@ -85,6 +86,10 @@ def _voice_notice(ui_lang: str) -> str:
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")
 _LANGUAGES = {lang.code for lang in LANGUAGES}
 _CURRENCIES = set(all_currencies())
+#: Version source -> customer notice phrase; unknown sources read as mixed.
+_SRC_KEYS = {"video": "shop.src_video", "voice": "shop.src_voice",
+             "live": "shop.src_live", "board": "shop.src_board",
+             "mixed": "shop.src_mixed"}
 
 
 def _clean_phone(phone: str) -> str:
@@ -336,7 +341,7 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
         greet_key = "sh.greet_afternoon"
     else:
         greet_key = "sh.greet_evening"
-    today_label = local.strftime("%A, %d %B")
+    today_label = local_date_label(ui_lang, local)
 
     taps = []
     taps_total = 0
@@ -660,6 +665,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         from app.web.bills import bills_tiles
 
         bills = bills_tiles(conn, shop["id"])
+        has_bills = any(row["kind"] == "bill"
+                        for row in db.list_quotes(conn, shop["id"]))
+        gs_prices_done = any(session["kind"] in (
+            "video", "live", "board", "voice_update") for session in sessions)
         from app import purchases as pur
 
         today = datetime.now(UTC).astimezone(IST).date().isoformat()
@@ -711,7 +720,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "greet_key": home["greet_key"],
              "taps": home["taps"], "taps_total": home["taps_total"],
              "taps_first": home["taps_first"], "orders": home["orders"],
-             "week": home["week"]},
+             "week": home["week"],
+             "first_run": published_id is None and not is_staff,
+             "has_bills": has_bills, "gs_prices_done": gs_prices_done},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -1531,12 +1542,19 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         shop_link = f"{app.state.settings.public_base_url}/s/{shop['slug']}"
         share_text = f"{shop['name']}\n{shop_link}"
         share_url = "https://wa.me/?text=" + url_quote(share_text)
+        strings = get_strings(language)
+        price_source = ""
+        if version_id is not None:
+            raw_source = db.version_source(conn, version_id)
+            price_source = strings(
+                _SRC_KEYS.get(raw_source or "", "shop.src_mixed"))
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
             "share_url": share_url,
             "lang": language, "shop_lang": shop_lang,
-            "shop_native": shop_native, "t": get_strings(language),
-            "prices_time": prices_time, "hero_photo": hero_photo,
+            "shop_native": shop_native, "t": strings,
+            "prices_time": prices_time, "price_source": price_source,
+            "hero_photo": hero_photo,
             "summary_min": summary_min, "summary_max": summary_max,
             "has_upi": bool(db.shop_upi_id(shop)),
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
