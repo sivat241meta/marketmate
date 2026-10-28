@@ -1,25 +1,49 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}{{ shop["name"] }}{% endblock %}
 {% block content %}
-<h1>{{ shop["name"] }}</h1>
-{% if shop["is_demo"] %}<p class="muted">Demo data</p>{% endif %}
-{% if not rows %}
-<p>No prices published yet.</p>
-{% else %}
-{% for row in rows %}
-<section class="card{% if row.sold_out %} soldout{% endif %}">
-  {% if row.photo_url %}<img class="photo" src="{{ row.photo_url }}" alt="">{% endif %}
-  <h2>{{ row.name }}</h2>
-  {% if row.sold_out %}
-  <p><strong>Sold out</strong></p>
-  {% else %}
-  {% for line in row.lines %}
-  <p class="price-line"><strong>₹{{ line.price }}</strong> per {{ line.per }}</p>
-  {% endfor %}
-  {% endif %}
+<section class="shop-hero">
+  <div class="shop-hero-top">
+    <div>
+      <h1>{{ shop["name"] }}</h1>
+      <p class="shop-area">{{ shop["area"] }}</p>
+    </div>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <a href="/s/{{ shop["slug"] }}?lang=ta" lang="ta" class="{% if lang == "ta" %}is-active{% endif %}">தமிழ்</a>
+      <a href="/s/{{ shop["slug"] }}?lang=en" class="{% if lang != "ta" %}is-active{% endif %}">EN</a>
+    </div>
+  </div>
+  {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
 </section>
+
+{% if rows %}
+<section class="trust-card">
+  {{ ui.icon("check") }}
+  <div><strong>Prices set by the seller</strong><br><span class="muted">spoken and checked {{ rel }}</span></div>
+</section>
+<div class="contact-grid">
+  <a class="btn btn-secondary" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}Call</a>
+  <a class="btn btn-green" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}WhatsApp</a>
+</div>
+<div class="grid-products">
+{% for row in rows %}
+  <article class="product-card{% if row.sold_out %} is-out{% endif %}">
+    {% if row.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+    {% if row.photo_url %}<img src="{{ row.photo_url }}" alt="">{% endif %}
+    <div class="product-info">
+      <b lang="ta">{{ row.name_ta }}</b>
+      <small>{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</small>
+      {% if not row.sold_out %}
+      {% for line in row.lines %}
+      <div class="product-price">₹{{ line.price }} <small>/ {{ line.per }}</small></div>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </article>
 {% endfor %}
-<p class="muted">Set by seller · {{ rel }}</p>
-{% endif %}
+</div>
+{% else %}
+<p>No prices published yet.</p>
 <p><a href="tel:{{ shop["phone"] }}">{{ shop["phone"] }}</a> · <a href="https://wa.me/{{ digits }}">WhatsApp</a></p>
+{% endif %}
 {% endblock %}

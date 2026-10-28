@@ -1,3 +1,4 @@
+import html as html_lib
 import json
 import re
 import sqlite3
@@ -32,6 +33,7 @@ from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
 from app.pipeline.names import CANONICAL_NAMES, PRODUCE_KEYWORDS
+from app.pipeline.numbers import parse_number
 from app.pipeline.run import process_video_session, reprocess
 from app.pipeline.update import (
     apply_changes,
@@ -134,6 +136,37 @@ def _relative_time(when, now) -> str:
     if hours < 24:
         return f"{hours} hours ago"
     return f"{hours // 24} days ago"
+
+
+def _highlight_quote(quote: str) -> str:
+    """Escape the proof quote and wrap heard numbers in <mark>."""
+    parts = re.split(r"(\s+)", quote or "")
+    out = []
+    for part in parts:
+        if not part or part.isspace():
+            out.append(html_lib.escape(part))
+            continue
+        stripped = part.strip(".,;:!?\"'()[]{}₹")
+        if stripped and parse_number(stripped) is not None:
+            out.append(f"<mark>{html_lib.escape(part)}</mark>")
+        else:
+            out.append(html_lib.escape(part))
+    return "".join(out)
+
+
+def _needs_decision(item) -> bool:
+    return any(flag.options or flag.blocking for flag in item.flags)
+
+
+def _price_summary(item) -> str:
+    for line in item.price_lines:
+        if line.price is not None:
+            if line.per_amount is not None and line.unit:
+                return f"₹{line.price} / {line.per_amount} {line.unit}"
+            if line.unit:
+                return f"₹{line.price} / {line.unit}"
+            return f"₹{line.price}"
+    return "no price yet"
 
 
 def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
@@ -325,9 +358,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             else None
                         ),
                         "proof_json": json.dumps(proof),
+                        "needs_decision": _needs_decision(item),
+                        "quote_html": _highlight_quote(item.proof.quote),
+                        "price_summary": _price_summary(item),
                     }
                 )
+            cards.sort(key=lambda c: (not c["needs_decision"], c["index"]))
+            need_count = sum(1 for c in cards if c["needs_decision"])
             context["cards"] = cards
+            context["total"] = len(cards)
+            context["need_count"] = need_count
+            context["ok_count"] = len(cards) - need_count
             return templates.TemplateResponse(request, "review.html", context)
         return templates.TemplateResponse(request, "session.html", context)
 
@@ -603,6 +644,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 name = item.name_ta if language == "ta" else item.name_en
                 rows.append({
                     "name": f"{name} ({item.variety})" if item.variety else name,
+                    "name_ta": item.name_ta,
+                    "name_en": item.name_en,
+                    "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
                     "sold_out": item.sold_out,
                     "lines": [{"price": str(line.price),
@@ -613,7 +657,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                  datetime.now(UTC))
         digits = re.sub(r"\D", "", shop["phone"] or "")
         return templates.TemplateResponse(request, "shop.html", {
-            "shop": shop, "rows": rows, "rel": rel, "digits": digits})
+            "shop": shop, "rows": rows, "rel": rel, "digits": digits,
+            "lang": language})
 
     @app.get("/s/{slug}/qr.png")
     def shop_qr(slug: str, conn: Conn):

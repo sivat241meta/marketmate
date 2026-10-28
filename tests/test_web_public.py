@@ -61,7 +61,8 @@ def test_publish_shows_price_without_proof(tmp_path, monkeypatch):
     html = client.get(f"/s/{slug}").text
     assert "₹18" in html
     assert "/m/s1_0.jpg" in html
-    assert "Set by seller" in html
+    assert "Prices set by the seller" in html
+    assert "spoken and checked" in html
     assert QUOTE not in html
     assert "/clip/" not in html
     assert "ripe" not in html
@@ -101,5 +102,5 @@ def test_relative_time_shown(tmp_path, monkeypatch):
     client, token, slug, version_id, _ = seed(tmp_path, monkeypatch)
     client.post(f"/e/{token}/v/{version_id}/publish")
     html = client.get(f"/s/{slug}").text
-    assert re.search(r"Set by seller · (just now|\d+ (minutes|hours|days) ago)",
+    assert re.search(r"spoken and checked (just now|\d+ (minutes|hours|days) ago)",
                      html)

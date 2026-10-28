@@ -1,48 +1,49 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}Find prices — MarketMate{% endblock %}
 {% block content %}
 <h1>Find prices</h1>
-<form method="get" action="/market">
-  <label>What do you need?
-    <input type="search" name="q" value="{{ q or '' }}"
-           placeholder="tomato under 25" required>
-  </label>
-  <button class="btn" type="submit">Search</button>
+<form method="get" action="/market" class="search-bar">
+  <label class="visually-hidden" for="market-q">What do you need?</label>
+  <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="tomato, potato 2 kg, budget ₹100" required>
+  <button class="btn btn-green btn-small" type="submit">Search</button>
+  <button class="mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25.">{{ ui.icon("mic") }}<span>Speak</span></button>
+  <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
 </form>
-
-<h2>Or say it</h2>
-<p>
-  <button class="btn" type="button" id="rec-start"
-          data-upload-url="/market/voice"
-          data-rec-prompt="Recording… say what you need, e.g. tomato under 25.">Start recording</button>
-  <button class="btn" type="button" id="rec-stop" disabled>Stop and search</button>
-</p>
-<p class="muted" id="rec-status">Tap Start and say what you need.</p>
+<p class="muted" id="rec-status">Tap Speak and say what you need.</p>
 <form method="post" action="/market/voice" enctype="multipart/form-data">
-  <input type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-  <button class="btn" type="submit">Upload and search</button>
+  <div class="field">
+    <label for="market-audio">Or upload a recording</label>
+    <input id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+  </div>
+  <button class="btn btn-secondary" type="submit">Upload and search</button>
 </form>
 <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 
-{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if heard %}<p class="muted">Heard: {{ heard }}</p>{% endif %}
+{% if chips %}
+<p class="muted">Understood:</p>
+<div class="chips">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}</div>
+{% endif %}
 {% if unknown %}
-<p class="form-error">Sorry, these words were not understood: {{ unknown | join(", ") }}.</p>
+<div class="alert alert-info">Sorry, these words were not understood: {{ unknown | join(", ") }}. Showing the rest instead.</div>
 {% endif %}
 
 {% if basket %}
-<section class="basket">
+<section aria-label="Budget basket">
   <h2>Budget basket{% if basket.budget %} — ₹{{ basket.budget }}{% endif %}</h2>
   <p>{{ basket.explanation }}</p>
   {% for plan in basket.plans %}
-  <div class="card">
+  <div class="basket">
     {% if plan.kind == "split" %}
-    <h3>Cheapest split — ₹{{ plan.total }}</h3>
+    <div class="basket-title">Cheapest split</div>
     {% else %}
-    <h3>{{ plan.shop }} alone — ₹{{ plan.total }}</h3>
+    <div class="basket-title">{{ plan.shop }} alone</div>
     {% endif %}
+    <div class="basket-total">₹{{ plan.total }}</div>
     {% if plan.lines %}
-    <ul>
+    <ul class="basket-lines">
       {% for line in plan.lines %}
       <li>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — ₹{{ line.cost }}</li>
       {% endfor %}
@@ -56,18 +57,24 @@
 </section>
 {% endif %}
 
-{% if searched and not rows and not error and not basket %}
+{% if searched and not groups and not error and not basket %}
 <p class="muted">No shops have what you asked for today.</p>
 {% endif %}
-{% for row in rows %}
-<section class="card">
-  <h2><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a></h2>
-  {% if row.is_demo %}<p class="muted">Demo data</p>{% endif %}
-  <p><strong>{{ row.name }}</strong> — <strong>₹{{ row.price }}</strong> per {{ row.per }}{% if row.rate %} (₹{{ row.rate }}/{{ row.rate_unit }}){% endif %}</p>
-  <p class="muted">Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</p>
+<div class="results-grid">
+{% for group in groups %}
+<section class="card result-card">
+  <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
+  {% for row in group.rows %}
+  <div class="shop-row">
+    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %}<span class="pill pill-live best">Lowest</span>{% endif %}</span>
+    <b>₹{{ row.price }} <small class="muted">/ {{ row.per }}{% if row.rate %} (₹{{ row.rate }}/{{ row.rate_unit }}){% endif %}</small></b>
+  </div>
+  <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>
+  {% endfor %}
 </section>
 {% endfor %}
+</div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/recorder.js"></script>
+<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 {% endblock %}

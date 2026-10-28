@@ -147,7 +147,8 @@ def test_review_html_shows_quote_options_and_names(tmp_path, monkeypatch):
     ).headers["location"]
     html = client.get(session_url).text
     assert "tomato eighteen rupees" in html
-    assert ">18<" in html and ">80<" in html
+    assert "₹18" in html and "₹80" in html
+    assert 'data-value="18"' in html and 'data-value="80"' in html
     assert "opt-btn" in html
     assert "தக்காளி" in html and "tomato" in html
     assert "flag-note" in html

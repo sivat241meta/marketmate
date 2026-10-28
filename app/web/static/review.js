@@ -111,7 +111,19 @@ function cardEdited(card) {
   return false;
 }
 
+function expandCard(card) {
+  if (!card || !card.classList.contains("is-collapsed")) {
+    return;
+  }
+  card.classList.remove("is-collapsed");
+  const toggle = card.querySelector("[data-card-toggle]");
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "true");
+  }
+}
+
 function showConfirm(card) {
+  expandCard(card);
   const wrap = card.querySelector("[data-confirm-wrap]");
   const note = card.querySelector("[data-edit-note]");
   const box = card.querySelector("[data-card-confirm]");
@@ -150,6 +162,50 @@ function syncCardConfirm(card) {
   }
 }
 
+function cardNeeds(card) {
+  let needs = false;
+  card.querySelectorAll(".flag-options").forEach((group) => {
+    if (!group.querySelector(".opt-btn.chosen")) {
+      needs = true;
+    }
+  });
+  card.querySelectorAll("[data-card-confirm]").forEach((box) => {
+    if (!box.checked && !isHiddenBox(box)) {
+      needs = true;
+    }
+  });
+  return needs;
+}
+
+function updateCounts(form, unresolved) {
+  const cards = form.querySelectorAll(".card");
+  const total = cards.length;
+  let need = 0;
+  cards.forEach((card) => {
+    if (cardNeeds(card)) {
+      need += 1;
+    }
+  });
+  const ok = total - need;
+  const counts = document.querySelector("[data-review-counts]");
+  if (counts) {
+    counts.textContent = `${ok} of ${total} look right · ${need} need you`;
+  }
+  const bar = document.querySelector("[data-review-bar]");
+  if (bar) {
+    bar.value = ok;
+    bar.max = total;
+    bar.setAttribute("aria-label", `${ok} of ${total} prices look right`);
+  }
+  const sticky = form.querySelector("[data-approve-count]");
+  if (sticky) {
+    sticky.textContent =
+      unresolved === 0
+        ? "All cards look right — ready to approve."
+        : `${unresolved} still need${unresolved === 1 ? "s" : ""} a decision.`;
+  }
+}
+
 function updateApprove(form) {
   const button = form.querySelector("#approve-btn");
   const error = form.querySelector("#approve-error");
@@ -165,6 +221,7 @@ function updateApprove(form) {
     }
   });
   button.disabled = unresolved > 0;
+  updateCounts(form, unresolved);
   if (error) {
     if (error.dataset.serverMessage === "true") {
       return;
@@ -198,6 +255,7 @@ function revealNeedsConfirm(form, needs) {
     if (box) {
       box.checked = false;
     }
+    expandCard(card);
     if (!firstCard) {
       firstCard = card;
     }
@@ -214,6 +272,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   form.querySelectorAll(".card").forEach((card) => {
     card.dataset.initialLines = String(card.querySelectorAll(".line").length);
+  });
+  form.querySelectorAll("[data-card-toggle]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const card = toggle.closest(".card");
+      if (!card) {
+        return;
+      }
+      card.classList.toggle("is-collapsed");
+      toggle.setAttribute(
+        "aria-expanded",
+        card.classList.contains("is-collapsed") ? "false" : "true",
+      );
+    });
   });
   form.querySelectorAll(".opt-btn").forEach((button) => {
     button.addEventListener("click", () => {

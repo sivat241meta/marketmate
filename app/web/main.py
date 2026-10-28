@@ -1,3 +1,4 @@
+import hashlib
 import secrets
 import sqlite3
 import subprocess
@@ -43,6 +44,30 @@ def _fmt_rate(value: Decimal) -> str:
     return format(value.quantize(Decimal("0.01")).normalize(), "f")
 
 
+def build_static_url(static_dir: Path):
+    """Cache-busting helper: /static/<rel>?v=<first 10 sha1 hex chars>."""
+    versions: dict[str, str] = {}
+    for path in sorted(static_dir.rglob("*")):
+        if path.is_file():
+            rel = path.relative_to(static_dir).as_posix()
+            versions[rel] = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+
+    def static_url(path: str) -> str:
+        rel = path
+        if rel.startswith("/static/"):
+            rel = rel[len("/static/"):]
+        elif rel.startswith("static/"):
+            rel = rel[len("static/"):]
+        else:
+            rel = rel.lstrip("/")
+        version = versions.get(rel)
+        if version:
+            return f"/static/{rel}?v={version}"
+        return f"/static/{rel}"
+
+    return static_url
+
+
 def create_app(settings: Settings) -> FastAPI:
     """Build the MarketMate web app (seller flow plus the customer market)."""
     app = FastAPI()
@@ -65,6 +90,7 @@ def create_app(settings: Settings) -> FastAPI:
     finally:
         startup_conn.close()
     templates = Jinja2Templates(directory=str(here / "templates"))
+    templates.env.globals["static_url"] = build_static_url(here / "static")
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
 
@@ -93,8 +119,44 @@ def create_app(settings: Settings) -> FastAPI:
                 "rate_unit": found.rate_unit or "",
                 "rel": _relative_time(found.updated_at, now),
                 "stale": found.stale,
+                "lowest": False,
             })
         return rows
+
+    def _group_rows(rows):
+        groups: list[dict] = []
+        by_name: dict[str, dict] = {}
+        for row in rows:
+            key = row["name"]
+            if key not in by_name:
+                by_name[key] = {"name": key, "rows": []}
+                groups.append(by_name[key])
+            by_name[key]["rows"].append(row)
+        for group in groups:
+            first = group["rows"][0] if group["rows"] else None
+            if first is not None and not first["stale"]:
+                first["lowest"] = True
+        return groups
+
+    def _chips(query):
+        chips = []
+        if query is None:
+            return chips
+        for want in query.wants:
+            label = want.name_en
+            if want.amount is not None and want.unit:
+                qty = format(want.amount.normalize(), "f")
+                label += f" · {qty} {want.unit}"
+            elif want.amount is not None:
+                label += f" · {format(want.amount.normalize(), 'f')}"
+            if want.max_rate is not None:
+                label += f" under ₹{format(want.max_rate.normalize(), 'f')}"
+            chips.append(label)
+        if query.budget is not None:
+            chips.append(f"Budget ₹{format(query.budget.normalize(), 'f')}")
+        if query.area:
+            chips.append(query.area)
+        return chips
 
     def _basket_dict(plans, budget, explanation):
         plan_dicts = []
@@ -139,8 +201,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None):
+        flat = rows or []
         return templates.TemplateResponse(request, "market.html", {
-            "q": q, "heard": heard, "rows": rows or [],
+            "q": q, "heard": heard, "rows": flat, "groups": _group_rows(flat),
+            "chips": _chips(query),
             "unknown": list(query.unknown) if query else [],
             "error": error, "searched": searched, "basket": basket})
 

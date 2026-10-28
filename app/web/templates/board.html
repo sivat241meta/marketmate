@@ -13,27 +13,30 @@
   font-weight: bold;
   src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
 }
-@page { size: A4; margin: 18mm 15mm; }
-body { font-family: "Noto Sans Tamil", sans-serif; color: #1a1a1a; }
-h1 { font-size: 28pt; margin: 0 0 2mm; }
-.shop-meta { color: #444; font-size: 11pt; margin: 0 0 6mm; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border-bottom: 1pt solid #999; padding: 3mm 2mm; text-align: left; }
-th { font-size: 10pt; color: #444; }
+@page { size: A4; margin: 15mm 12mm; }
+body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
+.header { background: #14532d; color: #fbf7ef; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
+.header h1 { font-size: 30pt; margin: 0; }
+.header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }
+table { width: 100%; border-collapse: collapse; background: #ffffff; }
+th { background: #14532d; color: #fbf7ef; font-size: 10pt; padding: 3mm; text-align: left; }
+td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
 .name-ta { font-size: 16pt; font-weight: bold; }
-.name-en { font-size: 11pt; color: #444; }
-.thumb { width: 20mm; height: 20mm; margin-right: 3mm; vertical-align: middle; }
+.name-en { font-size: 11pt; color: #57534e; }
+.thumb { width: 20mm; height: 20mm; margin-right: 3mm; vertical-align: middle; border-radius: 2mm; }
 .item-cell { display: inline-block; vertical-align: middle; }
-.price { font-size: 22pt; font-weight: bold; white-space: nowrap; }
-.per { font-size: 11pt; color: #444; }
-.soldout { font-size: 16pt; font-weight: bold; color: #888; }
-.footer { margin-top: 8mm; font-size: 10pt; color: #444; }
+.price { font-size: 24pt; font-weight: bold; color: #14532d; white-space: nowrap; }
+.per { font-size: 11pt; color: #57534e; }
+.soldout { display: inline-block; font-size: 14pt; font-weight: bold; color: #b3261e; border: 1pt solid #b3261e; border-radius: 2mm; padding: 1mm 3mm; }
+.footer { margin-top: 6mm; font-size: 10pt; color: #57534e; }
 .footer img { width: 30mm; }
 </style>
 </head>
 <body>
-<h1>{{ shop["name"] }}</h1>
-<p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }} · {{ at }}</p>
+<div class="header">
+  <h1>{{ shop["name"] }}</h1>
+  <p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }} · {{ at }}</p>
+</div>
 <table>
 <tr><th>Item</th><th>Price</th></tr>
 {% for row in rows %}

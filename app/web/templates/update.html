@@ -1,102 +1,136 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}{% if mode == "confirm" %}Confirm price changes{% else %}Update prices by voice{% endif %}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block sidebar %}
+<nav class="sidebar" aria-label="Seller">
+  <a class="side-link" href="/e/{{ token }}">{{ ui.icon("home") }}<span>Dashboard</span></a>
+  <a class="side-link is-active" href="/e/{{ token }}/update">{{ ui.icon("mic") }}<span>Prices</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("photo") }}<span>Photos</span> <span class="soon">soon</span></span>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("receipt") }}<span>Bills</span> <span class="soon">soon</span></span>
+  <a class="side-link" href="/s/{{ shop["slug"] }}">{{ ui.icon("tag") }}<span>Shop page</span></a>
+  <span class="side-link is-disabled" aria-disabled="true">{{ ui.icon("settings") }}<span>Settings</span> <span class="soon">soon</span></span>
+</nav>
+{% endblock %}
 {% block content %}
 {% if mode == "confirm" %}
-<h1>Confirm price changes</h1>
-<p class="muted">Heard: {{ transcript }}</p>
+<header class="update-confirm-head">
+  <h1>Confirm price changes</h1>
+  <p class="muted">Heard: {{ transcript }}</p>
+</header>
 <form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm">
 {% for card in cards %}
 {% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
-<section class="card" data-card="{{ card.index }}">
-  {% if card.photo_url %}<img class="photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}
-  <h2><span lang="ta">{{ card.name_ta }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
-  <p><strong>{{ card.action_label }}</strong></p>
-  {% if card.action == "set_price" %}
-  {% for line in card.lines %}
-  <div class="line">
-    <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
-    <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
-    <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
-      {% for u in units %}
-      <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
-      {% endfor %}
-      {% if line.unit and line.unit not in units %}
-      <option value="{{ line.unit }}" selected>{{ line.unit }}</option>
-      {% endif %}
-    </select></label>
-    <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="Remove this price line">✕</button>
-  </div>
-  {% endfor %}
-  <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
-  {% elif card.action == "set_qty" %}
-  <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
-  {% else %}
-  <input type="hidden" data-item="{{ card.index }}" data-field="qty" value="">
-  {% if card.action == "sold_out" %}
-  <p>Sold out{% if card.current_summary %} — was {{ card.current_summary }}{% endif %}</p>
-  {% else %}
-  <p>Back in stock{% if card.current_summary %} — {{ card.current_summary }}{% endif %}</p>
-  {% endif %}
-  {% endif %}
-  <blockquote class="quote">{{ card.quote }}</blockquote>
-  {% for flag in card.flags %}
-    {% if flag.options %}
-    <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
-      <p>{{ flag.message }}</p>
-      {% for option in flag.options %}
-      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-field="{{ flag.field }}" data-value="{{ option }}">{{ option }}</button>
-      {% endfor %}
+<section class="card review-card needs" data-card="{{ card.index }}">
+  <div class="review-body">
+    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}
+    <h2><span lang="ta">{{ card.name_ta }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
+    <p><strong>{{ card.action_label }}</strong></p>
+    {% if card.action == "set_price" %}
+    {% for line in card.lines %}
+    <div class="line">
+      <label>Price <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
+      <label>Per <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>Unit <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
+        {% for u in units %}
+        <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+        {% if line.unit and line.unit not in units %}
+        <option value="{{ line.unit }}" selected>{{ line.unit }}</option>
+        {% endif %}
+      </select></label>
+      <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="Remove this price line">✕ Remove</button>
     </div>
-    {% elif flag.blocking %}
-    <p class="flag-blocking">{{ flag.message }}</p>
+    {% endfor %}
+    <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
+    {% elif card.action == "set_qty" %}
+    <label>Quantity <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
     {% else %}
-    <p class="flag-note">{{ flag.message }}</p>
+    <input type="hidden" data-item="{{ card.index }}" data-field="qty" value="">
+    {% if card.action == "sold_out" %}
+    <p>Sold out{% if card.current_summary %} — was {{ card.current_summary }}{% endif %}</p>
+    {% else %}
+    <p>Back in stock{% if card.current_summary %} — {{ card.current_summary }}{% endif %}</p>
     {% endif %}
-  {% endfor %}
-  {% if card.need_confirm %}
-  <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}" name="confirmed" value="{{ card.index }}"> I confirm</label>
-  {% endif %}
-  <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
+    {% endif %}
+    <blockquote class="quote">{{ card.quote }}</blockquote>
+    {% for flag in card.flags %}
+      {% if flag.options %}
+      <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
+        <div class="alert alert-warn">{{ flag.message }}</div>
+        <div class="choice">
+          {% for option in flag.options %}
+          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}₹{{ option }}{% else %}{{ option }}{% endif %}</button>
+          {% endfor %}
+        </div>
+      </div>
+      {% elif flag.blocking %}
+      <div class="alert alert-warn flag-blocking">{{ flag.message }}</div>
+      {% else %}
+      <p class="flag-note">{{ flag.message }}</p>
+      {% endif %}
+    {% endfor %}
+    {% if card.need_confirm %}
+    <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}" name="confirmed" value="{{ card.index }}"> I confirm</label>
+    {% endif %}
+    <script type="application/json" class="proof-data" data-item="{{ card.index }}">{{ card.proof_json | safe }}</script>
+  </div>
 </section>
 {% endfor %}
 {% if not cards %}
 <p class="muted">No changes heard. Nothing to confirm.</p>
 {% endif %}
   <p class="form-error" id="approve-error" hidden></p>
-  <button class="btn" type="submit" id="approve-btn" disabled>Confirm and publish</button>
+  <div class="sticky-bar">
+    <p class="muted sticky-count" data-approve-count></p>
+    <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>Confirm and publish</button>
+  </div>
 </form>
 {% else %}
-<h1>Update prices by voice</h1>
-<p class="muted">Say today's changes, e.g. “thakkali 22, vengayam sold out”. No video needed.</p>
-{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+<section class="card record-card">
+  {{ ui.icon("mic") }}
+  <h1>Update prices by voice</h1>
+  <p class="muted">Say today's changes, e.g. “thakkali 22, vengayam sold out”. No video needed.</p>
+  {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+  <div class="record-actions">
+    <button class="btn btn-primary" type="button" id="rec-start">Start recording</button>
+    <button class="btn btn-secondary" type="button" id="rec-stop" disabled>Stop and check</button>
+  </div>
+  <p class="muted" id="rec-status">Tap Start and say the new prices.</p>
+  <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data">
+    <div class="field">
+      <label for="update-audio">Or upload a recording</label>
+      <input id="update-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload and check</button>
+  </form>
+  <p class="notice">{{ notice | safe }}</p>
+</section>
 {% if items %}
 <h2>Current prices</h2>
-<ul>
 {% for item in items %}
-  <li>{{ item.name_ta }} {{ item.name_en }}{% if item.sold_out %} — sold out{% else %}{% for line in item.price_lines %} — ₹{{ line.price }} per {{ line.per_amount }} {{ line.unit }}{% endfor %}{% endif %}</li>
+<div class="list-row">
+  <div class="list-main">
+    <span class="list-name"><span lang="ta">{{ item.name_ta }}</span> {{ item.name_en }}</span>
+    {% if item.sold_out %}
+    <span class="list-sub">sold out</span>
+    {% else %}
+    {% for line in item.price_lines %}
+    <span class="list-sub">₹{{ line.price }} per {{ line.per_amount }} {{ line.unit }}</span>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
 {% endfor %}
-</ul>
 {% else %}
 <p class="muted">No approved price list yet — upload a video first.</p>
 {% endif %}
-<h2>Record</h2>
-<p>
-  <button class="btn" type="button" id="rec-start">Start recording</button>
-  <button class="btn" type="button" id="rec-stop" disabled>Stop and check</button>
-</p>
-<p class="muted" id="rec-status">Tap Start and say the new prices.</p>
-<h2>Or upload a recording</h2>
-<form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data">
-  <input type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-  <button class="btn" type="submit">Upload and check</button>
-</form>
-<p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 {% endif %}
 {% endblock %}
 {% block scripts %}
 {% if mode == "confirm" %}
-<script src="/static/review.js"></script>
+<script src="{{ static_url('review.js') if static_url is defined else '/static/review.js' }}"></script>
 {% else %}
-<script src="/static/recorder.js"></script>
+<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 {% endif %}
 {% endblock %}

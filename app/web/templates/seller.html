@@ -13,7 +13,7 @@
 </nav>
 {% endblock %}
 {% block content %}
-{% if shop["is_judge"] %}<p class="banner">Test shop - not listed in the market, deleted after 7 days</p>{% endif %}
+{% if shop["is_judge"] %}<div class="alert alert-warn">Test shop - not listed in the market, deleted after 7 days</div>{% endif %}
 
 <section class="shopcard">
   <h1>{{ shop["name"] }}</h1>
