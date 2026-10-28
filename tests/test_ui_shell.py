@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CSS = ROOT / "app" / "web" / "static" / "app.css"
 BASE = ROOT / "app" / "web" / "templates" / "base.html"
 
-TOKENS = ["--brand", "--bg", "--surface", "--surface2", "--ink", "--muted", "--line", "--ok"]
+TOKENS = ["--forest", "--leaf", "--cta", "--gold", "--mint", "--bg", "--surface", "--ink", "--muted", "--line", "--danger"]
 
 
 def make_client(tmp_path):
@@ -40,7 +40,7 @@ def create_shop(client):
 
 def assert_shell(html, action):
     assert "MarketMate" in html
-    assert 'class="topbar"' in html or "topbar" in html
+    assert 'class="hdr"' in html
     assert action in html
     assert "style=" not in html
 

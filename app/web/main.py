@@ -34,6 +34,7 @@ from app.web import purchases as purchases_routes
 from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
 from app.web import settings as settings_routes
+from app.web import shell as shell_data
 
 
 def _fmt_rate(value: Decimal) -> str:
@@ -80,6 +81,14 @@ def create_app(settings: Settings) -> FastAPI:
 
     here = Path(__file__).parent
     data_dir = Path(settings.data_dir)
+
+    @app.middleware("http")
+    async def _shell_announcement(request: Request, call_next):
+        request.state.shell_ann = None
+        if request.method == "GET":
+            request.state.shell_ann = shell_data.ann_for_path(
+                data_dir, request.url.path)
+        return await call_next(request)
     startup_conn = db.connect(data_dir)
     try:
         db.purge_expired(startup_conn, data_dir, datetime.now(UTC))
@@ -234,8 +243,8 @@ def create_app(settings: Settings) -> FastAPI:
             {
                 "name": "MarketMate",
                 "short_name": "MarketMate",
-                "theme_color": "#0866FF",
-                "background_color": "#F0F2F5",
+                "theme_color": "#173F2A",
+                "background_color": "#F7F9F6",
                 "display": "standalone",
                 "start_url": "/",
                 "icons": [

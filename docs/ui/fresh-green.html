@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketMate · Fresh Green style guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== gallery chrome (not part of the app) ===== */
+*{box-sizing:border-box}html,body{margin:0}
+body.g{font-family:"Plus Jakarta Sans",sans-serif;background:#e8ece7;color:#111;padding:26px 30px 80px}
+.g h1.t{font:800 26px "Plus Jakarta Sans";margin:0 0 6px;letter-spacing:-.02em}
+.g p.t{margin:0 0 18px;color:#4b5a50;font-size:14px;max-width:900px;line-height:1.55}
+.g .sec{font:700 12.5px "Plus Jakarta Sans";text-transform:uppercase;letter-spacing:.1em;color:#5b6b60;margin:28px 0 12px}
+.g .row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.g .lab{font:600 12.5px "Plus Jakarta Sans";color:#334;margin-bottom:8px}
+.phone{width:390px;height:820px;border-radius:42px;background:#0b0b0c;padding:9px;box-shadow:0 22px 44px -20px rgba(0,0,0,.4)}
+.phone>.sc{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative}
+.desk{width:880px;height:560px;border-radius:14px;overflow:hidden;background:#0b0b0c;position:relative;box-shadow:0 22px 44px -20px rgba(0,0,0,.4)}
+.desk .bar{height:24px;background:#2a2a2e;display:flex;gap:6px;align-items:center;padding:0 10px}.desk .bar i{width:9px;height:9px;border-radius:50%;background:#555}
+.desk .sc{position:absolute;top:24px;left:0;width:1408px;height:858px;transform:scale(.625);transform-origin:0 0}
+
+/* ===== FRESH GREEN design tokens (the app) ===== */
+.fg{
+ --forest:#173F2A; --forest-2:#1F5135; --forest-ink:#fff;
+ --leaf:#4F9A2E;          /* big display text + kickers (13px bold+) */
+ --leaf-ink:#3E7D22;      /* small green text on white */
+ --cta:#178A4C;           /* "order / say prices" green pill */
+ --gold:#F5C451; --gold-soft:#FFF4D6; --gold-ink:#173F2A;
+ --mint:#EEF6EE; --mint-2:#E3F0E2;
+ --bg:#F7F9F6; --surface:#fff; --line:rgba(23,63,42,.10); --line-2:#E3E9E1;
+ --ink:#1B2820; --muted:#5B6B60;
+ --danger:#C8372D;
+ --r-card:22px; --r-pill:999px;
+ --shadow:0 1px 2px rgba(23,63,42,.06),0 8px 24px -12px rgba(23,63,42,.14);
+ font:500 15px/1.45 "Plus Jakarta Sans","Noto Sans Tamil",system-ui,sans-serif; color:var(--ink); background:var(--bg);
+ height:100%;overflow:auto;display:flex;flex-direction:column;container-type:inline-size;scrollbar-width:none}
+.fg::-webkit-scrollbar{display:none}.fg>*{flex-shrink:0}
+.fg [lang=ta],.fg .ta{font-family:"Noto Sans Tamil","Plus Jakarta Sans",sans-serif}
+.fg a{color:inherit;text-decoration:none}
+.fg .ic{width:18px;height:18px;flex:none}
+/* announcement bar */
+.fg .ann{background:var(--forest);color:#E7F1E4;font:600 12.5px "Plus Jakarta Sans";display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 16px}
+.fg .ann .dot{width:7px;height:7px;border-radius:50%;background:#7BD15A;display:inline-block;margin-right:7px}
+.fg .lang{display:inline-flex;background:rgba(255,255,255,.12);border-radius:999px;padding:2px}
+.fg .lang b{font:700 11.5px "Plus Jakarta Sans";padding:3px 9px;border-radius:999px;color:#E7F1E4}
+.fg .lang b.on{background:#fff;color:var(--forest)}
+/* header */
+.fg .hdr{background:#fff;display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line-2);position:sticky;top:0;z-index:5}
+.fg .logo{display:flex;align-items:center;gap:8px;font:800 18px "Plus Jakarta Sans";color:var(--forest);letter-spacing:-.01em}
+.fg .logo .mk{width:30px;height:30px;border-radius:10px;background:var(--mint);color:var(--leaf);display:grid;place-items:center}
+.fg .nav{display:none;gap:4px;margin-left:12px}
+.fg .nav a{font:600 14.5px "Plus Jakarta Sans";padding:8px 12px;border-radius:999px;color:var(--ink)}
+.fg .nav a.on{background:var(--gold);color:var(--gold-ink)}
+.fg .hdr .sp{flex:1}
+.fg .pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;font:700 15px "Plus Jakarta Sans","Noto Sans Tamil";padding:11px 18px;border:1.5px solid transparent;white-space:nowrap;min-height:46px}
+.fg .pill.cta{background:var(--cta);color:#fff}
+.fg .pill.dark{background:var(--forest);color:#fff}
+.fg .pill.ghost{background:#fff;border-color:var(--line-2);color:var(--ink)}
+.fg .pill.gold{background:var(--gold);color:var(--gold-ink)}
+.fg .pill.sm{padding:8px 14px;min-height:38px;font-size:14px}
+.fg .pill.big{padding:15px 24px;font-size:16px;min-height:54px}
+.fg .circ{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;background:#fff;position:relative}
+.fg .circ em{position:absolute;top:-4px;right:-4px;background:var(--gold);color:var(--gold-ink);font:800 11px "Plus Jakarta Sans";border-radius:999px;padding:1px 6px;font-style:normal}
+/* layout */
+.fg .wrap{padding:18px 16px 24px;display:flex;flex-direction:column;gap:18px}
+.fg .kick{display:flex;align-items:center;gap:10px;font:700 12.5px "Plus Jakarta Sans";letter-spacing:.14em;text-transform:uppercase;color:var(--leaf-ink)}
+.fg .kick::before{content:"";width:22px;height:2px;background:var(--leaf);border-radius:2px}
+.fg h1.big{font:800 34px/1.06 "Plus Jakarta Sans","Noto Sans Tamil";letter-spacing:-.03em;color:var(--forest);margin:0}
+.fg h1.big em{font-style:normal;color:var(--leaf);background:linear-gradient(transparent 72%,var(--gold-soft) 72%,var(--gold-soft) 92%,transparent 92%)}
+.fg h2.h2s{font:800 24px/1.12 "Plus Jakarta Sans","Noto Sans Tamil";letter-spacing:-.02em;color:var(--forest);margin:0}
+.fg .lead{color:var(--muted);font-size:15px;margin:0}
+/* feature trio / stats */
+.fg .trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fg .tri{display:flex;flex-direction:column;gap:5px}
+.fg .tile{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;box-shadow:inset 0 -2px 0 rgba(0,0,0,.06)}
+.fg .tile.m{background:linear-gradient(160deg,#F2F9EF,#DDEFD7);color:var(--leaf-ink)}
+.fg .tile.s{background:linear-gradient(160deg,#EEF5FB,#DCEAF6);color:#2C6C9E}
+.fg .tile.y{background:linear-gradient(160deg,#FFF8E4,#FCE7B6);color:#9A6A00}
+.fg .tri b{font:800 18px "Plus Jakarta Sans";color:var(--forest)}
+.fg .tri small{color:var(--muted);font-size:12.5px;line-height:1.35}
+/* trust notice */
+.fg .notice{display:flex;gap:10px;align-items:flex-start;border:1.5px dashed #C9D8C6;border-radius:16px;padding:11px 13px;color:var(--muted);font-size:13px;background:#fff}
+.fg .notice .ic{color:var(--leaf);margin-top:1px}
+/* search + chips */
+.fg .search{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line-2);border-radius:999px;padding:12px 16px;color:var(--muted);box-shadow:var(--shadow)}
+.fg .search .k{margin-left:auto;font:700 12px "Plus Jakarta Sans";border:1.5px solid var(--line-2);border-radius:7px;padding:1px 7px;color:var(--muted)}
+.fg .search .mic{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--forest);color:#fff;display:grid;place-items:center}
+.fg .chips{display:flex;gap:8px;flex-wrap:wrap}
+.fg .chip{font:600 13.5px "Plus Jakarta Sans","Noto Sans Tamil";padding:8px 14px;border-radius:999px;border:1.5px solid var(--line-2);background:#fff;white-space:nowrap}
+.fg .chip small{color:var(--muted);font-weight:600;margin-left:4px}
+.fg .chip.on{background:var(--forest);border-color:var(--forest);color:#fff}.fg .chip.on small{color:#BFD8C2}
+/* product card */
+.fg .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg .card{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.fg .card .ph{aspect-ratio:1/0.82;background:radial-gradient(circle at 50% 40%,#fff 0,#F1F5EF 70%);display:grid;place-items:center;position:relative;overflow:hidden}
+.fg .card .ph img{width:100%;height:100%;object-fit:cover}
+.fg .card .tag{position:absolute;top:10px;left:10px;background:var(--forest);color:#fff;font:800 10.5px "Plus Jakarta Sans";letter-spacing:.06em;padding:4px 9px;border-radius:999px;text-transform:uppercase}
+.fg .card .tag.g{background:var(--gold);color:var(--gold-ink)}
+.fg .card .bd{padding:12px 13px 13px;display:flex;flex-direction:column;gap:7px}
+.fg .card .kk{font:700 10.5px "Plus Jakarta Sans";letter-spacing:.12em;text-transform:uppercase;color:var(--leaf-ink)}
+.fg .card h3{margin:0;font:800 16.5px/1.2 "Noto Sans Tamil","Plus Jakarta Sans";color:var(--forest)}
+.fg .card h3 small{display:block;font:600 12px "Plus Jakarta Sans";color:var(--muted);margin-top:2px}
+.fg .sizes{display:flex;gap:5px;flex-wrap:wrap}
+.fg .sz{font:600 12px "Plus Jakarta Sans";padding:4px 9px;border-radius:9px;border:1.5px solid var(--line-2)}
+.fg .sz.on{background:var(--forest);border-color:var(--forest);color:#fff}
+.fg .card .pr{display:flex;align-items:flex-end;justify-content:space-between;gap:6px 8px;margin-top:2px;flex-wrap:wrap}
+.fg .card .pr b{font:800 22px/1 "Plus Jakarta Sans";color:var(--forest);letter-spacing:-.01em}
+.fg .card .pr small{display:block;font:600 11.5px "Plus Jakarta Sans";color:var(--muted);margin-top:3px}
+.fg .add{background:var(--forest);color:#fff;font:700 14.5px "Plus Jakarta Sans","Noto Sans Tamil";padding:9px 16px;border-radius:999px;min-height:40px;display:inline-flex;align-items:center}
+.fg .step{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:var(--mint);color:var(--forest);border-radius:999px;padding:6px 8px;font:800 14px "Plus Jakarta Sans"}
+.fg .step i{width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.fg .card.out{opacity:.55}
+/* floating bar (cart / bill) */
+.fg .float{position:sticky;bottom:12px;margin:auto 12px 12px;background:var(--forest);color:#fff;border-radius:20px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 18px 30px -14px rgba(23,63,42,.6);z-index:6}
+.fg .float .t{flex:1}.fg .float .t b{display:block;font:800 17px "Plus Jakarta Sans"}.fg .float .t small{opacity:.8;font-size:12px}
+/* bottom nav (phones) */
+.fg .bnav{position:sticky;bottom:0;margin-top:auto;background:#fff;border-top:1px solid var(--line-2);display:flex;justify-content:space-around;align-items:flex-end;padding:8px 4px 12px;z-index:7}
+.fg .bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;font:700 11.5px "Plus Jakarta Sans","Noto Sans Tamil";color:var(--muted);min-width:56px;padding:4px 8px;border-radius:14px}
+.fg .bnav a.on{color:var(--forest);background:var(--gold-soft)}
+.fg .bnav .ic{width:22px;height:22px}
+.fg .bnav .mic{margin-top:-26px;background:none}
+.fg .bnav .mic span{width:58px;height:58px;border-radius:50%;background:var(--cta);color:#fff;display:grid;place-items:center;border:4px solid #fff;box-shadow:0 10px 20px -8px rgba(23,138,76,.7)}
+.fg .bnav .mic .ic{width:26px;height:26px}
+/* dark band (stats) */
+.fg .band{background:radial-gradient(120% 120% at 0% 100%,#245a3a 0%,var(--forest) 55%);color:#fff;border-radius:26px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.fg .band .kick{color:#9FD685}.fg .band .kick::before{background:#9FD685}
+.fg .gcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg .gc{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:8px}
+.fg .gc .gi{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(160deg,#FFD978,#E8A930);color:#3d2a00}
+.fg .gc .gi.g{background:linear-gradient(160deg,#A7E07F,#5FAE3A);color:#123018}
+.fg .gc b{font:800 26px/1 "Plus Jakarta Sans";letter-spacing:-.02em}
+.fg .gc small{color:#C9DCCB;font-size:12.5px}
+/* timeline */
+.fg .tline{position:relative;display:flex;justify-content:space-between;padding:22px 4px 0}
+.fg .tline::before{content:"";position:absolute;left:14px;right:14px;top:36px;border-top:2.5px dashed #B9D6AE}
+.fg .tline .st{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;width:70px;text-align:center;font:700 11.5px/1.2 "Plus Jakarta Sans","Noto Sans Tamil";color:var(--muted)}
+.fg .tline .st i{width:28px;height:28px;border-radius:50%;background:#fff;border:2.5px solid var(--leaf);display:grid;place-items:center;font-style:normal}
+.fg .tline .st.d i{background:var(--leaf);color:#fff}
+.fg .tline .st.n i{background:var(--gold);border-color:var(--forest);box-shadow:0 0 0 6px var(--gold-soft)}
+.fg .tline .st.n{color:var(--forest)}
+.fg .tline .st .now{position:absolute;top:-24px;background:var(--forest);color:#fff;font:800 9.5px "Plus Jakarta Sans";letter-spacing:.08em;padding:3px 7px;border-radius:6px;white-space:nowrap}
+/* receipt + standee */
+.fg .rcpt{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);padding:16px}
+.fg .rl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line-2)}
+.fg .rl b{font:700 15px "Noto Sans Tamil"}.fg .rl small{display:block;color:var(--muted);font-size:12px}
+.fg .rt{display:flex;justify-content:space-between;align-items:baseline;padding-top:10px}.fg .rt b{font:800 30px "Plus Jakarta Sans";color:var(--forest)}
+.fg .upi{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden;text-align:center}
+.fg .upi .h{background:var(--forest);color:#fff;font:700 13px "Plus Jakarta Sans";padding:9px}
+.fg .upi .qr{width:168px;height:168px;margin:14px auto 4px;display:block}
+.fg .upi .a{font:800 30px "Plus Jakarta Sans";color:var(--forest)}
+.fg .upi .p{color:var(--muted);font-size:12.5px;padding-bottom:10px}
+.fg .upi .apps{border-top:1px dashed var(--line-2);padding:8px;font:700 11px "Plus Jakarta Sans";color:var(--muted);letter-spacing:.03em}
+.fg .change{display:flex;justify-content:space-between;align-items:center;background:var(--mint);border-radius:16px;padding:12px 14px;color:var(--forest)}
+.fg .change b{font:800 28px "Plus Jakarta Sans"}
+/* live */
+.fg .cam{border-radius:var(--r-card);overflow:hidden;position:relative;height:260px}
+.fg .cam img{width:100%;height:100%;object-fit:cover}
+.fg .cam .rec{position:absolute;top:12px;left:12px;background:var(--danger);color:#fff;font:800 12px "Plus Jakarta Sans";padding:5px 10px;border-radius:999px}
+.fg .cam .cap{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(23,63,42,.82);color:#fff;border-radius:16px;padding:10px 12px;font:600 15px "Noto Sans Tamil";backdrop-filter:blur(6px)}
+.fg .cam .cap mark{background:var(--gold);color:var(--forest);border-radius:5px;padding:0 4px}
+.fg .heard{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:9px 11px;box-shadow:var(--shadow)}
+.fg .heard img{width:46px;height:46px;border-radius:12px;object-fit:cover}
+.fg .heard .n{flex:1}.fg .heard .n b{display:block;font:700 15px "Noto Sans Tamil"}.fg .heard .n small{color:var(--muted);font-size:12px}
+.fg .heard .p{font:800 18px "Plus Jakarta Sans";color:var(--forest)}
+.fg .ok{width:26px;height:26px;border-radius:50%;background:var(--mint);color:var(--leaf-ink);display:grid;place-items:center}
+.fg .ask{width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--forest);display:grid;place-items:center;font:800 14px "Plus Jakarta Sans"}
+.fg .heard.need{border-color:#F0D58C;background:#FFFBEF}
+.fg .stopb{width:70px;height:70px;border-radius:50%;background:var(--danger);display:grid;place-items:center;margin:4px auto 0;box-shadow:0 0 0 8px #FBE3E0}.fg .stopb i{width:22px;height:22px;border-radius:6px;background:#fff}
+/* desktop (container ≥ 1000px) */
+@container (min-width:1000px){
+ .fg .nav{display:flex}
+ .fg h2.h2s{font-size:40px}
+ .fg .bnav{display:none}
+ .fg .hdr{padding:14px 64px}
+ .fg .ann{padding:8px 64px}
+ .fg .wrap{padding:36px 64px 48px;gap:26px}
+ .fg h1.big{font-size:64px}
+ .fg h2.h2s{font-size:40px}
+ .fg .grid{grid-template-columns:repeat(4,1fr);gap:18px}
+ .fg .hero2{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center}
+ .fg .gcards{grid-template-columns:repeat(4,1fr)}
+ .fg .float{display:none}
+ .fg .split{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+}
+.fg .desk-only{display:none!important}
+@container (min-width:1000px){.fg .desk-only{display:inline-flex!important}.fg div.desk-only{display:block!important}.fg .mob-only{display:none!important}}
+</style>
+</head>
+<body class="g">
+<h1 class="t">MarketMate · "Fresh Green" style guide (in the style you shared)</h1>
+<p class="t">The same look as the site you liked: forest green, leaf green and a warm gold highlight, the Plus Jakarta Sans font, white cards with soft shadows, pill buttons, a dashed "where the prices come from" note, and a dark green stats band. The colours and code are our own. Each screen is shown on a <b>phone</b> and on a <b>laptop</b> (same page, it reflows). The photos and prices come from your real shop videos; sales and orders are sample data. This is the reference Muse will build from.</p>
+<div id="stage"></div>
+<script>
+const P='p/'; /* photos are not in the repo; the layout is the reference */
+const L=(en,ta)=>en; /* English for the guide; the app keeps its Tamil/Hindi switch */
+const IC={leaf:'<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19 13 11"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',home:'<path d="M3 10.5 12 3l9 7.5V21H3z"/>',receipt:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',box:'<path d="M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4z"/><path d="M3.5 7.5 12 11.5l8.5-4M12 11.5v9"/>',chart:'<path d="M4 20V11M10 20V5M16 20v-8M21 20H3"/>',bag:'<path d="M5 8h14l-1.2 12.5H6.2z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',shield:'<path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',wallet:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/>',qr:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2z"/>',clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',chat:'<path d="M4 20l1.4-3.6A8 8 0 1 1 8 19.2z"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',download:'<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4.5 20h15"/>',tag:'<path d="M3 12V3h9l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.2"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>',star:'<path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z"/>'};
+const icon=n=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+const IT={carrot:['ஊட்டி கேரட்','Ooty carrot','OOTY · PER KG',80,'carrot'],beans:['பீன்ஸ்','Beans','FRESH · PER KG',120,'beans'],avarai:['அவரைக்காய்','Broad beans','PER KG',80,'avarai'],brinjal:['கத்திரிக்காய்','Brinjal','KRISHNAGIRI · PER KG',60,'brinjal'],poovan:['பூவன் பழம்','Poovan banana','BANANA · PER KG',60,'poovan'],yelakki:['ஏலக்கி','Yelakki banana','BANANA · PER KG',100,'yelakki'],red:['செவ்வாழை','Red banana','BANANA · PER KG',100,'redbanana'],green:['பச்சை வாழை','Green banana','COOKING · PER KG',40,'greenbanana']};
+function qr(seed=7,n=25){let s=seed;const r=()=>(s=(s*9301+49297)%233280)/233280;let d='';for(let y=0;y<n;y++)for(let x=0;x<n;x++){if((x<8&&y<8)||(x>=n-8&&y<8)||(x<8&&y>=n-8))continue;if(r()>.5)d+=`M${x},${y}h1v1h-1z`;}const f=(x,y)=>`M${x},${y}h7v7h-7zM${x+1},${y+1}v5h5v-5zM${x+2},${y+2}h3v3h-3z`;return `<svg class="qr" viewBox="-2 -2 ${n+4} ${n+4}"><rect x="-2" y="-2" width="${n+4}" height="${n+4}" fill="#fff"/><path fill-rule="evenodd" fill="#173F2A" d="${f(0,0)}${f(n-7,0)}${f(0,n-7)}${d}"/></svg>`;}
+const card=(k,o={})=>{const t=IT[k];return `<div class="card ${o.out?'out':''}"><div class="ph"><img src="${P}${t[4]}.jpg" alt="">${o.tag?`<span class="tag ${o.gold?'g':''}">${o.tag}</span>`:''}</div><div class="bd"><span class="kk">${t[2]}</span><h3>${t[0]}<small>${t[1]}</small></h3><div class="sizes"><span class="sz">½ kg</span><span class="sz ${o.q?'':'on'}">1 kg</span><span class="sz ${o.q==='2 kg'?'on':''}">2 kg</span></div><div class="pr"><div><b>₹${t[3]}</b><small>₹${t[3]} / kg</small></div>${o.out?`<span class="pill sm ghost">Sold out</span>`:o.q?`<span class="step"><i>−</i>${o.q}<i>+</i></span>`:`<span class="add">Add</span>`}</div></div></div>`;};
+const ann=(t)=>`<div class="ann"><span><span class="dot"></span>${t}</span><span class="lang"><b class="on">EN</b><b>தமிழ்</b><b>हिन्दी</b></span></div>`;
+const hdrC=()=>`<div class="hdr"><a class="logo"><span class="mk">${icon('leaf')}</span>MarketMate</a><nav class="nav"><a class="on">Today's prices</a><a>Order by voice</a><a>My orders</a><a>Find a shop</a></nav><span class="sp"></span><a class="pill cta sm desk-only">${icon('chat')}Order on WhatsApp</a><a class="circ">${icon('bag')}<em>2</em></a></div>`;
+const hdrS=(on)=>`<div class="hdr"><a class="logo"><span class="mk">${icon('leaf')}</span>MarketMate</a><nav class="nav">${['Home','Live prices','Bills','Orders','Close day','More'].map((n,i)=>`<a class="${i===on?'on':''}">${n}</a>`).join('')}</nav><span class="sp"></span><a class="pill cta sm desk-only">${icon('mic')}Say today's prices</a><a class="circ">${icon('user')}</a></div>`;
+const bnav=(on)=>`<nav class="bnav">${[['home','Home'],['receipt','Bills'],['mic','Live',1],['box','Orders'],['chart','Day']].map((t,i)=>t[2]?`<a class="mic"><span>${icon('mic')}</span>${t[1]}</a>`:`<a class="${i===on?'on':''}">${icon(t[0])}${t[1]}</a>`).join('')}</nav>`;
+const S={};
+S.shop=()=>`<div class="fg">${ann('Prices said by the seller today, 3:10 PM · Velachery')}${hdrC()}<div class="wrap">
+ <div class="hero2"><div style="display:flex;flex-direction:column;gap:14px"><span class="kick">Lakshmi Fruits &amp; Veg</span><h1 class="big">Fresh from Koyambedu,<br><em>priced this morning.</em></h1>
+ <div class="trio"><div class="tri"><span class="tile m">${icon('mic')}</span><b>12 prices</b><small>said by the seller, not guessed</small></div><div class="tri"><span class="tile y">${icon('clock')}</span><b>Ready in 15 min</b><small>pick up at the shop</small></div><div class="tri"><span class="tile s">${icon('wallet')}</span><b>UPI or cash</b><small>pay when you collect</small></div></div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill dark big">Order by voice ${icon('mic')}</a><a class="pill ghost big">${icon('chat')}WhatsApp</a></div></div>
+ <div class="desk-only" style="position:relative"><img src="${P}carrot.jpg" style="width:100%;height:380px;object-fit:cover;border-radius:200px 200px 28px 28px"></div></div>
+ <span class="kick">Today's prices</span><h2 class="h2s">8 items, from ₹40 green banana to ₹120 beans.</h2>
+ <div class="search">${icon('search')}Search 8 items: carrot, beans, banana…<span class="mic">${icon('mic')}</span></div>
+ <div class="chips"><span class="chip on">All<small>8</small></span><span class="chip">Vegetables<small>4</small></span><span class="chip">Bananas<small>4</small></span></div>
+ <div class="notice">${icon('shield')}<span>Every price here was said by the seller in today's video at 3:10 PM, and checked by them. Photos are from the same video.</span></div>
+ <div class="grid">${card('carrot',{q:'2 kg',tag:'In your bag'})}${card('beans')}${card('avarai')}${card('brinjal')}${card('poovan')}${card('yelakki',{tag:'New today',gold:1})}${card('red')}${card('green',{out:1})}</div>
+ </div><div class="float"><div class="t"><b>2 items · ₹220</b><small>Ready in about 15 min</small></div><a class="pill gold">View order ${icon('arrow')}</a></div></div>`;
+S.seller=()=>`<div class="fg">${ann('Shop is open · last prices 6:10 AM · 2 need a tap')}${hdrS(0)}<div class="wrap">
+ <div class="hero2"><div style="display:flex;flex-direction:column;gap:14px"><span class="kick">Wednesday, 28 October</span><h1 class="big">Good morning, Lakshmi.<br><em>₹4,280 sold today.</em></h1>
+ <div class="trio"><div class="tri"><span class="tile m">${icon('receipt')}</span><b>32 bills</b><small>since 6 AM</small></div><div class="tri"><span class="tile y">${icon('wallet')}</span><b>₹2,910</b><small>cash in drawer</small></div><div class="tri"><span class="tile s">${icon('qr')}</span><b>₹1,370</b><small>UPI received</small></div></div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill dark big">${icon('mic')}Say today's prices</a><a class="pill ghost big">${icon('receipt')}New bill</a></div></div>
+ <div style="display:flex;flex-direction:column;gap:12px"><div class="notice" style="border-color:#F0D58C;background:#FFFBEF;color:#5c4400">${icon('star')}<span><b style="color:#173F2A">2 prices need one tap.</b> Carrot: ₹50 or ₹80? Avarai: per kg? <a style="color:#173F2A;font-weight:800;text-decoration:underline">Check now</a></span></div>
+ <span class="kick">New orders</span>
+ <div class="rcpt" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:800 16px 'Plus Jakarta Sans';color:#173F2A">Kavitha · #33</b><span class="pill sm gold" style="min-height:30px;padding:4px 10px;font-size:12px">${icon('clock')}2 min ago</span></div><div style="color:#5B6B60;font-size:13px;margin:6px 0 10px" lang="ta">ஊட்டி கேரட் 2 கி · பீன்ஸ் ½ கி · பூவன் 1 கி</div><div style="display:flex;justify-content:space-between;align-items:center"><b style="font:800 22px 'Plus Jakarta Sans';color:#173F2A">₹280</b><a class="pill dark sm">Start packing</a></div></div></div></div>
+ <div class="band"><span class="kick">This week in numbers</span><div class="gcards"><div class="gc"><span class="gi">${icon('chart')}</span><b>₹31,640</b><small>sales this week</small></div><div class="gc"><span class="gi g">${icon('receipt')}</span><b>284</b><small>bills</small></div><div class="gc"><span class="gi g">${icon('users')}</span><b>46</b><small>customer orders</small></div><div class="gc"><span class="gi">${icon('star')}</span><b>34%</b><small>margin (from your purchases)</small></div></div></div>
+ </div>${bnav(0)}</div>`;
+S.live=()=>`<div class="fg">${hdrS(1)}<div class="wrap">
+ <div style="display:flex;justify-content:space-between;align-items:center"><span class="kick">Live prices</span><span class="pill sm ghost" style="min-height:32px">தமிழ் · 01:42</span></div>
+ <div class="cam"><img src="${P}carrot.jpg"><span class="rec">● LIVE</span><div class="cap">…ஊட்டி கேரட் வந்து <mark>எண்பது ரூபா</mark></div></div>
+ <h2 class="h2s" style="font-size:22px">Heard so far · 3 prices</h2>
+ <div class="heard"><img src="${P}beans.jpg"><div class="n"><b>பீன்ஸ்</b><small>Beans · per kg</small></div><span class="p">₹120</span><span class="ok">${icon('check')}</span></div>
+ <div class="heard"><img src="${P}carrot.jpg"><div class="n"><b>ஊட்டி கேரட்</b><small>Ooty carrot · per kg</small></div><span class="p">₹80</span><span class="ok">${icon('check')}</span></div>
+ <div class="heard need"><img src="${P}avarai.jpg"><div class="n"><b>அவரைக்காய்</b><small>Per kg? Tap after you stop</small></div><span class="p">₹80</span><span class="ask">?</span></div>
+ <div class="stopb"><i></i></div><div style="text-align:center;font:700 13px 'Plus Jakarta Sans';color:#5B6B60">Tap to stop and check</div>
+ </div>${bnav(2)}</div>`;
+S.bill=()=>`<div class="fg">${hdrS(2)}<div class="wrap">
+ <div style="display:flex;justify-content:space-between;align-items:center"><div><span class="kick">New bill</span><h2 class="h2s" style="font-size:26px;margin-top:6px">Tap, speak or weigh.</h2></div><a class="circ" style="background:#173F2A;color:#fff;border:0">${icon('mic')}</a></div>
+ <div class="chips"><span class="chip on">All<small>8</small></span><span class="chip">Vegetables<small>4</small></span><span class="chip">Bananas<small>4</small></span></div>
+ <div class="split"><div class="grid">${card('carrot',{q:'2 kg'})}${card('beans',{q:'½ kg'})}${card('poovan',{q:'1 kg'})}${card('brinjal')}</div>
+ <div class="rcpt desk-only"><span class="kick">This bill</span><div class="rl"><div><b>ஊட்டி கேரட்</b><small>2 kg × ₹80</small></div><b>₹160</b></div><div class="rl"><div><b>பீன்ஸ்</b><small>½ kg × ₹120</small></div><b>₹60</b></div><div class="rl" style="border:0"><div><b>பூவன் பழம்</b><small>1 kg × ₹60</small></div><b>₹60</b></div><div class="rt"><span style="color:#5B6B60;font-weight:700">3 items</span><b>₹280</b></div><a class="pill dark big" style="width:100%;margin-top:12px">Get paid ${icon('arrow')}</a></div></div>
+ </div><div class="float"><div class="t"><b>Bill · ₹280</b><small>3 items</small></div><a class="pill gold">Get paid ${icon('arrow')}</a></div>${bnav(1)}</div>`;
+S.pay=()=>`<div class="fg">${hdrS(2)}<div class="wrap">
+ <div><span class="kick">Bill #34 · 3:24 PM</span><h1 class="big" style="font-size:30px;margin-top:6px">₹280 to collect.</h1></div>
+ <div class="split"><div class="upi"><div class="h">Scan &amp; pay with any UPI app</div>${qr(11)}<div class="a">₹280</div><div class="p">Lakshmi Stores · lakshmi.test@upi</div><div class="apps">GPay · PhonePe · Paytm · BHIM · any bank app</div></div>
+ <div style="display:flex;flex-direction:column;gap:12px"><div class="rcpt"><span class="kick">Cash? Customer gave</span><div class="chips" style="margin:10px 0"><span class="chip">₹280</span><span class="chip">₹300</span><span class="chip on">₹500</span><span class="chip">₹2000</span></div><div class="change"><span style="font-weight:700">Give back</span><b>₹220</b></div></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><a class="pill cta big">${icon('check')}Paid</a><a class="pill ghost big">${icon('chat')}Send bill</a></div></div></div>
+ </div>${bnav(1)}</div>`;
+S.track=()=>`<div class="fg">${ann('Lakshmi Fruits & Veg · Velachery · open till 9 pm')}${hdrC()}<div class="wrap">
+ <span class="kick">Your order #33</span><h1 class="big" style="font-size:32px">Packing your order.<br><em>Ready in 8 min.</em></h1>
+ <div class="rcpt"><div class="tline"><div class="st d"><i>${icon('check')}</i>Sent<br>3:21</div><div class="st d"><i>${icon('check')}</i>Accepted<br>3:22</div><div class="st n"><span class="now">RIGHT NOW</span><i>${icon('box')}</i>Packing</div><div class="st"><i>${icon('bag')}</i>Ready</div><div class="st"><i>${icon('check')}</i>Collected</div></div></div>
+ <div class="rcpt"><div class="rl"><div><b>ஊட்டி கேரட்</b><small>2 kg × ₹80</small></div><b>₹160</b></div><div class="rl" style="border:0"><div><b>பூவன் பழம்</b><small>1 kg × ₹60</small></div><b>₹60</b></div><div class="rt"><span style="color:#5B6B60;font-weight:700">Pay at the shop</span><b>₹220</b></div></div>
+ <div class="notice">${icon('shield')}<span>Prices from the shop's own list today, 3:10 PM. Nothing is guessed.</span></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><a class="pill ghost big">Call shop</a><a class="pill cta big">${icon('chat')}WhatsApp</a></div></div></div>`;
+S.close=()=>`<div class="fg">${hdrS(4)}<div class="wrap">
+ <span class="kick">Close day · Wednesday 28 Oct</span><h1 class="big" style="font-size:34px">₹6,420 sold.<br><em>Beans sold out by 7 pm.</em></h1>
+ <div class="band"><span class="kick">Today in numbers</span><div class="gcards"><div class="gc"><span class="gi">${icon('chart')}</span><b>₹6,420</b><small>41 bills</small></div><div class="gc"><span class="gi g">${icon('wallet')}</span><b>₹4,100</b><small>cash · count the drawer</small></div><div class="gc"><span class="gi g">${icon('qr')}</span><b>₹2,320</b><small>UPI · 18 payments</small></div><div class="gc"><span class="gi">${icon('star')}</span><b>₹2,180</b><small>margin · 34%</small></div></div></div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><a class="pill dark">${icon('download')}Excel</a><a class="pill ghost">${icon('chat')}Share on WhatsApp</a></div>
+ </div>${bnav(4)}</div>`;
+const SCREENS=[['shop','Customer · shop page'],['seller','Seller · home'],['live','Seller · live prices'],['bill','Seller · new bill'],['pay','Seller · get paid'],['track','Customer · order status'],['close','Seller · close day']];
+document.getElementById('stage').innerHTML=
+ `<div class="sec">Phone</div><div class="row">${SCREENS.map(([id,n])=>`<div><div class="lab">${n}</div><div class="phone"><div class="sc">${S[id]()}</div></div></div>`).join('')}</div>`+
+ `<div class="sec">Laptop (same pages, wider)</div><div class="row">${['shop','seller','bill','pay'].map(id=>`<div><div class="lab">${SCREENS.find(s=>s[0]===id)[1]}</div><div class="desk"><div class="bar"><i></i><i></i><i></i></div><div class="sc">${S[id]()}</div></div></div>`).join('')}</div>`;
+</script>
+</body>
+</html>
