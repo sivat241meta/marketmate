@@ -66,7 +66,7 @@
   <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
   {% for row in group.rows %}
   <div class="shop-row">
-    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %}<span class="pill pill-live best">Lowest</span>{% endif %}</span>
+    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %}<span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a></span>
     <b>₹{{ row.price }} <small class="muted">/ {{ row.per }}{% if row.rate %} (₹{{ row.rate }}/{{ row.rate_unit }}){% endif %}</small></b>
   </div>
   <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>

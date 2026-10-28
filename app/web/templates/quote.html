@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Quote — {{ shop["name"] }}{% endblock %}
+{% block content %}
+<h1>{{ shop["name"] }}</h1>
+<p class="muted">Prices from {{ shop["name"] }}'s list, set {{ rel }}</p>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<form method="post" action="/q/{{ token }}/lines">
+{% for line in lines %}
+<section class="card">
+  <div class="product-head">
+    <h3>{{ line.display }}{% if line.name_local %} <span class="name-local" lang="ta">{{ line.name_local }}</span>{% endif %}</h3>
+  </div>
+  {% if line.status == "priced" or line.status == "needs_qty" %}
+  {% if line.status == "needs_qty" %}<p>{{ ui.pill("check quantity", "check") }} <span class="muted">{{ line.note }}</span></p>{% endif %}
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  <div class="stepper" data-stepper>
+    <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="One less {{ line.display }}">−</button>
+    <input type="number" min="0" step="any" name="qty_{{ line.index }}" value="{{ line.qty }}" data-count-for="{{ line.name_en }}" aria-label="Quantity for {{ line.display }}">
+    <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="One more {{ line.display }}">+</button>
+    <span class="muted">{{ line.unit }}</span>
+  </div>
+  <p>₹{{ line.unit_price }} <small class="muted">per {{ line.per_amount }} {{ line.per_unit }}</small></p>
+  <p><strong>₹{{ line.line_total }}</strong></p>
+  {% elif line.status == "sold_out" %}
+  <p>{{ ui.pill("Sold out", "soldout") }}</p>
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="qty_{{ line.index }}" value="{{ line.qty }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  {% else %}
+  <p class="muted">not on this shop's list{% if line.note %} — {{ line.note }}{% endif %}</p>
+  <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+  <input type="hidden" name="qty_{{ line.index }}" value="{{ line.qty }}">
+  <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
+  {% endif %}
+</section>
+{% endfor %}
+{% if lines %}
+<div class="sticky-bar">
+  <button class="btn btn-green btn-big" type="submit">Update quote</button>
+</div>
+{% else %}
+<p class="muted">No items on this quote yet.</p>
+{% endif %}
+</form>
+
+<section class="card">
+  <h2>Total ₹{{ total }}</h2>
+  <p class="muted">{{ priced_count }} priced{% if unpriced_count %}, {{ unpriced_count }} not priced{% endif %}</p>
+</section>
+
+<div class="contact-grid">
+  <a class="btn btn-green" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}Send on WhatsApp</a>
+  <a class="btn btn-secondary" href="/q/{{ token }}/pdf">{{ ui.icon("download") }}PDF</a>
+</div>
+<p><a href="/s/{{ shop["slug"] }}">Back to {{ shop["name"] }}</a></p>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+{% endblock %}

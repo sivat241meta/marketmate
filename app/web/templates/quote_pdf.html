@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<title>{{ shop["name"] }} — price quote</title>
+<style>
+@font-face {
+  font-family: "Noto Sans Tamil";
+  src: url("{{ fonts_uri }}/NotoSansTamil-Regular.ttf");
+}
+@font-face {
+  font-family: "Noto Sans Tamil";
+  font-weight: bold;
+  src: url("{{ fonts_uri }}/NotoSansTamil-Bold.ttf");
+}
+@page { size: A4; margin: 15mm 12mm; }
+body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; background: #fbf7ef; margin: 0; }
+.header { background: #14532d; color: #fbf7ef; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
+.header h1 { font-size: 26pt; margin: 0; }
+.header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }
+table { width: 100%; border-collapse: collapse; background: #ffffff; }
+th { background: #14532d; color: #fbf7ef; font-size: 10pt; padding: 3mm; text-align: left; }
+td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: top; }
+.name-ta { font-size: 14pt; font-weight: bold; }
+.name-en { font-size: 10pt; color: #57534e; }
+.qty { white-space: nowrap; }
+.price { font-weight: bold; white-space: nowrap; }
+.total-row td { font-size: 16pt; font-weight: bold; color: #14532d; border-bottom: 0; }
+.muted { color: #57534e; font-size: 10pt; }
+.footer { margin-top: 6mm; font-size: 10pt; color: #57534e; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>{{ shop["name"] }}</h1>
+  <p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }}</p>
+  <p class="shop-meta">Price quote · {{ prices_note }}</p>
+</div>
+<table>
+<tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+{% for row in rows %}
+<tr>
+  <td><div class="name-ta">{{ row.name_local or row.name_en }}</div><div class="name-en">{{ row.name_en }}{% if row.status == "not_on_list" %} — not on this shop's list{% elif row.status == "sold_out" %} — Sold out{% endif %}{% if row.note %} · {{ row.note }}{% endif %}</div></td>
+  <td class="qty">{{ row.qty }} {{ row.unit }}</td>
+  <td>{% if row.unit_price %}₹{{ row.unit_price }} <span class="muted">per {{ row.per_amount }} {{ row.per_unit }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+  <td>{% if row.line_total %}₹{{ row.line_total }}{% else %}<span class="muted">not priced</span>{% endif %}</td>
+</tr>
+{% endfor %}
+<tr class="total-row"><td colspan="3">Total</td><td>₹{{ total }}</td></tr>
+</table>
+<div class="footer">
+<p>{{ prices_note }}. Items not on the list are not priced. Counts from photos are estimates — please check.</p>
+<p>{{ quote_url }}</p>
+</div>
+</body>
+</html>

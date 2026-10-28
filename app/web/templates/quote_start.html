@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Get a price quote — {{ shop["name"] }}{% endblock %}
+{% block content %}
+<h1>Get a price quote</h1>
+<p class="muted">{{ shop["name"] }} · {{ shop["area"] }}</p>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<section class="card">
+  <h2>{{ ui.icon("mic") }} Speak your list</h2>
+  <p class="muted">Say what you need, e.g. “2 kilo tomato, 1 dozen banana”.</p>
+  <div class="record-actions">
+    <button class="mic-btn" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote" data-rec-prompt="Recording… say your shopping list.">{{ ui.icon("mic") }}<span>Speak</span></button>
+    <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
+  </div>
+  <p class="muted" id="rec-status">Tap Speak and say your list.</p>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote" enctype="multipart/form-data">
+    <div class="field">
+      <label for="quote-audio">Or upload a recording</label>
+      <input id="quote-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload and quote</button>
+  </form>
+  <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+</section>
+
+<section class="card">
+  <h2>{{ ui.icon("tag") }} Type your list</h2>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote">
+    <div class="field">
+      <label for="quote-items">What do you need?</label>
+      <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
+    </div>
+    <button class="btn btn-primary btn-big" type="submit">Get quote</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{ ui.icon("photo") }} Photo your list</h2>
+  <p class="muted">A photo of the items you picked, or of a handwritten shopping list.</p>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote" enctype="multipart/form-data">
+    <div class="field">
+      <label for="quote-photo">Choose a photo</label>
+      <input id="quote-photo" type="file" name="photo" accept="image/*" capture="environment" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Upload photo and quote</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
+{% endblock %}

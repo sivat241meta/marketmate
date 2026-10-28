@@ -25,6 +25,7 @@ from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.web import photos as photo_routes
+from app.web import quotes as quote_routes
 from app.web import seller as seller_routes
 
 
@@ -95,6 +96,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)
+    quote_routes.register(app, settings, templates)
 
     def get_conn():
         conn = db.connect(data_dir)

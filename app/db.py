@@ -7,13 +7,13 @@ import secrets
 import shutil
 import sqlite3
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
-_SESSION_KINDS = {"video", "voice_update", "photo"}
+_SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo"}
 
 STAGES: list[tuple[str, str]] = [
     ("uploaded", "Video received"),
@@ -50,6 +50,22 @@ PHOTO_STAGE_FRIENDLY = {
     "suggesting": "Preparing suggestions for you.",
     "ready": "Ready for you to check.",
 }
+QUOTE_VOICE_STAGES = ["received", "listening", "matching", "ready"]
+QUOTE_PHOTO_STAGES = ["received", "looking", "matching", "ready"]
+QUOTE_STAGE_LABELS = {
+    "received": "Request received",
+    "listening": "Listening",
+    "looking": "Looking",
+    "matching": "Matching prices",
+    "ready": "Quote ready",
+}
+QUOTE_STAGE_FRIENDLY = {
+    "received": "Your request arrived safely.",
+    "listening": "Muse Voice is turning your speech into text.",
+    "looking": "Muse Spark is reading your photo.",
+    "matching": "Matching each line to the shop's prices.",
+    "ready": "Your quote is ready.",
+}
 _STAGE_COLUMNS = (
     ("stage", "TEXT"),
     ("stage_detail", "TEXT"),
@@ -64,6 +80,10 @@ def stages_for_kind(kind: str) -> list[str]:
         return list(VOICE_STAGES)
     if kind == "photo":
         return list(PHOTO_STAGES)
+    if kind == "quote_voice":
+        return list(QUOTE_VOICE_STAGES)
+    if kind == "quote_photo":
+        return list(QUOTE_PHOTO_STAGES)
     return [key for key, _ in STAGES]
 
 
@@ -71,6 +91,8 @@ def stage_label(kind: str, key: str) -> str:
     """Stepper label for a stage; photo sessions use their own wording."""
     if kind == "photo":
         return PHOTO_STAGE_LABELS.get(key, key)
+    if kind in ("quote_voice", "quote_photo"):
+        return QUOTE_STAGE_LABELS.get(key, key)
     return STAGE_LABELS.get(key, key)
 
 
@@ -78,6 +100,8 @@ def stage_friendly(kind: str, key: str) -> str:
     """One-line explanation under the active step, per session kind."""
     if kind == "photo":
         return PHOTO_STAGE_FRIENDLY.get(key, "")
+    if kind in ("quote_voice", "quote_photo"):
+        return QUOTE_STAGE_FRIENDLY.get(key, "")
     return STAGE_FRIENDLY.get(key, "")
 
 
@@ -143,6 +167,15 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             created_at TEXT NOT NULL, image_path TEXT NOT NULL,
             report_json TEXT NOT NULL, cost REAL NOT NULL DEFAULT 0
         );
+        CREATE TABLE IF NOT EXISTS quotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            token TEXT UNIQUE NOT NULL, source TEXT NOT NULL,
+            kind TEXT NOT NULL, status TEXT NOT NULL,
+            lines_json TEXT NOT NULL, total TEXT NOT NULL,
+            customer_note TEXT, created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -201,13 +234,14 @@ def create_session(conn, shop_id: int, kind: str) -> int:
     if kind not in _SESSION_KINDS:
         raise ValueError(f"unknown session kind: {kind}")
     now = _now()
-    history = json.dumps([{"key": "uploaded", "started_at": now,
+    first = stages_for_kind(kind)[0]
+    history = json.dumps([{"key": first, "started_at": now,
                            "ended_at": None}])
     cursor = conn.execute(
         "INSERT INTO sessions (shop_id, kind, status, created_at, stage,"
         " stage_detail, stage_started_at, stages_json)"
-        " VALUES (?, ?, 'uploaded', ?, 'uploaded', '', ?, ?)",
-        (shop_id, kind, now, now, history),
+        " VALUES (?, ?, 'uploaded', ?, ?, '', ?, ?)",
+        (shop_id, kind, now, first, now, history),
     )
     conn.commit()
     return cursor.lastrowid
@@ -512,6 +546,125 @@ def load_photo_checks(conn, shop_id: int) -> list[sqlite3.Row]:
         (shop_id,)).fetchall()
 
 
+_QUOTE_SOURCES = {"customer", "seller"}
+_QUOTE_KINDS = {"quote", "bill"}
+_QUOTE_STATUSES = {"new", "billed", "paid", "cancelled"}
+
+
+def _quote_line_to_dict(line) -> dict:
+    return {
+        "name_en": line.name_en,
+        "name_local": line.name_local,
+        "qty": str(line.qty),
+        "unit": line.unit,
+        "unit_price": str(line.unit_price) if line.unit_price is not None else None,
+        "per_amount": str(line.per_amount) if line.per_amount is not None else None,
+        "line_total": str(line.line_total) if line.line_total is not None else None,
+        "status": line.status,
+        "note": line.note,
+    }
+
+
+def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
+                 kind: str = "quote", status: str = "new",
+                 customer_note: str | None = None) -> str:
+    """Store a priced quote; returns its unguessable public token."""
+    if source not in _QUOTE_SOURCES:
+        raise ValueError(f"unknown quote source: {source}")
+    if kind not in _QUOTE_KINDS:
+        raise ValueError(f"unknown quote kind: {kind}")
+    if status not in _QUOTE_STATUSES:
+        raise ValueError(f"unknown quote status: {status}")
+    for _ in range(5):
+        token = secrets.token_urlsafe(12)
+        if conn.execute("SELECT 1 FROM quotes WHERE token = ?",
+                        (token,)).fetchone() is None:
+            break
+    else:
+        raise ValueError("could not mint a unique quote token")
+    now = _now()
+    conn.execute(
+        "INSERT INTO quotes (shop_id, token, source, kind, status, lines_json,"
+        " total, customer_note, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (shop_id, token, source, kind, status,
+         json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
+         str(quote.total), customer_note, now, now),
+    )
+    conn.commit()
+    return token
+
+
+def get_quote_by_token(conn, token: str) -> sqlite3.Row | None:
+    """Fetch one quote by its public token; None when unknown."""
+    return conn.execute("SELECT * FROM quotes WHERE token = ?",
+                        (token,)).fetchone()
+
+
+def update_quote_lines(conn, token: str, lines: list[dict]):
+    """Recompute a quote's lines server side; client totals are ignored.
+
+    Each entry supplies name_en/qty/unit; any unit_price/line_total/total
+    sent by the client is discarded and rebuilt from the shop's published
+    price lines. Returns the rebuilt Quote.
+    """
+    from app.market.quote import WantedLine, build_quote
+
+    row = get_quote_by_token(conn, token)
+    if row is None:
+        raise ValueError("unknown quote")
+    try:
+        original = json.loads(row["lines_json"] or "[]")
+    except ValueError:
+        original = []
+    if not isinstance(original, list):
+        original = []
+    if len(lines) != len(original):
+        raise ValueError("quote lines are out of date; reload and try again")
+    wanted: list[WantedLine] = []
+    for index, raw in enumerate(lines):
+        if not isinstance(raw, dict):
+            raise TypeError(f"line {index + 1} is not valid")
+        fallback = original[index] if isinstance(original[index], dict) else {}
+        name = str(raw.get("name_en") or fallback.get("name_en") or "").strip()
+        if not name:
+            raise ValueError(f"line {index + 1} has no item name")
+        qty_raw = raw.get("qty", fallback.get("qty"))
+        try:
+            qty = Decimal(str(qty_raw).strip())
+        except (InvalidOperation, ValueError, AttributeError):
+            raise ValueError(f"quantity for {name} does not look right")
+        if qty.is_nan() or qty <= 0:
+            raise ValueError(f"quantity for {name} does not look right")
+        unit = raw.get("unit", fallback.get("unit"))
+        if unit is not None:
+            unit = str(unit).strip() or None
+        wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
+                                 source="edit"))
+    quote = build_quote(conn, row["shop_id"], wanted)
+    conn.execute(
+        "UPDATE quotes SET lines_json = ?, total = ?, updated_at = ?"
+        " WHERE token = ?",
+        (json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
+         str(quote.total), _now(), token),
+    )
+    conn.commit()
+    return quote
+
+
+def list_quotes(conn, shop_id: int, since=None) -> list[sqlite3.Row]:
+    """Quotes and bills for a shop since a moment, newest first."""
+    if since is None:
+        return conn.execute(
+            "SELECT * FROM quotes WHERE shop_id = ? ORDER BY id DESC",
+            (shop_id,)).fetchall()
+    marker = since.isoformat() if isinstance(since, datetime) else str(since)
+    return conn.execute(
+        "SELECT * FROM quotes WHERE shop_id = ? AND created_at >= ?"
+        " ORDER BY id DESC",
+        (shop_id, marker)).fetchall()
+
+
 def last_prices(conn, shop_id: int) -> dict[str, PriceLine]:
     """name_en -> first price line of the latest approved version."""
     version_id = latest_version(conn, shop_id)
@@ -589,6 +742,8 @@ def _delete_shop_rows(conn, shop_id: int) -> None:
         conn.execute("DELETE FROM items WHERE version_id = ?", (version_id,))
     conn.execute("DELETE FROM sessions WHERE shop_id = ?", (shop_id,))
     conn.execute("DELETE FROM versions WHERE shop_id = ?", (shop_id,))
+    conn.execute("DELETE FROM photo_checks WHERE shop_id = ?", (shop_id,))
+    conn.execute("DELETE FROM quotes WHERE shop_id = ?", (shop_id,))
     conn.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
 
 
