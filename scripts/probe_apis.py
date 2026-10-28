@@ -69,7 +69,7 @@ def main() -> None:
     costs: dict[str, float] = {}
 
     wav = OUT / (clip.stem + ".wav")
-    run(["ffmpeg", "-y", "-i", str(clip), "-ac", "1", "-ar", "16000",
+    run(["ffmpeg", "-y", "-i", str(clip), "-ac", "1", "-ar", "24000",
          "-sample_fmt", "s16", str(wav)])
     audio_hours = ffprobe_duration(wav) / 3600
 

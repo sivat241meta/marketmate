@@ -222,8 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
         other.classList.remove("chosen");
       });
       button.classList.add("chosen");
+      const field = button.dataset.field || "price";
       const input = form.querySelector(
-        `[data-item="${button.dataset.item}"][data-field="price"]`);
+        `[data-item="${button.dataset.item}"][data-field="${field}"]`);
       if (input) {
         input.value = button.dataset.value;
       }

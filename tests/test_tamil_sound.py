@@ -1,7 +1,12 @@
 from decimal import Decimal
+from pathlib import Path
 
 from app.models import DraftItem, PriceLine, Proof
-from app.pipeline.checks import check_item
+from app.pipeline.checks import (
+    TAMIL_HALF_WORDS,
+    TAMIL_SIX_WORDS,
+    check_item,
+)
 from app.pipeline.numbers import find_numbers, parse_number
 
 
@@ -99,3 +104,54 @@ def test_sixty_not_tamil_sound_alike():
     item = draft(quote="தக்காளி அறுபது ரூபாய்", lines=[pl(60, 1, "kg")],
                  name_en="tomato")
     assert not [f for f in check_item(item, {}) if f.code == "SOUND_ALIKE"]
+
+
+def test_half_six_word_sets():
+    assert "அரை" in TAMIL_HALF_WORDS
+    assert "arai" in TAMIL_HALF_WORDS
+    assert "ara" in TAMIL_HALF_WORDS
+    assert "ஆறு" in TAMIL_SIX_WORDS
+    assert "aaru" in TAMIL_SIX_WORDS
+    assert "aru" in TAMIL_SIX_WORDS
+
+
+def test_half_six_per_amount_blocking():
+    quote = "இந்த வங்காயம் ஆறு கிலோ பதினஞ்சு ரூபா"
+    item = draft(quote=quote, lines=[pl(15, 6, "kg")], name_en="small onion")
+    flag = next(
+        f for f in check_item(item, {})
+        if f.code == "SOUND_ALIKE" and f.field == "per_amount"
+    )
+    assert flag.options == ["0.5", "6"]
+    assert flag.blocking is True
+    assert flag.message == (
+        "did you say half a kg or 6 kg? (arai and aaru sound alike in Tamil)"
+    )
+
+
+def test_half_six_previous_half_still_blocking():
+    quote = "இந்த வங்காயம் ஆறு கிலோ பதினஞ்சு ரூபா"
+    previous = {"small onion": pl(15, "0.5", "kg")}
+    item = draft(quote=quote, lines=[pl(15, 6, "kg")], name_en="small onion")
+    flag = next(
+        f for f in check_item(item, previous)
+        if f.code == "SOUND_ALIKE" and f.field == "per_amount"
+    )
+    assert flag.options == ["0.5", "6"]
+    assert flag.blocking is True
+
+
+def test_half_kilo_half_amount_no_flag():
+    quote = "இந்த வங்காயம் அரை கிலோ பதினைந்து ரூபா"
+    item = draft(quote=quote, lines=[pl(15, "0.5", "kg")], name_en="small onion")
+    assert not [
+        f for f in check_item(item, {})
+        if f.code == "SOUND_ALIKE" and f.field == "per_amount"
+    ]
+
+
+def test_review_template_option_targets_per_field():
+    template = Path("app/web/templates/review.html").read_text(encoding="utf-8")
+    assert 'data-field="per_amount"' in template or "{{ flag.field }}" in template
+    js = Path("app/web/static/review.js").read_text(encoding="utf-8")
+    assert "dataset.field" in js

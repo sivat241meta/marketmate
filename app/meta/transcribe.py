@@ -41,7 +41,7 @@ def transcribe_wav(
     settings: Settings,
     languages: tuple[str, ...] = ("Tamil", "English"),
 ) -> Transcript:
-    """Transcribe a 16 kHz mono WAV via Voice Transcribe; log cost; parse."""
+    """Transcribe a 24 kHz mono WAV via Voice Transcribe; log cost; parse."""
     ledger.check()
     request_payload = {
         "model": VOICE_MODEL,

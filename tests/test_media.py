@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 from app.pipeline.media import (
+    AUDIO_SAMPLE_RATE,
     VideoTooLong,
     check_length,
     extract_audio,
@@ -48,10 +49,62 @@ def video_webm(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return out
 
 
-def test_audio_is_16k_mono(tmp_path, video_mp4):
+def test_audio_is_24k_mono(tmp_path, video_mp4):
     wav = extract_audio(video_mp4, tmp_path / "a.wav")
     with wave.open(str(wav)) as f:
-        assert f.getframerate() == 16000 and f.getnchannels() == 1
+        assert f.getframerate() == 24000 and f.getnchannels() == 1
+
+
+def test_audio_sample_rate_constant():
+    assert AUDIO_SAMPLE_RATE == 24000
+
+
+def test_extract_audio_ffmpeg_uses_24k(tmp_path, monkeypatch):
+    from app.pipeline import media
+
+    captured: dict = {}
+
+    def fake_run(*args: str):
+        captured["args"] = list(args)
+
+        class _Result:
+            stdout = ""
+            stderr = ""
+
+        return _Result()
+
+    monkeypatch.setattr(media, "_run", fake_run)
+    media.extract_audio(Path("in.mp4"), tmp_path / "out.wav")
+    args = captured["args"]
+    assert "-ar" in args
+    assert args[args.index("-ar") + 1] == "24000"
+    assert args[args.index("-ac") + 1] == "1"
+
+
+def test_cut_audio_clip_ffmpeg_uses_24k(tmp_path, monkeypatch):
+    from app.pipeline import media
+
+    captured: dict = {}
+
+    def fake_run(*args: str):
+        captured["args"] = list(args)
+
+        class _Result:
+            stdout = ""
+            stderr = ""
+
+        return _Result()
+
+    monkeypatch.setattr(media, "_run", fake_run)
+    media.cut_audio_clip(tmp_path / "a.wav", 0, 1000, tmp_path / "clip.m4a")
+    args = captured["args"]
+    assert "-ar" in args
+    assert args[args.index("-ar") + 1] == "24000"
+
+
+def test_24k_10min_wav_under_32mb():
+    assert AUDIO_SAMPLE_RATE * 2 * 600 == 28_800_000
+    assert AUDIO_SAMPLE_RATE * 2 * 600 < 32 * 1024 * 1024
 
 
 def test_two_frames_per_second(tmp_path, video_mp4):  # 3 s video

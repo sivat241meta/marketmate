@@ -36,7 +36,7 @@
     <div class="flag-options" data-flag="{{ flag.code }}" data-item="{{ card.index }}">
       <p>{{ flag.message }}</p>
       {% for option in flag.options %}
-      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-value="{{ option }}">{{ option }}</button>
+      <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-field="{{ flag.field }}" data-value="{{ option }}">{{ option }}</button>
       {% endfor %}
     </div>
     {% elif flag.blocking %}

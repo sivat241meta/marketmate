@@ -31,6 +31,16 @@ TAMIL_EIGHTY_WORDS = frozenset({
     "enbadhu", "enbathu", "embadhu", "embathu", "yenbadhu",
 })
 
+TAMIL_HALF_WORDS = frozenset({
+    "அரை",
+    "arai", "ara",
+})
+
+TAMIL_SIX_WORDS = frozenset({
+    "ஆறு",
+    "aaru", "aru",
+})
+
 CORRECTION_MARKERS = (
     "illa illa", "illai", "sorry", "no no", "wait", "correction", "இல்ல", "இல்லை",
 )
@@ -57,6 +67,21 @@ def _sound_alike_rates(item: DraftItem, line: PriceLine,
         return (None, None, None)
     heard = rate(line)
     alt = rate(PriceLine(Decimal(alt_value), line.per_amount, line.unit))
+    old = rate(prev_line)
+    if heard is None or alt is None or old is None:
+        return (None, None, None)
+    return (heard, alt, old)
+
+
+def _per_amount_sound_alike_rates(item: DraftItem, line: PriceLine,
+                                  alt_per_amount: Decimal,
+                                  previous: dict[str, PriceLine]):
+    """(heard rate, alternative rate, previous rate) varying per_amount."""
+    prev_line = (previous or {}).get(item.name_en)
+    if prev_line is None:
+        return (None, None, None)
+    heard = rate(line)
+    alt = rate(PriceLine(line.price, alt_per_amount, line.unit))
     old = rate(prev_line)
     if heard is None or alt is None or old is None:
         return (None, None, None)
@@ -112,7 +137,21 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
     quote_tokens = [t for t in _raw_tokens(quote) if t]
     has_fifty = _has_word(quote_tokens, TAMIL_FIFTY_WORDS)
     has_eighty = _has_word(quote_tokens, TAMIL_EIGHTY_WORDS)
+    has_half = _has_word(quote_tokens, TAMIL_HALF_WORDS)
+    has_six = _has_word(quote_tokens, TAMIL_SIX_WORDS)
     alternatives = _sound_alike_alternatives(heard, has_fifty, has_eighty)
+    offers_half_six = any(
+        line.per_amount is not None
+        and (
+            (line.per_amount == Decimal(6) and has_six)
+            or (line.per_amount == Decimal("0.5") and has_half and has_six)
+        )
+        for line in item.price_lines
+    )
+    if offers_half_six:
+        heard_values.add(Decimal("0.5"))
+        alternatives.add(Decimal("0.5"))
+        alternatives.add(Decimal(6))
 
     for line in item.price_lines:
         if (line.price is not None and line.price not in heard_values
@@ -167,6 +206,34 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
                         field="price", code="SOUND_ALIKE", message=message,
                         options=[str(pair[0]), str(pair[1])], blocking=blocking))
                     break
+
+    for line in item.price_lines:
+        if line.per_amount is None:
+            continue
+        triggers = (
+            (line.per_amount == Decimal(6) and has_six)
+            or (line.per_amount == Decimal("0.5") and has_half and has_six)
+        )
+        if not triggers:
+            continue
+        unit = line.unit or "unit"
+        message = (
+            f"did you say half a {unit} or 6 {unit}?"
+            " (arai and aaru sound alike in Tamil)"
+        )
+        blocking = True
+        other_per = (
+            Decimal("0.5") if line.per_amount == Decimal(6) else Decimal(6)
+        )
+        heard_rate, alt_rate, prev_rate = _per_amount_sound_alike_rates(
+            item, line, other_per, previous)
+        if _non_blocking(heard_rate, alt_rate, prev_rate):
+            blocking = False
+            message += (f" {line.per_amount} matches the previous price"
+                        f" ({prev_rate[0]} per {prev_rate[1]})")
+        flags.append(Flag(
+            field="per_amount", code="SOUND_ALIKE", message=message,
+            options=["0.5", "6"], blocking=blocking))
 
     if item.qty is not None and item.qty not in heard_values:
         flags.append(Flag(field="qty", code="NOT_HEARD",

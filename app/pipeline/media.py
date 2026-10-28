@@ -8,6 +8,8 @@ from app.models import Frame
 
 _TIME_RE = re.compile(r"time=(\d+):(\d+):([\d.]+)")
 
+AUDIO_SAMPLE_RATE = 24000
+
 
 class VideoTooLong(Exception):
     pass
@@ -52,7 +54,7 @@ def extract_audio(video: Path, out_wav: Path) -> Path:
     _run(
         "ffmpeg",
         "-y", "-i", str(video),
-        "-ac", "1", "-ar", "16000", "-sample_fmt", "s16",
+        "-ac", "1", "-ar", str(AUDIO_SAMPLE_RATE), "-sample_fmt", "s16",
         str(out_wav),
     )
     return out_wav
@@ -85,6 +87,7 @@ def cut_audio_clip(
         "ffmpeg",
         "-y", "-i", str(wav),
         "-ss", str(start_s), "-to", str(end_s),
+        "-ac", "1", "-ar", str(AUDIO_SAMPLE_RATE),
         "-c:a", "aac",
         str(out),
     )
