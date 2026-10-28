@@ -22,7 +22,8 @@ Sheets:
   are known).
 
 Header row is bold and frozen; money cells use number format `0.00`;
-Tamil text is kept as text.
+Tamil text is kept as text. On the Lines sheet, rate is per one unit
+(price ÷ per_amount); amount is the bill's own line total.
 
 ## General POS CSV (UTF-8 with BOM)
 
@@ -43,8 +44,8 @@ Columns:
 | item_name_local | Local name, e.g. `தக்காளி` |
 | qty | Quantity sold (number) |
 | unit | `kg`, `g`, `piece`, `dozen`, `bunch`, `packet`, `l`, `ml` |
-| rate | Unit price from the shop list (number, 2 decimals in Excel) |
-| amount | Line total (number) |
+| rate | Unit price per one unit (price ÷ per_amount from the shop list; number, 2 decimals in Excel) — rate is per one unit |
+| amount | Line total from the bill (number, qty × rate = amount) |
 | discount | Always `0` (no discounts in MarketMate) |
 | tax | Always `0` (no tax in MarketMate) |
 | bill_total | Rounded bill total (number) |

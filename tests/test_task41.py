@@ -387,6 +387,10 @@ def test_staff_permissions_matrix(tmp_path):
     got = client.post(f"/e/{staff_token}/bills/{bill_id}/order-status",
                       data={"status": "packing"})
     assert got.status_code in (302, 303, 200), got.status_code
+    # Reopen is a billing action: staff may use it.
+    got = client.post(f"/e/{staff_token}/bills/{bill_id}/reopen")
+    assert got.status_code in (302, 303, 200, 400), got.status_code
+    assert got.status_code != 403, "staff reopen must not be forbidden"
     # Tap billing as staff records created_by.
     got = client.post(f"/e/{staff_token}/bills/new", data={
         "name_en_0": "tomato", "qty_0": "1", "unit_0": "kg"})

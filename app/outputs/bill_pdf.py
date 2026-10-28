@@ -24,8 +24,10 @@ def _plain(value) -> str:
 
 def bill_pdf(shop: sqlite3.Row | dict, bill_id: int, lines: list[dict],
              total: str, created_label: str,
-             customer_phone: str | None = None, lang: str = "en") -> bytes:
-    """Receipt-style seller bill: shop header, bill number, lines, total."""
+             customer_phone: str | None = None, lang: str = "en",
+             round_off: str | None = None,
+             paid_mode: str | None = None) -> bytes:
+    """Receipt-style seller bill: shop header, lines, round-off, total, paid."""
     from weasyprint import HTML
 
     from app.web.i18n import t_for
@@ -50,5 +52,6 @@ def bill_pdf(shop: sqlite3.Row | dict, bill_id: int, lines: list[dict],
     html = template.render(
         shop=shop, bill_id=bill_id, rows=rows, total=_plain(total),
         created_label=created_label, customer_phone=customer_phone or "",
+        round_off=round_off or "", paid_mode=paid_mode or "",
         fonts_uri=_FONTS_URI)
     return HTML(string=html).write_pdf()

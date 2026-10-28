@@ -215,6 +215,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
         write_board_meta(Path(settings.data_dir), session_id,
                          {"image": str(image)})
         db.set_stage(conn, session_id, "ready")
+        db.ensure_session_base(conn, session_id)
         noun = "item" if len(items) == 1 else "items"
         db.set_session_status(conn, session_id, "review",
                               f"{len(items)} {noun} read from your board")

@@ -36,6 +36,8 @@ td { padding: 1.2mm 0; vertical-align: top; border-bottom: 0.4pt dotted #d6cfbd;
 .sub { font-size: 8pt; color: #57534e; }
 .qty, .amount { white-space: nowrap; text-align: right; }
 .total { display: flex; justify-content: space-between; font-size: 15pt; font-weight: bold; margin-top: 3mm; border-top: 0.5pt solid #1c1917; padding-top: 2mm; }
+.roundoff { display: flex; justify-content: space-between; font-size: 9pt; color: #57534e; margin-top: 2mm; }
+.paid { text-align: center; font-size: 11pt; font-weight: bold; margin-top: 2mm; }
 .thanks { text-align: center; margin-top: 4mm; font-size: 10pt; }
 .note { text-align: center; font-size: 8pt; color: #57534e; margin-top: 1mm; }
 </style>
@@ -59,7 +61,9 @@ td { padding: 1.2mm 0; vertical-align: top; border-bottom: 0.4pt dotted #d6cfbd;
 </tr>
 {% endfor %}
 </table>
+{% if round_off %}<div class="roundoff"><span>{{ t('bpdf.round_off', off=round_off) }}</span></div>{% endif %}
 <div class="total"><span>{{ t('bpdf.total') }}</span><span>{{ total | money(shop["currency"]) }}</span></div>
+{% if paid_mode %}<div class="paid">{{ t('bpdf.paid', mode=paid_mode) }}</div>{% endif %}
 <p class="thanks">{{ t('bpdf.thanks') }}</p>
 <p class="note">{{ t('bpdf.note', shop=shop["name"]) }}</p>
 </body>

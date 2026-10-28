@@ -514,12 +514,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             shop_dict = dict(shop)
         finally:
             conn.close()
-        from app.web.i18n import get_ui_lang
-        from app.web.seller import NOTICE
+        from app.web.i18n import get_ui_lang, t_for
 
         ui_lang = get_ui_lang(request, shop_dict)
         return templates.TemplateResponse(request, "live.html", {
-            "shop": shop_dict, "token": token, "notice": NOTICE,
+            "shop": shop_dict, "token": token,
+            "notice": t_for(ui_lang)("notice.voice"),
             "shop_lang": shop_dict.get("language") or "ta",
             "max_upload_bytes": app.state.settings.max_upload_bytes,
             "ui_lang": ui_lang,
@@ -980,6 +980,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 if not turns:
                     db.save_drafts(fin_conn, session_id, [])
                     db.set_stage(fin_conn, session_id, "ready")
+                    db.ensure_session_base(fin_conn, session_id)
                     db.set_session_status(fin_conn, session_id, "review",
                                           "No prices heard")
                     return "review"

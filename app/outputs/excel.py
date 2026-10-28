@@ -148,8 +148,12 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
                     _decimal(line.get("qty"), "0"))
             lines_ws.cell(row=line_row, column=6,
                           value=str(line.get("unit") or ""))
+            from app.outputs.pos_csv import per_unit_rate
+
+            rate = per_unit_rate(line.get("unit_price"),
+                                 line.get("per_amount"))
             _money(lines_ws.cell(row=line_row, column=7),
-                   _decimal(line.get("unit_price"), "0"))
+                   rate if rate is not None else Decimal("0.00"))
             _money(lines_ws.cell(row=line_row, column=8),
                    _decimal(line.get("line_total"), "0"))
 

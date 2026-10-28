@@ -317,6 +317,7 @@ def approve_first_version(client, data_dir):
 
 def test_update_page_has_recorder_and_notice(tmp_path, monkeypatch):
     client, _ = make_client(tmp_path, monkeypatch)
+    client.cookies.set("ui_lang", "en")
     html = client.get(create_shop(client) + "/update").text
     assert "recorder.js" in html
     assert 'name="audio"' in html

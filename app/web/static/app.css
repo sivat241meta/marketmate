@@ -1386,11 +1386,12 @@ button.chip {
 }
 .qr-wrap svg {
   width: 100%;
-  max-width: 260px;
+  max-width: 240px;
   height: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: #fff;
+  display: block;
 }
 .pay-amount {
   font-size: 2.2rem;
@@ -1488,3 +1489,37 @@ button.chip {
 .is-current .step-dot { background: var(--saffron); border-color: var(--saffron); }
 .order-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 [data-offline-banner] { border-color: var(--saffron); }
+
+/* ---- Task 43: tap list rows + close-day items table ---- */
+.tap-list { border-top: 2px dashed var(--line); border-bottom: 2px dashed var(--line); }
+.tap-line {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed var(--line);
+}
+.tap-line:last-child { border-bottom: 0; }
+.tap-line .line-thumb { flex: none; }
+.tap-main { flex: 1 1 auto; min-width: 0; }
+.tap-top { display: flex; gap: var(--space-3); align-items: flex-start; }
+.tap-names { flex: 1 1 auto; min-width: 0; text-align: left; }
+.tap-names .line-name { display: block; text-align: left; }
+.tap-names .line-rate { display: block; }
+.tap-top .stepper { flex: none; margin-left: auto; }
+.tap-main .quick-chips { margin-top: var(--space-2); }
+@media (max-width: 420px) {
+  .tap-top { gap: var(--space-2); }
+  .tap-top .stepper input[type="number"] { width: 3.8rem; }
+}
+.close-table { width: 100%; border-collapse: collapse; }
+.close-table th,
+.close-table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.close-table th { font-size: 0.85rem; color: var(--muted); }
+.close-table td.money { text-align: right; white-space: nowrap; }
+.close-table input[type="number"] { width: 5.5rem; }

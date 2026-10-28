@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
@@ -241,18 +240,9 @@ def _insert_item(conn, version_id: int, name_local: str, name_en: str,
                  variety: str | None, qty: Decimal | None, qty_unit: str | None,
                  photo: str | None, sold_out: bool, proof: Proof,
                  lines: list[PriceLine]) -> None:
-    cursor = conn.execute(
-        "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
-        " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (version_id, name_local, name_en, variety, _decimal_to_str(qty), qty_unit,
-         photo, int(sold_out), json.dumps(db._proof_to_json(proof))))
-    item_id = cursor.lastrowid
-    conn.executemany(
-        "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
-        " VALUES (?, ?, ?, ?, ?)",
-        [(item_id, _decimal_to_str(line.price), _decimal_to_str(line.per_amount),
-          line.unit, line.said) for line in lines],
-    )
+    # Shared copy path lives in app.db so approve() reuses it.
+    db.insert_version_item(conn, version_id, name_local, name_en, variety,
+                           qty, qty_unit, photo, sold_out, proof, lines)
 
 
 def apply_changes(conn, shop_id: int, base_version_id: int,

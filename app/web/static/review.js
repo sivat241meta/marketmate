@@ -71,7 +71,15 @@ function collectCards(form) {
       flags: [], photo: null, condition_hint: null, confirmed: false,
     };
   });
-  return { items, confirmed };
+  const carried = [];
+  form.querySelectorAll("input[data-carried]").forEach((box) => {
+    if (box.checked) {
+      const raw = box.dataset.id || box.value;
+      const num = Number(raw);
+      carried.push(Number.isNaN(num) ? raw : num);
+    }
+  });
+  return { items, confirmed, carried };
 }
 
 function lineKey(wrap) {
@@ -275,6 +283,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form) {
     return;
   }
+  form.querySelectorAll("[data-carried-clear]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      form.querySelectorAll("input[data-carried]").forEach((box) => {
+        box.checked = false;
+      });
+    });
+  });
   form.querySelectorAll(".card").forEach((card) => {
     card.dataset.initialLines = String(card.querySelectorAll(".line").length);
   });

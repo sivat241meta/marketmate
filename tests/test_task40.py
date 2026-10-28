@@ -144,7 +144,8 @@ def test_no_english_leftovers_on_tamil_dashboard(tmp_path):
                    "Update by voice", "Scan stock photo", "Print board",
                    "Today's list", "Recent sessions", "Versions",
                    "Bills today", "Sales today", "Close day", "Settings",
-                   "Check prices", "Approve price list"):
+                   "Check prices", "Approve price list",
+                   "Your voice recording is sent to Meta's AI service to be transcribed."):
         assert needle not in html, f"English leftover: {needle}"
 
 

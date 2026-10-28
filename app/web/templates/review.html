@@ -99,6 +99,20 @@
   </div>
 </section>
 {% endfor %}
+{% if carried %}
+<section class="card" aria-label="Also on your list">
+  <h2>Also on your list (not in this session)</h2>
+  <p class="muted">These stay on your list. Untick to drop.</p>
+  <p><a href="#" data-carried-clear>Remove all of these</a></p>
+  {% for item in carried %}
+  <label class="card-confirm">
+    <input type="checkbox" data-carried data-id="{{ item.id }}" checked>
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% endif %}
+    <span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %} — {{ item.price_summary }}{% if item.sold_out %} (Sold out){% endif %}
+  </label>
+  {% endfor %}
+</section>
+{% endif %}
   <p class="form-error" id="approve-error" hidden></p>
   <div class="sticky-bar">
     <p class="muted sticky-count" data-approve-count></p>

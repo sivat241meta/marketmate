@@ -1271,6 +1271,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
+            if bill["status"] == "paid":
+                ui_lang = get_ui_lang(request, shop)
+                return _bill_context(
+                    request, shop, token, bill, conn,
+                    error=t_for(ui_lang)("bill.paid_locked"))
             try:
                 original = json.loads(bill["lines_json"] or "[]")
             except ValueError:
@@ -1305,6 +1310,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
+            if bill["status"] == "paid":
+                ui_lang = get_ui_lang(request, shop)
+                return _bill_context(
+                    request, shop, token, bill, conn,
+                    error=t_for(ui_lang)("bill.paid_locked"))
             form = await request.form()
             try:
                 db.add_bill_line(conn, bill["id"], {
@@ -1327,6 +1337,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
+            if bill["status"] == "paid":
+                ui_lang = get_ui_lang(request, shop)
+                return _bill_context(
+                    request, shop, token, bill, conn,
+                    error=t_for(ui_lang)("bill.paid_locked"))
             form = await request.form()
             try:
                 db.remove_bill_line(conn, bill["id"], form.get("index", ""))
@@ -1386,6 +1401,27 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
 
+    @app.post("/e/{token}/bills/{bill_id}/reopen")
+    async def bill_reopen_post(request: Request, token: str, bill_id: int):
+        """Change a paid bill: back to billed, payment cleared.
+
+        Billing action, so helpers may use it.
+        """
+        conn = db.connect(data_dir)
+        try:
+            shop = _shop_or_404(conn, token)
+            bill = _bill_of_shop(conn, shop["id"], bill_id)
+            try:
+                db.reopen_bill(conn, bill["id"])
+            except ValueError as exc:
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(request, shop, token, fresh, conn,
+                                     error=str(exc), status_code=400)
+            return RedirectResponse(f"/e/{token}/bills/{bill_id}",
+                                    status_code=303)
+        finally:
+            conn.close()
+
     @app.post("/e/{token}/bills/{bill_id}/accept")
     def bill_accept_post(request: Request, token: str, bill_id: int,
                          conn: Conn):
@@ -1412,10 +1448,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         created_label = when.astimezone(IST).strftime(
             "%d %b %Y, %H:%M") if when else ""
         totals = db.bill_display_totals(shop, bill)
+        show_round = bool(totals["enabled"] and totals["off"] != 0)
+        round_off = f"{totals['off']:+.2f}" if show_round else ""
+        paid_mode = (_mode_label(_row_mode(bill), ui_lang)
+                     if bill["status"] == "paid" else "")
         pdf = bill_pdf(shop, bill["id"],
                        raw_lines if isinstance(raw_lines, list) else [],
                        str(totals["rounded"]), created_label,
-                       _row_phone(bill), lang=ui_lang)
+                       _row_phone(bill), lang=ui_lang,
+                       round_off=round_off, paid_mode=paid_mode)
         return Response(pdf, media_type="application/pdf")
 
     @app.get("/b/{bill_token}")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import sqlite3
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 POS_HEADER = ["date", "time", "bill_no", "item_code", "item_name",
               "item_name_local", "qty", "unit", "rate", "amount",
@@ -15,7 +15,31 @@ POS_HEADER = ["date", "time", "bill_no", "item_code", "item_name",
 PRICELIST_HEADER = ["item_code", "item_name", "item_name_local", "unit",
                     "per_amount", "price", "sold_out"]
 
-__all__ = ["POS_HEADER", "PRICELIST_HEADER", "pos_csv", "pricelist_csv"]
+__all__ = ["POS_HEADER", "PRICELIST_HEADER", "per_unit_rate", "pos_csv",
+           "pricelist_csv"]
+
+
+def per_unit_rate(unit_price, per_amount) -> Decimal | None:
+    """Rate per ONE unit: price ÷ per_amount, to 2 decimals.
+
+    E.g. ₹18 per 0.5 kg -> ₹36 per kg. Amounts stay the bill's own
+    line totals; only the rate column is normalised to one unit.
+    """
+    if unit_price in (None, ""):
+        return None
+    try:
+        price = Decimal(str(unit_price))
+    except (InvalidOperation, ValueError, AttributeError):
+        return None
+    if per_amount in (None, ""):
+        return price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    try:
+        per = Decimal(str(per_amount))
+    except (InvalidOperation, ValueError, AttributeError):
+        return price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if per == 0:
+        return price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return (price / per).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def _plain(value) -> str:
@@ -81,11 +105,13 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
             name_en = str(line.get("name_en") or "").strip()
             if not name_en:
                 continue
+            rate = per_unit_rate(line.get("unit_price"),
+                                 line.get("per_amount"))
             writer.writerow([
                 day, clock, row["id"], item_code(name_en), name_en,
                 str(line.get("name_local") or ""),
                 _plain(line.get("qty")), str(line.get("unit") or ""),
-                _plain(line.get("unit_price")),
+                _plain(rate),
                 _plain(line.get("line_total")),
                 "0", "0", bill_total, mode, phone,
             ])

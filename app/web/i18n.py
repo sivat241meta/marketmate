@@ -439,6 +439,8 @@ _ENGLISH: dict[str, str] = {
     "bill.ok": "OK",
     "bill.sold_out": "Sold out",
     "bill.no_price_yet": "No price yet",
+    "bill.change_bill": "Change bill",
+    "bill.paid_locked": "This bill is paid. Tap 'Change bill' to reopen it.",
     # --- new bill ---
     "bn.title": "New bill — {shop}",
     "bn.back": "← All bills",
@@ -615,6 +617,8 @@ _ENGLISH: dict[str, str] = {
     "bpdf.amount": "Amount",
     "bpdf.per": "per {amount} {unit}",
     "bpdf.total": "Total",
+    "bpdf.round_off": "Round off {off}",
+    "bpdf.paid": "Paid · {mode}",
     "bpdf.thanks": "Thank you, come again!",
     "bpdf.note": "Prices from {shop}'s list.",
     # --- close PDF ---
@@ -649,6 +653,11 @@ _ENGLISH: dict[str, str] = {
     "wa.summary_margin": "Margin {margin}.",
     "wa.order_ready": "Your order from {shop} is ready for pickup. Total Rs.{total}.",
     "wa.link_self": "My MarketMate seller link (keep this safe): {url}",
+    # --- privacy notices ---
+    "notice.voice": "Your voice recording is sent to Meta's AI service to be transcribed.",
+    "notice.offline_bills": "Offline – bills will sync when you're back online",
+    "notice.needs_internet": "needs internet",
+    "bill.not_understood": "Not understood: {items} – add it from the list",
 }
 
 
@@ -1076,6 +1085,8 @@ _TAMIL: dict[str, str] = {
     "bill.ok": "சரி",
     "bill.sold_out": "தீர்ந்தது",
     "bill.no_price_yet": "விலை இல்லை",
+    "bill.change_bill": "பில்லை மாற்று",
+    "bill.paid_locked": "இந்த பில் வசூலாச்சு. மாற்ற 'பில்லை மாற்று' என்பதை தட்டுங்கள்.",
     # --- new bill ---
     "bn.title": "புது பில் — {shop}",
     "bn.back": "← எல்லா பில்லும்",
@@ -1251,6 +1262,8 @@ _TAMIL: dict[str, str] = {
     "bpdf.amount": "தொகை",
     "bpdf.per": "/ {amount} {unit}",
     "bpdf.total": "மொத்தம்",
+    "bpdf.round_off": "சில்லரை {off}",
+    "bpdf.paid": "வசூல் · {mode}",
     "bpdf.thanks": "நன்றி, மீண்டும் வாங்க!",
     "bpdf.note": "{shop} விலை பட்டியலிலிருந்து.",
     # --- close PDF ---
@@ -1285,6 +1298,11 @@ _TAMIL: dict[str, str] = {
     "wa.summary_margin": "லாபம் {margin}.",
     "wa.order_ready": "{shop} கடையில் உங்கள் ஆர்டர் எடுக்கத் தயார். மொத்தம் ரூ.{total}.",
     "wa.link_self": "என் MarketMate விற்பனை லிங்க் (பத்திரமாக வையுங்கள்): {url}",
+    # --- privacy notices ---
+    "notice.voice": "உங்கள் குரல் பதிவு எழுத்தாக மாற்ற Meta AI சேவைக்கு அனுப்பப்படும்.",
+    "notice.offline_bills": "இணையம் இல்லை – இணையம் வந்ததும் பில்கள் ஒத்திசையும்",
+    "notice.needs_internet": "இணையம் தேவை",
+    "bill.not_understood": "புரியவில்லை: {items} – பட்டியலிலிருந்து சேருங்கள்",
 }
 
 
@@ -1712,6 +1730,8 @@ _HINDI: dict[str, str] = {
     "bill.ok": "ठीक",
     "bill.sold_out": "खत्म",
     "bill.no_price_yet": "दाम नहीं",
+    "bill.change_bill": "बिल बदलें",
+    "bill.paid_locked": "यह बिल वसूल हो गया। बदलने के लिए 'बिल बदलें' दबाएँ।",
     # --- new bill ---
     "bn.title": "नया बिल — {shop}",
     "bn.back": "← सारे बिल",
@@ -1887,6 +1907,8 @@ _HINDI: dict[str, str] = {
     "bpdf.amount": "राशि",
     "bpdf.per": "/ {amount} {unit}",
     "bpdf.total": "कुल",
+    "bpdf.round_off": "पूर्णांक {off}",
+    "bpdf.paid": "वसूल · {mode}",
     "bpdf.thanks": "धन्यवाद, फिर आइए!",
     "bpdf.note": "{shop} की सूची से दाम।",
     # --- close PDF ---
@@ -1921,6 +1943,11 @@ _HINDI: dict[str, str] = {
     "wa.summary_margin": "मुनाफा {margin}।",
     "wa.order_ready": "{shop} से आपका ऑर्डर लेने के लिए तैयार है। कुल रु.{total}।",
     "wa.link_self": "मेरा MarketMate विक्रेता लिंक (संभालकर रखें): {url}",
+    # --- privacy notices ---
+    "notice.voice": "आपकी आवाज़ की रिकॉर्डिंग लिखावट में बदलने के लिए Meta की AI सेवा को भेजी जाती है।",
+    "notice.offline_bills": "ऑफ़लाइन – ऑनलाइन आते ही बिल सिंक होंगे",
+    "notice.needs_internet": "इंटरनेट चाहिए",
+    "bill.not_understood": "समझ नहीं आया: {items} – सूची से जोड़ें",
 }
 
 

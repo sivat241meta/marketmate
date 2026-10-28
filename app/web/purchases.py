@@ -167,8 +167,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "spent": pur.spent_on(conn, shop["id"], today),
             "currency": currency, "sessions": sessions, "error": None,
             "units": list(UNITS),
-            "notice": "Your voice recording is sent to Meta's AI service"
-                      " to be transcribed.",
+            "notice": t_for(ui_lang)("notice.voice"),
             "ui_lang": ui_lang,
         })
 

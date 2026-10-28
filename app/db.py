@@ -268,6 +268,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     for name, column_type in _STAGE_COLUMNS:
         if name not in existing:
             conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {column_type}")
+    if "base_version_id" not in existing:
+        conn.execute("ALTER TABLE sessions ADD COLUMN base_version_id INTEGER")
     item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
     if "name_ta" in item_columns and "name_local" not in item_columns:
         conn.execute("ALTER TABLE items RENAME COLUMN name_ta TO name_local")
@@ -664,8 +666,115 @@ def load_drafts(conn, session_id: int) -> list[DraftItem]:
     return [_draft_from_json(row["data"]) for row in rows]
 
 
-def approve(conn, session_id: int, items: list[DraftItem]) -> int:
-    """Freeze approved drafts as a new immutable version; returns version_id."""
+_MERGE_KINDS = {"video", "live", "board"}
+
+
+def session_base_version(conn, session_id: int) -> int | None:
+    """Base version id stored when review started; None for first lists."""
+    try:
+        row = conn.execute("SELECT base_version_id FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+    try:
+        value = row["base_version_id"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    return int(value) if value is not None else None
+
+
+def set_session_base(conn, session_id: int, base_id: int | None) -> None:
+    try:
+        conn.execute("UPDATE sessions SET base_version_id = ? WHERE id = ?",
+                     (base_id, session_id))
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+
+
+def ensure_session_base(conn, session_id: int) -> int | None:
+    """Pin the merge base when review starts; two tabs share one base.
+
+    Only for video/live/board sessions. Returns the stored base id, or
+    None when the shop has no version yet (first-ever session).
+    """
+    row = conn.execute("SELECT shop_id, kind FROM sessions WHERE id = ?",
+                       (session_id,)).fetchone()
+    if row is None or row["kind"] not in _MERGE_KINDS:
+        return None
+    existing = session_base_version(conn, session_id)
+    if existing is not None:
+        return existing
+    base = latest_version(conn, row["shop_id"])
+    if base is not None:
+        set_session_base(conn, session_id, base)
+    return base
+
+
+def session_replaces(session_item, base_item) -> bool:
+    """True when a session item replaces a base item.
+
+    Match on name_en; when both carry a variety, it must match too.
+    """
+    sess_name = str(getattr(session_item, "name_en", "") or "").strip().lower()
+    base_name = str(getattr(base_item, "name_en", "") or "").strip().lower()
+    if not sess_name or sess_name != base_name:
+        return False
+    sess_var = str(getattr(session_item, "variety", "") or "").strip().lower()
+    base_var = str(getattr(base_item, "variety", "") or "").strip().lower()
+    if sess_var and base_var:
+        return sess_var == base_var
+    return True
+
+
+def carried_from_base(session_items: list, base_items: list) -> list:
+    """Base items not replaced by any session item, in base order."""
+    out = []
+    for base in base_items:
+        if any(session_replaces(sess, base) for sess in session_items):
+            continue
+        out.append(base)
+    return out
+
+
+def insert_version_item(conn, version_id: int, name_local: str, name_en: str,
+                        variety: str | None, qty, qty_unit: str | None,
+                        photo: str | None, sold_out: bool, proof: Proof,
+                        lines: list) -> None:
+    """Insert one item row plus its price lines.
+
+    Shared copy helper: approve() reuses the same logic as
+    app.pipeline.update.apply_changes instead of duplicating it.
+    """
+    cursor = conn.execute(
+        "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
+        " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (version_id, name_local, name_en, variety, _decimal_to_str(qty),
+         qty_unit, photo, int(bool(sold_out)),
+         json.dumps(_proof_to_json(proof))))
+    item_id = cursor.lastrowid
+    conn.executemany(
+        "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
+        " VALUES (?, ?, ?, ?, ?)",
+        [(item_id, _decimal_to_str(line.price),
+          _decimal_to_str(line.per_amount), line.unit, line.said)
+         for line in lines],
+    )
+
+
+def approve(conn, session_id: int, items: list[DraftItem],
+            carried_ids: list[int] | None = None) -> int:
+    """Freeze approved drafts as a new immutable version; returns version_id.
+
+    For video/live/board sessions with a stored base version, the new
+    version is the session's items plus the checked carried items copied
+    exactly from the base (names, price lines, photo, proof, sold_out).
+    ``carried_ids`` lists the base item ids the seller kept ticked; None
+    keeps every carried item (checkboxes default checked). First-ever
+    sessions (no base) behave exactly as before.
+    """
     needs: list[dict] = []
     for index, item in enumerate(items):
         blocking = [flag for flag in item.flags if flag.blocking]
@@ -697,31 +806,49 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
                 raise ApprovalError(
                     f"two prices for the same amount on {item.name_en}: pick one")
             seen_amounts.add(key)
+    row = conn.execute("SELECT shop_id, kind FROM sessions WHERE id = ?",
+                       (session_id,)).fetchone()
+    shop_id = row["shop_id"] if row else None
+    kind = row["kind"] if row else "video"
+    kept: list = []
+    if shop_id is not None and kind in _MERGE_KINDS:
+        base_id = session_base_version(conn, session_id)
+        if base_id is not None:
+            brow = conn.execute("SELECT shop_id FROM versions WHERE id = ?",
+                                (base_id,)).fetchone()
+            if brow is not None and brow["shop_id"] == shop_id:
+                base_items = version_items(conn, base_id)
+                carried = carried_from_base(items, base_items)
+                if carried_ids is None:
+                    kept = carried
+                else:
+                    wanted = set()
+                    for raw in carried_ids:
+                        try:
+                            wanted.add(int(raw))
+                        except (TypeError, ValueError):
+                            continue
+                    kept = [it for it in carried if it.id in wanted]
+    total = len(items) + len(kept)
     conn.execute("UPDATE sessions SET status = 'approved', message = ? WHERE id = ?",
-                   (f"{len(items)} items approved", session_id))
-    shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
-                           (session_id,)).fetchone()["shop_id"]
+                   (f"{total} items approved", session_id))
+    if shop_id is None:
+        shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
+                               (session_id,)).fetchone()["shop_id"]
     cursor = conn.execute(
         "INSERT INTO versions (shop_id, created_at, published) VALUES (?, ?, 0)",
         (shop_id, _now()),
     )
     version_id = cursor.lastrowid
     for item in items:
-        item_cursor = conn.execute(
-            "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
-            " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
-            (version_id, item.name_local, item.name_en, item.variety,
-             _decimal_to_str(item.qty), item.qty_unit, item.photo,
-             json.dumps(_proof_to_json(item.proof))),
-        )
-        item_id = item_cursor.lastrowid
         priced = [line for line in item.price_lines if line.price is not None]
-        conn.executemany(
-            "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
-            " VALUES (?, ?, ?, ?, ?)",
-            [(item_id, _decimal_to_str(line.price), _decimal_to_str(line.per_amount),
-              line.unit, line.said) for line in priced],
-        )
+        insert_version_item(conn, version_id, item.name_local, item.name_en,
+                            item.variety, item.qty, item.qty_unit, item.photo,
+                            False, item.proof, priced)
+    for base in kept:
+        insert_version_item(conn, version_id, base.name_local, base.name_en,
+                            base.variety, base.qty, base.qty_unit, base.photo,
+                            base.sold_out, base.proof, list(base.price_lines))
     conn.commit()
     return version_id
 
@@ -1108,6 +1235,18 @@ def _wanted_from_raw(raw: dict, fallback: dict, index: int):
     return WantedLine(name_en=name, qty=qty, unit=unit, source="edit")
 
 
+PAID_LOCK_MESSAGE = "This bill is paid. Tap 'Change bill' to reopen it."
+
+
+def _ensure_bill_editable(row) -> None:
+    try:
+        status = row["status"]
+    except (KeyError, IndexError, TypeError):
+        return
+    if status == "paid":
+        raise ValueError(PAID_LOCK_MESSAGE)
+
+
 def rebuild_bill(conn, bill_id: int, wanted) -> object:
     """Reprice a bill's wanted lines from the shop list; returns the Quote."""
     from app.market.quote import build_quote
@@ -1115,6 +1254,7 @@ def rebuild_bill(conn, bill_id: int, wanted) -> object:
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
+    _ensure_bill_editable(row)
     quote = build_quote(conn, row["shop_id"], list(wanted))
     total, total_exact = _store_totals(conn, row["shop_id"], "bill",
                                        quote.total)
@@ -1133,6 +1273,7 @@ def update_bill_lines(conn, bill_id: int, lines: list[dict]):
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
+    _ensure_bill_editable(row)
     try:
         original = json.loads(row["lines_json"] or "[]")
     except ValueError:
@@ -1151,6 +1292,7 @@ def add_bill_line(conn, bill_id: int, raw: dict):
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
+    _ensure_bill_editable(row)
     try:
         original = json.loads(row["lines_json"] or "[]")
     except ValueError:
@@ -1171,6 +1313,7 @@ def remove_bill_line(conn, bill_id: int, index: int):
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
+    _ensure_bill_editable(row)
     try:
         original = json.loads(row["lines_json"] or "[]")
     except ValueError:
@@ -1227,6 +1370,19 @@ def mark_bill_paid(conn, bill_id: int,
     conn.execute("UPDATE quotes SET status = 'paid', payment_mode = ?,"
                  " paid_at = ?, updated_at = ? WHERE id = ?",
                  (mode, now, now, row["id"]))
+    conn.commit()
+
+
+def reopen_bill(conn, bill_id: int) -> None:
+    """Reopen a paid bill for corrections: back to billed, payment cleared."""
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    if row["status"] != "paid":
+        raise ValueError("only paid bills can be reopened")
+    conn.execute("UPDATE quotes SET status = 'billed', payment_mode = NULL,"
+                 " paid_at = NULL, updated_at = ? WHERE id = ?",
+                 (_now(), row["id"]))
     conn.commit()
 
 

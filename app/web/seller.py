@@ -63,6 +63,10 @@ from app.web.photos import read_photo_meta, run_photo_job
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
+
+def _voice_notice(ui_lang: str) -> str:
+    return t_for(ui_lang)("notice.voice")
+
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")
 _LANGUAGES = {lang.code for lang in LANGUAGES}
 _CURRENCIES = set(all_currencies())
@@ -388,7 +392,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             request,
             "seller.html",
             {"shop": shop, "sessions": sessions, "versions": versions,
-             "notice": NOTICE, "stock": stock, "token": token,
+             "notice": _voice_notice(ui_lang), "stock": stock, "token": token,
              "items": items, "live": live, "live_count": live_count,
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
@@ -625,6 +629,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if session["status"] == "review" and session["kind"] in (
                 "video", "live", "board"):
             items = db.load_drafts(conn, session_id)
+            base_id = db.ensure_session_base(conn, session_id)
+            carried = []
+            if base_id is not None:
+                try:
+                    base_items = db.version_items(conn, base_id)
+                except Exception:  # noqa: BLE001 - unreadable base means no carried
+                    base_items = []
+                for base in db.carried_from_base(items, base_items):
+                    carried.append({
+                        "id": base.id,
+                        "name_local": base.name_local,
+                        "name_en": base.name_en,
+                        "variety": base.variety,
+                        "photo_url": _photo_url(base.photo),
+                        "sold_out": base.sold_out,
+                        "price_summary": _price_summary(
+                            base, shop["currency"] or "INR", ui_lang),
+                    })
+            context["carried"] = carried
+            context["base_version_id"] = base_id
             cards = []
             for index, item in enumerate(items):
                 proof = {
@@ -697,12 +721,27 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         _session_of_shop(conn, shop["id"], session_id)
         raw_items = body.get("items", [])
         confirmed = set(body.get("confirmed", []))
+        carried_raw = body.get("carried", None)
+        carried_ids = None
+        if carried_raw is not None:
+            carried_ids = []
+            for raw_id in carried_raw or []:
+                try:
+                    carried_ids.append(int(raw_id))
+                except (TypeError, ValueError):
+                    continue
         previous = db.last_prices(conn, shop["id"])
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        try:
+            saved_drafts = db.load_drafts(conn, session_id)
+        except Exception:  # noqa: BLE001 - missing drafts keep variety empty
+            saved_drafts = []
         items = []
         for index, raw in enumerate(raw_items):
             item = _draft_from_client(raw)
+            if index < len(saved_drafts) and saved_drafts[index].variety:
+                item.variety = saved_drafts[index].variety
             if item.proof.source == "board_photo":
                 kept = [
                     flag for flag in check_item(
@@ -719,7 +758,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             item.confirmed = index in confirmed
             items.append(item)
         try:
-            db.approve(conn, session_id, items)
+            db.approve(conn, session_id, items, carried_ids=carried_ids)
         except db.ApprovalError as exc:
             if exc.needs_confirm:
                 return JSONResponse(
@@ -815,7 +854,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         items = db.version_items(conn, version_id) if version_id else []
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "record", "items": items,
-            "notice": NOTICE, "error": None, "hint": (hint or "").strip(),
+            "notice": _voice_notice(ui_lang), "error": None,
+            "hint": (hint or "").strip(),
             "shop_lang": shop["language"], "ui_lang": ui_lang,
             "max_upload_bytes": app.state.settings.max_upload_bytes})
 
@@ -846,7 +886,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             items = db.version_items(conn, base_version_id)
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
-                "notice": NOTICE, "error": _too_big_message(len(payload), limit),
+                "notice": _voice_notice(ui_lang),
+                "error": _too_big_message(len(payload), limit),
                 "shop_lang": shop["language"], "ui_lang": ui_lang,
                 "max_upload_bytes": limit})
         session_id = db.create_session(conn, shop["id"], "voice_update")
@@ -881,7 +922,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             items = db.version_items(conn, base_version_id)
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
-                "notice": NOTICE, "error": message,
+                "notice": _voice_notice(ui_lang), "error": message,
                 "shop_lang": shop["language"], "ui_lang": ui_lang,
                 "max_upload_bytes": limit})
         finally:

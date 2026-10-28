@@ -200,6 +200,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 message=f"no frame clearly shows {item.name_en}"))
     db.save_drafts(conn, session_id, items)
     db.set_stage(conn, session_id, "ready")
+    db.ensure_session_base(conn, session_id)
     db.set_session_status(conn, session_id, "review", f"{len(items)} items need review")
     return items
 
@@ -235,6 +236,7 @@ def process_video_session(conn, session_id: int, video: Path, *,
         if not transcript.turns:
             db.save_drafts(conn, session_id, [])
             db.set_stage(conn, session_id, "ready")
+            db.ensure_session_base(conn, session_id)
             db.set_session_status(conn, session_id, "review", "No prices heard")
         else:
             _progress(conn, session_id, "Extracting items...")
