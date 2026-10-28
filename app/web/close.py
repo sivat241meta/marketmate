@@ -25,6 +25,7 @@ from app.outputs.day_pdf import day_summary_pdf
 from app.outputs.excel import sales_workbook
 from app.outputs.money import format_money
 from app.outputs.pos_csv import pos_csv, pricelist_csv
+from app.pipeline.names import qualified_name
 from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import get_ui_lang, summary_whatsapp_text
 
@@ -118,6 +119,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             sold = entry["sold_qty"]
             rows.append({
                 "name_en": entry["name_en"],
+                "variety": entry.get("variety") or "",
                 "display": entry["display"],
                 "name_local": entry["name_local"],
                 "slug": entry["slug"],
@@ -200,10 +202,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             break
                 if entry is None:
                     continue
-                name_en = entry["name_en"]
-                if name_en in seen:
+                name_en = qualified_name(entry["name_en"],
+                                         entry.get("variety"))
+                if entry["slug"] in seen:
                     continue
-                seen.add(name_en)
+                seen.add(entry["slug"])
                 raw_qty = str(form.get(key) or "").strip()
                 unit = (str(form.get(f"unit_{suffix}") or "").strip()
                         or entry["unit"] or entry["opening_unit"] or None)

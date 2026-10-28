@@ -23,6 +23,7 @@ from app.pipeline.units import normalize_unit
 __all__ = [
     "FILLER_WORDS",
     "FRACTIONS",
+    "SEPARATOR_WORDS",
     "item_like_leftovers",
     "leftover_needs_spark",
     "parse_order",
@@ -46,6 +47,12 @@ FILLER_HI = frozenset({
 })
 
 FILLER_WORDS = frozenset(FILLER_EN | FILLER_TA | FILLER_HI)
+
+# Words that split an order into one-item segments (Task 55). All are also
+# filler, so they never surface as leftovers.
+SEPARATOR_WORDS = frozenset({
+    "and", "then", "um", "உம்", "அப்புறம்", "aur", "और",
+})
 
 FRACTIONS: dict[str, Decimal] = {
     "half": Decimal("0.5"),
@@ -368,6 +375,187 @@ def _unit_at(token: str) -> tuple[str | None, Decimal]:
     return normalize_unit(token)
 
 
+def _orig_segments(text: str) -> list[int]:
+    """Segment id per whitespace-separated word of the raw text.
+
+    A comma, a non-decimal full stop or a newline ends the segment
+    after that word. Numeric commas ("2,000") and decimal points
+    ("1.5") never split.
+    """
+    seg_ids: list[int] = []
+    seg = 0
+    for line_no, line in enumerate(text.splitlines()):
+        if line_no > 0:
+            seg += 1
+        for raw in line.split():
+            seg_ids.append(seg)
+            word = raw.strip()
+            stop = False
+            if "," in word:
+                head = word.replace(",", " ").strip()
+                if not head or any(ch not in "0123456789. " for ch in head):
+                    stop = True
+            if _DOT_RE.search(word):
+                stop = True
+            if stop:
+                seg += 1
+    return seg_ids
+
+
+def _split_segments(tokens: list[str], to_orig: list[int], text: str,
+                    occ_spans: list[tuple[int, int]]) -> list[list[int]]:
+    """Group token indexes into segments split on separators.
+
+    Splits on commas, full stops and newlines (via the original
+    words) and on SEPARATOR_WORDS. A separator word inside an item
+    name ("then vazhai") never splits.
+    """
+    seg_ids = _orig_segments(text or "")
+    inside = [False] * len(tokens)
+    for begin, end in occ_spans:
+        for idx in range(max(0, begin), min(len(tokens), end)):
+            inside[idx] = True
+    groups: dict[int, list[int]] = {}
+    order: list[int] = []
+    for idx in range(len(tokens)):
+        owner = to_orig[idx] if idx < len(to_orig) else -1
+        key = seg_ids[owner] if 0 <= owner < len(seg_ids) else -1
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(idx)
+    segments: list[list[int]] = []
+    for key in order:
+        current: list[int] = []
+        for idx in groups[key]:
+            if _norm(tokens[idx]) in SEPARATOR_WORDS and not inside[idx]:
+                if current:
+                    segments.append(current)
+                    current = []
+            else:
+                current.append(idx)
+        if current:
+            segments.append(current)
+    return segments
+
+
+def _match_number_at(tokens: list[str], pos: int, end: int,
+                     inside: list[bool], decimal_comma: bool,
+                     ) -> tuple[Decimal, int] | None:
+    """Longest number phrase starting exactly at pos, or None."""
+    for width in (4, 3, 2, 1):
+        stop = pos + width
+        if stop > end:
+            continue
+        if any(inside[idx] for idx in range(pos, stop)):
+            continue
+        span = tokens[pos:stop]
+        if any(tok in FILLER_WORDS for tok in span):
+            continue
+        if width == 1:
+            single = span[0]
+            if single in FRACTIONS:
+                return (FRACTIONS[single], stop)
+            if single in ("a", "an"):
+                return (Decimal(1), stop)
+        value = parse_number(" ".join(span), decimal_comma=decimal_comma)
+        if value is not None:
+            return (value, stop)
+    return None
+
+
+def _quantity_groups(tokens: list[str], idxs: list[int],
+                     inside: list[bool], decimal_comma: bool,
+                     ) -> list[tuple[str, Decimal, str | None, int, int]]:
+    """Quantity groups in one segment, in token order.
+
+    Each group is (kind, value, unit, begin, end) with kind "qty" or
+    "amount". A number pairs with an adjacent unit ("2 kg") or with
+    an adjacent currency word ("₹20", "20 ரூபாய்க்கு"); a lone unit
+    word means one of that unit.
+    """
+    groups: list[tuple[str, Decimal, str | None, int, int]] = []
+    seg_set = set(idxs)
+    pos = 0
+    while pos < len(idxs):
+        tok_idx = idxs[pos]
+        if inside[tok_idx] or tokens[tok_idx] in FILLER_WORDS:
+            pos += 1
+            continue
+        hit = _match_number_at(tokens, tok_idx, idxs[-1] + 1, inside,
+                               decimal_comma)
+        if hit is not None:
+            value, stop = hit
+            if any(not inside[i] and _is_currency(tokens[i])
+                   for i in range(tok_idx, stop)):
+                groups.append(("amount", value, None, tok_idx, stop))
+                while pos < len(idxs) and idxs[pos] < stop:
+                    pos += 1
+                continue
+            followed = stop if stop in seg_set else None
+            if followed is not None and not inside[followed]:
+                got, scale = _unit_at(tokens[followed])
+                if got is not None:
+                    groups.append(("qty", value * scale, got, tok_idx,
+                                   followed + 1))
+                    while pos < len(idxs) and idxs[pos] <= followed:
+                        pos += 1
+                    continue
+            if followed is not None and not inside[followed] and _is_currency(
+                    tokens[followed]):
+                groups.append(("amount", value, None, tok_idx, followed + 1))
+                while pos < len(idxs) and idxs[pos] <= followed:
+                    pos += 1
+                continue
+            prev = tok_idx - 1
+            if (prev in seg_set and not inside[prev]
+                    and _is_currency(tokens[prev])):
+                groups.append(("amount", value, None, prev, stop))
+                while pos < len(idxs) and idxs[pos] < stop:
+                    pos += 1
+                continue
+            groups.append(("qty", value, None, tok_idx, stop))
+            while pos < len(idxs) and idxs[pos] < stop:
+                pos += 1
+            continue
+        got, scale = _unit_at(tokens[tok_idx])
+        if got is not None:
+            groups.append(("qty", Decimal(1) * scale, got, tok_idx,
+                           tok_idx + 1))
+        pos += 1
+    return groups
+
+
+def _pair_segment(occs, groups):
+    """Pair each item occurrence with at most one quantity group.
+
+    One item takes the nearest group on either side (ties go to the
+    group before the item). Several items pair alternately: a
+    quantity first means quantity-before, an item first means
+    quantity-after. Unpaired groups stay out so they surface as
+    leftovers; unpaired items bill one.
+    """
+    if not occs:
+        return []
+    if len(occs) == 1:
+        start, stop, _, _ = occs[0]
+        best = None
+        best_key = None
+        for group in groups:
+            _, _, _, begin, end = group
+            gap = start - end if end <= start else begin - stop
+            key = (gap, 0 if end <= start else 1)
+            if best_key is None or key < best_key:
+                best_key = key
+                best = group
+        return [(occs[0], best)]
+    # Alternating pairs serve both orders: quantity-first
+    # ("2 kg onion, half kg ginger") and item-first
+    # ("tomato 2 kg onion 1 kg").
+    return [(occ, groups[pos] if pos < len(groups) else None)
+            for pos, occ in enumerate(occs)]
+
+
 def _default_for_qty(item, qty: Decimal) -> tuple[Decimal, str | None]:
     shop_unit = _shop_unit(item)
     if shop_unit is None:
@@ -406,6 +594,8 @@ def item_like_leftovers(leftover_words: list[str],
 
     Drops filler words, numbers, units, currency words and anything
     already on the bill, so only genuinely unheard words are shown.
+    When nothing item-like remains, an unpaired quantity is shown
+    as-is instead of being dropped silently.
     """
     covered: set[str] = set()
     for name in wanted_names or ():
@@ -428,7 +618,11 @@ def item_like_leftovers(leftover_words: list[str],
         if _is_currency(norm):
             continue
         out.append(word)
-    return out
+    if out:
+        return out
+    return [word for word in leftover_words
+            if _norm(word) and _norm(word) not in FILLER_WORDS
+            and _norm(word) not in covered]
 
 
 def parse_order(text: str, price_list_items, language: str | None = "en",
@@ -472,87 +666,61 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
             pos += width
     consumed: set[int] = {i for i, tok in enumerate(tokens)
                           if tok in FILLER_WORDS}
+    inside = [False] * len(tokens)
+    for begin, end in [(s, e) for s, e, _, _ in occurrences]:
+        for idx in range(begin, end):
+            inside[idx] = True
     lines: list[WantedLine] = []
-    prev_end = 0
-    for start, stop, kind, payload in occurrences:
-        options: list[str] | None = None
-        variety: str | None = None
-        if kind == "choose":
-            idxs = [i for i in payload if isinstance(i, int)]  # type: ignore[union-attr]
-            item = items[idxs[0]]
-            name_en = " ".join(tokens[start:stop])
-            options = [_display_name(items[i]) for i in idxs]
-        else:
-            item = items[payload]  # type: ignore[index]
-            name_en = str(_field(item, "name_en") or "")
-            variety = _shop_variety(item)
-        found = _find_number(tokens, prev_end, start, decimal_comma)
-        currencies = [k for k in range(prev_end, start)
-                      if _is_currency(tokens[k])]
-        if found is not None and currencies:
-            amount = found[0]
-            for k in range(found[1], found[2]):
-                consumed.add(k)
-            for k in currencies:
-                consumed.add(k)
+    segments = _split_segments(tokens, to_orig, text or "",
+                               [(s, e) for s, e, _, _ in occurrences])
+    seg_of = [-1] * len(tokens)
+    for seg_no, idxs in enumerate(segments):
+        for idx in idxs:
+            seg_of[idx] = seg_no
+    for seg_no, seg_idxs in enumerate(segments):
+        seg_occs = [occ for occ in occurrences if seg_of[occ[0]] == seg_no]
+        groups = _quantity_groups(tokens, seg_idxs, inside, decimal_comma)
+        pairs = _pair_segment(seg_occs, groups)
+        for occ, group in pairs:
+            start, stop, kind, payload = occ
+            options: list[str] | None = None
+            variety: str | None = None
+            if kind == "choose":
+                idxs = [i for i in payload  # type: ignore[union-attr]
+                        if isinstance(i, int)]
+                item = items[idxs[0]]
+                name_en = " ".join(tokens[start:stop])
+                options = [_display_name(items[i]) for i in idxs]
+            else:
+                item = items[payload]  # type: ignore[index]
+                name_en = str(_field(item, "name_en") or "")
+                variety = _shop_variety(item)
             for k in range(start, stop):
                 consumed.add(k)
-            if amount > 0:
-                lines.append(WantedLine(name_en=name_en, qty=None,
-                                        unit=None, source="local",
-                                        amount=amount, options=options,
-                                        variety=variety))
-            prev_end = stop
-            continue
-        if found is not None:
-            qty, begin, end = found
-            unit_idx = None
-            canonical = None
-            factor = Decimal(1)
-            for k in range(end, start):
-                got, scale = _unit_at(tokens[k])
-                if got is not None:
-                    unit_idx, canonical, factor = k, got, scale
-                    break
-            if canonical is not None:
-                qty = qty * factor
-                unit: str | None = canonical
-                consumed.add(unit_idx)  # type: ignore[arg-type]
-            else:
-                qty, unit = _default_for_qty(item, qty)
+            if group is None:
+                qty, unit = _default_for_single(item)
+                lines.append(WantedLine(name_en=name_en, qty=qty,
+                                        unit=unit, source="local",
+                                        options=options, variety=variety))
+                continue
+            gkind, value, gunit, begin, end = group
             for k in range(begin, end):
                 consumed.add(k)
-            for k in range(start, stop):
-                consumed.add(k)
+            if gkind == "amount":
+                if value > 0:
+                    lines.append(WantedLine(name_en=name_en, qty=None,
+                                            unit=None, source="local",
+                                            amount=value, options=options,
+                                            variety=variety))
+                continue
+            if gunit is not None:
+                qty, unit = value, gunit
+            else:
+                qty, unit = _default_for_qty(item, value)
             if qty > 0:
                 lines.append(WantedLine(name_en=name_en, qty=qty,
                                         unit=unit, source="local",
                                         options=options, variety=variety))
-            prev_end = stop
-            continue
-        unit_idx = None
-        canonical = None
-        factor = Decimal(1)
-        for k in range(prev_end, start):
-            got, scale = _unit_at(tokens[k])
-            if got is not None:
-                unit_idx, canonical, factor = k, got, scale
-        if canonical is not None:
-            for k in range(start, stop):
-                consumed.add(k)
-            consumed.add(unit_idx)  # type: ignore[arg-type]
-            lines.append(WantedLine(name_en=name_en, qty=Decimal(1) * factor,
-                                    unit=canonical, source="local",
-                                    options=options, variety=variety))
-            prev_end = stop
-            continue
-        for k in range(start, stop):
-            consumed.add(k)
-        qty, unit = _default_for_single(item)
-        lines.append(WantedLine(name_en=name_en, qty=qty, unit=unit,
-                                source="local", options=options,
-                                variety=variety))
-        prev_end = stop
     leftover: list[str] = []
     for orig_idx, word in enumerate(display):
         if not word:

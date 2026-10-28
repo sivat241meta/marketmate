@@ -7,6 +7,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 from app.outputs.money import format_money
+from app.pipeline.names import display_name_en, display_name_local
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 _FONTS_URI = (Path(__file__).resolve().parent.parent
@@ -33,9 +34,11 @@ def quote_pdf(shop: sqlite3.Row | dict, lines: list[dict], total: str,
     template = env.get_template("quote_pdf.html")
     rows = []
     for line in lines:
+        variety = line.get("variety") or None
         rows.append({
-            "name_en": line.get("name_en", ""),
-            "name_local": line.get("name_local", ""),
+            "name_en": display_name_en(line.get("name_en", ""), variety),
+            "name_local": display_name_local(line.get("name_local", ""),
+                                             variety),
             "qty": _plain(line.get("qty", "")),
             "unit": line.get("unit") or "",
             "unit_price": _plain(line.get("unit_price")),

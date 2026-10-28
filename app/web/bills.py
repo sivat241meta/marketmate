@@ -43,7 +43,12 @@ from app.meta.transcribe import transcribe_wav
 from app.outputs.bill_pdf import bill_pdf
 from app.outputs.money import format_money
 from app.pipeline.media import extract_audio
-from app.pipeline.names import keywords_for
+from app.pipeline.names import (
+    display_name_en,
+    display_name_local,
+    keywords_for,
+    qualified_name,
+)
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 from app.web.auth import created_by_for, resolve_or_404
@@ -321,8 +326,8 @@ def _fmt_money(value) -> str:
         return str(value)
 
 
-def _display(name: str) -> str:
-    return name[:1].upper() + name[1:] if name else name
+def _display(name: str, variety: str | None = None) -> str:
+    return display_name_en(name, variety)
 
 
 def _row_phone(row) -> str | None:
@@ -444,11 +449,14 @@ def _bill_lines(raw_lines, photos: dict[str, str] | None = None
                                else []):
         if not isinstance(raw, dict):
             continue
+        variety = raw.get("variety") or None
         lines.append({
             "index": index,
             "name_en": raw.get("name_en", ""),
-            "display": _display(raw.get("name_en", "")),
-            "name_local": raw.get("name_local", ""),
+            "variety": variety or "",
+            "display": _display(raw.get("name_en", ""), variety),
+            "name_local": display_name_local(raw.get("name_local", ""),
+                                             variety),
             "photo_url": photos.get(
                 str(raw.get("name_en", "")).strip().lower()),
             "qty": _fmt_money(raw.get("qty", "")),
@@ -496,12 +504,14 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
                 summary = price
         else:
             summary = t("bill.no_price_yet")
-        display = _display(item.name_en)
+        display = _display(item.name_en, item.variety)
         items.append({
             "index": index,
             "name_en": item.name_en,
+            "value": qualified_name(item.name_en, item.variety),
+            "variety": item.variety or "",
             "display": display,
-            "name_local": item.name_local,
+            "name_local": display_name_local(item.name_local, item.variety),
             "tile": first_grapheme(item.name_local or display),
             "unit": first.unit if first is not None else "",
             "summary": summary,
@@ -700,9 +710,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     raw = []
                 count = len(raw) if isinstance(raw, list) else 0
                 text, kind = _status_pill(row, ui_lang)
-                names = [_display(str(entry.get("name_en", "")))
-                         for entry in raw
-                         if isinstance(entry, dict) and entry.get("name_en")]
+                names = [
+                    _display(str(entry.get("name_en", "")),
+                             entry.get("variety"))
+                    for entry in raw
+                    if isinstance(entry, dict) and entry.get("name_en")]
                 try:
                     display_total = db.bill_display_totals(
                         shop, row)["rounded"]
@@ -1326,6 +1338,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "qty": form.get(f"qty_{index}", fallback.get("qty", "1")),
                     "unit": form.get(f"unit_{index}", fallback.get("unit")),
                     "amount": form.get(f"amount_{index}", ""),
+                    "variety": form.get(f"variety_{index}",
+                                        fallback.get("variety")),
                 })
             try:
                 db.update_bill_lines(conn, bill["id"], updates)
@@ -1355,6 +1369,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "name_en": form.get("name_en", ""),
                     "qty": form.get("qty", ""),
                     "unit": form.get("unit"),
+                    "variety": form.get("variety"),
                 })
             except (ValueError, TypeError) as exc:
                 fresh = _bill_of_shop(conn, shop["id"], bill_id)

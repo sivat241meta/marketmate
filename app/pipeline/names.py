@@ -308,3 +308,64 @@ def keywords_for(language_code: str | None) -> list[str]:
     if language_code == "ta":
         return list(PRODUCE_KEYWORDS)
     return list(_ENGLISH_KEYWORDS)
+
+
+# English variety -> Tamil display word (Task 55). Each variety below is
+# only sold for one item, so the variety alone picks the Tamil word.
+VARIETY_LOCAL: dict[str, str] = {
+    "ujala": "உஜாலா",
+    "krishnagiri": "கிருஷ்ணகிரி",
+    "poovan": "பூவன்",
+    "yelakki": "ஏலக்கி",
+    "karpooravalli": "கற்பூரவள்ளி",
+    "thenvazhai": "தேன்வாழை",
+    "red": "செவ்வாழை",
+    "green": "பச்சை வாழை",
+    "nendran": "நேந்திரன்",
+    "rasthali": "ரஸ்தாளி",
+    "ooty": "ஊட்டி",
+}
+
+
+def variety_local_name(variety: str | None) -> str | None:
+    """Tamil display word for an English variety, or None if unknown."""
+    if variety is None:
+        return None
+    key = str(variety).strip().lower()
+    if not key:
+        return None
+    return VARIETY_LOCAL.get(key)
+
+
+def _title(word: str) -> str:
+    return word[:1].upper() + word[1:] if word else word
+
+
+def display_name_en(name_en: str | None, variety: str | None = None) -> str:
+    """English display name: "Banana (Poovan)", or plain "Banana"."""
+    base = _title((name_en or "").strip())
+    text = str(variety or "").strip()
+    if base and text:
+        return f"{base} ({_title(text)})"
+    return base
+
+
+def display_name_local(name_local: str | None,
+                       variety: str | None = None) -> str:
+    """Local display name: "வாழைப்பழம் (பூவன்)", or the plain name."""
+    base = (name_local or "").strip()
+    if not base:
+        return ""
+    text = str(variety or "").strip()
+    if not text:
+        return base
+    return f"{base} ({variety_local_name(text) or _title(text)})"
+
+
+def qualified_name(name_en: str | None, variety: str | None = None) -> str:
+    """Bill-form value carrying the variety: "banana (poovan)"."""
+    base = (name_en or "").strip()
+    text = str(variety or "").strip()
+    if base and text:
+        return f"{base} ({text})"
+    return base

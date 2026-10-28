@@ -36,6 +36,7 @@ from app.meta.spark import SparkError
 from app.models import Frame, Transcript, Turn
 from app.pipeline.checks import check_item
 from app.pipeline.extract import extract_items, merge_repeated_prices
+from app.pipeline.names import display_name_en, display_name_local
 from app.pipeline.photos import make_photo  # noqa: F401 - monkeypatch seam
 from app.pipeline.run import live_frame_for_item, process_turns
 from app.pipeline.scripts import count_letters, dominant_script, expected_scripts
@@ -157,15 +158,17 @@ def _meta_int(data: dict, keys, default: int) -> int:
     return default
 
 
-def _display(name: str) -> str:
-    return name[:1].upper() + name[1:] if name else name
+def _display(name: str, variety: str | None = None) -> str:
+    return display_name_en(name, variety)
 
 
 def _order_line_dict(line) -> dict:
+    variety = getattr(line, "variety", None)
     return {
         "name_en": line.name_en,
-        "display": _display(line.name_en or ""),
-        "name_local": line.name_local or "",
+        "variety": variety or "",
+        "display": _display(line.name_en or "", variety),
+        "name_local": display_name_local(line.name_local or "", variety),
         "qty": str(line.qty),
         "unit": line.unit or "",
         "unit_price": str(line.unit_price) if line.unit_price is not None else None,

@@ -1019,6 +1019,7 @@ def _quote_line_to_dict(line) -> dict:
         "line_total": str(line.line_total) if line.line_total is not None else None,
         "status": line.status,
         "note": line.note,
+        "variety": getattr(line, "variety", None),
     }
 
 
@@ -1214,8 +1215,11 @@ def update_quote_lines(conn, token: str, lines: list[dict]):
         unit = raw.get("unit", fallback.get("unit"))
         if unit is not None:
             unit = str(unit).strip() or None
+        variety = raw.get("variety", fallback.get("variety"))
+        if variety is not None:
+            variety = str(variety).strip() or None
         wanted.append(WantedLine(name_en=name, qty=qty, unit=unit,
-                                 source="edit"))
+                                 source="edit", variety=variety))
     quote = build_quote(conn, row["shop_id"], wanted)
     total, total_exact = _store_totals(conn, row["shop_id"], row["kind"],
                                        quote.total)
@@ -1264,6 +1268,9 @@ def _wanted_from_raw(raw: dict, fallback: dict, index: int):
         raise ValueError(f"line {index + 1} has no item name")
     amount_raw = raw.get("amount", fallback.get("amount"))
     amount_text = str(amount_raw or "").strip() if amount_raw is not None else ""
+    variety = raw.get("variety", fallback.get("variety"))
+    if variety is not None:
+        variety = str(variety).strip() or None
     if amount_text:
         try:
             amount = Decimal(amount_text)
@@ -1273,7 +1280,7 @@ def _wanted_from_raw(raw: dict, fallback: dict, index: int):
         if amount.is_nan() or amount <= 0:
             raise ValueError(f"amount for {name} does not look right")
         return WantedLine(name_en=name, qty=None, unit=None, source="edit",
-                          amount=amount)
+                          amount=amount, variety=variety)
     qty_raw = raw.get("qty", fallback.get("qty"))
     try:
         qty = Decimal(str(qty_raw).strip())
@@ -1284,7 +1291,8 @@ def _wanted_from_raw(raw: dict, fallback: dict, index: int):
     unit = raw.get("unit", fallback.get("unit"))
     if unit is not None:
         unit = str(unit).strip() or None
-    return WantedLine(name_en=name, qty=qty, unit=unit, source="edit")
+    return WantedLine(name_en=name, qty=qty, unit=unit, source="edit",
+                      variety=variety)
 
 
 PAID_LOCK_MESSAGE = "This bill is paid. Tap 'Change bill' to reopen it."
@@ -1353,7 +1361,7 @@ def add_bill_line(conn, bill_id: int, raw: dict):
         original = []
     wanted = [_wanted_from_raw(
         {"name_en": line.get("name_en"), "qty": line.get("qty"),
-         "unit": line.get("unit")},
+         "unit": line.get("unit"), "variety": line.get("variety")},
         {}, index) for index, line in enumerate(original)
         if isinstance(line, dict)]
     wanted.append(_wanted_from_raw(raw, {}, len(wanted)))
@@ -1381,7 +1389,7 @@ def remove_bill_line(conn, bill_id: int, index: int):
     kept = [line for pos, line in enumerate(original) if pos != number]
     wanted = [_wanted_from_raw(
         {"name_en": line.get("name_en"), "qty": line.get("qty"),
-         "unit": line.get("unit")},
+         "unit": line.get("unit"), "variety": line.get("variety")},
         {}, pos) for pos, line in enumerate(kept)
         if isinstance(line, dict)]
     return rebuild_bill(conn, row["id"], wanted)

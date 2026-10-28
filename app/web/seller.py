@@ -38,7 +38,11 @@ from app.outputs.time import format_relative
 from app.outputs.value import stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
-from app.pipeline.names import CANONICAL_NAMES, keywords_for
+from app.pipeline.names import (
+    CANONICAL_NAMES,
+    display_name_en,
+    keywords_for,
+)
 from app.pipeline.numbers import parse_number
 from app.pipeline.run import (
     apply_spoken_language,
@@ -328,9 +332,11 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
             raw = json.loads(row["lines_json"] or "[]")
         except ValueError:
             raw = []
-        names = [str(entry.get("name_en") or "").strip().capitalize()
-                 for entry in raw
-                 if isinstance(entry, dict) and entry.get("name_en")]
+        names = [
+            display_name_en(str(entry.get("name_en") or ""),
+                            entry.get("variety"))
+            for entry in raw
+            if isinstance(entry, dict) and entry.get("name_en")]
         try:
             total = db.bill_display_totals(shop, row)["rounded"]
         except (ValueError, ArithmeticError):

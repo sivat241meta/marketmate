@@ -55,6 +55,7 @@
             <span class="muted">{{ line.qty }} {{ line.unit }}</span>
             {% else %}
             <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+            <input type="hidden" name="variety_{{ line.index }}" value="{{ line.variety or '' }}">
             <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
             <input type="hidden" name="amount_{{ line.index }}" value="">
             <span class="stepper is-compact" data-stepper>
@@ -98,6 +99,7 @@
           {% endif %}
         </div>
         <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
+        <input type="hidden" name="variety_{{ line.index }}" value="{{ line.variety or '' }}">
         <input type="hidden" name="qty_{{ line.index }}" value="{{ line.qty }}">
         <input type="hidden" name="unit_{{ line.index }}" value="{{ line.unit or '' }}">
       </div>
@@ -220,7 +222,7 @@
           <label for="add-name">{{ t('bill.from_list') }}</label>
           <select id="add-name" name="name_en">
             {% for item in price_items %}
-            {% if not item.sold_out %}<option value="{{ item.name_en }}">{{ item.display }} — {{ item.summary }}</option>{% endif %}
+            {% if not item.sold_out %}<option value="{{ item.value }}">{{ item.display }} — {{ item.summary }}</option>{% endif %}
             {% endfor %}
           </select>
         </div>

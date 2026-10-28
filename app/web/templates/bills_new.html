@@ -30,7 +30,7 @@
           <div class="bd tap-main">
             <h3><span class="tname" lang="{{ shop_lang }}">{{ item.name_local or item.display }}</span>{% if item.name_local %}<small>{{ item.display }}</small>{% endif %}<small class="line-rate">{{ item.summary }}</small></h3>
             {% if not item.sold_out %}
-            <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.name_en }}">
+            <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.value }}">
             <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
             <input type="hidden" name="amount_{{ item.index }}" value="">
             <span class="muted" data-amount-label hidden></span>

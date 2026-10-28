@@ -2858,8 +2858,10 @@ def photo_button_text(action: str | None, lang: str = "en") -> str:
 # WhatsApp texts from seller pages (bill, quote, day summary)
 # ---------------------------------------------------------------------------
 
-def _display(name: str) -> str:
-    return name[:1].upper() + name[1:] if name else name
+def _display(name: str, variety: str | None = None) -> str:
+    from app.pipeline.names import display_name_en
+
+    return display_name_en(name, variety)
 
 
 def _fmt_number(value: Any) -> str:
@@ -2884,7 +2886,8 @@ def bill_whatsapp_text(shop: Any, bill_id: int, raw_lines: list[dict],
     for raw in raw_lines or []:
         if not isinstance(raw, dict):
             continue
-        name = _display(str(raw.get("name_en") or ""))
+        name = _display(str(raw.get("name_en") or ""),
+                        raw.get("variety"))
         status = raw.get("status", "")
         if status in ("priced", "needs_qty") and raw.get("line_total"):
             parts.append(t(
@@ -2911,7 +2914,8 @@ def quote_whatsapp_text(shop: Any, raw_lines: list[dict], total: Any,
     for raw in raw_lines or []:
         if not isinstance(raw, dict):
             continue
-        name = _display(str(raw.get("name_en") or ""))
+        name = _display(str(raw.get("name_en") or ""),
+                        raw.get("variety"))
         status = raw.get("status", "")
         if status in ("priced", "needs_qty") and raw.get("line_total"):
             parts.append(t(

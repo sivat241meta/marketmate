@@ -418,26 +418,54 @@ def stock_left_for_day(conn, shop, canonical: str, day: str,
     else:
         return (None, None)
     sold = _sold_qty_on(conn, shop_id, canonical, day, unit, tz)
-    waste_qty, waste_unit = get_wastage(conn, shop_id, day, canonical)
-    waste = Decimal(0)
-    if waste_qty is not None and waste_unit:
-        converted = convert(waste_qty, waste_unit, unit)
-        if converted is not None:
-            waste = converted
+    waste = _wastage_total(conn, shop_id, day, canonical, unit)
     return (opening - sold - waste, unit)
+
+
+def _wastage_total(conn, shop_id: int, day: str, canonical: str,
+                   unit: str) -> Decimal:
+    """Wastage for one item across its plain and per-variety rows."""
+    from app.pipeline.units import convert
+
+    total = Decimal(0)
+    rows = conn.execute(
+        "SELECT name_en, qty, unit FROM wastage"
+        " WHERE shop_id = ? AND date = ?",
+        (shop_id, day)).fetchall()
+    for row in rows:
+        raw = str(row["name_en"] or "").strip()
+        base = raw
+        if base.endswith(")") and " (" in base:
+            base = base.rsplit(" (", 1)[0].strip()
+        if (_canonical(base) != canonical
+                and raw.strip().lower() != canonical):
+            continue
+        qty = _decimal_or_none(row["qty"])
+        waste_unit = (row["unit"] or "").strip() or None
+        if qty is None or not waste_unit:
+            continue
+        converted = convert(qty, waste_unit, unit)
+        if converted is not None:
+            total += converted
+    return total
 
 
 def items_for_day(conn, shop, day: str) -> list[dict]:
     """Per-item sold qty, sales, opening, stock left and wastage for a day."""
     import json
 
+    from app.pipeline.names import (
+        display_name_en,
+        display_name_local,
+        qualified_name,
+    )
     from app.pipeline.units import convert
 
     tz = shop_tz(shop)
     shop_id = shop["id"]
     bills = bills_for_day(conn, shop_id, day, tz)
-    grouped: dict[str, dict] = {}
-    order: list[str] = []
+    grouped: dict[tuple[str, str], dict] = {}
+    order: list[tuple[str, str]] = []
     for row in bills:
         try:
             lines = json.loads(row["lines_json"] or "[]")
@@ -456,19 +484,21 @@ def items_for_day(conn, shop, day: str) -> list[dict]:
             if not raw_name:
                 continue
             key = _canonical(raw_name)
+            variety = str(line.get("variety") or "").strip() or None
+            group_key = (key, (variety or "").lower())
             qty = _decimal_or_none(line.get("qty"))
             unit = (line.get("unit") or "").strip() or None
             amount = _decimal_or_none(line.get("line_total"))
             if amount is None:
                 continue
             local = str(line.get("name_local") or "").strip()
-            entry = grouped.get(key)
+            entry = grouped.get(group_key)
             if entry is None:
-                entry = {"name_en": key, "display": key[:1].upper() + key[1:],
+                entry = {"name_en": key, "variety": variety,
                          "name_local": local, "sold_qty": Decimal(0),
                          "unit": unit, "sales_amount": Decimal("0.00")}
-                grouped[key] = entry
-                order.append(key)
+                grouped[group_key] = entry
+                order.append(group_key)
             if not entry["name_local"] and local:
                 entry["name_local"] = local
             entry["sales_amount"] += amount
@@ -489,16 +519,18 @@ def items_for_day(conn, shop, day: str) -> list[dict]:
 
     for purchase in pur.list_purchases(conn, shop_id, day):
         key = _canonical(purchase.name_en)
-        if key not in grouped:
-            grouped[key] = {
-                "name_en": key, "display": key[:1].upper() + key[1:],
+        group_key = (key, "")
+        if group_key not in grouped:
+            grouped[group_key] = {
+                "name_en": key, "variety": None,
                 "name_local": (purchase.name_local or "").strip(),
                 "sold_qty": Decimal(0), "unit": purchase.unit,
                 "sales_amount": Decimal("0.00")}
-            order.append(key)
+            order.append(group_key)
     rows = []
-    for key in sorted(order):
-        entry = grouped[key]
+    for key, variety_norm in sorted(order):
+        entry = grouped[(key, variety_norm)]
+        variety = entry["variety"]
         opening, opening_unit = opening_for_day(conn, shop, key, day)
         _left, left_unit = stock_left_for_day(conn, shop, key, day)
         # stock_left_for_day recomputes opening; reuse its unit for display.
@@ -512,12 +544,14 @@ def items_for_day(conn, shop, day: str) -> list[dict]:
             converted = convert(entry["sold_qty"], entry["unit"], unit)
             if converted is not None:
                 sold_qty = converted
-        waste_qty, waste_unit = get_wastage(conn, shop_id, day, key)
+        waste_qty, waste_unit = get_wastage(
+            conn, shop_id, day, qualified_name(key, variety))
         rows.append({
             "name_en": entry["name_en"],
-            "display": entry["display"],
-            "name_local": entry["name_local"],
-            "slug": item_code(entry["name_en"]),
+            "variety": variety or "",
+            "display": display_name_en(entry["name_en"], variety),
+            "name_local": display_name_local(entry["name_local"], variety),
+            "slug": item_code(qualified_name(key, variety)),
             "sold_qty": sold_qty,
             "unit": unit or "",
             "sales_amount": _quantize_money(entry["sales_amount"]),

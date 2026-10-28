@@ -40,7 +40,7 @@ from app.meta.transcribe import transcribe_wav
 from app.outputs.quote_pdf import quote_pdf
 from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
-from app.pipeline.names import keywords_for
+from app.pipeline.names import display_name_en, display_name_local, keywords_for
 from app.pipeline.run import friendly_error_message
 from app.web.i18n import get_strings, quote_whatsapp_text
 
@@ -107,8 +107,8 @@ def _fmt_money(value) -> str:
         return str(value)
 
 
-def _display(name: str) -> str:
-    return name[:1].upper() + name[1:] if name else name
+def _display(name: str, variety: str | None = None) -> str:
+    return display_name_en(name, variety)
 
 
 def _quote_lines_context(raw_lines: list[dict],
@@ -121,11 +121,14 @@ def _quote_lines_context(raw_lines: list[dict],
         status = raw.get("status", "")
         if status == "priced":
             priced += 1
+        variety = raw.get("variety") or None
         lines.append({
             "index": index,
             "name_en": raw.get("name_en", ""),
-            "display": _display(raw.get("name_en", "")),
-            "name_local": raw.get("name_local", ""),
+            "variety": variety or "",
+            "display": _display(raw.get("name_en", ""), variety),
+            "name_local": display_name_local(raw.get("name_local", ""),
+                                             variety),
             "photo_url": photos.get(
                 str(raw.get("name_en", "")).strip().lower()),
             "qty": _fmt_money(raw.get("qty", "")),
@@ -596,6 +599,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                     original.get("name_en", "")),
                 "qty": form.get(f"qty_{index}", original.get("qty", "1")),
                 "unit": form.get(f"unit_{index}", original.get("unit")),
+                "variety": form.get(f"variety_{index}",
+                                    original.get("variety")),
             })
         language = _customer_lang(shop, request.query_params.get("lang"))
         try:

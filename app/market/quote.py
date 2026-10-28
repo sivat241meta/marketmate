@@ -53,6 +53,7 @@ class QuoteLine:
     line_total: Decimal | None
     status: str
     note: str | None = None
+    variety: str | None = None
 
 
 @dataclass
@@ -342,7 +343,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 name_en=item.name_en, name_local="",
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit, unit_price=None, per_amount=None,
-                line_total=None, status="not_on_list", note=None)
+                line_total=None, status="not_on_list", note=None,
+                variety=item.variety)
             for item in wanted
         ]
         return Quote(lines=lines, total=Decimal("0.00"),
@@ -386,7 +388,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 name_en=item.name_en, name_local=local,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit, unit_price=None, per_amount=None,
-                line_total=None, status="not_on_list", note=None))
+                line_total=None, status="not_on_list", note=None,
+                variety=item.variety))
             continue
         if shop_item.sold_out:
             fallback_unit = None
@@ -397,7 +400,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit or fallback_unit,
                 unit_price=None, per_amount=None, line_total=None,
-                status="sold_out", note=None))
+                status="sold_out", note=None,
+                variety=getattr(shop_item, "variety", None)))
             continue
         priced = [line for line in shop_item.price_lines
                   if line.price is not None and line.per_amount is not None
@@ -407,7 +411,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit, unit_price=None, per_amount=None,
-                line_total=None, status="not_on_list", note=None))
+                line_total=None, status="not_on_list", note=None,
+                variety=getattr(shop_item, "variety", None)))
             continue
         picked = None
         if item.unit is not None:
@@ -435,7 +440,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                     qty=item.qty if item.qty is not None else Decimal(1),
                     unit=item.unit, unit_price=None, per_amount=None,
                     line_total=None, status="not_on_list",
-                    note=f"sold per {', '.join(sold_units)}"))
+                    note=f"sold per {', '.join(sold_units)}",
+                    variety=getattr(shop_item, "variety", None)))
                 continue
         else:
             picked = priced[0]
@@ -445,7 +451,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=qty, unit=unit, unit_price=picked.price,
                 per_amount=picked.per_amount, line_total=total,
-                status="priced", note=note))
+                status="priced", note=note,
+                variety=getattr(shop_item, "variety", None)))
             continue
         is_weight = _canonical(shop_item.name_en) in WEIGHT_ITEMS
         qty = item.qty
@@ -467,7 +474,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=qty, unit=item.unit, unit_price=None, per_amount=None,
                 line_total=None, status="not_on_list",
-                note=f"sold per {', '.join(sold_units)}"))
+                note=f"sold per {', '.join(sold_units)}",
+                variety=getattr(shop_item, "variety", None)))
             continue
         note = None
         if status == "needs_qty":
@@ -476,7 +484,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
             name_en=shop_item.name_en, name_local=shop_item.name_local,
             qty=qty, unit=unit, unit_price=picked.price,
             per_amount=picked.per_amount, line_total=total,
-            status=status, note=note))
+            status=status, note=note,
+            variety=getattr(shop_item, "variety", None)))
     total = sum((line.line_total for line in lines
                  if line.line_total is not None), Decimal("0.00"))
     if total == 0:
