@@ -79,7 +79,7 @@
 <div class="list-row">
   {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
   <div class="list-main">
-    <span class="list-name" lang="ta">{{ item.name_ta }}</span>
+    <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
     <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
     {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
     {% if item.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}

@@ -22,7 +22,7 @@ def pl(price, per_amount, unit):
 def draft(quote="", lines=(), name_en="ginger", qty=None, qty_unit=None):
     return DraftItem(
         name_spoken=name_en,
-        name_ta=name_en,
+        name_local=name_en,
         name_en=name_en,
         variety=None,
         price_lines=list(lines),

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
+from app.languages import currency_words_for, get_language
+from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
-from app.pipeline.numbers import CURRENCY_WORDS, find_numbers, parse_number
+from app.pipeline.numbers import find_numbers, parse_number
 from app.pipeline.units import normalise_unit, rate
 
 SOUND_ALIKE_PAIRS = {13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90}
@@ -41,13 +43,72 @@ TAMIL_SIX_WORDS = frozenset({
     "aaru", "aru",
 })
 
+HINDI_SIXTY_WORDS = frozenset({
+    "साठ",
+    "saath", "sath",
+})
+
+HINDI_SEVEN_WORDS = frozenset({
+    "सात",
+    "saat", "sat",
+})
+
 CORRECTION_MARKERS = (
     "illa illa", "illai", "sorry", "no no", "wait", "correction", "இல்ல", "இல்லை",
 )
 
+_PARSED_LANGUAGES = frozenset({"en", "ta", "hi"})
+
+# Currency words for the parsed languages only: "real" (Portuguese) or "en"
+# (Japanese) are ordinary words in English quotes, so the full registry
+# union must not drive UNCLEAR_NUMBER here.
+_PARSED_CURRENCY_WORDS = frozenset(
+    {"rupai", "rupees", "rupee", "rs", "₹", "ரூபாய்", "ரூபா"}
+    | {word.lower() for code in ("en", "ta", "hi")
+       for word in currency_words_for(code)}
+)
+
+_CROSS_CHECK_SYSTEM = (
+    "You turn one spoken number phrase into digits. "
+    'Return only JSON shaped like {"value": 25}.'
+)
+
+
+def cross_check_number(phrase: str, language_name: str, *,
+                       ledger, settings) -> Decimal | None:
+    """Independently turn a quoted number phrase into digits.
+
+    The model sees only the phrase and the language name, never the price
+    the first pass extracted. Baseten's open-weights Spark answers when a
+    key is set, else Meta. Returns None when the model fails or disagrees
+    with itself; the cost is logged via the ledger.
+    """
+    provider = "baseten" if settings.baseten_api_key else "meta"
+    messages = [
+        {"role": "system", "content": _CROSS_CHECK_SYSTEM},
+        {"role": "user", "content": (
+            f"Language: {language_name}\nPhrase: \"{phrase}\"\n"
+            'Return only JSON shaped like {"value": 25}.'
+        )},
+    ]
+    try:
+        data = chat_json(messages, ledger=ledger, settings=settings,
+                         provider=provider, reasoning_effort="low")
+    except Exception:  # noqa: BLE001 - any failure means "not sure"
+        return None
+    if not isinstance(data, dict):
+        return None
+    raw = data.get("value", data.get("number", data.get("digits")))
+    if raw is None or isinstance(raw, bool):
+        return None
+    try:
+        return Decimal(str(raw).strip())
+    except (InvalidOperation, ValueError, AttributeError):
+        return None
+
 
 def _raw_tokens(quote: str) -> list[str]:
-    return [t.strip(".,;:!?\"'()[]{}").lower() for t in quote.split()]
+    return [t.strip(".,;:!?\"'()[]{}।॥").lower() for t in quote.split()]
 
 
 def _within(rate: tuple[Decimal, str], ref: tuple[Decimal, str],
@@ -100,10 +161,16 @@ def _has_word(tokens: list[str], words: frozenset[str]) -> bool:
     return any(token.startswith(word) for token in tokens for word in words)
 
 
+def _has_exact_word(tokens: list[str], words: frozenset[str]) -> bool:
+    return any(token in words for token in tokens)
+
+
 def _sound_alike_alternatives(heard: list[tuple[Decimal, str]],
                               has_fifty: bool,
-                              has_eighty: bool) -> set[Decimal]:
-    """Alternatives of heard numbers via English pairs and the Tamil 50/80 pair."""
+                              has_eighty: bool,
+                              has_sixty: bool = False,
+                              has_seven: bool = False) -> set[Decimal]:
+    """Alternatives of heard numbers via English, Tamil 50/80, Hindi 60/7."""
     alts: set[Decimal] = set()
     for value, kind in heard:
         if value != int(value):
@@ -115,6 +182,10 @@ def _sound_alike_alternatives(heard: list[tuple[Decimal, str]],
             alts.add(Decimal(ivalue + 30))
         if has_eighty and ivalue % 100 == 80:
             alts.add(Decimal(ivalue - 30))
+        if has_sixty and ivalue % 100 == 60:
+            alts.add(Decimal(ivalue - 53))
+        if has_seven and ivalue % 100 == 7:
+            alts.add(Decimal(ivalue + 53))
     return alts
 
 
@@ -128,18 +199,49 @@ def _non_blocking(heard_rate, alt_rate, prev_rate) -> bool:
     return _closer_than(heard_rate, alt_rate, prev_rate)
 
 
-def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
-    """Flag risky values on a draft item. Proof decides; nothing is guessed."""
+def _decimal_comma_for(language: str) -> bool:
+    try:
+        return get_language(language).decimal_comma
+    except KeyError:
+        return False
+
+
+def _api_name_for(language: str) -> str | None:
+    try:
+        return get_language(language).api_name
+    except KeyError:
+        return None
+
+
+def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
+               language: str = "ta", ledger=None, settings=None
+               ) -> list[Flag]:
+    """Flag risky values on a draft item. Proof decides; nothing is guessed.
+
+    English, Tamil and Hindi prices verify against digits and the local
+    number-word parsers. Every other shop language cross-checks an
+    otherwise unheard price with one independent model call over only the
+    quoted number phrase; agreement counts as heard, anything else is a
+    blocking NUMBER_CHECK flag.
+    """
     flags: list[Flag] = []
     quote = item.proof.quote or ""
-    heard = find_numbers(quote)
+    heard = find_numbers(quote,
+                         decimal_comma=_decimal_comma_for(language))
     heard_values = {value for value, _ in heard}
     quote_tokens = [t for t in _raw_tokens(quote) if t]
     has_fifty = _has_word(quote_tokens, TAMIL_FIFTY_WORDS)
     has_eighty = _has_word(quote_tokens, TAMIL_EIGHTY_WORDS)
     has_half = _has_word(quote_tokens, TAMIL_HALF_WORDS)
     has_six = _has_word(quote_tokens, TAMIL_SIX_WORDS)
-    alternatives = _sound_alike_alternatives(heard, has_fifty, has_eighty)
+    has_sixty = _has_exact_word(quote_tokens, HINDI_SIXTY_WORDS)
+    has_seven = _has_exact_word(quote_tokens, HINDI_SEVEN_WORDS)
+    alternatives = _sound_alike_alternatives(heard, has_fifty, has_eighty,
+                                             has_sixty, has_seven)
+    api_name = _api_name_for(language)
+    cross_checkable = (language not in _PARSED_LANGUAGES
+                       and api_name is not None
+                       and ledger is not None and settings is not None)
     offers_half_six = any(
         line.per_amount is not None
         and (
@@ -156,8 +258,27 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
     for line in item.price_lines:
         if (line.price is not None and line.price not in heard_values
                 and line.price not in alternatives):
-            flags.append(Flag(field="price", code="NOT_HEARD",
-                              message=f"price {line.price} not heard in quote"))
+            if cross_checkable:
+                phrase = line.said.strip() or quote
+                checked = cross_check_number(phrase, api_name,
+                                             ledger=ledger, settings=settings)
+                if checked is not None and checked == line.price:
+                    item.proof.number_check = "cross-checked"
+                elif checked is not None:
+                    flags.append(Flag(
+                        field="price", code="NUMBER_CHECK",
+                        message="we are not sure about this number"
+                                " - please listen",
+                        options=[str(line.price), str(checked)]))
+                else:
+                    flags.append(Flag(
+                        field="price", code="NUMBER_CHECK",
+                        message="we are not sure about this number"
+                                " - please listen",
+                        options=[str(line.price)]))
+            else:
+                flags.append(Flag(field="price", code="NOT_HEARD",
+                                  message=f"price {line.price} not heard in quote"))
         if line.price is not None and line.price == int(line.price):
             for value, kind in heard:
                 if (kind == "english" and value == int(value)
@@ -195,6 +316,33 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
                     other = pair[1] if pair[0] == int(line.price) else pair[0]
                     message = (f"did you say {pair[0]} or {pair[1]}?"
                                " (50 and 80 sound alike in Tamil)")
+                    blocking = True
+                    heard_rate, alt_rate, prev_rate = _sound_alike_rates(
+                        item, line, other, previous)
+                    if _non_blocking(heard_rate, alt_rate, prev_rate):
+                        blocking = False
+                        message += (f" {int(line.price)} matches the previous price"
+                                    f" ({prev_rate[0]} per {prev_rate[1]})")
+                    flags.append(Flag(
+                        field="price", code="SOUND_ALIKE", message=message,
+                        options=[str(pair[0]), str(pair[1])], blocking=blocking))
+                    break
+            for value, _ in heard:
+                if value != int(value):
+                    continue
+                ivalue = int(value)
+                alt_value = None
+                if has_sixty and ivalue % 100 == 60:
+                    alt_value = ivalue - 53
+                elif has_seven and ivalue % 100 == 7:
+                    alt_value = ivalue + 53
+                if alt_value is None:
+                    continue
+                if line.price == ivalue or line.price == alt_value:
+                    pair = sorted([ivalue, alt_value])
+                    other = pair[1] if pair[0] == int(line.price) else pair[0]
+                    message = (f"did you say {pair[0]} or {pair[1]}?"
+                               " (saath and saat sound alike in Hindi)")
                     blocking = True
                     heard_rate, alt_rate, prev_rate = _sound_alike_rates(
                         item, line, other, previous)
@@ -245,15 +393,16 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine]) -> list[Flag]:
         flags.append(Flag(field="quote", code="CORRECTION_SAID",
                           message=f'seller corrected themselves ("{marker}")'))
 
-    tokens = [t for t in _raw_tokens(quote) if t]
-    for idx, token in enumerate(tokens):
-        if token in CURRENCY_WORDS and idx > 0:
-            before = tokens[idx - 1]
-            if (before not in CURRENCY_WORDS
-                    and parse_number(before) is None
-                    and normalise_unit(before) is None):
-                flags.append(Flag(field="price", code="UNCLEAR_NUMBER",
-                                  message=f'unclear number "{before}" before currency'))
+    if language in _PARSED_LANGUAGES or api_name is None:
+        tokens = [t for t in _raw_tokens(quote) if t]
+        for idx, token in enumerate(tokens):
+            if token in _PARSED_CURRENCY_WORDS and idx > 0:
+                before = tokens[idx - 1]
+                if (before not in _PARSED_CURRENCY_WORDS
+                        and parse_number(before) is None
+                        and normalise_unit(before) is None):
+                    flags.append(Flag(field="price", code="UNCLEAR_NUMBER",
+                                      message=f'unclear number "{before}" before currency'))
 
     for line in item.price_lines:
         if line.price is not None and line.unit is None:

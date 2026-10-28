@@ -27,10 +27,10 @@ def pl(price, per_amount, unit, said=""):
     )
 
 
-def item(name_en="tomato", name_ta="தக்காளி", variety=None, qty=None,
+def item(name_en="tomato", name_local="தக்காளி", variety=None, qty=None,
          qty_unit=None, lines=(), photo=None, sold_out=False):
     return Item(
-        id=1, version_id=1, name_ta=name_ta, name_en=name_en, variety=variety,
+        id=1, version_id=1, name_local=name_local, name_en=name_en, variety=variety,
         qty=Decimal(qty) if qty is not None else None, qty_unit=qty_unit,
         photo=photo, sold_out=sold_out, price_lines=list(lines),
         proof=Proof(quote="", turn_ids=[], start_ms=0, end_ms=0),
@@ -81,7 +81,7 @@ def test_generic_csv_rows_per_line():
                   lines=[pl(18, 1, "kg"), pl(20, 1, "kg")])]
     rows = list(csv.reader(io.StringIO(generic_csv(
         goods, datetime(2026, 10, 28, 9, 0, tzinfo=IST)))))
-    assert rows[0] == ["name_en", "name_ta", "variety", "price", "per_amount",
+    assert rows[0] == ["name_en", "name_local", "variety", "price", "per_amount",
                        "unit", "qty", "qty_unit", "updated_at"]
     assert len(rows) == 3
     assert rows[1][:8] == ["tomato", "தக்காளி", "bengaluru", "18", "1",
@@ -125,7 +125,7 @@ def test_pdf_has_prices_and_shop():
 def test_pdf_plain_price_figures():
     pdf = price_board_pdf(
         demo_shop_row(),
-        [item(name_en="banana", name_ta="வாழைப்பழம்",
+        [item(name_en="banana", name_local="வாழைப்பழம்",
               lines=[pl(60, 1, "dozen")])],
         datetime(2026, 10, 28, 9, 0, tzinfo=IST),
         "http://127.0.0.1:8000/s/demo-stall",
@@ -192,7 +192,7 @@ def seed_version(tmp_path):
             language="ta", currency="INR", shop_type="vegetable")
         session_id = db.create_session(conn, shop_id, "video")
         draft = DraftItem(
-            name_spoken="tomato", name_ta="தக்காளி", name_en="tomato",
+            name_spoken="tomato", name_local="தக்காளி", name_en="tomato",
             variety="bengaluru", price_lines=[pl(18, 1, "kg", "kilo eighteen")],
             qty=Decimal(40), qty_unit="kg",
             proof=Proof(quote="tomato", turn_ids=[], start_ms=0, end_ms=0),
@@ -220,7 +220,7 @@ def test_output_routes(tmp_path, monkeypatch):
     assert pdf.content[:5] == b"%PDF-"
     csv_resp = client.get(base + "/export.csv")
     assert csv_resp.status_code == 200
-    assert "name_en,name_ta" in csv_resp.text
+    assert "name_en,name_local" in csv_resp.text
     posapp = client.get(base + "/posapp.csv")
     assert posapp.status_code == 200
     assert "Item Name" in posapp.text

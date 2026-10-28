@@ -21,7 +21,7 @@ body { font-family: "Noto Sans Tamil", sans-serif; color: #1c1917; background: #
 table { width: 100%; border-collapse: collapse; background: #ffffff; }
 th { background: #14532d; color: #fbf7ef; font-size: 10pt; padding: 3mm; text-align: left; }
 td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
-.name-ta { font-size: 16pt; font-weight: bold; }
+.name-local { font-size: 16pt; font-weight: bold; }
 .name-en { font-size: 11pt; color: #57534e; }
 .thumb { width: 20mm; height: 20mm; margin-right: 3mm; vertical-align: middle; border-radius: 2mm; }
 .item-cell { display: inline-block; vertical-align: middle; }
@@ -41,7 +41,7 @@ td { border-bottom: 0.5pt solid #efe8d8; padding: 3mm; vertical-align: middle; }
 <tr><th>Item</th><th>Price</th></tr>
 {% for row in rows %}
 <tr>
-  <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-ta">{{ row.name_ta }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
+  <td>{% if row.photo %}<img class="thumb" src="{{ row.photo }}" alt="">{% endif %}<div class="item-cell"><div class="name-local">{{ row.name_local }}</div><div class="name-en">{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</div></div></td>
   <td>{% if row.sold_out %}<span class="soldout">Sold out</span>{% else %}<span class="price">₹{{ row.price }}</span> <span class="per">per {{ row.per }}</span>{% endif %}</td>
 </tr>
 {% endfor %}

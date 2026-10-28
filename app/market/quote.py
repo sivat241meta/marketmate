@@ -263,7 +263,7 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
             if shop_item.price_lines:
                 fallback_unit = shop_item.price_lines[0].unit
             lines.append(QuoteLine(
-                name_en=shop_item.name_en, name_local=shop_item.name_ta,
+                name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit or fallback_unit,
                 unit_price=None, per_amount=None, line_total=None,
@@ -274,7 +274,7 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
                   and line.unit is not None and line.per_amount != 0]
         if not priced:
             lines.append(QuoteLine(
-                name_en=shop_item.name_en, name_local=shop_item.name_ta,
+                name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit, unit_price=None, per_amount=None,
                 line_total=None, status="not_on_list", note=None))
@@ -295,7 +295,7 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
             if picked is None:
                 sold_units = sorted({line.unit for line in priced})
                 lines.append(QuoteLine(
-                    name_en=shop_item.name_en, name_local=shop_item.name_ta,
+                    name_en=shop_item.name_en, name_local=shop_item.name_local,
                     qty=item.qty if item.qty is not None else Decimal(1),
                     unit=item.unit, unit_price=None, per_amount=None,
                     line_total=None, status="not_on_list",
@@ -320,7 +320,7 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
         if total is None:
             sold_units = sorted({line.unit for line in priced})
             lines.append(QuoteLine(
-                name_en=shop_item.name_en, name_local=shop_item.name_ta,
+                name_en=shop_item.name_en, name_local=shop_item.name_local,
                 qty=qty, unit=item.unit, unit_price=None, per_amount=None,
                 line_total=None, status="not_on_list",
                 note=f"sold per {', '.join(sold_units)}"))
@@ -329,7 +329,7 @@ def build_quote(conn: sqlite3.Connection, shop_id: int,
         if status == "needs_qty":
             note = "Quantity assumed — please check"
         lines.append(QuoteLine(
-            name_en=shop_item.name_en, name_local=shop_item.name_ta,
+            name_en=shop_item.name_en, name_local=shop_item.name_local,
             qty=qty, unit=unit, unit_price=picked.price,
             per_amount=picked.per_amount, line_total=total,
             status=status, note=note))

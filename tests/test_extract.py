@@ -104,8 +104,8 @@ def test_parse_builds_proof_times(transcript_3_turns):
     assert items[0].proof.end_ms == transcript_3_turns.turns[2].end_ms
 
 
-def test_name_ta_from_canonical(transcript_3_turns):
-    assert parse_extract_json(CANNED, transcript_3_turns)[0].name_ta == "தக்காளி"
+def test_name_local_from_canonical(transcript_3_turns):
+    assert parse_extract_json(CANNED, transcript_3_turns)[0].name_local == "தக்காளி"
     assert CANONICAL_NAMES["tomato"] == "தக்காளி"
 
 
@@ -152,8 +152,8 @@ def test_live_mixed_turn_shared_quotes(live_transcript):
         assert item.proof.quote and item.proof.quote in turn_text
         assert item.proof.start_ms == live_transcript.turns[0].start_ms
     assert "இல்ல" in items[3].proof.quote
-    assert items[0].name_ta == "தக்காளி"
-    assert items[2].name_ta == "சின்ன வெங்காயம்"
+    assert items[0].name_local == "தக்காளி"
+    assert items[2].name_local == "சின்ன வெங்காயம்"
 
 
 def test_variety_lowercased_english(transcript_3_turns):

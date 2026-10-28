@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
+from app.languages import shop_bias
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
@@ -49,6 +50,15 @@ def _progress(conn, session_id: int, message: str) -> None:
     db.set_session_status(conn, session_id, "processing", message)
 
 
+def _shop_language(conn, session_id: int) -> str:
+    row = conn.execute(
+        "SELECT shops.language AS language FROM shops"
+        " JOIN sessions ON sessions.shop_id = shops.id"
+        " WHERE sessions.id = ?",
+        (session_id,)).fetchone()
+    return row["language"] if row and row["language"] else "ta"
+
+
 def _transcript_to_json(transcript: Transcript) -> dict:
     return {
         "text": transcript.text,
@@ -79,14 +89,15 @@ def _load_frames(frames_dir: Path) -> list[Frame]:
 
 
 def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[Frame],
-                    wav: Path, session_dir: Path, *, settings, ledger) -> None:
+                    wav: Path, session_dir: Path, *, settings, ledger,
+                    language: str = "ta") -> None:
     def _extract_progress(part: int, total: int) -> None:
         detail = f"part {part} of {total}" if total > 1 else None
         db.set_stage(conn, session_id, "items", detail=detail)
 
     db.set_stage(conn, session_id, "items")
     items = extract_items(transcript, ledger=ledger, settings=settings,
-                          progress=_extract_progress)
+                          language=language, progress=_extract_progress)
     shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()["shop_id"]
     previous = db.last_prices(conn, shop_id)
@@ -113,7 +124,8 @@ def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[
         item.proof.audio_clip = str(clip)
     db.set_stage(conn, session_id, "checking")
     for item, matches in zip(items, matched):
-        item.flags.extend(check_item(item, previous))
+        item.flags.extend(check_item(item, previous, language=language,
+                                    ledger=ledger, settings=settings))
         if not matches:
             item.flags.append(Flag(
                 field="photo", code="PICTURE_MISMATCH",
@@ -137,8 +149,10 @@ def process_video_session(conn, session_id: int, video: Path, *,
         frames = extract_frames(video, session_dir / "frames")
         _progress(conn, session_id, "Transcribing...")
         db.set_stage(conn, session_id, "listening")
+        language = _shop_language(conn, session_id)
         transcript = transcribe_wav(wav, keywords=PRODUCE_KEYWORDS,
-                                    ledger=ledger, settings=settings)
+                                    ledger=ledger, settings=settings,
+                                    languages=shop_bias(language))
         (session_dir / "transcript.json").write_text(
             json.dumps(_transcript_to_json(transcript)))
         if not transcript.turns:
@@ -148,7 +162,7 @@ def process_video_session(conn, session_id: int, video: Path, *,
         else:
             _progress(conn, session_id, "Extracting items...")
             _finish_session(conn, session_id, transcript, frames, wav, session_dir,
-                            settings=settings, ledger=ledger)
+                            settings=settings, ledger=ledger, language=language)
         video.unlink(missing_ok=True)
     except CostCapExceeded:
         db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
@@ -173,7 +187,8 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
         frames = _load_frames(session_dir / "frames")
         wav = session_dir / "audio.wav"
         _finish_session(conn, session_id, transcript, frames, wav, session_dir,
-                        settings=settings, ledger=ledger)
+                        settings=settings, ledger=ledger,
+                        language=_shop_language(conn, session_id))
     except CostCapExceeded:
         db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status

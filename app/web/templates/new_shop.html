@@ -23,15 +23,18 @@
   <div class="field">
     <label for="shop-language">Language</label>
     <select id="shop-language" name="language">
-      <option value="ta">Tamil</option>
-      <option value="en">English</option>
+      {% for lang in languages %}
+      <option value="{{ lang.code }}">{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
+      {% endfor %}
     </select>
     <span class="help">The language you speak your prices in.</span>
   </div>
   <div class="field">
     <label for="shop-currency">Currency</label>
     <select id="shop-currency" name="currency">
-      <option value="INR">INR</option>
+      {% for currency in currencies %}
+      <option value="{{ currency }}"{% if currency == "INR" %} selected{% endif %}>{{ currency }}</option>
+      {% endfor %}
     </select>
   </div>
   <div class="field">
@@ -42,4 +45,24 @@
   <button class="btn btn-primary btn-big" type="submit">Create shop</button>
 </form>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const defaults = {{ default_currency | tojson }};
+  const lang = document.getElementById("shop-language");
+  const currency = document.getElementById("shop-currency");
+  if (!lang || !currency) {
+    return;
+  }
+  function applyDefault() {
+    const want = defaults[lang.value];
+    if (want) {
+      currency.value = want;
+    }
+  }
+  lang.addEventListener("change", applyDefault);
+  applyDefault();
+});
+</script>
 {% endblock %}

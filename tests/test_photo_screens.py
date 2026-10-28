@@ -70,9 +70,9 @@ def fake_analyse(report=None):
     return run
 
 
-def make_draft(name_en="tomato", name_ta="தக்காளி", price=5, unit="piece"):
+def make_draft(name_en="tomato", name_local="தக்காளி", price=5, unit="piece"):
     return DraftItem(
-        name_spoken=name_en, name_ta=name_ta, name_en=name_en, variety=None,
+        name_spoken=name_en, name_local=name_local, name_en=name_en, variety=None,
         price_lines=[PriceLine(Decimal(price), Decimal(1), unit, "")],
         qty=None, qty_unit=None,
         proof=Proof(quote=name_en, turn_ids=[], start_ms=0, end_ms=0),
@@ -403,7 +403,7 @@ def pl(price, per_amount, unit):
 
 
 def stock_item(**kwargs):
-    values = {"id": 1, "version_id": 1, "name_ta": "தக்காளி",
+    values = {"id": 1, "version_id": 1, "name_local": "தக்காளி",
               "name_en": "tomato", "variety": None, "qty": None,
               "qty_unit": None, "photo": None, "sold_out": False,
               "price_lines": [pl(5, 1, "piece")],

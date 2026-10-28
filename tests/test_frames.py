@@ -21,7 +21,7 @@ def make_frames(tmp_path):
 
 def make_item(name_en="tomato"):
     return DraftItem(
-        name_spoken=name_en, name_ta=name_en, name_en=name_en, variety=None,
+        name_spoken=name_en, name_local=name_en, name_en=name_en, variety=None,
         price_lines=[], qty=None, qty_unit=None,
         proof=Proof(quote="", turn_ids=[], start_ms=0, end_ms=0),
     )
@@ -88,7 +88,7 @@ def live_turns():
 
 def live_item(quote):
     return DraftItem(
-        name_spoken="x", name_ta="x", name_en="potato", variety=None,
+        name_spoken="x", name_local="x", name_en="potato", variety=None,
         price_lines=[], qty=None, qty_unit=None,
         proof=Proof(quote=quote, turn_ids=[1], start_ms=0, end_ms=0),
     )

@@ -1,0 +1,811 @@
+{
+ "_note": "Synthetic test scripts for the language benchmark. Same 4 items per language; prices are local-currency test values, not real market data. Voices: macOS say, picked by locale.",
+ "photos": {
+  "tomato": "eval/clips/src_wikimedia/1_tomato.jpg",
+  "onion": "eval/clips/src_wikimedia/2_onion.jpg",
+  "banana": "eval/clips/src_wikimedia/6_banana.jpg",
+  "coconut": "eval/clips/src_wikimedia/7_coconut.jpg"
+ },
+ "languages": {
+  "en": {
+   "api_name": "English",
+   "voice_locale": "en_IN",
+   "currency": "INR",
+   "text": "Tomato, one kilo, 40 rupees. Onion, one kilo, 30 rupees. Banana, one dozen, 60 rupees. Coconut, one piece, 25 rupees.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "ta": {
+   "api_name": "Tamil",
+   "voice_locale": "ta_IN",
+   "currency": "INR",
+   "text": "தக்காளி ஒரு கிலோ 40 ரூபாய். வெங்காயம் ஒரு கிலோ 30 ரூபாய். வாழைப்பழம் ஒரு டஜன் 60 ரூபாய். தேங்காய் ஒன்று 25 ரூபாய்.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "hi": {
+   "api_name": "Hindi",
+   "voice_locale": "hi_IN",
+   "currency": "INR",
+   "text": "टमाटर एक किलो 40 रुपये। प्याज़ एक किलो 30 रुपये। केला एक दर्जन 60 रुपये। नारियल एक पीस 25 रुपये।",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "bn": {
+   "api_name": "Bengali",
+   "voice_locale": "bn_IN",
+   "currency": "INR",
+   "text": "টমেটো এক কেজি 40 টাকা। পেঁয়াজ এক কেজি 30 টাকা। কলা এক ডজন 60 টাকা। নারকেল একটা 25 টাকা।",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "te": {
+   "api_name": "Telugu",
+   "voice_locale": "te_IN",
+   "currency": "INR",
+   "text": "టమాటా ఒక కిలో 40 రూపాయలు. ఉల్లిపాయ ఒక కిలో 30 రూపాయలు. అరటిపండు ఒక డజను 60 రూపాయలు. కొబ్బరికాయ ఒకటి 25 రూపాయలు.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "kn": {
+   "api_name": "Kannada",
+   "voice_locale": "kn_IN",
+   "currency": "INR",
+   "text": "ಟೊಮೇಟೊ ಒಂದು ಕಿಲೋ 40 ರೂಪಾಯಿ. ಈರುಳ್ಳಿ ಒಂದು ಕಿಲೋ 30 ರೂಪಾಯಿ. ಬಾಳೆಹಣ್ಣು ಒಂದು ಡಜನ್ 60 ರೂಪಾಯಿ. ತೆಂಗಿನಕಾಯಿ ಒಂದು 25 ರೂಪಾಯಿ.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "mr": {
+   "api_name": "Marathi",
+   "voice_locale": "mr_IN",
+   "currency": "INR",
+   "text": "टोमॅटो एक किलो 40 रुपये. कांदा एक किलो 30 रुपये. केळी एक डझन 60 रुपये. नारळ एक नग 25 रुपये.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "ar": {
+   "api_name": "Arabic",
+   "voice_locale": "ar_001",
+   "currency": "AED",
+   "text": "طماطم، كيلو واحد، 6 دراهم. بصل، كيلو واحد، 4 دراهم. موز، دزينة واحدة، 12 درهم. جوز هند، حبة واحدة، 5 دراهم.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 6,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 12,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "nl": {
+   "api_name": "Dutch",
+   "voice_locale": "nl_NL",
+   "currency": "EUR",
+   "text": "Tomaten, een kilo, 3 euro. Uien, een kilo, 2 euro. Bananen, een dozijn, 4 euro. Kokosnoot, per stuk, 5 euro.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 2,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "fr": {
+   "api_name": "French",
+   "voice_locale": "fr_FR",
+   "currency": "EUR",
+   "text": "Tomates, un kilo, 3 euros. Oignons, un kilo, 2 euros. Bananes, une douzaine, 4 euros. Noix de coco, la pièce, 5 euros.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 2,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "de": {
+   "api_name": "German",
+   "voice_locale": "de_DE",
+   "currency": "EUR",
+   "text": "Tomaten, ein Kilo, 3 Euro. Zwiebeln, ein Kilo, 2 Euro. Bananen, ein Dutzend, 4 Euro. Kokosnuss, pro Stück, 5 Euro.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 2,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "he": {
+   "api_name": "Hebrew",
+   "voice_locale": "he_IL",
+   "currency": "ILS",
+   "text": "עגבניות, קילו אחד, 8 שקלים. בצל, קילו אחד, 5 שקלים. בננות, תריסר, 15 שקלים. קוקוס, ליחידה, 10 שקלים.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 8,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 15,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 10,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "id": {
+   "api_name": "Indonesian",
+   "voice_locale": "id_ID",
+   "currency": "IDR",
+   "text": "Tomat, satu kilo, 15000 rupiah. Bawang bombay, satu kilo, 30000 rupiah. Pisang, satu lusin, 25000 rupiah. Kelapa, satu buah, 10000 rupiah.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 15000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 25000,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 10000,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "it": {
+   "api_name": "Italian",
+   "voice_locale": "it_IT",
+   "currency": "EUR",
+   "text": "Pomodori, un chilo, 3 euro. Cipolle, un chilo, 2 euro. Banane, una dozzina, 4 euro. Noce di cocco, al pezzo, 5 euro.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 2,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "ja": {
+   "api_name": "Japanese",
+   "voice_locale": "ja_JP",
+   "currency": "JPY",
+   "text": "トマト、1キロ、600円。玉ねぎ、1キロ、300円。バナナ、1ダース、400円。ココナッツ、1個、500円。",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 600,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 300,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 400,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 500,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "ko": {
+   "api_name": "Korean",
+   "voice_locale": "ko_KR",
+   "currency": "KRW",
+   "text": "토마토, 1킬로, 6000원. 양파, 1킬로, 3000원. 바나나, 한 다스, 5000원. 코코넛, 한 개, 4000원.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 6000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 3000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 5000,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 4000,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "ms": {
+   "api_name": "Malay",
+   "voice_locale": "ms_MY",
+   "currency": "MYR",
+   "text": "Tomato, satu kilo, 8 ringgit. Bawang besar, satu kilo, 5 ringgit. Pisang, satu dozen, 6 ringgit. Kelapa, sebiji, 3 ringgit.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 8,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 6,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "zh": {
+   "api_name": "Mandarin Chinese",
+   "voice_locale": "zh_CN",
+   "currency": "CNY",
+   "text": "西红柿，一公斤，8块钱。洋葱，一公斤，5块钱。香蕉，一打，12块钱。椰子，一个，10块钱。",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 8,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 12,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 10,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "pl": {
+   "api_name": "Polish",
+   "voice_locale": "pl_PL",
+   "currency": "PLN",
+   "text": "Pomidory, jeden kilogram, 12 złotych. Cebula, jeden kilogram, 4 złote. Banany, tuzin, 10 złotych. Kokos, za sztukę, 8 złotych.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 12,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 10,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 8,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "pt": {
+   "api_name": "Portuguese",
+   "voice_locale": "pt_BR",
+   "currency": "BRL",
+   "text": "Tomate, um quilo, 9 reais. Cebola, um quilo, 6 reais. Banana, uma dúzia, 7 reais. Coco, a unidade, 5 reais.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 9,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 6,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 7,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "es": {
+   "api_name": "Spanish",
+   "voice_locale": "es_ES",
+   "currency": "EUR",
+   "text": "Tomates, un kilo, 3 euros. Cebollas, un kilo, 2 euros. Plátanos, una docena, 4 euros. Coco, la unidad, 5 euros.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 3,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 2,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 4,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 5,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "tl": {
+   "api_name": "Tagalog",
+   "voice_locale": "fil_PH",
+   "currency": "PHP",
+   "text": "Kamatis, isang kilo, 60 piso. Sibuyas, isang kilo, 80 piso. Saging, isang dosena, 50 piso. Niyog, isa, 30 piso.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 80,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 50,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "th": {
+   "api_name": "Thai",
+   "voice_locale": "th_TH",
+   "currency": "THB",
+   "text": "มะเขือเทศ หนึ่งกิโล 40 บาท หัวหอม หนึ่งกิโล 30 บาท กล้วย หนึ่งโหล 50 บาท มะพร้าว ลูกละ 25 บาท",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 40,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 30,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 50,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 25,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "tr": {
+   "api_name": "Turkish",
+   "voice_locale": "tr_TR",
+   "currency": "TRY",
+   "text": "Domates, bir kilo, 35 lira. Soğan, bir kilo, 20 lira. Muz, bir düzine, 60 lira. Hindistan cevizi, tanesi, 50 lira.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 35,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 20,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 60,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 50,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  },
+  "vi": {
+   "api_name": "Vietnamese",
+   "voice_locale": "vi_VN",
+   "currency": "VND",
+   "text": "Cà chua, một ký, 20000 đồng. Hành tây, một ký, 25000 đồng. Chuối, một tá, 30000 đồng. Dừa, một trái, 15000 đồng.",
+   "answers": [
+    {
+     "name_en": "tomato",
+     "price": 20000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "onion",
+     "price": 25000,
+     "per_amount": 1,
+     "unit": "kg"
+    },
+    {
+     "name_en": "banana",
+     "price": 30000,
+     "per_amount": 1,
+     "unit": "dozen"
+    },
+    {
+     "name_en": "coconut",
+     "price": 15000,
+     "per_amount": 1,
+     "unit": "piece"
+    }
+   ]
+  }
+ }
+}

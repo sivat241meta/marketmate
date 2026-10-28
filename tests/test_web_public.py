@@ -15,7 +15,7 @@ CLIP = "/tmp/clips/item_0.m4a"
 def draft():
     return DraftItem(
         name_spoken="tomato",
-        name_ta="தக்காளி",
+        name_local="தக்காளி",
         name_en="tomato",
         variety=None,
         price_lines=[PriceLine(Decimal(18), Decimal(1), "kg", "kilo eighteen")],

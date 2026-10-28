@@ -18,7 +18,7 @@ function collectCards(form) {
   form.querySelectorAll(".card").forEach((card) => {
     const head = card.querySelector("h2");
     names[card.dataset.card] = {
-      ta: head.querySelector("[lang=ta]").textContent.trim(),
+      local: head.querySelector(".name-local").textContent.trim(),
       en: head.querySelector(".name-en").textContent.trim(),
     };
   });
@@ -48,7 +48,7 @@ function collectCards(form) {
     const proof = proofs[key] || {};
     return {
       name_spoken: names[key] ? names[key].en : "",
-      name_ta: names[key] ? names[key].ta : "",
+      name_local: names[key] ? names[key].local : "",
       name_en: names[key] ? names[key].en : "",
       variety: null,
       price_lines: lines.map((line) => ({

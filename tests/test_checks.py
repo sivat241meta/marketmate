@@ -18,7 +18,7 @@ def pl(price, per_amount, unit, said=""):
 def draft(quote="", lines=(), name_en="tomato", qty=None, qty_unit=None, **kwargs):
     return DraftItem(
         name_spoken=kwargs.get("name_spoken", name_en),
-        name_ta=kwargs.get("name_ta", name_en),
+        name_local=kwargs.get("name_local", name_en),
         name_en=name_en,
         variety=kwargs.get("variety"),
         price_lines=list(lines),

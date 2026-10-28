@@ -3,10 +3,49 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
+from app.languages import LANGUAGES
+
 _DIGIT_RE = re.compile(r"^\d+(?:\.\d+)?$")
-_DIGIT_SPAN_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_DIGIT_SPAN_RE = re.compile(r"\d[\d,.\u066B\u066C \u00A0\u2009\u202F]*\d|\d")
 _ASCII_RUN_RE = re.compile(r"[A-Za-z]+")
 _TAMIL_RUN_RE = re.compile(r"[\u0B80-\u0BFF]+")
+_DEVANAGARI_RUN_RE = re.compile(r"[\u0900-\u097F]+")
+_INTER_DIGIT_SPACE_RE = re.compile(r"(?<=\d)[ \u00A0\u2009\u202F]+(?=\d)")
+
+# Non-ASCII decimal digits, mapped to 0-9: Devanagari, Bengali, Tamil,
+# Telugu, Kannada, Arabic-Indic (+ Eastern/Extended), Thai.
+_DIGIT_SOURCES = (
+    "\u0966\u0967\u0968\u0969\u096A\u096B\u096C\u096D\u096E\u096F"
+    "\u09E6\u09E7\u09E8\u09E9\u09EA\u09EB\u09EC\u09ED\u09EE\u09EF"
+    "\u0BE6\u0BE7\u0BE8\u0BE9\u0BEA\u0BEB\u0BEC\u0BED\u0BEE\u0BEF"
+    "\u0C66\u0C67\u0C68\u0C69\u0C6A\u0C6B\u0C6C\u0C6D\u0C6E\u0C6F"
+    "\u0CE6\u0CE7\u0CE8\u0CE9\u0CEA\u0CEB\u0CEC\u0CED\u0CEE\u0CEF"
+    "\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669"
+    "\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9"
+    "\u0E50\u0E51\u0E52\u0E53\u0E54\u0E55\u0E56\u0E57\u0E58\u0E59"
+)
+_DIGIT_TABLE = str.maketrans(
+    _DIGIT_SOURCES, "0123456789" * (len(_DIGIT_SOURCES) // 10))
+
+
+def normalise_digits(text: str, decimal_comma: bool = False) -> str:
+    """Map Indic/Arabic/Thai digits to ASCII and resolve separators.
+
+    With ``decimal_comma=False`` (English, Tamil, Hindi, ...) a comma is a
+    thousands separator ("15,000" -> "15000") and the dot stays decimal.
+    With ``decimal_comma=True`` (French, German, ...) the dot and spaces
+    are thousands separators and the comma becomes the decimal dot.
+    """
+    out = text.translate(_DIGIT_TABLE)
+    out = out.replace("\u066C", "")
+    out = out.replace("\u066B", ".")
+    out = _INTER_DIGIT_SPACE_RE.sub("", out)
+    if decimal_comma:
+        out = out.replace(".", "").replace(",", ".")
+    else:
+        out = out.replace(",", "")
+    return out
+
 
 _ENGLISH_ONES: dict[str, int] = {
     "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
@@ -27,6 +66,7 @@ _ENGLISH_NUMBER_WORDS = (
 
 CURRENCY_WORDS = frozenset(
     {"rupai", "rupees", "rupee", "rs", "₹", "ரூபாய்", "ரூபா"}
+    | {word.lower() for lang in LANGUAGES for word in lang.currency_words}
 )
 
 # Romanised Tamil and Tamil-script number words. Spoken markets mix
@@ -74,6 +114,129 @@ _TAMIL: dict[str, int] = {
     "ainnooru": 500, "ஐநூறு": 500,
 }
 
+# Hindi 0-99: highly irregular, one fused word each. Devanagari plus the
+# common romanised spellings heard in markets.
+_HINDI: dict[str, int] = {
+    "shunya": 0, "shoonya": 0, "sunya": 0, "शून्य": 0,
+    "ek": 1, "एक": 1,
+    "do": 2, "दो": 2,
+    "teen": 3, "तीन": 3,
+    "chaar": 4, "char": 4, "चार": 4,
+    "paanch": 5, "panch": 5, "पाँच": 5, "पांच": 5,
+    "chhah": 6, "chheh": 6, "cheh": 6, "छह": 6, "छः": 6,
+    "saat": 7, "sat": 7, "सात": 7,
+    "aath": 8, "ath": 8, "आठ": 8,
+    "nau": 9, "nao": 9, "नौ": 9,
+    "das": 10, "दस": 10,
+    "gyaarah": 11, "gyarah": 11, "ग्यारह": 11,
+    "baarah": 12, "barah": 12, "बारह": 12,
+    "terah": 13, "teraha": 13, "तेरह": 13,
+    "chaudah": 14, "chaudaha": 14, "chodah": 14, "चौदह": 14,
+    "pandrah": 15, "pandraha": 15, "पंद्रह": 15,
+    "solah": 16, "solaha": 16, "सोलह": 16,
+    "satrah": 17, "satraha": 17, "सत्रह": 17,
+    "athaarah": 18, "atharah": 18, "अठारह": 18,
+    "unnees": 19, "unnis": 19, "उन्नीस": 19,
+    "bees": 20, "bis": 20, "बीस": 20,
+    "ikkees": 21, "ikkis": 21, "इक्कीस": 21,
+    "baais": 22, "bais": 22, "बाईस": 22,
+    "teis": 23, "तेईस": 23,
+    "chaubees": 24, "chaubis": 24, "चौबीस": 24,
+    "pachchees": 25, "pachees": 25, "pachis": 25, "पच्चीस": 25,
+    "chhabbees": 26, "chhabbis": 26, "छब्बीस": 26,
+    "sattaais": 27, "sattais": 27, "सत्ताईस": 27,
+    "atthaais": 28, "atthais": 28, "अट्ठाईस": 28,
+    "untees": 29, "untis": 29, "उनतीस": 29,
+    "tees": 30, "tis": 30, "तीस": 30,
+    "iktees": 31, "iktis": 31, "इकतीस": 31, "इकत्तीस": 31,
+    "battees": 32, "battis": 32, "बत्तीस": 32,
+    "tentees": 33, "tentis": 33, "taintees": 33, "तैंतीस": 33,
+    "तेंतीस": 33,
+    "chauntees": 34, "chauntis": 34, "चौंतीस": 34,
+    "pentees": 35, "pentis": 35, "paintees": 35, "पैंतीस": 35,
+    "chhattees": 36, "chhattis": 36, "छत्तीस": 36,
+    "sentees": 37, "sentis": 37, "saintees": 37, "सैंतीस": 37,
+    "adtees": 38, "adtis": 38, "अड़तीस": 38,
+    "untaalis": 39, "untalis": 39, "उनतालीस": 39,
+    "chaalis": 40, "chalis": 40, "चालीस": 40,
+    "iktaalis": 41, "iktalis": 41, "इकतालीस": 41,
+    "beyaalis": 42, "beyalis": 42, "बयालीस": 42,
+    "tentaalis": 43, "tentalis": 43, "तैंतालीस": 43,
+    "chavaalis": 44, "chavalis": 44, "चवालीस": 44,
+    "paintaalis": 45, "paintalis": 45, "पैंतालीस": 45,
+    "chhiyaalis": 46, "chhiyalis": 46, "छियालीस": 46,
+    "sentaalis": 47, "sentalis": 47, "सैंतालीस": 47,
+    "adtaalis": 48, "adtalis": 48, "अड़तालीस": 48,
+    "unchaas": 49, "unchas": 49, "उनचास": 49,
+    "pachaas": 50, "pachas": 50, "पचास": 50,
+    "ikyaavan": 51, "ikyavan": 51, "इक्यावन": 51,
+    "baavan": 52, "bavan": 52, "बावन": 52,
+    "tirapan": 53, "tirpan": 53, "तिरपन": 53,
+    "chauvan": 54, "chouvan": 54, "चौवन": 54,
+    "pachpan": 55, "पचपन": 55,
+    "chhappan": 56, "छप्पन": 56,
+    "sattaavan": 57, "sattavan": 57, "सत्तावन": 57,
+    "atthaavan": 58, "atthavan": 58, "अट्ठावन": 58,
+    "unsath": 59, "उनसठ": 59,
+    "saath": 60, "sath": 60, "साठ": 60,
+    "iksath": 61, "इकसठ": 61,
+    "baasath": 62, "basath": 62, "बासठ": 62,
+    "tirsath": 63, "tirasath": 63, "तिरसठ": 63,
+    "chaunsath": 64, "chonsath": 64, "चौंसठ": 64,
+    "painsath": 65, "पैंसठ": 65,
+    "chhiyaasath": 66, "chhiyasath": 66, "छियासठ": 66,
+    "sadsath": 67, "sarsath": 67, "सड़सठ": 67,
+    "adsath": 68, "अड़सठ": 68,
+    "unhattar": 69, "उनहत्तर": 69,
+    "sattar": 70, "सत्तर": 70,
+    "ikhattar": 71, "इकहत्तर": 71,
+    "bahattar": 72, "बहत्तर": 72,
+    "tihattar": 73, "तिहत्तर": 73,
+    "chauhattar": 74, "चौहत्तर": 74,
+    "pachhattar": 75, "पचहत्तर": 75,
+    "chhihattar": 76, "छिहत्तर": 76,
+    "satahattar": 77, "सत्तहत्तर": 77,
+    "athhahattar": 78, "atthattar": 78, "अट्ठहत्तर": 78,
+    "unyaasi": 79, "unyasi": 79, "उन्यासी": 79,
+    "assi": 80, "asi": 80, "अस्सी": 80,
+    "ikyaasi": 81, "ikyasi": 81, "इक्यासी": 81,
+    "beyaasi": 82, "beyasi": 82, "बयासी": 82,
+    "tiraasi": 83, "tirasi": 83, "तिरासी": 83,
+    "chauraasi": 84, "chaurasi": 84, "चौरासी": 84,
+    "pachaasi": 85, "pachasi": 85, "पचासी": 85,
+    "chhiyaasi": 86, "chhiyasi": 86, "छियासी": 86,
+    "sattaasi": 87, "sattasi": 87, "सत्तासी": 87,
+    "atthaasi": 88, "atthasi": 88, "अट्ठासी": 88,
+    "navaasi": 89, "navasi": 89, "नवासी": 89,
+    "nabbe": 90, "नब्बे": 90,
+    "ikyaanve": 91, "ikyanve": 91, "इक्यानवे": 91,
+    "baanve": 92, "banve": 92, "बानवे": 92,
+    "tiraanve": 93, "tiranve": 93, "तिरानवे": 93,
+    "chauraanve": 94, "chauranve": 94, "चौरानवे": 94,
+    "pachaanve": 95, "pachanve": 95, "पचानवे": 95,
+    "chhiyaanve": 96, "chhiyanve": 96, "छियानवे": 96,
+    "sattaanve": 97, "sattanve": 97, "सत्तानवे": 97,
+    "atthaanve": 98, "atthanve": 98, "अट्ठानवे": 98,
+    "ninyaanve": 99, "ninyanve": 99, "निन्यानवे": 99,
+}
+
+_HINDI_HUNDRED = {"sau": 100, "sao": 100, "सौ": 100}
+_HINDI_THOUSAND = {"hazaar": 1000, "hazar": 1000, "hajaar": 1000,
+                   "हज़ार": 1000, "हजार": 1000}
+_HINDI_FRACTIONS: dict[str, Decimal] = {
+    "dedh": Decimal("1.5"), "derh": Decimal("1.5"),
+    "डेढ़": Decimal("1.5"), "देढ़": Decimal("1.5"),
+    "dhai": Decimal("2.5"), "dhaai": Decimal("2.5"),
+    "ढाई": Decimal("2.5"),
+}
+_HINDI_SAWA = {"sawa", "sava", "सवा"}
+_HINDI_PAUNE = {"paune", "paone", "पौने", "पौणे"}
+
+_HINDI_WORDS = (
+    set(_HINDI) | set(_HINDI_HUNDRED) | set(_HINDI_THOUSAND)
+    | set(_HINDI_FRACTIONS) | _HINDI_SAWA | _HINDI_PAUNE
+)
+
 _TENS_VALUES = {20, 30, 40, 50, 60, 70, 80, 90}
 _HUNDRED_VALUES = {100, 200, 300, 400, 500}
 
@@ -119,8 +282,9 @@ _ROMAN_ONES = {w: v for w, v in _TAMIL_ALL.items() if w.isascii() and 1 <= v <= 
 _MUNCH_KEYS = sorted(_TAMIL_ALL, key=len, reverse=True)
 
 _WORD_SPLIT_RE = re.compile(r"[^\s]+")
-_STRIP_CHARS = ".,;:!?\"'()[]{}₹"
+_STRIP_CHARS = ".,;:!?\"'()[]{}₹।॥"
 _CURRENCY_STRIP_CHARS = ".,;:!?\"'()[]{}"
+_DEVANAGARI_STRIP = "।॥.,;:!?\"'()[]{}"
 
 
 def _words(text: str) -> list[str]:
@@ -130,8 +294,98 @@ def _words(text: str) -> list[str]:
     ]
 
 
+def _hindi_single(word: str) -> int | Decimal | None:
+    if word in _HINDI:
+        return _HINDI[word]
+    if word in _HINDI_HUNDRED:
+        return 100
+    if word in _HINDI_THOUSAND:
+        return 1000
+    if word in _HINDI_FRACTIONS:
+        return _HINDI_FRACTIONS[word]
+    if word in _HINDI_SAWA:
+        return Decimal("1.25")
+    if word in _HINDI_PAUNE:
+        return Decimal("0.75")
+    return None
+
+
+def _hindi_span_value(words: list[str]) -> int | Decimal | None:
+    """Multi-word Hindi: sau/hazaar groups, dedh/dhai, sawa/paune."""
+    if not words or any(w not in _HINDI_WORDS for w in words):
+        return None
+    head, rest = words[0], words[1:]
+    if head in _HINDI_FRACTIONS:
+        mult = _HINDI_FRACTIONS[head]
+        if not rest:
+            return mult
+        if rest == ["sau"] or rest == ["सौ"] or rest == ["sao"]:
+            return mult * 100
+        if rest[0] in _HINDI_THOUSAND and len(rest) == 1:
+            return mult * 1000
+        return None
+    if head in _HINDI_SAWA:
+        if not rest:
+            return Decimal("1.25")
+        if len(rest) == 1:
+            if rest[0] in _HINDI_HUNDRED:
+                return 125
+            if rest[0] in _HINDI_THOUSAND:
+                return 1250
+            value = _HINDI.get(rest[0])
+            if value is not None and value < 100:
+                return Decimal(value) + Decimal("0.25")
+        return None
+    if head in _HINDI_PAUNE:
+        if not rest:
+            return Decimal("0.75")
+        if len(rest) == 1:
+            if rest[0] in _HINDI_HUNDRED:
+                return 75
+            if rest[0] in _HINDI_THOUSAND:
+                return 750
+            value = _HINDI.get(rest[0])
+            if value is not None and 1 <= value < 100:
+                return Decimal(value) - Decimal("0.25")
+        return None
+    if head in _HINDI_HUNDRED:
+        if not rest:
+            return 100
+        if len(rest) == 1 and rest[0] in _HINDI and _HINDI[rest[0]] < 100:
+            return 100 + _HINDI[rest[0]]
+        return None
+    if head in _HINDI_THOUSAND:
+        if not rest:
+            return 1000
+        tail = _hindi_span_value(rest)
+        if tail is not None and tail < 1000:
+            return 1000 + tail
+        return None
+    count = _HINDI.get(head)
+    if count is None:
+        return None
+    if not rest:
+        return count
+    if rest[0] in _HINDI_HUNDRED:
+        base = count * 100
+        if len(rest) == 1:
+            return base
+        if len(rest) == 2 and rest[1] in _HINDI and _HINDI[rest[1]] < 100:
+            return base + _HINDI[rest[1]]
+        return None
+    if rest[0] in _HINDI_THOUSAND:
+        base = count * 1000
+        if len(rest) == 1:
+            return base
+        tail = _hindi_span_value(rest[1:])
+        if tail is not None and tail < 1000:
+            return base + tail
+        return None
+    return None
+
+
 def _single_value(word: str) -> tuple[int | Decimal, str] | None:
-    """Value of one token: digits, English, Tamil or a joined compound."""
+    """Value of one token: digits, English, Tamil, Hindi or a compound."""
     if _DIGIT_RE.match(word):
         try:
             return (Decimal(word), "digits")
@@ -143,6 +397,9 @@ def _single_value(word: str) -> tuple[int | Decimal, str] | None:
         return (_ENGLISH_TENS[word], "english")
     if word in _TAMIL_ALL:
         return (_TAMIL_ALL[word], "tamil")
+    hindi = _hindi_single(word)
+    if hindi is not None:
+        return (hindi, "hindi")
     return _split_joined(word)
 
 
@@ -198,10 +455,13 @@ def _number_word_value(word: str) -> int | None:
     return None
 
 
-def _span_value(words: list[str]) -> int | None:
+def _span_value(words: list[str]) -> int | Decimal | None:
     """Value of 2+ words, or None. Only tens+unit (or hundred-headed) combine."""
     if "hundred" in words:
         return _english_hundred(words)
+    hindi = _hindi_span_value(words)
+    if hindi is not None:
+        return hindi
     first = _single_value(words[0])
     if first is None or isinstance(first[0], Decimal):
         return None
@@ -225,34 +485,38 @@ def _tens_group_value(words: list[str]) -> int | None:
             return int(single[0])
         return None
     if len(words) == 2:
-        return _span_value(words)
+        value = _span_value(words)
+        return int(value) if isinstance(value, int) else None
     return None
 
 
-def _words_value(words: list[str]) -> int | None:
+def _words_value(words: list[str]) -> int | Decimal | None:
     if len(words) == 1:
         single = _single_value(words[0])
         if single is None:
             return None
-        return int(single[0])
+        return single[0]
     return _span_value(words)
 
 
-def parse_number(token: str) -> Decimal | None:
-    """Parse digits, English words or Tamil words (script or romanised)."""
+def parse_number(token: str, decimal_comma: bool = False) -> Decimal | None:
+    """Parse digits (any supported script), English, Tamil or Hindi words."""
     text = token.strip().lower().strip(_STRIP_CHARS)
     if not text:
         return None
-    if _DIGIT_RE.match(text):
+    normalised = normalise_digits(text, decimal_comma)
+    if _DIGIT_RE.match(normalised):
         try:
-            return Decimal(text)
+            return Decimal(normalised)
         except InvalidOperation:
             return None
     words = [w for w in _words(text) if w]
     if not words:
         return None
     value = _words_value(words)
-    return Decimal(value) if value is not None else None
+    if value is None:
+        return None
+    return value if isinstance(value, Decimal) else Decimal(value)
 
 
 def _segment_tamil(run: str) -> list[tuple[str, int, int]]:
@@ -282,6 +546,14 @@ def _currency_ahead(seg: str, rel_end: int) -> bool:
     return token in CURRENCY_WORDS
 
 
+def _span_kind(span: list[str]) -> str:
+    if all(w in _ENGLISH_NUMBER_WORDS for w in span):
+        return "english"
+    if all(w in _HINDI_WORDS for w in span):
+        return "hindi"
+    return "tamil"
+
+
 def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
     """Number hits in digit-free text: ascii spans plus Tamil segmentation."""
     hits: list[tuple[int, int, str]] = []
@@ -294,8 +566,7 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
             value = _words_value(span)
             kind = None
             if value is not None:
-                kind = ("english" if all(w in _ENGLISH_NUMBER_WORDS for w in span)
-                        else "tamil")
+                kind = _span_kind(span)
             elif (width == 2 and span[0] in _ENGLISH_ONES
                     and 1 <= _ENGLISH_ONES[span[0]] <= 9
                     and span[1] in _ENGLISH_TENS
@@ -305,6 +576,24 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
                 kind = "english"
             if value is not None and kind is not None:
                 hits.append((ascii_words[i][1], value, kind))
+                i += width
+                matched = True
+                break
+        if not matched:
+            i += 1
+    deva_words = [
+        (m.group(0).strip(_DEVANAGARI_STRIP).lower(), base + m.start())
+        for m in _DEVANAGARI_RUN_RE.finditer(seg)
+    ]
+    deva_words = [(w, pos) for w, pos in deva_words if w]
+    i = 0
+    while i < len(deva_words):
+        matched = False
+        for width in range(min(4, len(deva_words) - i), 0, -1):
+            span = [w for w, _ in deva_words[i:i + width]]
+            value = _words_value(span)
+            if value is not None and all(w in _HINDI_WORDS for w in span):
+                hits.append((deva_words[i][1], value, "hindi"))
                 i += width
                 matched = True
                 break
@@ -339,14 +628,15 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
     return hits
 
 
-def find_numbers(text: str) -> list[tuple[Decimal, str]]:
+def find_numbers(text: str, decimal_comma: bool = False
+                 ) -> list[tuple[Decimal, str]]:
     """Find numbers in spoken order; multi-word numbers count as one."""
     lowered = text.lower()
     hits: list[tuple[int, Decimal, str]] = []
     digit_spans: list[tuple[int, int]] = []
     for m in _DIGIT_SPAN_RE.finditer(lowered):
         try:
-            value = Decimal(m.group(0).replace(",", ""))
+            value = Decimal(normalise_digits(m.group(0), decimal_comma))
         except InvalidOperation:
             continue
         hits.append((m.start(), value, "digits"))

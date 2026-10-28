@@ -47,7 +47,7 @@ def make_client(tmp_path, monkeypatch, settings=None):
 def clean_draft():
     return DraftItem(
         name_spoken="tomato",
-        name_ta="தக்காளி",
+        name_local="தக்காளி",
         name_en="tomato",
         variety=None,
         price_lines=[PriceLine(Decimal(18), Decimal(1), "kg", "kilo 18")],
@@ -72,9 +72,9 @@ def post_upload(client, seller_url, filename="clip.mp4"):
                        files={"video": (filename, b"fakevideo", "video/mp4")})
 
 
-def draft_dict(name_en, name_ta, price, flags=(), photo=None):
+def draft_dict(name_en, name_local, price, flags=(), photo=None):
     item = DraftItem(
-        name_spoken=name_en, name_ta=name_ta, name_en=name_en, variety=None,
+        name_spoken=name_en, name_local=name_local, name_en=name_en, variety=None,
         price_lines=[PriceLine(Decimal(price), Decimal(1), "kg",
                                f"kilo {price}")],
         qty=None, qty_unit=None,

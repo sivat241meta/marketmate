@@ -48,7 +48,7 @@ def seed_version(conn, shop_id, lines=(("tomato", 18), ("onion", 25), ("potato",
 
     drafts = [
         DraftItem(
-            name_spoken=name, name_ta=CANONICAL_NAMES[name], name_en=name,
+            name_spoken=name, name_local=CANONICAL_NAMES[name], name_en=name,
             variety=None, price_lines=[PriceLine(Decimal(p), Decimal(1), "kg")],
             qty=None, qty_unit=None,
             proof=Proof(quote=f"{name} {p}", turn_ids=[1], start_ms=0, end_ms=1),
@@ -395,14 +395,14 @@ def test_confirm_json_edits_price_and_enforces_flags(tmp_path, monkeypatch):
         conn.close()
 
     edited = json.loads(db._draft_to_json(
-        DraftItem(name_spoken="tomato", name_ta="தக்காளி", name_en="tomato",
+        DraftItem(name_spoken="tomato", name_local="தக்காளி", name_en="tomato",
                   variety=None,
                   price_lines=[PriceLine(Decimal(23), Decimal(1), "kg")],
                   qty=None, qty_unit=None,
                   proof=Proof(quote="thakkali 22 today", turn_ids=[1],
                               start_ms=0, end_ms=3000))))
     sold_out = json.loads(db._draft_to_json(
-        DraftItem(name_spoken="onion", name_ta="onion", name_en="onion",
+        DraftItem(name_spoken="onion", name_local="onion", name_en="onion",
                   variety=None, price_lines=[], qty=None, qty_unit=None,
                   proof=Proof(quote="vengayam sold out", turn_ids=[2],
                               start_ms=3000, end_ms=6000))))

@@ -12,7 +12,7 @@ from app.web.main import create_app
 def clean_item():
     return DraftItem(
         name_spoken="ginger",
-        name_ta="இஞ்சி",
+        name_local="இஞ்சி",
         name_en="ginger",
         variety=None,
         price_lines=[PriceLine(Decimal(180), Decimal(1), "kg", "")],

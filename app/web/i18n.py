@@ -1,0 +1,126 @@
+"""Customer-facing labels for the shop page and quote pages.
+
+English, Tamil and Hindi are translated. Every other shop language falls
+back to the English labels; item names still show in ``name_local``.
+"""
+
+from __future__ import annotations
+
+_ENGLISH: dict[str, str] = {
+    "prices_set_by_seller": "Prices set by the seller",
+    "spoken_and_checked": "spoken and checked",
+    "get_quote": "Get a price quote",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "sold_out": "Sold out",
+    "no_prices": "No prices published yet.",
+    "quote_subtitle": "Prices from {shop}'s list, set {rel}",
+    "check_quantity": "check quantity",
+    "per": "per",
+    "update_quote": "Update quote",
+    "total": "Total",
+    "priced": "priced",
+    "not_priced": "not priced",
+    "not_on_list": "not on this shop's list",
+    "send_whatsapp": "Send on WhatsApp",
+    "pdf": "PDF",
+    "back_to": "Back to",
+    "no_items": "No items on this quote yet.",
+    "speak_list": "Speak your list",
+    "speak_help": "Say what you need, e.g. “2 kilo tomato, 1 dozen banana”.",
+    "speak": "Speak",
+    "stop": "Stop",
+    "tap_speak": "Tap Speak and say your list.",
+    "upload_recording": "Or upload a recording",
+    "upload_and_quote": "Upload and quote",
+    "type_list": "Type your list",
+    "what_need": "What do you need?",
+    "get_quote_short": "Get quote",
+    "photo_list": "Photo your list",
+    "photo_help": "A photo of the items you picked, or of a handwritten shopping list.",
+    "choose_photo": "Choose a photo",
+    "upload_photo_quote": "Upload photo and quote",
+}
+
+_TAMIL: dict[str, str] = {
+    "prices_set_by_seller": "விற்பனையாளர் நிர்ணயித்த விலைகள்",
+    "spoken_and_checked": "பேசி சரிபார்க்கப்பட்டது",
+    "get_quote": "விலை மதிப்பீடு பெறுக",
+    "call": "அழைக்கவும்",
+    "whatsapp": "வாட்ஸ்அப்",
+    "sold_out": "விற்றுத் தீர்ந்தது",
+    "no_prices": "இன்னும் விலைகள் வெளியிடப்படவில்லை.",
+    "quote_subtitle": "{shop} பட்டியல் விலைகள் · {rel} நிர்ணயம்",
+    "check_quantity": "அளவை சரிபார்க்கவும்",
+    "per": "per",
+    "update_quote": "மதிப்பீட்டைப் புதுப்பிக்கவும்",
+    "total": "மொத்தம்",
+    "priced": "விலையிடப்பட்டது",
+    "not_priced": "விலையிடப்படவில்லை",
+    "not_on_list": "இந்தக் கடைப் பட்டியலில் இல்லை",
+    "send_whatsapp": "வாட்ஸ்அப்பில் அனுப்புக",
+    "pdf": "PDF",
+    "back_to": "திரும்புக",
+    "no_items": "இந்த மதிப்பீட்டில் பொருட்கள் இல்லை.",
+    "speak_list": "பட்டியலைப் பேசுங்கள்",
+    "speak_help": "உங்களுக்கு என்ன வேண்டும் என்று சொல்லுங்கள், எ.கா. “2 கிலோ தக்காளி, 1 டஜன் வாழைப்பழம்”.",
+    "speak": "பேசுக",
+    "stop": "நிறுத்து",
+    "tap_speak": "பேசுக என்பதைத் தட்டி உங்கள் பட்டியலைச் சொல்லுங்கள்.",
+    "upload_recording": "அல்லது பதிவைப் பதிவேற்றுக",
+    "upload_and_quote": "பதிவேற்றி மதிப்பீடு பெறுக",
+    "type_list": "பட்டியலைத் தட்டச்சு செய்க",
+    "what_need": "உங்களுக்கு என்ன வேண்டும்?",
+    "get_quote_short": "மதிப்பீடு பெறுக",
+    "photo_list": "பட்டியலைப் புகைப்படம் எடுங்கள்",
+    "photo_help": "நீங்கள் எடுத்த பொருட்களின் புகைப்படம், அல்லது கையால் எழுதிய பட்டியல்.",
+    "choose_photo": "புகைப்படத்தைத் தேர்வு செய்க",
+    "upload_photo_quote": "புகைப்படத்தைப் பதிவேற்றி மதிப்பீடு பெறுக",
+}
+
+_HINDI: dict[str, str] = {
+    "prices_set_by_seller": "विक्रेता द्वारा तय कीमतें",
+    "spoken_and_checked": "बोली और जाँची हुई",
+    "get_quote": "कीमत अनुमान पाएँ",
+    "call": "कॉल करें",
+    "whatsapp": "व्हाट्सऐप",
+    "sold_out": "समाप्त",
+    "no_prices": "अभी कोई कीमत प्रकाशित नहीं हुई।",
+    "quote_subtitle": "{shop} की सूची से कीमतें · {rel} निर्धारित",
+    "check_quantity": "मात्रा जाँचें",
+    "per": "per",
+    "update_quote": "अनुमान अपडेट करें",
+    "total": "कुल",
+    "priced": "कीमत लगी",
+    "not_priced": "कीमत नहीं लगी",
+    "not_on_list": "इस दुकान की सूची में नहीं है",
+    "send_whatsapp": "व्हाट्सऐप पर भेजें",
+    "pdf": "PDF",
+    "back_to": "वापस जाएँ",
+    "no_items": "इस अनुमान में कोई सामान नहीं है।",
+    "speak_list": "अपनी सूची बोलें",
+    "speak_help": "आपको क्या चाहिए, बोलें, जैसे “2 किलो टमाटर, 1 दर्जन केला”।",
+    "speak": "बोलें",
+    "stop": "रोकें",
+    "tap_speak": "बोलें दबाकर अपनी सूची बोलें।",
+    "upload_recording": "या रिकॉर्डिंग अपलोड करें",
+    "upload_and_quote": "अपलोड करें और अनुमान पाएँ",
+    "type_list": "अपनी सूची लिखें",
+    "what_need": "आपको क्या चाहिए?",
+    "get_quote_short": "अनुमान पाएँ",
+    "photo_list": "सूची की फोटो लें",
+    "photo_help": "आपके चुने सामान की फोटो, या हाथ से लिखी सूची।",
+    "choose_photo": "फोटो चुनें",
+    "upload_photo_quote": "फोटो अपलोड करें और अनुमान पाएँ",
+}
+
+STRINGS: dict[str, dict[str, str]] = {
+    "en": _ENGLISH,
+    "ta": _TAMIL,
+    "hi": _HINDI,
+}
+
+
+def get_strings(lang: str) -> dict[str, str]:
+    """Labels for a language code; anything untranslated falls back to English."""
+    return STRINGS.get(lang, _ENGLISH)

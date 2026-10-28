@@ -23,6 +23,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
+from app.languages import LANGUAGES, all_currencies, get_language, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
@@ -46,6 +47,7 @@ from app.pipeline.update import (
     flags_for_change,
     parse_update,
 )
+from app.web.i18n import get_strings
 from app.web.photos import (
     process_photo_session,
     read_photo_meta,
@@ -54,8 +56,8 @@ from app.web.photos import (
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
 _PHONE_RE = re.compile(r"^\+?\d{7,15}$")
-_LANGUAGES = {"ta", "en"}
-_CURRENCIES = {"INR"}
+_LANGUAGES = {lang.code for lang in LANGUAGES}
+_CURRENCIES = set(all_currencies())
 
 
 def _clean_phone(phone: str) -> str:
@@ -98,7 +100,7 @@ def _draft_from_client(raw: dict):
     """Parse one review-form item, filling fields the form never edits."""
     defaults = {
         "name_spoken": "",
-        "name_ta": "",
+        "name_local": "",
         "variety": None,
         "qty": None,
         "qty_unit": None,
@@ -200,7 +202,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/new")
     def new_shop(request: Request):
-        return templates.TemplateResponse(request, "new_shop.html", {})
+        return templates.TemplateResponse(request, "new_shop.html", {
+            "languages": LANGUAGES,
+            "currencies": all_currencies(),
+            "default_currency": {lang.code: lang.default_currency
+                                 for lang in LANGUAGES},
+        })
 
     @app.post("/new")
     def create_shop_post(
@@ -218,9 +225,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if not _PHONE_RE.match(_clean_phone(phone)):
             raise HTTPException(422, "phone must be 7-15 digits, optional leading +")
         if language not in _LANGUAGES:
-            raise HTTPException(422, "language must be ta or en")
+            raise HTTPException(422, "unknown language")
         if currency not in _CURRENCIES:
-            raise HTTPException(422, "currency must be INR")
+            raise HTTPException(422, "unknown currency")
         _, _, token = db.create_shop(
             conn,
             name=name.strip(),
@@ -255,7 +262,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                   f" ({item.stock_source})")
                 items.append({
                     "id": item.id,
-                    "name_ta": item.name_ta,
+                    "name_local": item.name_local,
                     "name_en": item.name_en,
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
@@ -284,7 +291,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "items": items, "live": live, "live_count": live_count,
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
-             "bills": bills},
+             "bills": bills, "shop_lang": shop["language"]},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -376,7 +383,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     f"/e/{token}/photos/{meta['check_id']}", status_code=303)
         progress = db.session_progress(session)
         context = {"shop": shop, "session": session, "token": token,
-                   "progress": progress,
+                   "progress": progress, "shop_lang": shop["language"],
                    "friendly": db.stage_friendly(session["kind"],
                                                 progress["stage"])}
         if session["status"] == "review" and session["kind"] == "video":
@@ -445,10 +452,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         raw_items = body.get("items", [])
         confirmed = set(body.get("confirmed", []))
         previous = db.last_prices(conn, shop["id"])
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
         items = []
         for index, raw in enumerate(raw_items):
             item = _draft_from_client(raw)
-            item.flags = check_item(item, previous)
+            item.flags = check_item(item, previous, language=shop["language"],
+                                    ledger=ledger,
+                                    settings=app.state.settings)
             item.confirmed = index in confirmed
             items.append(item)
         try:
@@ -502,7 +513,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             cards.append({
                 "index": index,
                 "name_en": change.name_en,
-                "name_ta": CANONICAL_NAMES.get(change.name_en, change.name_en),
+                "name_local": CANONICAL_NAMES.get(change.name_en, change.name_en),
                 "action": change.action,
                 "action_label": _ACTION_LABELS.get(change.action, change.action),
                 "lines": change.price_lines,
@@ -533,6 +544,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "record", "items": items,
             "notice": NOTICE, "error": None, "hint": (hint or "").strip(),
+            "shop_lang": shop["language"],
             "max_upload_bytes": app.state.settings.max_upload_bytes})
 
     @app.post("/e/{token}/update")
@@ -560,6 +572,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
                 "notice": NOTICE, "error": _too_big_message(len(payload), limit),
+                "shop_lang": shop["language"],
                 "max_upload_bytes": limit})
         session_id = db.create_session(conn, shop["id"], "voice_update")
         session_dir = data_dir / "sessions" / str(session_id)
@@ -578,11 +591,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             wav = extract_audio(saved, session_dir / "audio.wav")
             transcript = transcribe_wav(
                 wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
-                settings=app.state.settings)
+                settings=app.state.settings,
+                languages=shop_bias(shop["language"]))
             db.set_stage(conn, session_id, "items")
             current = db.version_items(conn, base_version_id)
             changes = parse_update(transcript, current,
-                                   ledger=ledger, settings=app.state.settings)
+                                   ledger=ledger, settings=app.state.settings,
+                                   language=shop["language"])
             db.set_stage(conn, session_id, "checking")
         except (TranscribeError, SparkError, CostCapExceeded,
                 subprocess.CalledProcessError, OSError) as exc:
@@ -592,6 +607,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
                 "notice": NOTICE, "error": message,
+                "shop_lang": shop["language"],
                 "max_upload_bytes": limit})
         finally:
             saved.unlink(missing_ok=True)
@@ -606,6 +622,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "shop": shop, "token": token, "mode": "confirm",
             "session_id": session_id,
             "cards": _update_cards(token, changes, current_map),
+            "shop_lang": shop["language"],
             "transcript": transcript.text})
 
     @app.post("/e/{token}/update/{session_id}/confirm")
@@ -633,6 +650,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         stored = json.loads(stored_path.read_text())
         base_version_id = stored["base_version_id"]
         changes = [change_from_dict(raw) for raw in stored["changes"]]
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
         if request.headers.get("content-type", "").startswith("application/json"):
             body = await request.json()
             raw_items = body.get("items", [])
@@ -654,7 +673,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     change.qty = draft.qty
                     if draft.qty_unit is not None:
                         change.qty_unit = draft.qty_unit
-                change.flags = flags_for_change(change, current_map, previous)
+                change.flags = flags_for_change(
+                    change, current_map, previous, language=shop["language"],
+                    ledger=ledger, settings=app.state.settings)
                 if (any(flag.blocking for flag in change.flags)
                         and index not in confirmed):
                     raise HTTPException(
@@ -672,7 +693,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             previous = {item.name_en: item.price_lines[0] for item in current
                         if item.price_lines}
             for index, change in enumerate(changes):
-                change.flags = flags_for_change(change, current_map, previous)
+                change.flags = flags_for_change(
+                    change, current_map, previous, language=shop["language"],
+                    ledger=ledger, settings=app.state.settings)
                 if (any(flag.blocking for flag in change.flags)
                         and index not in confirmed):
                     raise HTTPException(
@@ -715,16 +738,21 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             (slug,)).fetchone()
         if shop is None:
             raise HTTPException(404, "unknown shop")
-        language = lang if lang in ("ta", "en") else "en"
+        shop_lang = shop["language"] or "en"
+        try:
+            shop_native = get_language(shop_lang).native_name
+        except KeyError:
+            shop_lang, shop_native = "en", "English"
+        language = lang if lang in ("en", shop_lang) else "en"
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         rows = []
         rel = ""
         if version_id is not None:
             for item in db.version_items(conn, version_id):
-                name = item.name_ta if language == "ta" else item.name_en
+                name = item.name_local if language == shop_lang else item.name_en
                 rows.append({
                     "name": f"{name} ({item.variety})" if item.variety else name,
-                    "name_ta": item.name_ta,
+                    "name_local": item.name_local,
                     "name_en": item.name_en,
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
@@ -738,7 +766,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         digits = re.sub(r"\D", "", shop["phone"] or "")
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
-            "lang": language})
+            "lang": language, "shop_lang": shop_lang,
+            "shop_native": shop_native, "t": get_strings(language)})
 
     @app.get("/s/{slug}/qr.png")
     def shop_qr(slug: str, conn: Conn):

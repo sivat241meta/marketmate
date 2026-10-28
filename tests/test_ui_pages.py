@@ -59,7 +59,7 @@ def _create_shop(client):
 def _clean_draft():
     return DraftItem(
         name_spoken="potato",
-        name_ta="உருளைக்கிழங்கு",
+        name_local="உருளைக்கிழங்கு",
         name_en="potato",
         variety=None,
         price_lines=[PriceLine(Decimal(30), Decimal(1), "kg", "kilo thirty")],
@@ -78,7 +78,7 @@ def _clean_draft():
 def _flagged_draft():
     return DraftItem(
         name_spoken="tomato",
-        name_ta="தக்காளி",
+        name_local="தக்காளி",
         name_en="tomato",
         variety=None,
         price_lines=[PriceLine(Decimal(18), Decimal(1), "kg", "kilo eighteen")],
@@ -151,7 +151,7 @@ def _seed_shop(tmp_path, name="Kannan Store"):
         )
         draft = DraftItem(
             name_spoken="tomato",
-            name_ta="தக்காளி",
+            name_local="தக்காளி",
             name_en="tomato",
             variety=None,
             price_lines=[PriceLine(Decimal(18), Decimal(1), "kg", "kilo eighteen")],
@@ -187,7 +187,7 @@ def test_shop_trust_line_and_no_seller_info(tmp_path):
 def _market_draft(name_en, price):
     return DraftItem(
         name_spoken=name_en,
-        name_ta=CANONICAL_NAMES[name_en],
+        name_local=CANONICAL_NAMES[name_en],
         name_en=name_en,
         variety=None,
         price_lines=[PriceLine(Decimal(price), Decimal(1), "kg")],

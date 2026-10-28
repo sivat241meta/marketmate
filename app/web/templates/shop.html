@@ -9,8 +9,10 @@
       <p class="shop-area">{{ shop["area"] }}</p>
     </div>
     <div class="lang-toggle" role="group" aria-label="Language">
-      <a href="/s/{{ shop["slug"] }}?lang=ta" lang="ta" class="{% if lang == "ta" %}is-active{% endif %}">தமிழ்</a>
-      <a href="/s/{{ shop["slug"] }}?lang=en" class="{% if lang != "ta" %}is-active{% endif %}">EN</a>
+      {% if shop_lang != "en" %}
+      <a href="/s/{{ shop["slug"] }}?lang={{ shop_lang }}" lang="{{ shop_lang }}" class="{% if lang == shop_lang %}is-active{% endif %}">{{ shop_native }}</a>
+      {% endif %}
+      <a href="/s/{{ shop["slug"] }}?lang=en" class="{% if lang == "en" %}is-active{% endif %}">EN</a>
     </div>
   </div>
   {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
@@ -19,21 +21,21 @@
 {% if rows %}
 <section class="trust-card">
   {{ ui.icon("check") }}
-  <div><strong>Prices set by the seller</strong><br><span class="muted">spoken and checked {{ rel }}</span></div>
+  <div><strong>{{ t.prices_set_by_seller }}</strong><br><span class="muted">{{ t.spoken_and_checked }} {{ rel }}</span></div>
 </section>
-<p><a class="btn btn-primary btn-big" href="/s/{{ shop["slug"] }}/quote">{{ ui.icon("tag") }}Get a price quote</a></p>
+<p><a class="btn btn-primary btn-big" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ ui.icon("tag") }}{{ t.get_quote }}</a></p>
 <div class="contact-grid">
-  <a class="btn btn-secondary" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}Call</a>
-  <a class="btn btn-green" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}WhatsApp</a>
+  <a class="btn btn-secondary" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t.call }}</a>
+  <a class="btn btn-green" href="https://wa.me/{{ digits }}">{{ ui.icon("whatsapp") }}{{ t.whatsapp }}</a>
 </div>
 <div class="grid-products">
 {% for row in rows %}
   <article class="product-card{% if row.sold_out %} is-out{% endif %}">
-    {% if row.sold_out %}{{ ui.pill("Sold out", "soldout") }}{% endif %}
+    {% if row.sold_out %}{{ ui.pill(t.sold_out, "soldout") }}{% endif %}
     {% if row.photo_url %}<img src="{{ row.photo_url }}" alt="">{% endif %}
     <div class="product-info">
-      <b lang="ta">{{ row.name_ta }}</b>
-      <small>{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</small>
+      <b lang="{{ shop_lang }}">{{ row.name_local }}</b>
+      {% if row.name_en != row.name_local %}<small>{{ row.name_en }}{% if row.variety %} ({{ row.variety }}){% endif %}</small>{% elif row.variety %}<small>({{ row.variety }})</small>{% endif %}
       {% if not row.sold_out %}
       {% for line in row.lines %}
       <div class="product-price">₹{{ line.price }} <small>/ {{ line.per }}</small></div>
@@ -44,7 +46,7 @@
 {% endfor %}
 </div>
 {% else %}
-<p>No prices published yet.</p>
+<p>{{ t.no_prices }}</p>
 <p><a href="tel:{{ shop["phone"] }}">{{ shop["phone"] }}</a> · <a href="https://wa.me/{{ digits }}">WhatsApp</a></p>
 {% endif %}
 {% endblock %}

@@ -17,7 +17,7 @@ def make_shop(conn, name="Kannan Store"):
 def make_draft(price="18.50"):
     return DraftItem(
         name_spoken="thakkali",
-        name_ta="தக்காளி",
+        name_local="தக்காளி",
         name_en="tomato",
         variety=None,
         price_lines=[PriceLine(Decimal(price), Decimal(1), "kg", "kilo pathinettu")],
@@ -82,7 +82,7 @@ def test_approve_accepts_confirmed(conn):
     version_id = db.approve(conn, session_id, [item])
     assert version_id
     (stored,) = db.version_items(conn, version_id)
-    assert stored.name_en == "tomato" and stored.name_ta == "தக்காளி"
+    assert stored.name_en == "tomato" and stored.name_local == "தக்காளி"
     assert stored.price_lines[0].price == Decimal("18.50")
 
 

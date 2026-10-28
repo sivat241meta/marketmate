@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.models import Item
 
-_GENERIC_HEADER = ["name_en", "name_ta", "variety", "price", "per_amount",
+_GENERIC_HEADER = ["name_en", "name_local", "variety", "price", "per_amount",
                    "unit", "qty", "qty_unit", "updated_at"]
 _POSAPP_HEADER = ["Item Name", "Selling Price", "Unit", "Description"]
 
@@ -23,7 +23,7 @@ def generic_csv(items: list[Item], updated_at: datetime) -> str:
     for item in items:
         for line in item.price_lines:
             writer.writerow([
-                item.name_en, item.name_ta, _text(item.variety),
+                item.name_en, item.name_local, _text(item.variety),
                 _text(line.price), _text(line.per_amount),
                 _text(line.unit), _text(item.qty), _text(item.qty_unit),
                 updated_at.isoformat(),
@@ -48,5 +48,5 @@ def posapp_pos_csv(items: list[Item]) -> str:
         if line is None:
             continue
         writer.writerow([_display_name(item), str(line.price),
-                         _text(line.unit), item.name_ta])
+                         _text(line.unit), item.name_local])
     return buf.getvalue()

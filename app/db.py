@@ -153,7 +153,7 @@ def connect(data_dir: Path) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             version_id INTEGER NOT NULL REFERENCES versions(id),
-            name_ta TEXT NOT NULL, name_en TEXT NOT NULL, variety TEXT,
+            name_local TEXT NOT NULL, name_en TEXT NOT NULL, variety TEXT,
             qty TEXT, qty_unit TEXT, photo TEXT,
             sold_out INTEGER NOT NULL DEFAULT 0, proof TEXT NOT NULL
         );
@@ -183,6 +183,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
         if name not in existing:
             conn.execute(f"ALTER TABLE sessions ADD COLUMN {name} {column_type}")
     item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
+    if "name_ta" in item_columns and "name_local" not in item_columns:
+        conn.execute("ALTER TABLE items RENAME COLUMN name_ta TO name_local")
+        item_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
     for name in ("stock_qty", "stock_unit", "stock_source"):
         if name not in item_columns:
             conn.execute(f"ALTER TABLE items ADD COLUMN {name} TEXT")
@@ -341,18 +344,30 @@ def _decimal_to_str(value: Decimal | None) -> str | None:
     return str(value) if value is not None else None
 
 
+def _proof_to_json(proof: Proof) -> dict:
+    return {"quote": proof.quote, "turn_ids": proof.turn_ids,
+            "start_ms": proof.start_ms, "end_ms": proof.end_ms,
+            "frame": proof.frame, "audio_clip": proof.audio_clip,
+            "number_check": proof.number_check}
+
+
+def _proof_from_json(proof: dict) -> Proof:
+    return Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
+                start_ms=proof["start_ms"], end_ms=proof["end_ms"],
+                frame=proof.get("frame"), audio_clip=proof.get("audio_clip"),
+                number_check=proof.get("number_check"))
+
+
 def _draft_to_json(item: DraftItem) -> str:
     return json.dumps({
-        "name_spoken": item.name_spoken, "name_ta": item.name_ta,
+        "name_spoken": item.name_spoken, "name_local": item.name_local,
         "name_en": item.name_en, "variety": item.variety,
         "price_lines": [{"price": _decimal_to_str(line.price),
                          "per_amount": _decimal_to_str(line.per_amount),
                          "unit": line.unit, "said": line.said}
                         for line in item.price_lines],
         "qty": _decimal_to_str(item.qty), "qty_unit": item.qty_unit,
-        "proof": {"quote": item.proof.quote, "turn_ids": item.proof.turn_ids,
-                  "start_ms": item.proof.start_ms, "end_ms": item.proof.end_ms,
-                  "frame": item.proof.frame, "audio_clip": item.proof.audio_clip},
+        "proof": _proof_to_json(item.proof),
         "range_said": item.range_said,
         "flags": [{"field": flag.field, "code": flag.code, "message": flag.message,
                    "options": flag.options, "blocking": flag.blocking}
@@ -366,7 +381,9 @@ def _draft_from_json(data: str) -> DraftItem:
     raw = json.loads(data)
     proof = raw["proof"]
     return DraftItem(
-        name_spoken=raw["name_spoken"], name_ta=raw["name_ta"], name_en=raw["name_en"],
+        name_spoken=raw["name_spoken"],
+        name_local=raw.get("name_local", raw.get("name_ta", "")),
+        name_en=raw["name_en"],
         variety=raw["variety"],
         price_lines=[PriceLine(
             Decimal(line["price"]) if line["price"] is not None else None,
@@ -374,9 +391,7 @@ def _draft_from_json(data: str) -> DraftItem:
             line["unit"], line.get("said", "")) for line in raw["price_lines"]],
         qty=Decimal(raw["qty"]) if raw["qty"] is not None else None,
         qty_unit=raw["qty_unit"],
-        proof=Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
-                    start_ms=proof["start_ms"], end_ms=proof["end_ms"],
-                    frame=proof.get("frame"), audio_clip=proof.get("audio_clip")),
+        proof=_proof_from_json(proof),
         range_said=raw["range_said"],
         flags=[Flag(field=f["field"], code=f["code"], message=f["message"],
                     options=f.get("options", []), blocking=f.get("blocking", True))
@@ -442,14 +457,11 @@ def approve(conn, session_id: int, items: list[DraftItem]) -> int:
     version_id = cursor.lastrowid
     for item in items:
         item_cursor = conn.execute(
-            "INSERT INTO items (version_id, name_ta, name_en, variety, qty, qty_unit,"
+            "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
             " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
-            (version_id, item.name_ta, item.name_en, item.variety,
+            (version_id, item.name_local, item.name_en, item.variety,
              _decimal_to_str(item.qty), item.qty_unit, item.photo,
-             json.dumps({"quote": item.proof.quote, "turn_ids": item.proof.turn_ids,
-                         "start_ms": item.proof.start_ms, "end_ms": item.proof.end_ms,
-                         "frame": item.proof.frame,
-                         "audio_clip": item.proof.audio_clip})),
+             json.dumps(_proof_to_json(item.proof))),
         )
         item_id = item_cursor.lastrowid
         priced = [line for line in item.price_lines if line.price is not None]
@@ -483,7 +495,8 @@ def version_items(conn, version_id: int) -> list[Item]:
         proof = json.loads(row["proof"])
         items.append(Item(
             id=row["id"], version_id=version_id,
-            name_ta=row["name_ta"], name_en=row["name_en"], variety=row["variety"],
+            name_local=row["name_local"], name_en=row["name_en"],
+            variety=row["variety"],
             qty=Decimal(row["qty"]) if row["qty"] is not None else None,
             qty_unit=row["qty_unit"], photo=row["photo"],
             sold_out=bool(row["sold_out"]),
@@ -491,9 +504,7 @@ def version_items(conn, version_id: int) -> list[Item]:
                 Decimal(line["price"]) if line["price"] is not None else None,
                 Decimal(line["per_amount"]) if line["per_amount"] is not None else None,
                 line["unit"], line["said"]) for line in line_rows],
-            proof=Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
-                        start_ms=proof["start_ms"], end_ms=proof["end_ms"],
-                        frame=proof.get("frame"), audio_clip=proof.get("audio_clip")),
+            proof=_proof_from_json(proof),
             stock_qty=(Decimal(_row_get(row, "stock_qty"))
                        if _row_get(row, "stock_qty") is not None else None),
             stock_unit=_row_get(row, "stock_unit"),

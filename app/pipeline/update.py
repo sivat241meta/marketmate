@@ -67,11 +67,11 @@ def build_update_messages(transcript: Transcript, current: list[Item]) -> list[d
     stock = []
     for item in current:
         if item.sold_out:
-            stock.append(f"- {item.name_en} ({item.name_ta}): sold out")
+            stock.append(f"- {item.name_en} ({item.name_local}): sold out")
             continue
         lines = ", ".join(f"₹{line.price} per {line.per_amount} {line.unit}"
                           for line in item.price_lines)
-        stock.append(f"- {item.name_en} ({item.name_ta}): {lines or 'no price'}")
+        stock.append(f"- {item.name_en} ({item.name_local}): {lines or 'no price'}")
     lines = "\n".join(f"[{turn.id}] {turn.text}" for turn in transcript.turns)
     canonical = ", ".join(sorted(CANONICAL_NAMES))
     user_content = (
@@ -90,7 +90,7 @@ def _as_draft(change: Change) -> DraftItem:
     """Convert a change so the video-flow checks can run on it unchanged."""
     return DraftItem(
         name_spoken=change.name_en,
-        name_ta=CANONICAL_NAMES.get(change.name_en, change.name_en),
+        name_local=CANONICAL_NAMES.get(change.name_en, change.name_en),
         name_en=change.name_en,
         variety=None,
         price_lines=change.price_lines,
@@ -101,7 +101,8 @@ def _as_draft(change: Change) -> DraftItem:
 
 
 def flags_for_change(change: Change, current_map: dict[str, Item],
-                     previous: dict[str, PriceLine]) -> list[Flag]:
+                     previous: dict[str, PriceLine], *, language: str = "ta",
+                     ledger=None, settings=None) -> list[Flag]:
     """Honesty flags for one change, reusing the video-flow checks."""
     inherited = False
     if change.action == "set_price":
@@ -123,13 +124,18 @@ def flags_for_change(change: Change, current_map: dict[str, Item],
             field="name", code="NEW_ITEM",
             message=f"{change.name_en} is not in the current price list"))
     if change.action == "set_price":
-        flags.extend(check_item(_as_draft(change), previous))
+        flags.extend(check_item(_as_draft(change), previous, language=language,
+                                ledger=ledger, settings=settings))
     elif change.action == "set_qty":
-        flags.extend(flag for flag in check_item(_as_draft(change), previous)
-                     if flag.field in ("qty", "quote"))
+        flags.extend(flag for flag in check_item(
+            _as_draft(change), previous, language=language,
+            ledger=ledger, settings=settings)
+            if flag.field in ("qty", "quote"))
     elif change.action in ("sold_out", "in_stock"):
-        flags.extend(flag for flag in check_item(_as_draft(change), previous)
-                     if flag.code == "CORRECTION_SAID")
+        flags.extend(flag for flag in check_item(
+            _as_draft(change), previous, language=language,
+            ledger=ledger, settings=settings)
+            if flag.code == "CORRECTION_SAID")
     flags = [flag for flag in flags if flag.code != "QTY_MISSING"]
     if inherited:
         flags.append(Flag(
@@ -140,7 +146,8 @@ def flags_for_change(change: Change, current_map: dict[str, Item],
 
 
 def parse_update_json(data: dict, transcript: Transcript,
-                      current: list[Item]) -> list[Change]:
+                      current: list[Item], *, language: str = "ta",
+                      ledger=None, settings=None) -> list[Change]:
     """Build flagged changes from model JSON; unknown turns fall back to quotes."""
     current_map = {item.name_en: item for item in current}
     previous = {item.name_en: item.price_lines[0] for item in current
@@ -172,17 +179,20 @@ def parse_update_json(data: dict, transcript: Transcript,
             proof=Proof(quote=quote, turn_ids=turn_ids,
                         start_ms=start_ms, end_ms=end_ms),
         )
-        change.flags = flags_for_change(change, current_map, previous)
+        change.flags = flags_for_change(change, current_map, previous,
+                                            language=language, ledger=ledger,
+                                            settings=settings)
         changes.append(change)
     return changes
 
 
 def parse_update(transcript: Transcript, current: list[Item], *,
-                 ledger, settings) -> list[Change]:
+                 ledger, settings, language: str = "ta") -> list[Change]:
     """One low-reasoning Spark call turning an update transcript into changes."""
     data = chat_json(build_update_messages(transcript, current),
                      ledger=ledger, settings=settings, reasoning_effort="low")
-    return parse_update_json(data, transcript, current)
+    return parse_update_json(data, transcript, current, language=language,
+                             ledger=ledger, settings=settings)
 
 
 def _decimal_to_str(value: Decimal | None) -> str | None:
@@ -197,10 +207,7 @@ def change_to_dict(change: Change) -> dict:
                          "unit": line.unit, "said": line.said}
                         for line in change.price_lines],
         "qty": _decimal_to_str(change.qty), "qty_unit": change.qty_unit,
-        "proof": {"quote": change.proof.quote, "turn_ids": change.proof.turn_ids,
-                  "start_ms": change.proof.start_ms, "end_ms": change.proof.end_ms,
-                  "frame": change.proof.frame,
-                  "audio_clip": change.proof.audio_clip},
+        "proof": db._proof_to_json(change.proof),
         "flags": [{"field": flag.field, "code": flag.code, "message": flag.message,
                    "options": flag.options, "blocking": flag.blocking}
                   for flag in change.flags],
@@ -216,28 +223,22 @@ def change_from_dict(raw: dict) -> Change:
             _decimal_or_none(line["per_amount"]),
             line["unit"], line.get("said", "")) for line in raw["price_lines"]],
         qty=_decimal_or_none(raw["qty"]), qty_unit=raw["qty_unit"],
-        proof=Proof(quote=proof["quote"], turn_ids=proof["turn_ids"],
-                    start_ms=proof["start_ms"], end_ms=proof["end_ms"],
-                    frame=proof.get("frame"), audio_clip=proof.get("audio_clip")),
+        proof=db._proof_from_json(proof),
         flags=[Flag(field=f["field"], code=f["code"], message=f["message"],
                     options=f.get("options", []), blocking=f.get("blocking", True))
                for f in raw["flags"]],
     )
 
 
-def _insert_item(conn, version_id: int, name_ta: str, name_en: str,
+def _insert_item(conn, version_id: int, name_local: str, name_en: str,
                  variety: str | None, qty: Decimal | None, qty_unit: str | None,
                  photo: str | None, sold_out: bool, proof: Proof,
                  lines: list[PriceLine]) -> None:
     cursor = conn.execute(
-        "INSERT INTO items (version_id, name_ta, name_en, variety, qty, qty_unit,"
+        "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
         " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (version_id, name_ta, name_en, variety, _decimal_to_str(qty), qty_unit,
-         photo, int(sold_out),
-         json.dumps({"quote": proof.quote, "turn_ids": proof.turn_ids,
-                     "start_ms": proof.start_ms, "end_ms": proof.end_ms,
-                     "frame": proof.frame,
-                     "audio_clip": proof.audio_clip})))
+        (version_id, name_local, name_en, variety, _decimal_to_str(qty), qty_unit,
+         photo, int(sold_out), json.dumps(db._proof_to_json(proof))))
     item_id = cursor.lastrowid
     conn.executemany(
         "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
@@ -261,7 +262,7 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
     working: list[dict] = []
     for item in db.version_items(conn, base_version_id):
         working.append({
-            "name_ta": item.name_ta, "name_en": item.name_en,
+            "name_local": item.name_local, "name_en": item.name_en,
             "variety": item.variety, "qty": item.qty, "qty_unit": item.qty_unit,
             "photo": item.photo, "sold_out": item.sold_out,
             "proof": item.proof, "lines": list(item.price_lines),
@@ -271,7 +272,7 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
         entry = index.get(change.name_en)
         if entry is None:
             entry = {
-                "name_ta": CANONICAL_NAMES.get(change.name_en, change.name_en),
+                "name_local": CANONICAL_NAMES.get(change.name_en, change.name_en),
                 "name_en": change.name_en, "variety": None,
                 "qty": None, "qty_unit": None, "photo": None,
                 "sold_out": False, "proof": change.proof, "lines": [],
@@ -298,7 +299,7 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
     )
     new_id = cursor.lastrowid
     for entry in working:
-        _insert_item(conn, new_id, entry["name_ta"], entry["name_en"],
+        _insert_item(conn, new_id, entry["name_local"], entry["name_en"],
                      entry["variety"], entry["qty"], entry["qty_unit"],
                      entry["photo"], entry["sold_out"], entry["proof"],
                      entry["lines"])

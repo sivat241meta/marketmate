@@ -26,6 +26,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
+from app.languages import get_language, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.market.quote import build_quote, wanted_from_photo, wanted_from_text
 from app.meta.spark import SparkError
@@ -34,6 +35,7 @@ from app.outputs.quote_pdf import quote_pdf
 from app.pipeline.media import extract_audio
 from app.pipeline.names import PRODUCE_KEYWORDS
 from app.pipeline.run import friendly_error_message
+from app.web.i18n import get_strings
 
 MAX_QUOTE_PHOTO_BYTES = 10 * 1024 * 1024
 
@@ -60,6 +62,22 @@ def _shop_or_404(conn, slug: str):
     if shop is None:
         raise HTTPException(404, "unknown shop")
     return shop
+
+
+def _customer_lang(shop, lang: str | None) -> str:
+    """Customer page language: English or the shop language, else English."""
+    shop_lang = shop["language"] or "en"
+    try:
+        get_language(shop_lang)
+    except KeyError:
+        shop_lang = "en"
+    return lang if lang in ("en", shop_lang) else "en"
+
+
+def _shop_language(conn, shop_id: int) -> str:
+    row = conn.execute("SELECT language FROM shops WHERE id = ?",
+                       (shop_id,)).fetchone()
+    return row["language"] if row and row["language"] else "ta"
 
 
 def _session_of_shop(conn, shop_id: int, session_id: int):
@@ -158,7 +176,8 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
         session_dir.mkdir(parents=True, exist_ok=True)
         wav = extract_audio(Path(audio), session_dir / "audio.wav")
         transcript = transcribe_wav(
-            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings)
+            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings,
+            languages=shop_bias(_shop_language(conn, shop_id)))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
                                   settings=settings)
@@ -255,13 +274,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
-    def _quote_context(request, shop, row, conn, error=None):
+    def _quote_context(request, shop, row, conn, error=None, lang="en"):
         try:
             raw_lines = json.loads(row["lines_json"] or "[]")
         except ValueError:
             raw_lines = []
         if not isinstance(raw_lines, list):
             raw_lines = []
+        language = _customer_lang(shop, lang)
+        strings = get_strings(language)
         lines, priced_count, unpriced_count = _quote_lines_context(raw_lines)
         rel = ""
         published_id = db.latest_version(conn, shop["id"], published_only=True)
@@ -273,15 +294,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "shop": shop, "token": row["token"], "lines": lines,
             "total": _fmt_money(row["total"]),
             "priced_count": priced_count, "unpriced_count": unpriced_count,
-            "rel": rel, "error": error,
+            "rel": rel, "error": error, "lang": language, "t": strings,
+            "shop_lang": shop["language"] or "en",
+            "subtitle": strings["quote_subtitle"].format(
+                shop=shop["name"], rel=rel),
             "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
                                            quote_url)})
 
+    def _lang_suffix(language: str) -> str:
+        return f"?lang={language}" if language != "en" else ""
+
+    def _start_context(request, shop, error=None, lang="en", status=200):
+        language = _customer_lang(shop, lang)
+        return templates.TemplateResponse(
+            request, "quote_start.html",
+            {"shop": shop, "error": error, "lang": language,
+             "t": get_strings(language)},
+            status_code=status)
+
     @app.get("/s/{slug}/quote")
-    def quote_start(request: Request, slug: str, conn: Conn):
+    def quote_start(request: Request, slug: str, conn: Conn, lang: str = "en"):
         shop = _shop_or_404(conn, slug)
-        return templates.TemplateResponse(request, "quote_start.html",
-                                          {"shop": shop, "error": None})
+        return _start_context(request, shop, lang=lang)
 
     @app.post("/s/{slug}/quote")
     async def quote_submit(request: Request, slug: str):
@@ -294,6 +328,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     async def _quote_submit_impl(request: Request, slug: str, conn):
         shop = _shop_or_404(conn, slug)
+        language = _customer_lang(shop, request.query_params.get("lang"))
         form = await request.form()
         items = form.get("items")
         audio = form.get("audio")
@@ -301,15 +336,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         has_audio = audio is not None and hasattr(audio, "file")
         has_photo = photo is not None and hasattr(photo, "file")
         if has_audio:
-            return _start_voice_quote(request, shop, audio, conn)
+            return _start_voice_quote(request, shop, audio, conn, lang=language)
         if has_photo:
-            return _start_photo_quote(request, shop, photo, conn)
+            return _start_photo_quote(request, shop, photo, conn, lang=language)
         text = str(items or "").strip()
         if not text:
-            return templates.TemplateResponse(request, "quote_start.html",
-                                              {"shop": shop,
-                                               "error": "Tell us what you need first."},
-                                              status_code=400)
+            return _start_context(request, shop, "Tell us what you need first.",
+                                  lang=language, status=400)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
         try:
@@ -318,18 +351,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except (SparkError, CostCapExceeded) as exc:
             message = (BUDGET_EXHAUSTED_MESSAGE
                        if isinstance(exc, CostCapExceeded) else str(exc))
-            return templates.TemplateResponse(request, "quote_start.html",
-                                              {"shop": shop, "error": message},
-                                              status_code=503 if isinstance(
-                                                  exc, CostCapExceeded) else 502)
+            return _start_context(
+                request, shop, message, lang=language,
+                status=503 if isinstance(exc, CostCapExceeded) else 502)
         if not wanted:
-            return templates.TemplateResponse(request, "quote_start.html",
-                                              {"shop": shop,
-                                               "error": "We could not understand that list."},
-                                              status_code=400)
+            return _start_context(request, shop,
+                                  "We could not understand that list.",
+                                  lang=language, status=400)
         quote = build_quote(conn, shop["id"], wanted)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote)
-        return RedirectResponse(f"/q/{token}", status_code=303)
+        return RedirectResponse(f"/q/{token}{_lang_suffix(language)}",
+                                status_code=303)
 
     def _guarded(request, shop, conn):
         if not request.app.state.limiter.allow(client_ip(request),
@@ -350,16 +382,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 status_code=503)
         return None
 
-    def _start_voice_quote(request, shop, audio, conn):
+    def _start_voice_quote(request, shop, audio, conn, lang="en"):
         denied = _guarded(request, shop, conn)
         if denied is not None:
             return denied
         payload = audio.file.read() if hasattr(audio.file, "read") else b""
         if not payload:
-            return templates.TemplateResponse(request, "quote_start.html",
-                                              {"shop": shop,
-                                               "error": "That recording was empty."},
-                                              status_code=400)
+            return _start_context(request, shop, "That recording was empty.",
+                                  lang=lang, status=400)
         session_id = db.create_session(conn, shop["id"], "quote_voice")
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
@@ -368,19 +398,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         saved.write_bytes(payload)
         write_quote_meta(data_dir, session_id, {"token": None})
         jobs.submit(run_quote_voice_job, settings, session_id, str(saved))
-        return RedirectResponse(f"/s/{shop['slug']}/quote/{session_id}",
-                                status_code=303)
+        return RedirectResponse(
+            f"/s/{shop['slug']}/quote/{session_id}{_lang_suffix(lang)}",
+            status_code=303)
 
-    def _start_photo_quote(request, shop, photo: UploadFile, conn):
+    def _start_photo_quote(request, shop, photo: UploadFile, conn, lang="en"):
         denied = _guarded(request, shop, conn)
         if denied is not None:
             return denied
         payload = photo.file.read()
         if not payload:
-            return templates.TemplateResponse(request, "quote_start.html",
-                                              {"shop": shop,
-                                               "error": "Choose a photo first."},
-                                              status_code=400)
+            return _start_context(request, shop, "Choose a photo first.",
+                                  lang=lang, status=400)
         if len(payload) > MAX_QUOTE_PHOTO_BYTES:
             size_mb = len(payload) / (1024 * 1024)
             return templates.TemplateResponse(
@@ -408,17 +437,21 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         saved.write_bytes(payload)
         write_quote_meta(data_dir, session_id, {"token": None})
         jobs.submit(run_quote_photo_job, settings, session_id, str(saved))
-        return RedirectResponse(f"/s/{shop['slug']}/quote/{session_id}",
-                                status_code=303)
+        return RedirectResponse(
+            f"/s/{shop['slug']}/quote/{session_id}{_lang_suffix(lang)}",
+            status_code=303)
 
     @app.get("/s/{slug}/quote/{session_id}")
     def quote_session_page(request: Request, slug: str, session_id: int,
-                           conn: Conn):
+                           conn: Conn, lang: str = "en"):
         shop = _shop_or_404(conn, slug)
+        language = _customer_lang(shop, lang)
         session = _session_of_shop(conn, shop["id"], session_id)
         meta = read_quote_meta(data_dir, session_id)
         if meta.get("token") and session["status"] in ("review", "approved"):
-            return RedirectResponse(f"/q/{meta['token']}", status_code=303)
+            return RedirectResponse(
+                f"/q/{meta['token']}{_lang_suffix(language)}",
+                status_code=303)
         progress = db.session_progress(session)
         return templates.TemplateResponse(request, "quote_status.html", {
             "shop": shop, "session": session, "progress": progress,
@@ -441,7 +474,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         })
 
     @app.get("/q/{token}")
-    def quote_page(request: Request, token: str, conn: Conn):
+    def quote_page(request: Request, token: str, conn: Conn, lang: str = "en"):
         row = db.get_quote_by_token(conn, token)
         if row is None:
             raise HTTPException(404, "unknown quote")
@@ -449,7 +482,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             (row["shop_id"],)).fetchone()
         if shop is None:
             raise HTTPException(404, "unknown quote")
-        return _quote_context(request, shop, row, conn)
+        return _quote_context(request, shop, row, conn, lang=lang)
 
     @app.post("/q/{token}/lines")
     async def quote_lines_post(request: Request, token: str):
@@ -478,12 +511,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "qty": form.get(f"qty_{index}", original.get("qty", "1")),
                 "unit": form.get(f"unit_{index}", original.get("unit")),
             })
+        language = _customer_lang(shop, request.query_params.get("lang"))
         try:
             db.update_quote_lines(conn, token, updates)
         except (ValueError, TypeError) as exc:
             fresh = db.get_quote_by_token(conn, token)
-            return _quote_context(request, shop, fresh, conn, error=str(exc))
-        return RedirectResponse(f"/q/{token}", status_code=303)
+            return _quote_context(request, shop, fresh, conn, error=str(exc),
+                                  lang=language)
+        return RedirectResponse(f"/q/{token}{_lang_suffix(language)}",
+                                status_code=303)
 
     @app.get("/q/{token}/pdf")
     def quote_pdf_route(token: str, conn: Conn):

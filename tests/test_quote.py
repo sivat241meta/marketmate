@@ -25,7 +25,7 @@ CLIP = "/tmp/clips/quote_item.m4a"
 def draft(name_en, price, per_amount=1, unit="kg", variety=None):
     return DraftItem(
         name_spoken=name_en,
-        name_ta=CANONICAL_NAMES[name_en],
+        name_local=CANONICAL_NAMES[name_en],
         name_en=name_en,
         variety=variety,
         price_lines=[PriceLine(Decimal(price), Decimal(per_amount), unit)],
@@ -445,7 +445,9 @@ def test_quote_page_renders_lines_total_and_whatsapp(tmp_path, monkeypatch):
     html = client.get(location).text
     assert "₹36" in html and "₹60" in html and "₹45" in html
     assert "₹141" in html
-    assert "not on this shop's list" in html
+    import html as html_lib
+
+    assert "not on this shop's list" in html_lib.unescape(html)
     assert "Prices from" in html and "set " in html
     assert "https://wa.me/914400000001?text=" in html
     assert "%2Fq%2F" in html or "%2Fq" in html or "/q/" in html

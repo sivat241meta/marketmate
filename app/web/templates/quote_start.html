@@ -1,49 +1,49 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}Get a price quote — {{ shop["name"] }}{% endblock %}
+{% block title %}{{ t.get_quote }} — {{ shop["name"] }}{% endblock %}
 {% block content %}
-<h1>Get a price quote</h1>
+<h1>{{ t.get_quote }}</h1>
 <p class="muted">{{ shop["name"] }} · {{ shop["area"] }}</p>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <section class="card">
-  <h2>{{ ui.icon("mic") }} Speak your list</h2>
-  <p class="muted">Say what you need, e.g. “2 kilo tomato, 1 dozen banana”.</p>
+  <h2>{{ ui.icon("mic") }} {{ t.speak_list }}</h2>
+  <p class="muted">{{ t.speak_help }}</p>
   <div class="record-actions">
-    <button class="mic-btn" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote" data-rec-prompt="Recording… say your shopping list.">{{ ui.icon("mic") }}<span>Speak</span></button>
-    <button class="mic-btn" type="button" id="rec-stop" disabled>Stop</button>
+    <button class="mic-btn" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" data-rec-prompt="Recording… say your shopping list.">{{ ui.icon("mic") }}<span>{{ t.speak }}</span></button>
+    <button class="mic-btn" type="button" id="rec-stop" disabled>{{ t.stop }}</button>
   </div>
-  <p class="muted" id="rec-status">Tap Speak and say your list.</p>
-  <form method="post" action="/s/{{ shop["slug"] }}/quote" enctype="multipart/form-data">
+  <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
     <div class="field">
-      <label for="quote-audio">Or upload a recording</label>
+      <label for="quote-audio">{{ t.upload_recording }}</label>
       <input id="quote-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload and quote</button>
+    <button class="btn btn-secondary" type="submit">{{ t.upload_and_quote }}</button>
   </form>
   <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 </section>
 
 <section class="card">
-  <h2>{{ ui.icon("tag") }} Type your list</h2>
-  <form method="post" action="/s/{{ shop["slug"] }}/quote">
+  <h2>{{ ui.icon("tag") }} {{ t.type_list }}</h2>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
     <div class="field">
-      <label for="quote-items">What do you need?</label>
+      <label for="quote-items">{{ t.what_need }}</label>
       <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">Get quote</button>
+    <button class="btn btn-primary btn-big" type="submit">{{ t.get_quote_short }}</button>
   </form>
 </section>
 
 <section class="card">
-  <h2>{{ ui.icon("photo") }} Photo your list</h2>
-  <p class="muted">A photo of the items you picked, or of a handwritten shopping list.</p>
-  <form method="post" action="/s/{{ shop["slug"] }}/quote" enctype="multipart/form-data">
+  <h2>{{ ui.icon("photo") }} {{ t.photo_list }}</h2>
+  <p class="muted">{{ t.photo_help }}</p>
+  <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
     <div class="field">
-      <label for="quote-photo">Choose a photo</label>
+      <label for="quote-photo">{{ t.choose_photo }}</label>
       <input id="quote-photo" type="file" name="photo" accept="image/*" capture="environment" required>
     </div>
-    <button class="btn btn-secondary" type="submit">Upload photo and quote</button>
+    <button class="btn btn-secondary" type="submit">{{ t.upload_photo_quote }}</button>
   </form>
 </section>
 {% endblock %}

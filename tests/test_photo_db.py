@@ -64,7 +64,7 @@ def test_set_stock_migrates_old_db(tmp_path):
     old.execute(
         "CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT,"
         " version_id INTEGER NOT NULL REFERENCES versions(id),"
-        " name_ta TEXT NOT NULL, name_en TEXT NOT NULL, variety TEXT,"
+        " name_local TEXT NOT NULL, name_en TEXT NOT NULL, variety TEXT,"
         " qty TEXT, qty_unit TEXT, photo TEXT,"
         " sold_out INTEGER NOT NULL DEFAULT 0, proof TEXT NOT NULL)")
     old.commit()
@@ -82,7 +82,7 @@ def test_set_stock_migrates_old_db(tmp_path):
             " VALUES (?, '2026-10-28T00:00:00+00:00', 0)",
             (shop_id,)).lastrowid
         item_id = conn.execute(
-            "INSERT INTO items (version_id, name_ta, name_en, proof)"
+            "INSERT INTO items (version_id, name_local, name_en, proof)"
             " VALUES (?, 'x', 'tomato', '{}')", (version_id,)).lastrowid
         conn.commit()
         db.set_stock(conn, item_id, 31, "piece", "photo")

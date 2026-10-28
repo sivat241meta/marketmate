@@ -24,7 +24,7 @@
 <section class="card review-card needs" data-card="{{ card.index }}">
   <div class="review-body">
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}
-    <h2><span lang="ta">{{ card.name_ta }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
+    <h2><span lang="{{ shop_lang }}">{{ card.name_local }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
     <p><strong>{{ card.action_label }}</strong></p>
     {% if card.action == "set_price" %}
     {% for line in card.lines %}
@@ -119,7 +119,7 @@
 {% for item in items %}
 <div class="list-row">
   <div class="list-main">
-    <span class="list-name"><span lang="ta">{{ item.name_ta }}</span> {{ item.name_en }}</span>
+    <span class="list-name"><span lang="{{ shop_lang }}">{{ item.name_local }}</span> {{ item.name_en }}</span>
     {% if item.sold_out %}
     <span class="list-sub">sold out</span>
     {% else %}

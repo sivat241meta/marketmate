@@ -197,7 +197,7 @@ def test_explanation_passes_through_when_numbers_match(monkeypatch, tmp_path):
 def draft(name_en, price, per_amount=1, unit="kg"):
     return DraftItem(
         name_spoken=name_en,
-        name_ta=CANONICAL_NAMES[name_en],
+        name_local=CANONICAL_NAMES[name_en],
         name_en=name_en,
         variety=None,
         price_lines=[PriceLine(Decimal(price), Decimal(per_amount), unit)],

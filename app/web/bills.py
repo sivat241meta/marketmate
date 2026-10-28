@@ -28,6 +28,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
+from app.languages import shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.market.quote import (
     WantedLine,
@@ -330,7 +331,7 @@ def _price_items(conn, shop_id: int) -> list[dict]:
             "index": index,
             "name_en": item.name_en,
             "display": _display(item.name_en),
-            "name_local": item.name_ta,
+            "name_local": item.name_local,
             "unit": first.unit if first is not None else "",
             "summary": summary,
             "sold_out": item.sold_out,
@@ -348,11 +349,15 @@ def process_bill_voice_session(conn, session_id: int, audio: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        shop_row = conn.execute("SELECT language FROM shops WHERE id = ?",
+                                (shop_id,)).fetchone()
+        shop_lang = shop_row["language"] if shop_row else "ta"
         session_dir = Path(settings.data_dir) / "sessions" / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
         wav = extract_audio(Path(audio), session_dir / "audio.wav")
         transcript = transcribe_wav(
-            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings)
+            wav, keywords=PRODUCE_KEYWORDS, ledger=ledger, settings=settings,
+            languages=shop_bias(shop_lang))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
                                   settings=settings)

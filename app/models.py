@@ -44,6 +44,7 @@ class Proof:
     end_ms: int
     frame: str | None = None
     audio_clip: str | None = None
+    number_check: str | None = None
 
 
 @dataclass
@@ -58,7 +59,7 @@ class Flag:
 @dataclass
 class DraftItem:
     name_spoken: str
-    name_ta: str
+    name_local: str
     name_en: str
     variety: str | None
     price_lines: list[PriceLine]
@@ -76,7 +77,7 @@ class DraftItem:
 class Item:
     id: int
     version_id: int
-    name_ta: str
+    name_local: str
     name_en: str
     variety: str | None
     qty: Decimal | None

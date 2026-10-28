@@ -40,7 +40,7 @@ def _rows(items: list[Item]) -> list[dict]:
         photo = _photo_data_uri(item.photo)
         if item.sold_out:
             rows.append({
-                "name_ta": item.name_ta, "name_en": item.name_en,
+                "name_local": item.name_local, "name_en": item.name_en,
                 "variety": item.variety, "photo": photo, "sold_out": True,
                 "price": "", "per": "",
             })
@@ -50,7 +50,7 @@ def _rows(items: list[Item]) -> list[dict]:
                 continue
             amount = line.per_amount if line.per_amount is not None else ""
             rows.append({
-                "name_ta": item.name_ta,
+                "name_local": item.name_local,
                 "name_en": item.name_en,
                 "variety": item.variety,
                 "photo": photo,

@@ -91,7 +91,7 @@ def test_rerun_baseten_runs_honesty_checks(tmp_path, monkeypatch):
 
     def fake_extract(transcript, *, ledger, settings):
         return [DraftItem(
-            name_spoken="potato", name_ta="உருளைக்கிழங்கு", name_en="potato",
+            name_spoken="potato", name_local="உருளைக்கிழங்கு", name_en="potato",
             variety=None,
             price_lines=[PriceLine(Decimal(30), Decimal(1), "kg", "thirty"),
                          PriceLine(Decimal(35), Decimal(1), "kg", "thirty five")],

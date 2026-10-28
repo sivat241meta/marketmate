@@ -28,14 +28,14 @@
   <button type="button" class="review-summary" data-card-toggle aria-expanded="{{ 'true' if card.needs_decision else 'false' }}" aria-controls="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
-      <span class="review-summary-name"><span lang="ta">{{ item.name_ta }}</span> · {{ item.name_en }}</span>
+      <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
     </span>
     {% if card.needs_decision %}{{ ui.pill("Needs you", "check") }}{% else %}<span class="tick" aria-label="Looks right">✓</span>{% endif %}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}">{% endif %}
-    <h2><span lang="ta">{{ item.name_ta }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
+    <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted">{{ item.variety }}</p>{% endif %}
     {% set units = ["kg", "g", "piece", "dozen", "bunch", "packet"] %}
     {% for flag in item.flags %}

@@ -29,7 +29,7 @@ HINT = "market-condition-hint-marks"
 def draft(name_en, price, per_amount=1, unit="kg", variety=None):
     return DraftItem(
         name_spoken=name_en,
-        name_ta=CANONICAL_NAMES[name_en],
+        name_local=CANONICAL_NAMES[name_en],
         name_en=name_en,
         variety=variety,
         price_lines=[PriceLine(Decimal(price), Decimal(per_amount), unit)],

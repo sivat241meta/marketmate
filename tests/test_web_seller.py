@@ -14,7 +14,7 @@ NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 def canned_item():
     return DraftItem(
         name_spoken="tomato",
-        name_ta="தக்காளி",
+        name_local="தக்காளி",
         name_en="tomato",
         variety=None,
         price_lines=[PriceLine(Decimal(18), Decimal(1), "kg", "kilo eighteen")],
@@ -40,7 +40,7 @@ def canned_dict():
 def potato_item():
     return DraftItem(
         name_spoken="urulaikizhangu",
-        name_ta="உருளைக்கிழங்கு",
+        name_local="உருளைக்கிழங்கு",
         name_en="potato",
         variety=None,
         price_lines=[
@@ -112,7 +112,10 @@ def test_create_shop_validation(tmp_path, monkeypatch):
     }
     assert client.post("/new", data={}).status_code == 422
     assert client.post("/new", data={**base, "phone": "abc"}).status_code == 422
-    assert client.post("/new", data={**base, "language": "fr"}).status_code == 422
+    assert client.post("/new", data={**base, "language": "xx"}).status_code == 422
+    assert client.post("/new", data={**base, "currency": "XX"}).status_code == 422
+    assert client.post("/new", data={**base, "language": "fr",
+                                     "currency": "EUR"}).status_code in (302, 303)
 
 
 def test_create_shop_redirect_contains_token(tmp_path, monkeypatch):
