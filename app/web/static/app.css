@@ -227,6 +227,14 @@ img { max-width: 100%; }
   color: var(--ink);
   box-shadow: var(--shadow);
 }
+/* Task 109: on narrow phones the seller status strip stacks — its text
+   gets a full-width row (at most two lines) and the language switch
+   moves below it, instead of squeezing the text into five lines. */
+@media (max-width: 480px) {
+  body.is-seller .ann { flex-wrap: wrap; }
+  body.is-seller .ann > span:first-child { flex: 1 1 100%; min-width: 0; }
+  body.is-seller .ann .lang { margin-left: auto; }
+}
 .hdr {
   background: #fff;
   display: flex;
@@ -515,11 +523,14 @@ body.is-seller .hdr .seller-status { margin-left: auto; }
   font-size: 13px;
   color: var(--muted);
   text-decoration: none;
-  min-width: 56px;
+  /* Task 109: five equal flexible columns, so every item fits 320px. */
+  flex: 1 1 0;
+  min-width: 0;
   min-height: var(--tap);
   justify-content: center;
-  padding: 4px 8px;
+  padding: 4px 2px;
   border-radius: 14px;
+  text-align: center;
 }
 .bnav a.on { color: var(--ink); }
 .bnav .icon { width: 22px; height: 22px; }
@@ -537,6 +548,29 @@ body.is-seller .hdr .seller-status { margin-left: auto; }
   margin-top: -26px;
 }
 .bnav .mic .icon { width: 26px; height: 26px; }
+/* Task 109: bottom-nav labels wrap to two lines at a smaller size (never
+   below 11px) instead of pushing the last item off a 320px screen. */
+.bnav a .bl {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.bnav .mic .bl {
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  padding: 0;
+  display: block;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+@media (max-width: 359.98px) {
+  .bnav a .bl { font-size: 11px; }
+}
 
 .footer {
   text-align: center;
@@ -3525,6 +3559,22 @@ body.rdlg-open { overflow: hidden; }
   body.is-seller .hdr { flex-wrap: nowrap; gap: 10px; padding: 10px 12px; }
   body.is-seller .hdr .wordmark { display: none; }
   body.is-seller .hdr .seller-status { margin-left: 0; }
+  /* Task 109: at 320px in Tamil the status pill shrinks and ellipsizes
+     (full text stays in its title); the mark and both round buttons
+     never shrink below 40px and never leave the screen. */
+  body.is-seller .hdr .logo { flex: none; }
+  body.is-seller .hdr .seller-status { min-width: 0; flex: 0 1 auto; }
+  body.is-seller .hdr .seller-status .ss-t {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  body.is-seller .hdr .iconbtn, body.is-seller .hdr .circ {
+    min-width: 40px;
+    min-height: 40px;
+  }
 }
 /* Phone shop: products first — search, tabs, notice, grid, then hero. */
 @media (max-width: 600px) {
@@ -4004,10 +4054,20 @@ body.home-mkt > .hdr { display: none; }
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 .hp-sec-head h2 { margin-bottom: 2px; font-size: 26px; font-weight: 800; }
 .hp-sec-head p { margin: 0; }
-.hp-more { font-weight: 700; flex: none; margin-top: 5px; }
+/* Task 109: the compare-prices link wraps instead of widening a 320px
+   homepage in Tamil. */
+.hp-more {
+  font-weight: 700;
+  flex: none;
+  margin-top: 5px;
+  white-space: normal;
+  max-width: 100%;
+  min-width: 0;
+}
 
 .hp-pick-grid {
   display: grid;
