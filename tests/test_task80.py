@@ -1,8 +1,14 @@
-"""Task 80: refined MarketMate logo (basket taper, rim, handle, produce, small variant).
+"""Task 80: refined MarketMate logo (updated by Task 95).
 
-The generator script emits SVGs + PNGs/ICO from one Bezier geometry; these
-tests pin the outputs (names, sizes, transparency, no font-dependent SVG)
-and check the 16px favicon keeps distinct basket/produce/handle colours.
+Task 95 replaced the basket mark with direction 3 ("Mm leaves"): a
+lowercase "m" whose two humps peak in outward leaf tips, left leaf purple
+#5F55EE and right leaf green #1FA34A, plus a dark-chrome variant with a
+lighter left leaf. These tests pin the generator outputs (names, sizes,
+transparency, no font-dependent SVG) and check the 16px favicon keeps both
+leaf colours.
+
+No separate small-size variant: the two halves share their middle edge, so
+there is no thin gap to close up at small sizes.
 """
 
 from __future__ import annotations
@@ -30,6 +36,8 @@ PNG_SIZES = {
     "icon-maskable-512.png": (512, 512),
 }
 LOGO_HEIGHTS = {"logo-full.png": 160, "logo-full@2x.png": 320}
+LEFT = "#5F55EE"
+RIGHT = "#1FA34A"
 
 
 def _load_gen():
@@ -50,17 +58,19 @@ def test_brand_files_and_sizes():
         assert img.size[0] > img.size[1], name  # lockup is wider than tall
     ico = Image.open(BRAND / "favicon.ico")
     assert ico.info["sizes"] == {(16, 16), (32, 32), (48, 48)}
-    for name in ("mark.svg", "logo.svg"):
+    for name in ("mark.svg", "mark-dark.svg", "logo.svg"):
         ET.parse(str(BRAND / name))  # well-formed XML
 
 
 def test_brand_svgs_have_no_text_or_image():
-    for name in ("mark.svg", "logo.svg"):
+    for name in ("mark.svg", "mark-dark.svg", "logo.svg"):
         text = (BRAND / name).read_text()
         assert "<text" not in text and "<image" not in text, name
         assert "<path" in text, name
     logo = (BRAND / "logo.svg").read_text()
-    assert "#1B2A5C" in logo and "#2DA94F" in logo  # two-tone wordmark
+    assert LEFT in logo and RIGHT in logo  # two-tone wordmark
+    mark = (BRAND / "mark.svg").read_text()
+    assert LEFT in mark and RIGHT in mark  # both leaf colours
 
 
 def _corners_transparent(img: Image.Image) -> bool:
@@ -91,14 +101,13 @@ def test_brand_outputs_deterministic():
     assert before == after
 
 
-def test_favicon_16keeps_three_colour_groups():
-    """The 16px favicon must not collapse into one blob: basket, produce
-    and handle colours must each own a solid set of pixels."""
+def test_favicon_16keeps_two_colour_groups():
+    """The 16px favicon must not collapse into one blob: the purple and
+    green leaf colours must each own a solid set of pixels."""
     img = Image.open(BRAND / "favicon-16.png").convert("RGBA")
     groups = {
-        "basket": [(140, 208, 58), (34, 169, 85), (31, 111, 214)],
-        "produce": [(232, 65, 44), (245, 154, 35)],
-        "handle": [(30, 158, 71)],
+        "purple": [(95, 85, 238)],
+        "green": [(31, 163, 74)],
     }
     counts = dict.fromkeys(groups, 0)
     for x in range(16):
@@ -114,20 +123,8 @@ def test_favicon_16keeps_three_colour_groups():
                         best, dist = name, d
             if dist < 60:
                 counts[best] += 1
-    assert counts["basket"] >= 30, counts
-    assert counts["produce"] >= 6, counts
-    assert counts["handle"] >= 5, counts
-
-
-def test_small_size_variant_is_simplified():
-    """favicon-32 is rendered from the simplified variant, not a plain
-    downscale of the full-detail mark."""
-    full_down = Image.open(BRAND / "mark-256.png").convert("RGBA").resize(
-        (32, 32), Image.LANCZOS).load()
-    small = Image.open(BRAND / "favicon-32.png").convert("RGBA").load()
-    diff = sum(1 for x in range(32) for y in range(32)
-               if math.dist(full_down[x, y][:3], small[x, y][:3]) > 20)
-    assert diff / (32 * 32) > 0.05, diff
+    assert counts["purple"] >= 20, counts
+    assert counts["green"] >= 20, counts
 
 
 def _path_points(d: str) -> tuple[list[float], list[float]]:
@@ -175,19 +172,24 @@ def _path_bboxes(svg_text: str) -> list[tuple[str, tuple[float, float, float, fl
     return out
 
 
-def test_tighter_lockup_metrics():
-    """Gap ~0.18 x mark height, wordmark cap height ~0.42 x mark height."""
+def test_mark_halves_share_middle_edge():
+    """The two leaf halves abut (no thin gap that would close up small)."""
+    boxes = _path_bboxes((BRAND / "mark.svg").read_text())
+    assert len(boxes) == 2, boxes
+    (f0, b0), (f1, b1) = boxes
+    assert {f0, f1} == {LEFT, RIGHT}
+    assert abs(b0[2] - b1[0]) < 0.01, (b0, b1)  # shared seam, no gap
+
+
+def test_lockup_metrics():
+    """Gap ~0.55 x mark height, wordmark height ~0.42 x mark height."""
     boxes = _path_bboxes((BRAND / "logo.svg").read_text())
-    word = [b for f, b in boxes if f in ("#1B2A5C", "#2DA94F")]
-    mark = [b for f, b in boxes if f not in ("#1B2A5C", "#2DA94F", "#FFFFFF")]
-    assert word and mark
-    mark_x0 = min(b[0] for b in mark)
+    mark = [b for _, b in boxes if b[2] <= 512]  # mark lives in 0..512
+    word = [b for _, b in boxes if b[0] > 512]  # wordmark to its right
+    assert len(mark) == 2 and len(word) == 2, boxes
     mark_x1 = max(b[2] for b in mark)
-    mark_y0 = min(b[1] for b in mark)
-    mark_y1 = max(b[3] for b in mark)
-    mark_h = mark_y1 - mark_y0
+    mark_h = max(b[3] for b in mark) - min(b[1] for b in mark)
     word_x0 = min(b[0] for b in word)
     word_h = max(b[3] for b in word) - min(b[1] for b in word)
-    assert mark_x0 > 0  # mark sits left of the wordmark
-    assert abs((word_x0 - mark_x1) / mark_h - 0.18) < 0.04, (word_x0, mark_x1, mark_h)
+    assert abs((word_x0 - mark_x1) / mark_h - 0.55) < 0.05, (word_x0, mark_x1, mark_h)
     assert abs(word_h / mark_h - 0.42) < 0.06, (word_h, mark_h)

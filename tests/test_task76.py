@@ -132,9 +132,12 @@ def test_css_tabular_numbers_and_heading_tuning():
 
 
 def test_jakarta_file_kept_for_logo_generator():
+    # Task 95: the logo generator now sets the wordmark in Inter 800; the
+    # Jakarta file stays on disk but is no longer referenced by it.
     assert (FONTS_DIR / "PlusJakartaSans-Variable.ttf").is_file()
     logo_py = ROOT / "scripts" / "make_brand_assets.py"
-    assert "PlusJakartaSans-Variable.ttf" in logo_py.read_text()
+    assert "InterVariable.ttf" in logo_py.read_text()
+    assert "PlusJakartaSans-Variable.ttf" not in logo_py.read_text()
 
 
 def test_service_worker_caches_inter():
