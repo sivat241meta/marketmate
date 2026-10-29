@@ -6,32 +6,31 @@
 /* ---- Shared public header: base .hdr stays hidden, partial shows ---- */
 body.pub > .hdr { display: none; }
 body.pub .hp-header,
-body.pub .hp-sheet,
-body.pub .ph-shop-strip { overflow-wrap: break-word; }
+body.pub .hp-sheet { overflow-wrap: break-word; }
 body.pub .hp-header .logo,
 body.pub .hp-header .hp-sell,
+body.pub .hp-header .hp-bag,
 body.pub .hp-header .hp-menu-btn { flex: none; }
 body.pub .hp-header { min-width: 0; }
 
-/* Shop strip under the shared header on shop pages. */
-.ph-shop-strip {
-  background: #fff;
-  border-bottom: 1px solid var(--line-2);
-  margin: 0 calc(50% - 50vw);
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
+/* Task 93: no separate shop strip; on shop pages the Bag link sits in
+   the shared header instead of the My orders pill (same destination). */
+.hp-header.with-bag .hp-orders { display: none; }
+.hp-header.with-bag .hp-bag { display: inline-flex; }
+
+/* Mostly-white object icons (WhatsApp bubble, etc.) sit on a soft
+   tinted square so they read on white buttons/cards. */
+.obj-tint {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--soft);
+  flex: none;
 }
-.ph-shop-strip .sp { flex: 1; }
-.ph-shop-name {
-  font-weight: 800;
-  color: var(--ink);
-  text-decoration: none;
-  overflow-wrap: break-word;
-  min-width: 0;
-}
+.obj-tint .obj { width: 20px; height: 20px; }
+.obj-tint.tint-green { background: var(--green-soft); }
 
 /* ---- Page head: eyebrow + title + subtitle + actions ---- */
 .ph-head {
@@ -177,6 +176,59 @@ body.pub .shop-band-actions .pill { min-height: var(--tap); }
    reordering no longer applies. */
 @media (max-width: 600px) {
   body.pub .content { display: block; }
+}
+
+/* Task 93 compact band: short labels + one-line summary only on phones. */
+body.pub .shop-compact-line { display: none; }
+body.pub .shop-band-actions .act-short { display: none; }
+body.pub .shop-band-actions .act-ic { display: inline-flex; align-items: center; }
+@media (max-width: 600px) {
+  body.pub .content > section.hero2 { padding: 14px; gap: 10px; }
+  body.pub section.hero2 h1 { font-size: 21px; }
+  body.pub section.hero2 .band-full { display: none; }
+  body.pub section.hero2 .shop-compact-line {
+    display: block;
+    margin: 2px 0 0;
+    font-size: 13px;
+  }
+  body.pub .shop-band-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 2px;
+  }
+  body.pub .shop-band-actions .shop-action {
+    flex-direction: column;
+    gap: 4px;
+    min-height: var(--tap);
+    min-width: 0;
+    padding: 8px 2px;
+    font-size: 11.5px;
+    line-height: 1.25;
+    font-weight: 700;
+    white-space: normal;
+    text-align: center;
+  }
+  body.pub .shop-band-actions .act-ic {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--soft);
+  }
+  body.pub .shop-band-actions .shop-action.cta .act-ic {
+    background: rgba(255, 255, 255, 0.22);
+  }
+  body.pub .shop-band-actions .act-ic .obj-tint {
+    width: 32px;
+    height: 32px;
+  }
+  body.pub .shop-band-actions .act-full { display: none; }
+  body.pub .shop-band-actions .act-short {
+    display: block;
+    overflow-wrap: break-word;
+  }
 }
 
 /* Sticky search + chips under the header. */
@@ -401,8 +453,6 @@ body.pub section.hero2 { overflow-wrap: break-word; }
   body.pub .shop-band-actions .pill.cta { flex: 1; justify-content: center; }
 }
 @media (max-width: 380px) {
-  body.pub .ph-shop-strip { flex-wrap: wrap; row-gap: 4px; }
-  body.pub .ph-shop-strip .sp { display: none; }
   /* Long translations (e.g. Tamil "Start selling") wrap instead of
      overflowing the 320px viewport. */
   body.pub .hp-header { flex-wrap: wrap; row-gap: 8px; }

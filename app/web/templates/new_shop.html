@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('newshop.title') }} — MarketMate{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
+{% include "_public_header.html" %}
 <header class="v10-head">
   <div>
     <p class="v10-eyebrow">{{ t('top.start_selling') }}</p>

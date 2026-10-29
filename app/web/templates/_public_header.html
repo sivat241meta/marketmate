@@ -1,8 +1,31 @@
-{# Shared public header (Task 90): the homepage header, used by every
-   public/customer page. On a shop page the shop's own strip sits under it.
-   Home keeps byte-identical hrefs via the _ph_root prefix. #}
+{# Shared public header (Task 90, compacted Task 93): the homepage header,
+   used by every public/customer page. Task 93 removed the separate shop
+   strip: on shop pages the Bag link sits in this header instead, and the
+   header carries the page's only language switch (the top strip keeps
+   none). Home keeps byte-identical hrefs via the _ph_root prefix. #}
+{% import "_ui.html" as ui %}
 {% set _ph_root = "" if (request is defined and request.url.path == "/") else "/" %}
-<header id="site-header" class="hp-header" data-public-header>
+{% set _ph_path = request.url.path if request is defined else "/" %}
+{% set _ph_ann = request.state.shell_ann if request is defined else none %}
+{% set _ph_shop_known = shop is defined and shop is not none %}
+{# Shop content pages drive UI + item names from ?lang=, so the switch
+   there is links (moved from the top strip in Task 93), not cookie
+   buttons. Everywhere else it sets the ui_lang cookie. #}
+{% set _ph_content_lang = _ph_shop_known and _ph_ann and (_ph_path.startswith("/s/") or _ph_path.startswith("/q/")) %}
+{% macro _ph_links(exact, label, active, native_lang, native_name) %}
+  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle>
+    <a href="?lang=en" lang="en" class="{% if active == 'en' %}on{% endif %}">EN</a>
+    {% if native_lang != "en" %}<a href="?lang={{ native_lang }}" lang="{{ native_lang }}" class="{% if active == native_lang %}on{% endif %}">{{ native_name }}</a>{% endif %}
+  </span>
+{% endmacro %}
+{% macro _ph_buttons(exact, label, active) %}
+  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if active == 'en' %}on{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if active == 'ta' %}on{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if active == 'hi' %}on{% endif %}">हिन्दी</button>
+  </span>
+{% endmacro %}
+<header id="site-header" class="hp-header{% if _ph_shop_known %} with-bag{% endif %}" data-public-header>
   <a class="logo" href="/" aria-label="MarketMate home">
     <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
   </a>
@@ -15,12 +38,11 @@
   </nav>
   <span class="sp" aria-hidden="true"></span>
   <a class="pill cta sm hp-sell" href="/new">{{ t('hp.start_selling') }}<span class="free-badge">{{ t('hp.free') }}</span></a>
+  {% if _ph_shop_known %}
+  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}{{ t('shell.bag') }}</a>
+  {% endif %}
   <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
-  <span class="lang hp-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
-    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
-    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
-    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
-  </span>
+  {% if _ph_content_lang %}{{ _ph_links("lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
   <button type="button" class="iconbtn hp-menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}">☰</button>
 </header>
 <nav id="mobile-nav" class="hp-sheet" aria-label="{{ t('top.main_nav') }}" hidden>
@@ -30,18 +52,5 @@
   <a href="{{ _ph_root }}#sellers">{{ t('hp.nav_sellers') }}</a>
   <a href="{{ _ph_root }}#how">{{ t('hp.nav_how') }}</a>
   <a href="/my">{{ t('hp.my_orders') }}</a>
-  <span class="lang hp-sheet-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
-    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
-    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
-    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
-  </span>
+  {% if _ph_content_lang %}{{ _ph_links("lang hp-sheet-lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang hp-sheet-lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
 </nav>
-{% if shop is defined and shop is not none %}
-<div class="ph-shop-strip" data-shop-strip>
-  <a class="ph-shop-name" href="/s/{{ shop["slug"] }}">{{ shop["name"] }}</a>
-  {% if open_state is defined and open_state == "open" %}<span class="pill pill-live" data-open-chip>{{ t('hours.open_plain') }}</span>{% if open_time is defined and open_time %}<span class="muted">{{ open_time }}</span>{% endif %}
-  {% elif open_state is defined and open_state == "closed" %}<span class="pill sm ghost" data-open-chip>{{ t('hours.closed_plain') }}</span>{% if open_time is defined and open_time %}<span class="muted">{{ open_time }}</span>{% endif %}{% endif %}
-  <span class="sp" aria-hidden="true"></span>
-  <a class="pill ghost sm" href="/my" aria-label="{{ t('shell.bag') }}">{{ t('shell.bag') }}</a>
-</div>
-{% endif %}

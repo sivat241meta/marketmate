@@ -32,7 +32,6 @@
 {% set _on_close = _path == _home ~ "/close" or _path.startswith(_home ~ "/close") %}
 {% set _on_credit = _path == _home ~ "/credit" or _path.startswith(_home ~ "/credit/") %}
 {% endif %}
-{% set _shop_links = _shop_known and not _is_seller and (_path.startswith("/s/") or _path.startswith("/q/")) and _ann %}
 {% macro _lang_seg() %}
   <span class="lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
     <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
@@ -44,12 +43,7 @@
 {% macro _brand_logo(height) %}<img class="brand-logo" src="/static/brand/logo.svg" height="{{ height }}" alt="MarketMate">{% endmacro %}
 <div class="ann">
   <span><span class="dot" aria-hidden="true"></span>{% if _is_seller %}{% if _ann %}{{ t('ann.shop_open') }} · {% if _ann.prices_time %}{{ t('ann.last_prices', time=_ann.prices_time) }}{% else %}{{ t('ann.no_prices') }}{% endif %} · {{ t('ann.need_tap', n=_ann.need) }}{% else %}{{ shop["name"] }} · {{ shop["area"] }}{% endif %}{% elif _shop_known %}{% if _ann and _ann.prices_time %}{{ t('ann.said_today', time=_ann.prices_time, area=shop["area"]) }}{% else %}{{ t('ann.said_notime', area=shop["area"]) }}{% endif %}{% else %}{{ t('ann.public') }}{% endif %}</span>
-  {% if _shop_links %}
-  <span class="lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
-    <a href="?lang=en" lang="en" class="{% if lang|default('en') == 'en' %}on{% endif %}">EN</a>
-    {% if _ann.shop_lang != "en" %}<a href="?lang={{ _ann.shop_lang }}" lang="{{ _ann.shop_lang }}" class="{% if lang|default('en') == _ann.shop_lang %}on{% endif %}">{{ _ann.shop_native }}</a>{% endif %}
-  </span>
-  {% else %}
+  {% if _is_seller %}
   {{ _lang_seg() }}
   {% endif %}
 </div>
