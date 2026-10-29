@@ -802,6 +802,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             published_today = local_when.date().isoformat() == today
             live_since = local_when.strftime("%H:%M")
         tiles = day_tiles(conn, shop, today)
+        from app.market.hours import has_hours as _has_hours
+
+        try:
+            _hours_raw = shop["hours_json"]
+        except (KeyError, IndexError, TypeError):
+            _hours_raw = None
         credit_total, credit_count = db.credit_total_to_collect(conn, shop)
         can_credit = (not is_staff) or db.helper_can_credit(conn, token)
         closed_raw = db.day_closed_at(conn, shop["id"], today)
@@ -855,7 +861,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "credit_total": format_money(credit_total, currency),
              "credit_count": credit_count,
              "renamed": request.query_params.get("renamed") == "1",
-             "can_credit": can_credit},
+             "can_credit": can_credit,
+             "show_hours_nudge": (not is_staff
+                                  and not _has_hours(_hours_raw))},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):
@@ -1892,6 +1900,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 if row["photo_url"]:
                     hero_photo = row["photo_url"]
                     break
+        from app.market.hours import has_hours, shop_open_status
+
+        open_info = shop_open_status(shop)
         currency = shop["currency"] or "INR"
         summary_min = format_money(min_price, currency) if min_price else ""
         summary_max = format_money(max_price, currency) if max_price else ""
@@ -1905,6 +1916,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raw_source = db.version_source(conn, version_id)
             price_source = strings(
                 _SRC_KEYS.get(raw_source or "", "shop.src_mixed"))
+        try:
+            hours_raw = shop["hours_json"]
+        except (KeyError, IndexError, TypeError):
+            hours_raw = None
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
             "share_url": share_url,
@@ -1914,6 +1929,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "hero_photo": hero_photo,
             "summary_min": summary_min, "summary_max": summary_max,
             "has_upi": bool(db.shop_upi_id(shop)),
+            "open_state": open_info["state"],
+            "open_time": open_info["time"],
+            "has_hours": has_hours(hours_raw),
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
 
     @app.get("/s/{slug}/qr.png")

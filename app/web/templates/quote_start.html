@@ -9,6 +9,7 @@
     <p class="kick">{{ shop["name"] }}</p>
     <h2 class="h2s">{{ t('shell.order_voice') }}</h2>
     <p class="lead">{{ shop["area"] }}</p>
+    {% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
     {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
     <div class="segmented" data-methods role="group" aria-label="{{ t.get_quote }}">

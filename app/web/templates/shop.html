@@ -6,6 +6,8 @@
 <div class="hero2">
   <div class="hero-copy">
     <p class="kick">{{ shop["name"] }}</p>
+    {% if open_state == "open" %}<p><span class="pill pill-live" data-open-chip>{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
+    {% elif open_state == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
     <h1 class="big">{{ t('shop.headline_a') }}<br><em>{{ t('shop.headline_b') }}</em></h1>
     {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
     <div class="trio">

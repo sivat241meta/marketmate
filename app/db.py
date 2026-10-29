@@ -195,7 +195,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             type TEXT NOT NULL, edit_token_hash TEXT NOT NULL,
             is_demo INTEGER NOT NULL DEFAULT 0, is_judge INTEGER NOT NULL DEFAULT 0,
             listed INTEGER NOT NULL DEFAULT 0, expires_at TEXT, created_at TEXT NOT NULL,
-            upi_id TEXT, upi_payee TEXT, round_bills INTEGER
+            upi_id TEXT, upi_payee TEXT, round_bills INTEGER,
+            hours_json TEXT, pincode TEXT, lat REAL, lng REAL
         );
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -348,7 +349,9 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             conn.execute(f"ALTER TABLE quotes ADD COLUMN {name} {column_type}")
     shop_columns = {row[1] for row in conn.execute("PRAGMA table_info(shops)")}
     for name, column_type in (("upi_id", "TEXT"), ("upi_payee", "TEXT"),
-                              ("round_bills", "INTEGER")):
+                              ("round_bills", "INTEGER"),
+                              ("hours_json", "TEXT"), ("pincode", "TEXT"),
+                              ("lat", "REAL"), ("lng", "REAL")):
         if name not in shop_columns:
             conn.execute(f"ALTER TABLE shops ADD COLUMN {name} {column_type}")
     version_columns = {row[1] for row in conn.execute(
@@ -520,18 +523,41 @@ def get_quote_by_bill_token(conn, bill_token: str):
                         (bill_token,)).fetchone()
 
 
+_UNCHANGED: object = object()
+
+
 def update_shop_settings(conn, shop_id: int, *, name: str, area: str,
                          phone: str, language: str, currency: str,
                          shop_type: str, upi_id: str | None,
-                         upi_payee: str | None, round_bills: bool) -> None:
-    """Update editable shop settings. The slug is never changed."""
-    conn.execute(
-        "UPDATE shops SET name = ?, area = ?, phone = ?, language = ?,"
-        " currency = ?, type = ?, upi_id = ?, upi_payee = ?, round_bills = ?"
-        " WHERE id = ?",
-        (name, area, phone, language, currency, shop_type,
-         upi_id, upi_payee, int(bool(round_bills)), shop_id))
+                         upi_payee: str | None, round_bills: bool,
+                         hours_json=_UNCHANGED, pincode=_UNCHANGED,
+                         lat=_UNCHANGED, lng=_UNCHANGED) -> None:
+    """Update editable shop settings. The slug is never changed.
+
+    ``hours_json``/``pincode``/``lat``/``lng`` default to _UNCHANGED and
+    are only written when passed; pass None to clear one.
+    """
+    fields = {"name": name, "area": area, "phone": phone,
+              "language": language, "currency": currency,
+              "type": shop_type, "upi_id": upi_id,
+              "upi_payee": upi_payee, "round_bills": int(bool(round_bills))}
+    for key, value in (("hours_json", hours_json),
+                       ("pincode", pincode), ("lat", lat), ("lng", lng)):
+        if value is not _UNCHANGED:
+            fields[key] = value
+    columns = ", ".join(f"{key} = ?" for key in fields)
+    conn.execute(f"UPDATE shops SET {columns} WHERE id = ?",
+                 (*fields.values(), shop_id))
     conn.commit()
+
+
+def listed_areas(conn) -> list[str]:
+    """Distinct areas of listed shops that have a published price list."""
+    rows = conn.execute(
+        "SELECT DISTINCT s.area FROM shops s"
+        " JOIN versions v ON v.shop_id = s.id AND v.published = 1"
+        " WHERE s.listed = 1 ORDER BY s.area").fetchall()
+    return [row[0] for row in rows if (row[0] or "").strip()]
 
 
 def _now_plus_days(days: int) -> str:

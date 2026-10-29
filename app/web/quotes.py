@@ -352,6 +352,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         # "new" (sent, waiting for packing).
         display_status = _effective_order_status(row["status"])
         steps = order_steps(row["status"], strings)
+        open_info = _open_info(shop)
         sold_out_any = any(isinstance(entry, dict) and entry.get("sold_out")
                            for entry in raw_lines)
         from app.web.bills import row_not_understood
@@ -377,17 +378,27 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
                                            quote_url, language),
             "order_status": display_status,
-            "order_steps": steps})
+            "order_steps": steps,
+            "open_state": open_info["state"],
+            "open_time": open_info["time"]})
 
     def _lang_suffix(language: str) -> str:
         return f"?lang={language}" if language != "en" else ""
 
+    def _open_info(shop):
+        from app.market.hours import shop_open_status
+
+        return shop_open_status(shop)
+
     def _start_context(request, shop, error=None, lang="en", status=200):
         language = _customer_lang(shop, lang)
+        open_info = _open_info(shop)
         return templates.TemplateResponse(
             request, "quote_start.html",
             {"shop": shop, "error": error, "lang": language,
              "t": get_strings(language),
+             "open_state": open_info["state"],
+             "open_time": open_info["time"],
              "ui_lang": language if language in ("ta", "hi", "en") else "en"},
             status_code=status)
 

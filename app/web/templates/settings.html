@@ -6,6 +6,7 @@
 <p class="kick">{{ t('set.heading') }}</p>
 <h2 class="h2s">{{ t('set.sub', shop=shop["name"]) }}</h2>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if not has_hours %}<div class="alert">{{ t('hours.nudge') }}</div>{% endif %}
 
 <section class="rcpt">
   <h2>{{ t('set.profile') }}</h2>
@@ -17,6 +18,11 @@
     <div class="field">
       <label for="set-area">{{ t('set.area') }}</label>
       <input id="set-area" name="area" value="{{ shop["area"] }}" required autocomplete="address-level2">
+    </div>
+    <div class="field">
+      <label for="set-pincode">{{ t('set.pincode') }}</label>
+      <input id="set-pincode" name="pincode" value="{{ shop["pincode"] or "" }}" inputmode="numeric" maxlength="6" autocomplete="postal-code">
+      <span class="help">{{ t('set.pincode_help') }}</span>
     </div>
     <div class="field">
       <label for="set-phone">{{ t('set.phone') }}</label>
@@ -61,6 +67,67 @@
       </label>
       <span class="help">{{ t('set.round_help') }}</span>
     </div>
+    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
+  </form>
+</section>
+
+<section class="rcpt">
+  <h2>{{ t('set.hours') }}</h2>
+  <p class="muted">{{ t('set.hours_help') }}</p>
+  <form method="post" action="/e/{{ token }}/settings" data-hours-form>
+    <input type="hidden" name="name" value="{{ shop["name"] }}">
+    <input type="hidden" name="area" value="{{ shop["area"] }}">
+    <input type="hidden" name="phone" value="{{ shop["phone"] }}">
+    <input type="hidden" name="language" value="{{ shop["language"] }}">
+    <input type="hidden" name="currency" value="{{ shop["currency"] }}">
+    <input type="hidden" name="type" value="{{ shop["type"] }}">
+    <input type="hidden" name="upi_id" value="{{ shop["upi_id"] or "" }}">
+    <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
+    {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
+    <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
+    {% for day in hours_days %}
+    <div class="version-row" data-day-row="{{ day.index }}">
+      <div class="row-main"><strong>{{ t('date.day_' ~ (day.index + 1)) }}</strong></div>
+      <label class="chip" for="closed-{{ day.index }}">
+        <input id="closed-{{ day.index }}" type="checkbox" name="closed_{{ day.index }}" value="1"{% if day.closed %} checked{% endif %}>
+        <span>{{ t('set.closed') }}</span>
+      </label>
+      {% for slot in day.slots %}
+      <span class="slot-pair">
+        <label class="visually-hidden" for="open-{{ day.index }}-{{ loop.index }}">open</label>
+        <input id="open-{{ day.index }}-{{ loop.index }}" type="time" name="open_{{ day.index }}_{{ loop.index }}" value="{{ slot.open }}">
+        <label class="visually-hidden" for="close-{{ day.index }}-{{ loop.index }}">close</label>
+        <input id="close-{{ day.index }}-{{ loop.index }}" type="time" name="close_{{ day.index }}_{{ loop.index }}" value="{{ slot.close }}">
+      </span>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
+  </form>
+</section>
+
+<section class="rcpt">
+  <h2>{{ t('set.location') }}</h2>
+  <p class="muted">{{ t('set.location_consent') }}</p>
+  {% if shop["lat"] is not none and shop["lng"] is not none %}<p class="muted">{{ t('set.location_saved') }}</p>{% endif %}
+  <form method="post" action="/e/{{ token }}/settings" data-location-form>
+    <input type="hidden" name="name" value="{{ shop["name"] }}">
+    <input type="hidden" name="area" value="{{ shop["area"] }}">
+    <input type="hidden" name="phone" value="{{ shop["phone"] }}">
+    <input type="hidden" name="language" value="{{ shop["language"] }}">
+    <input type="hidden" name="currency" value="{{ shop["currency"] }}">
+    <input type="hidden" name="type" value="{{ shop["type"] }}">
+    <input type="hidden" name="upi_id" value="{{ shop["upi_id"] or "" }}">
+    <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
+    {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
+    <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
+    <input type="hidden" id="shop-lat" name="lat" value="{{ shop["lat"] if shop["lat"] is not none else "" }}">
+    <input type="hidden" id="shop-lng" name="lng" value="{{ shop["lng"] if shop["lng"] is not none else "" }}">
+    <p>
+      <button class="pill ghost" type="button" id="use-location">{{ t('set.use_location') }}</button>
+      <button class="pill ghost" type="submit" name="remove_location" value="1">{{ t('set.remove_location') }}</button>
+    </p>
+    <p class="muted" id="location-status" aria-live="polite"></p>
     <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
   </form>
 </section>
@@ -123,6 +190,29 @@
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  const locBtn = document.getElementById("use-location");
+  const latEl = document.getElementById("shop-lat");
+  const lngEl = document.getElementById("shop-lng");
+  const locStatus = document.getElementById("location-status");
+  if (locBtn && latEl && lngEl && navigator.geolocation) {
+    locBtn.addEventListener("click", () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          latEl.value = pos.coords.latitude.toFixed(3);
+          lngEl.value = pos.coords.longitude.toFixed(3);
+          if (locStatus) {
+            locStatus.textContent = latEl.value + ", " + lngEl.value;
+          }
+        },
+        () => {
+          if (locStatus) {
+            locStatus.textContent = "Location unavailable — try again.";
+          }
+        },
+        { maximumAge: 600000, timeout: 15000 },
+      );
+    });
+  }
   const btn = document.getElementById("copy-seller");
   if (!btn) { return; }
   btn.addEventListener("click", async () => {

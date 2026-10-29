@@ -46,6 +46,11 @@ class Listing:
     updated_at: datetime
     stale: bool
     currency: str = "INR"
+    pincode: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    open_state: str = "unknown"
+    open_time: str = ""
 
 
 _SYSTEM_PROMPT = (
@@ -158,19 +163,34 @@ def _display_line(lines: list[PriceLine]) -> PriceLine | None:
 
 
 def find_listings(conn: sqlite3.Connection, query: Query,
-                  now: datetime) -> list[Listing]:
+                  now: datetime, *, area: str | None = None,
+                  pincode: str | None = None,
+                  open_only: bool = False) -> list[Listing]:
     """Compare published prices for the query's wants across listed shops.
 
     Only listed shops with a published version count; sold-out items are
     excluded. A max_rate filters on the per-kg/per-piece rate. Rows are
-    fresh-first, then cheapest rate first.
+    fresh-first, then cheapest rate first. ``area`` (explicit chip, else
+    the query's area) matches case-insensitively; ``pincode`` matches
+    exactly; ``open_only`` drops shops known to be closed right now
+    (shops without hours stay, as unknown).
     """
+    from app.market.hours import shop_open_status
+
     now = _as_aware(now)
     shops = conn.execute(
         "SELECT * FROM shops WHERE listed = 1 ORDER BY id").fetchall()
-    if query.area:
-        needle = query.area.lower()
-        shops = [shop for shop in shops if needle in (shop["area"] or "").lower()]
+    needle = (area or query.area or "").strip().lower()
+    if needle:
+        shops = [shop for shop in shops
+                 if needle in (shop["area"] or "").lower()]
+    if (pincode or "").strip():
+        want_pin = pincode.strip()
+        shops = [shop for shop in shops
+                 if (shop["pincode"] or "") == want_pin]
+    if open_only:
+        shops = [shop for shop in shops
+                 if shop_open_status(shop, now)["state"] != "closed"]
     listings: list[Listing] = []
     for want in query.wants:
         for shop in shops:
@@ -191,6 +211,7 @@ def find_listings(conn: sqlite3.Connection, query: Query,
                 if (want.max_rate is not None
                         and (computed is None or computed[0] > want.max_rate)):
                     continue
+                status = shop_open_status(shop, now)
                 listings.append(Listing(
                     shop_name=shop["name"], slug=shop["slug"],
                     area=shop["area"], is_demo=bool(shop["is_demo"]),
@@ -198,6 +219,10 @@ def find_listings(conn: sqlite3.Connection, query: Query,
                     rate=computed[0] if computed else None,
                     rate_unit=computed[1] if computed else None,
                     updated_at=updated_at, stale=stale,
-                    currency=shop["currency"] or "INR"))
+                    currency=shop["currency"] or "INR",
+                    pincode=shop["pincode"] or None,
+                    lat=shop["lat"], lng=shop["lng"],
+                    open_state=status["state"],
+                    open_time=status["time"]))
     listings.sort(key=lambda row: (row.stale, row.rate is None, row.rate))
     return listings

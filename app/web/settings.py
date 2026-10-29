@@ -11,6 +11,14 @@ from fastapi.templating import Jinja2Templates
 
 from app import db
 from app.languages import LANGUAGES, all_currencies
+from app.market.hours import (
+    has_hours,
+    minutes_to_hhmm,
+    parse_hours_form,
+    parse_hours_json,
+    round_coord,
+    validate_pincode,
+)
 from app.outputs.qr import qr_svg
 from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import get_ui_lang, link_self_whatsapp_url
@@ -63,6 +71,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return None, owner_or_403(request, templates, role, ui_lang)
         return shop, None
 
+    def _hours_context(shop):
+        try:
+            raw = shop["hours_json"]
+        except (KeyError, IndexError, TypeError):
+            raw = None
+        try:
+            parsed = parse_hours_json(raw)
+        except ValueError:
+            parsed = {"closed": set(), "slots": {}}
+        days = []
+        for day in range(7):
+            slots = [(minutes_to_hhmm(o), minutes_to_hhmm(c))
+                     for o, c in parsed["slots"].get(day, [])]
+            while len(slots) < 2:
+                slots.append(("", ""))
+            days.append({"index": day, "closed": day in parsed["closed"],
+                         "slots": [{"open": o, "close": c}
+                                   for o, c in slots[:2]]})
+        return {"hours_days": days, "has_hours": has_hours(raw)}
+
     def _context(request, shop, token, error=None, just_created=None):
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         ui_lang = get_ui_lang(request, shop)
@@ -81,6 +109,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "helpers": helpers,
             "just_created": just_created,
             "self_wa_url": link_self_whatsapp_url(shop, seller_url),
+            **_hours_context(shop),
         })
 
     @app.get("/e/{token}/settings")
@@ -119,6 +148,29 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             except ValueError as exc:
                 error = error or str(exc)
                 upi_id = None
+            try:
+                pincode = validate_pincode(form.get("pincode"))
+            except ValueError as exc:
+                error = error or str(exc)
+                pincode = db._UNCHANGED
+            try:
+                parsed_hours = parse_hours_form(form)
+            except ValueError as exc:
+                error = error or str(exc)
+                parsed_hours = ""
+            lat = lng = db._UNCHANGED
+            if "remove_location" in form:
+                lat = lng = None
+            elif "lat" in form or "lng" in form:
+                try:
+                    lat = round_coord(form.get("lat"), kind="lat")
+                    lng = round_coord(form.get("lng"), kind="lng")
+                except ValueError as exc:
+                    error = error or str(exc)
+                    lat = lng = db._UNCHANGED
+            if (lat is None) != (lng is None):
+                error = error or "bad location"
+                lat = lng = db._UNCHANGED
             if error is not None:
                 fresh = _shop_or_404(conn, token)
                 ui_lang = get_ui_lang(request, fresh)
@@ -138,12 +190,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "just_created": None,
                         "self_wa_url": link_self_whatsapp_url(
                             fresh, seller_url),
+                        **_hours_context(fresh),
                     }, status_code=400)
             db.update_shop_settings(
                 conn, shop["id"], name=name, area=area, phone=phone,
                 language=language, currency=currency, shop_type=shop_type,
                 upi_id=upi_id, upi_payee=(upi_payee_raw or None),
-                round_bills=("round_bills" in form))
+                round_bills=("round_bills" in form),
+                hours_json=(parsed_hours if parsed_hours
+                            else db._UNCHANGED),
+                pincode=pincode, lat=lat, lng=lng)
             return RedirectResponse(f"/e/{token}/settings", status_code=303)
         finally:
             conn.close()

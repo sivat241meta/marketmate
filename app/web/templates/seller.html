@@ -17,6 +17,7 @@
 <section class="step-card grp" id="step-morning" aria-label="{{ t('t61.step1_kick') }}">
   <div class="gh"><span aria-hidden="true">▾</span>{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></div>
   <p class="kick"><span class="step-num" aria-hidden="true">1</span> {{ t('t61.step1_kick') }}</p>
+  {% if show_hours_nudge|default(false) %}<p class="notice">{{ ui.icon("check") }}<span><a href="/e/{{ token }}/settings">{{ t('hours.nudge') }}</a></span></p>{% endif %}
   {% if first_run|default(false) %}
   <div class="card start-card" id="say-prices" aria-label="{{ t('gs.kick') }}">
     <p class="kick">{{ t('gs.kick') }}</p>
