@@ -20,9 +20,11 @@ from fastapi.responses import (
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
+from app.config import SAM_MODEL, SPARK_MODEL, SPARK_OPEN_MODEL, VOICE_MODEL
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
     IST,
+    VISION_STEPS,
     CostCapExceeded,
     CostLedger,
 )
@@ -256,6 +258,110 @@ _ACTION_LABELS = {
     "in_stock": "Back in stock",
     "set_qty": "New quantity",
 }
+
+#: Task 78: ledger step value -> i18n label key for the Meta AI calls page.
+_AI_STEP_KEYS = {
+    "transcribe": "ai.step_transcribe",
+    "extract prices": "ai.step_extract_prices",
+    "check prices": "ai.step_check_prices",
+    "find product frames": "ai.step_find_product_frames",
+    "cut-out mask": "ai.step_cut_out_mask",
+    "face check": "ai.step_face_check",
+    "verify photo": "ai.step_verify_photo",
+    "read board": "ai.step_read_board",
+    "scan photo": "ai.step_scan_photo",
+    "count items": "ai.step_count_items",
+    "name items": "ai.step_name_items",
+    "voice order": "ai.step_voice_order",
+    "note purchases": "ai.step_note_purchases",
+    "market search": "ai.step_market_search",
+    "typed bill": "ai.step_typed_bill",
+}
+
+_AI_KINDS = ("all", "voice", "spark", "sam")
+
+_AI_HONESTY_URL = ("https://github.com/sivat241meta/marketmate"
+                   "/blob/main/README.md#honesty-by-design")
+
+
+def _ai_kind_of(row: dict) -> str:
+    """Filter kind for a ledger row: voice, spark, sam or other."""
+    if row["provider"] == "baseten" or row["model"] in (
+            SPARK_MODEL, SPARK_OPEN_MODEL):
+        return "spark"
+    if row["model"] == VOICE_MODEL:
+        return "voice"
+    if row["model"] == SAM_MODEL:
+        return "sam"
+    return "other"
+
+
+def _ai_row_time(created_at: str | None) -> str:
+    try:
+        return datetime.fromisoformat(created_at or "").strftime("%H:%M")
+    except ValueError:
+        return (created_at or "")[:5]
+
+
+def _ai_row_view(row: dict, t) -> dict:
+    """One ledger row as the page/JSON needs it (translated step label)."""
+    step = row["step"] or ""
+    key = _AI_STEP_KEYS.get(step)
+    kind = _ai_kind_of(row)
+    usd = float(row["usd"] or 0.0)
+    latency = row["latency_ms"]
+    return {
+        "id": row["id"],
+        "time": _ai_row_time(row["created_at"]),
+        "model": row["model"],
+        "kind": kind,
+        "spark_kind": ("vision" if step in VISION_STEPS else "text"
+                       if kind == "spark" else None),
+        "step": step,
+        "step_label": t(key) if key else step,
+        "summary": row["summary"],
+        "latency_ms": latency,
+        "latency": f"{latency} ms" if latency is not None else None,
+        "usd": usd,
+        "cost": f"${usd:.4f}",
+        "ok": None if row["ok"] is None else bool(row["ok"]),
+        "session_id": row["session_id"],
+        "session_title": (t("sess.title", id=row["session_id"])
+                          if row["session_id"] is not None
+                          else t("ai.other_calls")),
+    }
+
+
+def _ai_groups(views: list[dict]) -> list[dict]:
+    """Newest-first views grouped by session, order kept."""
+    groups: list[dict] = []
+    by_session: dict = {}
+    for view in views:
+        key = view["session_id"]
+        if key not in by_session:
+            by_session[key] = {"session_id": key,
+                               "title": view["session_title"], "rows": []}
+            groups.append(by_session[key])
+        by_session[key]["rows"].append(view)
+    return groups
+
+
+def _ai_processing(conn, shop_id: int, session_id: int | None) -> bool:
+    if session_id is not None:
+        row = conn.execute(
+            "SELECT status FROM sessions WHERE id = ? AND shop_id = ?",
+            (session_id, shop_id)).fetchone()
+        return row is not None and row["status"] == "processing"
+    return conn.execute(
+        "SELECT 1 FROM sessions WHERE shop_id = ? AND status = 'processing'"
+        " LIMIT 1", (shop_id,)).fetchone() is not None
+
+
+def _ai_session_param(raw: str | None) -> int | None:
+    try:
+        return int(raw) if raw not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
 
 _ACTION_LABEL_KEYS = {
     "set_price": "upd.action_set_price",
@@ -1259,6 +1365,63 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "friendly": friendly,
         })
 
+    @app.get("/e/{token}/ai")
+    def ai_calls_page(request: Request, token: str, conn: Conn,
+                      show: str | None = None, session: str | None = None):
+        """Owner-only log of every Meta model call for this shop."""
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
+        kind = show if show in _AI_KINDS else "all"
+        session_id = _ai_session_param(session)
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        stats = ledger.today_stats(shop["id"])
+        rows = ledger.rows_for_shop(
+            shop["id"], session_id=session_id,
+            kind=kind if kind != "all" else None)
+        views = [_ai_row_view(row, t) for row in rows]
+        avg = stats["avg_latency_ms"]
+        return templates.TemplateResponse(request, "ai.html", {
+            "shop": shop, "token": token, "ui_lang": ui_lang,
+            "shop_lang": shop["language"],
+            "stats": stats, "cost_text": f"${stats['cost_usd']:.4f}",
+            "avg_text": f"{avg} ms" if avg is not None else "—",
+            "groups": _ai_groups(views),
+            "max_id": max((view["id"] for view in views), default=0),
+            "kind": kind, "session_id": session_id,
+            "processing": _ai_processing(conn, shop["id"], session_id),
+            "honesty_url": _AI_HONESTY_URL,
+        })
+
+    @app.get("/e/{token}/ai.json")
+    def ai_calls_json(request: Request, token: str, conn: Conn,
+                      since_id: int = 0, show: str | None = None,
+                      session: str | None = None):
+        """Polling endpoint for the AI calls page; same owner auth."""
+        shop = _owner_or_403_exc(conn, token)
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
+        kind = show if show in _AI_KINDS else "all"
+        session_id = _ai_session_param(session)
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        stats = ledger.today_stats(shop["id"])
+        rows = ledger.rows_for_shop(
+            shop["id"], session_id=session_id, since_id=max(since_id, 0),
+            kind=kind if kind != "all" else None)
+        views = [_ai_row_view(row, t) for row in rows]
+        avg = stats["avg_latency_ms"]
+        latest = max([since_id] + [view["id"] for view in views])
+        return JSONResponse({
+            "rows": views, "max_id": latest, "stats": stats,
+            "cost_text": f"${stats['cost_usd']:.4f}",
+            "avg_text": f"{avg} ms" if avg is not None else "—",
+            "processing": _ai_processing(conn, shop["id"], session_id),
+        })
+
     @app.get("/e/{token}/s/{session_id}/clip/{index}")
     def session_clip(token: str, session_id: int, index: int, conn: Conn):
         shop = _owner_or_403_exc(conn, token)
@@ -1298,6 +1461,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raise HTTPException(404, "no such item")
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"], session_id=session_id)
         try:
             out = save_retake(
                 await photo.read(),
@@ -1328,6 +1492,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raise HTTPException(404, "no such item")
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"])
         try:
             out = save_retake(
                 await photo.read(),
@@ -1365,6 +1530,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         previous = db.last_prices(conn, shop["id"])
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"], session_id=session_id)
         try:
             saved_drafts = db.load_drafts(conn, session_id)
         except Exception:  # noqa: BLE001 - missing drafts keep variety empty
@@ -1613,6 +1779,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         saved.write_bytes(payload)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"], session_id=session_id)
         try:
             db.set_session_status(conn, session_id, "processing",
                                   "Listening to the update...")
@@ -1684,6 +1851,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         changes = [change_from_dict(raw) for raw in stored["changes"]]
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"], session_id=session_id)
         if request.headers.get("content-type", "").startswith("application/json"):
             body = await request.json()
             raw_items = body.get("items", [])

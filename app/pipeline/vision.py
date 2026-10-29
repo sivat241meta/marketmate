@@ -114,6 +114,13 @@ def _parse_products(data: dict) -> list[dict]:
     return products
 
 
+def _products_summary(data: dict) -> str:
+    raw = data.get("products")
+    count = len(raw) if isinstance(raw, list) else 0
+    noun = "product" if count == 1 else "products"
+    return f"{count} {noun}"
+
+
 def list_products(image: Path, *, ledger, settings) -> tuple[list[dict], str]:
     """One Spark vision call listing the products visible in the photo."""
     messages = [{"role": "user", "content": [
@@ -122,7 +129,8 @@ def list_products(image: Path, *, ledger, settings) -> tuple[list[dict], str]:
         image_part(Path(image)),
     ]}]
     data = chat_json(messages, ledger=ledger, settings=settings,
-                     reasoning_effort="low")
+                     reasoning_effort="low", step="scan photo",
+                     summary=_products_summary)
     if not isinstance(data, dict):
         return ([], "good")
     quality = data.get("photo_quality")
@@ -252,7 +260,7 @@ def analyse_photo(image: Path, *, shop_items, ledger, settings) -> PhotoReport:
         count_sam: int | None = None
         if raw["countable"]:
             found = find_boxes(Path(image), name_en, ledger=ledger,
-                               settings=settings)
+                               settings=settings, step="count items")
             boxes = dedupe_boxes(drop_low_confidence(found))
             count_sam = len(boxes)
         count, count_range, needs_check = reconcile(raw["visible_count"],

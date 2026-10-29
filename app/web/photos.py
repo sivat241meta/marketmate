@@ -198,6 +198,7 @@ def process_photo_session(conn, session_id: int, image: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         version_id = db.latest_version(conn, shop_id)
         shop_items = []
         if version_id is not None:

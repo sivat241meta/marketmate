@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from time import monotonic
 
 import httpx
 
@@ -40,8 +41,15 @@ def transcribe_wav(
     ledger: CostLedger,
     settings: Settings,
     languages: tuple[str, ...] = ("Tamil", "English"),
+    step: str = "transcribe",
+    shop_id: int | None = None,
+    session_id: int | None = None,
 ) -> Transcript:
-    """Transcribe a 24 kHz mono WAV via Voice Transcribe; log cost; parse."""
+    """Transcribe a 24 kHz mono WAV via Voice Transcribe; log cost; parse.
+
+    The logged summary names only the language and audio length, never the
+    transcript.
+    """
     ledger.check()
     request_payload = {
         "model": VOICE_MODEL,
@@ -50,6 +58,7 @@ def transcribe_wav(
         "languageBias": list(languages),
         "keywords": list(keywords),
     }
+    started = monotonic()
     try:
         response = httpx.post(
             f"{META_BASE_URL}/asr/transcribe",
@@ -62,9 +71,17 @@ def transcribe_wav(
         )
         response.raise_for_status()
     except Exception as exc:
+        ledger.add("meta", VOICE_MODEL, 0.0, "transcribe_wav",
+                   shop_id=shop_id, session_id=session_id, step=step,
+                   latency_ms=int((monotonic() - started) * 1000), ok=0)
         raise TranscribeError(f"transcribe request failed: {exc}") from exc
+    latency_ms = int((monotonic() - started) * 1000)
     data = response.json()
     duration_ms = int(data.get("audioDurationMs", 0))
+    language = languages[0] if languages else "English"
+    seconds = round(duration_ms / 1000)
     ledger.add("meta", VOICE_MODEL, duration_ms / 3_600_000 * TRANSCRIBE_USD_PER_HOUR,
-               "transcribe_wav")
+               "transcribe_wav", shop_id=shop_id, session_id=session_id,
+               step=step, latency_ms=latency_ms, ok=1,
+               summary=f"{language} · {seconds} s audio")
     return transcript_from_json(data)

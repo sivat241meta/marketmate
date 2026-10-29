@@ -204,11 +204,19 @@ def parse_update_json(data: dict, transcript: Transcript,
     return changes
 
 
+def _update_summary(data: dict) -> str:
+    found = data.get("changes")
+    count = len(found) if isinstance(found, list) else 0
+    noun = "change" if count == 1 else "changes"
+    return f"{count} {noun}"
+
+
 def parse_update(transcript: Transcript, current: list[Item], *,
                  ledger, settings, language: str = "ta") -> list[Change]:
     """One low-reasoning Spark call turning an update transcript into changes."""
     data = chat_json(build_update_messages(transcript, current),
-                     ledger=ledger, settings=settings, reasoning_effort="low")
+                     ledger=ledger, settings=settings, reasoning_effort="low",
+                     step="voice order", summary=_update_summary)
     return parse_update_json(data, transcript, current, language=language,
                              ledger=ledger, settings=settings)
 

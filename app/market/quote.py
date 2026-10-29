@@ -149,9 +149,10 @@ def _positive(value: Decimal | None) -> Decimal | None:
     return value
 
 
-def wanted_from_text(text: str, *, ledger, settings) -> list[WantedLine]:
+def wanted_from_text(text: str, *, ledger, settings,
+                     step: str = "market search") -> list[WantedLine]:
     """Parse a typed or spoken list via parse_query; keep unknown words."""
-    query = parse_query(text, ledger=ledger, settings=settings)
+    query = parse_query(text, ledger=ledger, settings=settings, step=step)
     wanted: list[WantedLine] = []
     for want in query.wants:
         wanted.append(WantedLine(
@@ -205,6 +206,17 @@ def _decimal_or_none(value) -> Decimal | None:
     return _positive(result)
 
 
+def _photo_quote_summary(data: dict) -> str:
+    for key in ("lines", "products"):
+        found = data.get(key)
+        if isinstance(found, list) and found:
+            noun = "line" if len(found) == 1 else "lines"
+            if key == "products":
+                noun = "product" if len(found) == 1 else "products"
+            return f"{len(found)} {noun}"
+    return "0 lines"
+
+
 def wanted_from_photo(image: Path | str, *, ledger, settings
                       ) -> list[WantedLine]:
     """One vision call: items photo -> counts, list photo -> lines as written.
@@ -221,7 +233,8 @@ def wanted_from_photo(image: Path | str, *, ledger, settings
         image_part(Path(image)),
     ]}]
     data = chat_json(messages, ledger=ledger, settings=settings,
-                     reasoning_effort="low")
+                     reasoning_effort="low", step="scan photo",
+                     summary=_photo_quote_summary)
     if not isinstance(data, dict):
         return []
     kind = str(data.get("kind") or "").strip().lower()

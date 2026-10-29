@@ -643,6 +643,7 @@ def process_bill_voice_session(conn, session_id: int, audio: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         shop_row = conn.execute("SELECT language FROM shops WHERE id = ?",
                                 (shop_id,)).fetchone()
         shop_lang = shop_row["language"] if shop_row else "ta"
@@ -654,7 +655,7 @@ def process_bill_voice_session(conn, session_id: int, audio: Path, *,
             settings=settings, languages=shop_bias(shop_lang))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
-                                  settings=settings)
+                                  settings=settings, step="voice order")
         for line in wanted:
             line.source = "voice"
         if not wanted:
@@ -694,6 +695,7 @@ def process_bill_photo_session(conn, session_id: int, image: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_photo(Path(image), ledger=ledger,
                                    settings=settings)
@@ -1232,6 +1234,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     def _type_bill(request, shop, token, text, conn, made_by="owner"):
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"])
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         price_items = (db.version_items(conn, version_id)
                        if version_id is not None else [])
@@ -1239,7 +1242,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             wanted, not_understood = wanted_local_first(
                 text, price_items, shop["language"] or "ta",
                 ledger=ledger, settings=app.state.settings,
-                aliases=db.shop_name_aliases(conn, shop["id"]))
+                aliases=db.shop_name_aliases(conn, shop["id"]),
+                step="typed bill")
         except CostCapExceeded:
             return _new_error(request, shop, token, conn,
                               BUDGET_EXHAUSTED_MESSAGE, 503)

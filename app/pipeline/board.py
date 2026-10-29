@@ -153,10 +153,18 @@ def parse_board_json(data: dict, image_path: Path | str) -> list[DraftItem]:
     return items
 
 
+def _board_summary(data: dict) -> str:
+    found = data.get("items")
+    count = len(found) if isinstance(found, list) else 0
+    noun = "item" if count == 1 else "items"
+    return f"{count} {noun} on board"
+
+
 def read_board(image: Path, *, ledger, settings) -> list[DraftItem]:
     """One low-reasoning Spark vision call reading the board into drafts."""
     data = chat_json(build_board_messages(Path(image)), ledger=ledger,
-                     settings=settings, reasoning_effort="low")
+                     settings=settings, reasoning_effort="low",
+                     step="read board", summary=_board_summary)
     if not isinstance(data, dict):
         return []
     return parse_board_json(data, Path(image))
@@ -195,6 +203,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
         row = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?", (session_id,)).fetchone()
         shop_id = row["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         shop_row = conn.execute("SELECT language FROM shops WHERE id = ?",
                                 (shop_id,)).fetchone()
         language = shop_row["language"] if shop_row else "ta"

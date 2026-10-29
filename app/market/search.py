@@ -134,11 +134,20 @@ def parse_query_json(data: dict) -> Query:
     )
 
 
-def parse_query(text: str, *, ledger, settings) -> Query:
+def _query_summary(data: dict) -> str:
+    wants = data.get("wants")
+    count = len(wants) if isinstance(wants, list) else 0
+    noun = "want" if count == 1 else "wants"
+    return f"{count} {noun}"
+
+
+def parse_query(text: str, *, ledger, settings,
+                step: str = "market search") -> Query:
     """One low-reasoning Spark call turning a search into a Query."""
     data = chat_json(build_query_messages(text),
                      ledger=ledger, settings=settings,
-                     reasoning_effort="low")
+                     reasoning_effort="low", step=step,
+                     summary=_query_summary)
     return parse_query_json(data)
 
 

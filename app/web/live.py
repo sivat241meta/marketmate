@@ -232,6 +232,7 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
     language = shop.get("language") or "ta"
     shop_id = shop["id"]
     ledger = CostLedger(data_dir / "costs.db", settings.daily_budget_usd)
+    ledger.bind(shop_id=shop_id)
     price_items = _price_items_for(data_dir, shop_id)
     shop_aliases = _aliases_for(data_dir, shop_id)
 
@@ -282,7 +283,8 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
 
     async def _spark_for_turn(turn_id: int, text: str, local: list) -> None:
         def _run():
-            return wanted_from_text(text, ledger=ledger, settings=settings)
+            return wanted_from_text(text, ledger=ledger, settings=settings,
+                                    step="voice order")
 
         try:
             wanted = await asyncio.to_thread(_run)
@@ -616,6 +618,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             await websocket.close()
             return
         ledger = CostLedger(data_dir / "costs.db", settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"])
         try:
             ledger.check()
         except CostCapExceeded:
@@ -678,6 +681,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             previous = db.last_prices(conn, shop["id"])
         finally:
             conn.close()
+        ledger.bind(shop_id=shop["id"], session_id=session_id)
 
         await websocket.send_text(json.dumps(
             {"type": "ready", "session_id": session_id}))

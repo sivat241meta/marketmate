@@ -364,11 +364,25 @@ def extract_items(transcript: Transcript, *, ledger, settings,
     """
     chunks = chunk_transcript(transcript)
     items: list[DraftItem] = []
+    total = len(chunks)
     for number, chunk in enumerate(chunks, start=1):
         if progress is not None:
-            progress(number, len(chunks))
-        data = chat_json(build_extract_messages(chunk, language=language),
-                         ledger=ledger, settings=settings,
-                         reasoning_effort="low")
+            progress(number, total)
+        data = chat_json(
+            build_extract_messages(chunk, language=language),
+            ledger=ledger, settings=settings, reasoning_effort="low",
+            step="extract prices",
+            summary=lambda reply, part=number, of=total: _part_summary(
+                reply, part, of))
         items.extend(parse_extract_json(data, transcript, language=language))
     return items
+
+
+def _part_summary(reply: dict, part: int, total: int) -> str:
+    found = reply.get("items")
+    count = len(found) if isinstance(found, list) else 0
+    noun = "item" if count == 1 else "items"
+    text = f"{count} {noun}"
+    if total > 1:
+        text += f" (part {part} of {total})"
+    return text

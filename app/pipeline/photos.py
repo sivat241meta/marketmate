@@ -798,7 +798,7 @@ def _face_boxes_for(data: bytes, directory: Path, *, ledger,
         with open(handle, "wb") as stream:
             stream.write(data)
         return find_boxes(Path(tmp), FACE_NOUN, ledger=ledger,
-                          settings=settings)
+                          settings=settings, step="face check")
     finally:
         Path(tmp).unlink(missing_ok=True)
 
@@ -903,7 +903,8 @@ def ensure_visual_nouns(names: list[str], cache: dict, *,
             items=", ".join(missing), first=missing[0])
         data = chat_json([{"role": "user", "content": prompt}],
                          ledger=ledger, settings=settings,
-                         reasoning_effort="low")
+                         reasoning_effort="low", step="name items",
+                         summary=f"{len(missing)} names")
         answers = data if isinstance(data, dict) else {}
         lowered = {str(key).strip().lower(): value
                    for key, value in answers.items()}
@@ -951,6 +952,13 @@ def _other_nouns(noun: str, picked: Frame,
     return nouns
 
 
+def _verify_summary(data: dict) -> str:
+    answer = data.get("item") if isinstance(data, dict) else None
+    if isinstance(answer, str) and answer.strip():
+        return f"says {answer.strip().lower()}"
+    return "says none"
+
+
 def verify_cutout(cutout: Path, target: str, candidates: list[str], *,
                   ledger, settings) -> str:
     """One Spark vision call: which session item does the cut-out show?
@@ -968,7 +976,8 @@ def verify_cutout(cutout: Path, target: str, candidates: list[str], *,
     data = chat_json([{"role": "user", "content": [
         {"type": "text", "text": instruction},
         image_part(Path(cutout))]}],
-        ledger=ledger, settings=settings, reasoning_effort="low")
+        ledger=ledger, settings=settings, reasoning_effort="low",
+        step="verify photo", summary=_verify_summary)
     answer = data.get("item") if isinstance(data, dict) else None
     if isinstance(answer, str) and answer.strip():
         return answer.strip().lower()
@@ -1005,6 +1014,12 @@ def candidate_montage(frame: Path, candidates: list[SamInstance],
     return out
 
 
+def _kept_summary(data: dict, of: int) -> str:
+    keep = data.get("keep") if isinstance(data, dict) else None
+    kept = len(keep) if isinstance(keep, list) else 0
+    return f"{kept} of {of} kept"
+
+
 def verify_candidates(frame: Path, target: str,
                       candidates: list[SamInstance], *,
                       ledger, settings) -> list[SamInstance]:
@@ -1023,10 +1038,13 @@ def verify_candidates(frame: Path, target: str,
             f"Which of them clearly show {target}? Reply with only JSON "
             'shaped like: {"keep": [1]}. Use an empty list when none '
             f"shows {target}.")
+        total = len(candidates)
         data = chat_json([{"role": "user", "content": [
             {"type": "text", "text": instruction},
             image_part(montage)]}],
-            ledger=ledger, settings=settings, reasoning_effort="low")
+            ledger=ledger, settings=settings, reasoning_effort="low",
+            step="verify photo",
+            summary=lambda reply, of=total: _kept_summary(reply, of))
     finally:
         Path(tmp).unlink(missing_ok=True)
     keep = data.get("keep") if isinstance(data, dict) else None
@@ -1052,7 +1070,8 @@ def _choose_frame(frames: list[Frame], noun: str, *,
     """
     for frame in frames[:MAX_TRIED_FRAMES]:
         instances = [inst for inst in find_instances(
-            frame.path, noun, ledger=ledger, settings=settings)
+            frame.path, noun, ledger=ledger, settings=settings,
+            step="cut-out mask")
             if _passes(inst.box.confidence, PRODUCT_CONFIDENCE)]
         if not instances:
             continue
@@ -1060,7 +1079,7 @@ def _choose_frame(frames: list[Frame], noun: str, *,
         size = _frame_size(frame.path)
         boxes = [inst.box for inst in cluster]
         faces = find_boxes(frame.path, FACE_NOUN, ledger=ledger,
-                           settings=settings)
+                           settings=settings, step="face check")
         if face_blocks_frame(faces, frame_size=size,
                              crop_area=crop_box(boxes, *size),
                              cluster=cluster_box(cluster)):
@@ -1116,7 +1135,8 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
     for target_noun in nouns:
         found = _sam_call(used, find_instances, frame.path, target_noun,
                           ledger=ledger, settings=settings,
-                          detail=f"target:{target_noun}")
+                          detail=f"target:{target_noun}",
+                          step="cut-out mask")
         passing = [inst for inst in found
                    if _passes(inst.box.confidence, PRODUCT_CONFIDENCE)]
         if passing:
@@ -1129,7 +1149,8 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
     if not cluster:
         return None, True
     faces = _sam_call(used, find_boxes, frame.path, FACE_NOUN,
-                      ledger=ledger, settings=settings, detail="face")
+                      ledger=ledger, settings=settings, detail="face",
+                      step="face check")
     boxes = [inst.box for inst in cluster]
     if face_blocks_frame(faces, frame_size=size,
                          crop_area=crop_box(boxes, *size),
@@ -1140,7 +1161,8 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
         for other in others:
             found = _sam_call(used, find_instances, frame.path, other,
                               ledger=ledger, settings=settings,
-                              detail=f"cross:{other}")
+                              detail=f"cross:{other}",
+                              step="cut-out mask")
             rival.extend(inst for inst in found
                          if _passes(inst.box.confidence, PRODUCT_CONFIDENCE))
         cluster = select_whole(drop_confused(instances, rival), size)
@@ -1181,7 +1203,8 @@ def _try_generic_fallback(frame: Frame, target: str, generic_noun: str,
     """
     found = _sam_call(used, find_instances, frame.path, generic_noun,
                       ledger=ledger, settings=settings,
-                      detail=f"generic:{generic_noun}")
+                      detail=f"generic:{generic_noun}",
+                      step="cut-out mask")
     candidates = [
         inst for inst in sorted(found, key=_score, reverse=True)
         if _passes(inst.box.confidence, FALLBACK_CONFIDENCE)
@@ -1202,7 +1225,8 @@ def _try_generic_fallback(frame: Frame, target: str, generic_noun: str,
     if not cluster:
         return None
     faces = _sam_call(used, find_boxes, frame.path, FACE_NOUN,
-                      ledger=ledger, settings=settings, detail="face")
+                      ledger=ledger, settings=settings, detail="face",
+                      step="face check")
     boxes = [inst.box for inst in cluster]
     if face_blocks_frame(faces, frame_size=size,
                          crop_area=crop_box(boxes, *size),

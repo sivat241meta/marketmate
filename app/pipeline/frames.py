@@ -36,6 +36,15 @@ def frames_for_window(frames: list[Frame], start_ms: int, end_ms: int,
     return [in_window[round(i * (len(in_window) - 1) / (k - 1))] for i in range(k)]
 
 
+def _pick_summary(data: dict, of: int) -> str:
+    try:
+        index = int(data["best_index"])
+    except (KeyError, TypeError, ValueError):
+        return f"of {of} frames"
+    match = "match" if data.get("matches") else "no match"
+    return f"frame {index + 1} of {of} · {match}"
+
+
 def pick_best_frame(item: DraftItem, candidates: list[Frame], *,
                     ledger, settings) -> tuple[Frame, bool]:
     """Ask Spark which candidate best shows the item and whether it matches."""
@@ -46,8 +55,12 @@ def pick_best_frame(item: DraftItem, candidates: list[Frame], *,
               ' "matches": bool}.')
     content: list[dict] = [{"type": "text", "text": prompt}]
     content.extend(image_part(frame.path) for frame in candidates)
-    reply = chat_json([{"role": "user", "content": content}],
-                      ledger=ledger, settings=settings, reasoning_effort="low")
+    count = len(candidates)
+    reply = chat_json(
+        [{"role": "user", "content": content}],
+        ledger=ledger, settings=settings, reasoning_effort="low",
+        step="find product frames",
+        summary=lambda data, of=count: _pick_summary(data, of))
     try:
         index = int(reply["best_index"])
     except (KeyError, TypeError, ValueError) as exc:

@@ -62,12 +62,18 @@ class RealtimeASR:
     """Minimal async client. Inject ``connect`` in tests with a fake server."""
 
     def __init__(self, *, settings, ledger, language: str = "ta",
-                 connect=None, url: str = REALTIME_URL) -> None:
+                 connect=None, url: str = REALTIME_URL,
+                 shop_id: int | None = None,
+                 session_id: int | None = None,
+                 step: str = "transcribe") -> None:
         self._settings = settings
         self._ledger = ledger
         self._language = language or "ta"
         self._connect = connect or _default_connect
         self._url = url
+        self._shop_id = shop_id
+        self._session_id_param = session_id
+        self._step = step
         self._ws = None
         self._session_id: str | None = None
         self._audio_bytes = 0
@@ -163,7 +169,11 @@ class RealtimeASR:
         if seconds <= 0:
             return
         usd = seconds / 3600 * REALTIME_USD_PER_HOUR
-        self._ledger.add("meta", VOICE_MODEL, usd, "realtime_asr")
+        self._ledger.add("meta", VOICE_MODEL, usd, "realtime_asr",
+                         shop_id=self._shop_id,
+                         session_id=self._session_id_param,
+                         step=self._step, ok=1,
+                         summary=f"{seconds} s live audio")
 
     async def close(self) -> None:
         self._log_cost()

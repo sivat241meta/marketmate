@@ -165,11 +165,19 @@ def parse_purchase_json(data: dict, transcript: Transcript, *,
     return items
 
 
+def _purchases_summary(data: dict) -> str:
+    found = data.get("items")
+    count = len(found) if isinstance(found, list) else 0
+    noun = "item" if count == 1 else "items"
+    return f"{count} {noun}"
+
+
 def extract_purchases(transcript: Transcript, *, ledger, settings,
                       language: str = "ta") -> list[PurchaseDraft]:
     data = chat_json(build_purchase_messages(transcript, language=language),
                      ledger=ledger, settings=settings,
-                     reasoning_effort="low")
+                     reasoning_effort="low", step="note purchases",
+                     summary=_purchases_summary)
     if not isinstance(data, dict):
         return []
     return parse_purchase_json(data, transcript, language=language)
@@ -244,6 +252,7 @@ def process_purchase_session(conn, session_id: int, audio: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         shop_row = conn.execute("SELECT language FROM shops WHERE id = ?",
                                 (shop_id,)).fetchone()
         shop_lang = shop_row["language"] if shop_row else "ta"

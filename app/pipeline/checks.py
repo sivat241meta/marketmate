@@ -129,7 +129,8 @@ def cross_check_number(phrase: str, language_name: str, *,
     ]
     try:
         data = chat_json(messages, ledger=ledger, settings=settings,
-                         provider=provider, reasoning_effort="low")
+                         provider=provider, reasoning_effort="low",
+                         step="check prices")
     except Exception:  # noqa: BLE001 - any failure means "not sure"
         return None
     if not isinstance(data, dict):

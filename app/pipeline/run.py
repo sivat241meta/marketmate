@@ -349,10 +349,22 @@ def _finish_session(conn, session_id: int, transcript: Transcript, frames: list[
                   all_frames=frames, video=video)
 
 
+def _bind_session(conn, session_id: int, ledger: CostLedger) -> None:
+    """Stamp the ledger with this job's shop/session for the AI calls page."""
+    try:
+        row = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
+                           (session_id,)).fetchone()
+    except Exception:  # noqa: BLE001 - a missing row leaves NULLs
+        row = None
+    ledger.bind(shop_id=row["shop_id"] if row else None,
+                session_id=session_id)
+
+
 def process_video_session(conn, session_id: int, video: Path, *,
                           settings, ledger: CostLedger) -> None:
     """Run the full pipeline for one uploaded video. Never raises."""
     video = Path(video)
+    _bind_session(conn, session_id, ledger)
     try:
         db.set_stage(conn, session_id, "uploaded")
         check_length(video, settings.max_video_seconds)
@@ -412,6 +424,7 @@ def apply_spoken_language(conn, session_id: int, new_lang: str, *,
         db.set_session_status(conn, session_id, "failed",
                               "Unknown language. Please try again.")
         return
+    _bind_session(conn, session_id, ledger)
     try:
         row = conn.execute("SELECT stage FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()
@@ -483,6 +496,7 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     # stepper immediately and let the background job do the re-run.
     if row is None or row["status"] not in ("failed", "review", "processing"):
         raise ValueError("reprocess is only for failed or review sessions")
+    _bind_session(conn, session_id, ledger)
     session_dir = _session_dir(settings, session_id)
     transcript_path = session_dir / "transcript.json"
     if not transcript_path.is_file():

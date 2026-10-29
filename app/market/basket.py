@@ -301,7 +301,7 @@ def explain_basket(plans: list[BasketPlan], budget: Decimal | None, *,
     try:
         data = chat_json(build_basket_messages(plans, budget),
                          ledger=ledger, settings=settings,
-                         reasoning_effort="low")
+                         reasoning_effort="low", step="market search")
     except (SparkError, CostCapExceeded):
         return template_explanation(plans, budget)
     text = ""

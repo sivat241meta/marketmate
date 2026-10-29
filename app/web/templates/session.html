@@ -60,6 +60,7 @@
 <p class="muted">{{ t('sess.refresh_note') }}</p>
 </noscript>
 {% endif %}
+<p class="muted"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
 {% endblock %}
 {% block scripts %}
 {% if session["status"] not in ("failed", "approved", "review") %}

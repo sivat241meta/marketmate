@@ -3484,3 +3484,20 @@ body.rdlg-open { overflow: hidden; }
     min-height: 44px;
   }
 }
+/* Task 78: Meta AI calls page. */
+.ai-model {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.ai-stats .ai-bymodel { gap: 2px; }
+.ai-stats .ai-bymodel .stat-label { display: block; }
+.ai-group-head { display: flex; align-items: baseline; gap: 8px; }
+.ai-row.is-new { background: var(--green-soft); transition: background 2s; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-row.is-new { transition: none; }
+}

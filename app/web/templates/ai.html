@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('ai.title') }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block crumb_page %}{{ t('ai.title') }}{% endblock %}
+{% block content %}
+<h1>{{ t('ai.title') }}</h1>
+<p class="muted">{{ t('ai.tagline') }} <a href="{{ honesty_url }}" target="_blank" rel="noopener">{{ t('ai.honesty_link') }}</a></p>
+
+<div class="stat-grid ai-stats">
+  <div class="stat"><b class="stat-num" data-ai-calls>{{ stats.calls }}</b><span class="stat-label">{{ t('ai.calls_today') }}</span></div>
+  <div class="stat"><b class="stat-num money" data-ai-cost>{{ cost_text }}</b><span class="stat-label">{{ t('ai.cost_today') }}</span></div>
+  <div class="stat"><b class="stat-num" data-ai-avg>{{ avg_text }}</b><span class="stat-label">{{ t('ai.avg_latency') }}</span></div>
+  <div class="stat ai-bymodel">
+    <span class="stat-label">{{ t('ai.voice') }} · <b>{{ stats.by_model.voice }}</b></span>
+    <span class="stat-label">{{ t('ai.spark_text') }} · <b>{{ stats.by_model.spark_text }}</b></span>
+    <span class="stat-label">{{ t('ai.spark_vision') }} · <b>{{ stats.by_model.spark_vision }}</b></span>
+    <span class="stat-label">{{ t('ai.sam') }} · <b>{{ stats.by_model.sam }}</b></span>
+    {% if stats.by_model.baseten %}<span class="stat-label">{{ t('ai.baseten') }} · <b>{{ stats.by_model.baseten }}</b></span>{% endif %}
+  </div>
+</div>
+
+{% set sess_q = ("&session=" ~ session_id) if session_id is not none else "" %}
+<nav class="chips" aria-label="{{ t('ai.title') }}">
+  <a class="chip{% if kind == "all" %} is-active{% endif %}" href="/e/{{ token }}/ai?show=all{{ sess_q }}">{{ t('ai.filter_all') }}</a>
+  <a class="chip{% if kind == "voice" %} is-active{% endif %}" href="/e/{{ token }}/ai?show=voice{{ sess_q }}">{{ t('ai.filter_voice') }}</a>
+  <a class="chip{% if kind == "spark" %} is-active{% endif %}" href="/e/{{ token }}/ai?show=spark{{ sess_q }}">{{ t('ai.filter_spark') }}</a>
+  <a class="chip{% if kind == "sam" %} is-active{% endif %}" href="/e/{{ token }}/ai?show=sam{{ sess_q }}">{{ t('ai.filter_sam') }}</a>
+</nav>
+{% if session_id is not none %}
+<p class="muted">{{ t('sess.title', id=session_id) }} · <a href="/e/{{ token }}/ai?show={{ kind }}">{{ t('ai.all_sessions') }}</a></p>
+{% endif %}
+{% if processing %}<p class="notice need" data-ai-live>{{ t('ai.live_note') }}</p>{% endif %}
+
+<div data-ai-list
+     data-ai-poll="/e/{{ token }}/ai.json?show={{ kind }}{{ sess_q }}"
+     data-ai-since="{{ max_id }}"
+     data-ai-live="{{ 1 if processing else 0 }}"
+     data-ai-session-base="/e/{{ token }}/s/"
+     data-ai-ok="{{ t('ai.ok') }}"
+     data-ai-failed="{{ t('ai.failed') }}">
+{% if groups %}
+{% for group in groups %}
+<section class="list-card" data-ai-group="{{ group.session_id if group.session_id is not none else "none" }}">
+  <h2 class="section-head ai-group-head"><span>{{ group.title }}</span>{% if group.session_id is not none %} <a href="/e/{{ token }}/s/{{ group.session_id }}">#{{ group.session_id }}</a>{% endif %}</h2>
+  {% for row in group.rows %}
+  <div class="list-row ai-row" data-ai-row data-id="{{ row.id }}" data-kind="{{ row.kind }}">
+    <div class="list-main">
+      <span class="list-name"><code class="ai-model">{{ row.model }}</code>{% if row.spark_kind %} <span class="muted">{{ row.spark_kind }}</span>{% endif %}</span>
+      <span class="list-sub">{% if row.step_label %}{{ row.step_label }}{% endif %}{% if row.summary %} · {{ row.summary }}{% endif %}</span>
+    </div>
+    <div class="list-price"><span>{{ row.cost }}</span><small>{{ row.time }}{% if row.latency %} · {{ row.latency }}{% endif %}</small></div>
+    {% if row.ok is false %}{{ ui.pill(t('ai.failed'), "danger") }}{% else %}{{ ui.pill(t('ai.ok'), "live") }}{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+{% else %}
+{{ ui.empty_state(t('ai.title'), t('ai.empty')) }}
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('ai.js') if static_url is defined else '/static/ai.js' }}"></script>
+{% endblock %}

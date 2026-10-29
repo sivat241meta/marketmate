@@ -3,8 +3,10 @@ from __future__ import annotations
 import base64
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import monotonic
 
 import httpx
 from meta_sam_parser import (
@@ -183,7 +185,12 @@ def _data_url(path: Path) -> str:
 
 
 def _request_text(image: Path, noun: str, *, ledger: CostLedger,
-                  settings: Settings, detail: str) -> str:
+                  settings: Settings, detail: str,
+                  step: str | None = None,
+                  shop_id: int | None = None,
+                  session_id: int | None = None,
+                  summarize: Callable[[str], str | None] | None = None,
+                  ) -> str:
     """One SAM 3.1 call; returns the joined streamed text and logs cost."""
     ledger.check()
     body = {
@@ -196,6 +203,7 @@ def _request_text(image: Path, noun: str, *, ledger: CostLedger,
         ]}],
     }
     chunks: list[str] = []
+    started = monotonic()
     try:
         with httpx.stream("POST", f"{META_BASE_URL}/responses", json=body,
                            headers={"Authorization": "Bearer " + settings.model_api_key},
@@ -216,21 +224,65 @@ def _request_text(image: Path, noun: str, *, ledger: CostLedger,
                 if event.get("type") == "response.completed":
                     break
     except Exception as exc:
+        ledger.add("meta", SAM_MODEL, 0.0, detail,
+                   shop_id=shop_id, session_id=session_id, step=step,
+                   latency_ms=int((monotonic() - started) * 1000), ok=0)
         raise SamError(f"SAM request failed: {exc}") from exc
-    ledger.add("meta", SAM_MODEL, SAM_USD_PER_IMAGE, detail)
-    return "".join(chunks)
+    text = "".join(chunks)
+    summary = None
+    if summarize is not None:
+        try:
+            summary = summarize(text)
+        except Exception:  # noqa: BLE001 - a bad summary never fails the call
+            summary = None
+    ledger.add("meta", SAM_MODEL, SAM_USD_PER_IMAGE, detail,
+               shop_id=shop_id, session_id=session_id, step=step,
+               latency_ms=int((monotonic() - started) * 1000), ok=1,
+               summary=summary)
+    return text
+
+
+def _box_summary(text: str) -> str:
+    boxes = parse_sam_text(text)
+    return _with_confidence(f"{len(boxes)} boxes",
+                            [b.confidence for b in boxes])
+
+
+def _mask_summary(text: str) -> str:
+    instances = parse_sam_response(text)
+    masks = sum(1 for inst in instances if inst.mask is not None)
+    return _with_confidence(f"{masks} masks",
+                            [inst.mask.confidence for inst in instances
+                             if inst.mask is not None])
+
+
+def _with_confidence(base: str, confidences: list[float | None]) -> str:
+    known = [c for c in confidences if c is not None]
+    if not known:
+        return base
+    return f"{base} c={sum(known) / len(known):.2f}"
 
 
 def find_boxes(image: Path, noun: str, *, ledger: CostLedger, settings: Settings,
-               detail: str = "find_boxes") -> list[Box]:
+               detail: str = "find_boxes",
+               step: str | None = None,
+               shop_id: int | None = None,
+               session_id: int | None = None) -> list[Box]:
     """Segment every instance of noun in image via SAM 3.1; log cost."""
     return parse_sam_text(_request_text(
-        image, noun, ledger=ledger, settings=settings, detail=detail))
+        image, noun, ledger=ledger, settings=settings, detail=detail,
+        step=step, shop_id=shop_id, session_id=session_id,
+        summarize=_box_summary))
 
 
 def find_instances(image: Path, noun: str, *, ledger: CostLedger,
-                   settings: Settings, detail: str = "find_instances"
+                   settings: Settings, detail: str = "find_instances",
+                   step: str | None = None,
+                   shop_id: int | None = None,
+                   session_id: int | None = None,
                    ) -> list[SamInstance]:
     """Like find_boxes, but each box keeps its decoded mask."""
     return parse_sam_response(_request_text(
-        image, noun, ledger=ledger, settings=settings, detail=detail))
+        image, noun, ledger=ledger, settings=settings, detail=detail,
+        step=step, shop_id=shop_id, session_id=session_id,
+        summarize=_mask_summary))

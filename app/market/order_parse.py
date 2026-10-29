@@ -771,7 +771,8 @@ def _resolve_spark_line(line, full_text: str):
 
 
 def wanted_local_first(text: str, price_list_items, language: str | None,
-                       *, ledger, settings, aliases=None):
+                       *, ledger, settings, aliases=None,
+                       step: str = "market search"):
     """Typed-order lines: free local parse first, Spark only for leftovers.
 
     Mirrors live billing: parse_order handles everything on the price list;
@@ -793,7 +794,12 @@ def wanted_local_first(text: str, price_list_items, language: str | None,
         note = item_like_leftovers(leftover, [w.name_en for w in local])
         return (local, " ".join(note) or None)
     try:
-        spark = wanted_from_text(text or "", ledger=ledger, settings=settings)
+        if step == "market search":
+            spark = wanted_from_text(text or "", ledger=ledger,
+                                     settings=settings)
+        else:
+            spark = wanted_from_text(text or "", ledger=ledger,
+                                     settings=settings, step=step)
     except Exception:
         if not local:
             raise

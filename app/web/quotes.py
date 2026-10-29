@@ -213,6 +213,7 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         session_dir = Path(settings.data_dir) / "sessions" / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
         wav = extract_audio(Path(audio), session_dir / "audio.wav")
@@ -222,7 +223,7 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
             settings=settings, languages=shop_bias(shop_lang))
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
-                                  settings=settings)
+                                  settings=settings, step="voice order")
         for line in wanted:
             line.source = "voice"
         if not wanted:
@@ -260,6 +261,7 @@ def process_quote_photo_session(conn, session_id: int, image: Path, *,
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
+        ledger.bind(shop_id=shop_id, session_id=session_id)
         db.set_stage(conn, session_id, "matching")
         wanted = wanted_from_photo(Path(image), ledger=ledger,
                                    settings=settings)
@@ -452,6 +454,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                   lang=language, status=400)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
+        ledger.bind(shop_id=shop["id"])
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         price_items = (db.version_items(conn, version_id)
                        if version_id is not None else [])
