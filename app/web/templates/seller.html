@@ -188,7 +188,7 @@
     {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb letter" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
     <div class="list-main">
       <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
-      <span class="list-sub">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ t('dash.per', per=item.lines[0].per) }}{% endif %}</span>
+      <span class="list-sub">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ item.lines[0].per }}{% endif %}</span>
       {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
       {% if item.margin_chip %}<span class="list-sub">{{ item.margin_chip }}</span>{% endif %}
       {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
@@ -283,7 +283,7 @@
   {% for item in items %}
   <div class="mini" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
     {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
-    <div class="mini-main"><span class="mini-name" lang="{{ shop_lang }}">{{ item.name_local }}</span><span class="per">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ t('dash.per', per=item.lines[0].per) }}{% endif %}</span></div>
+    <div class="mini-main"><span class="mini-name" lang="{{ shop_lang }}">{{ item.name_local }}</span><span class="per">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ item.lines[0].per }}{% endif %}</span></div>
     <span class="p">{% if item.lines %}{{ item.lines[0].price | money(shop["currency"]) }}{% endif %}</span>
     {% if not is_staff %}
     <details class="rename-sheet" data-rename-sheet>

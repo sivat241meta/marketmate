@@ -403,7 +403,7 @@ def test_quote_choice_page_has_three_cards(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     html = client.get(f"/s/{slug}/quote").text
-    assert "Get a price quote" in html
+    assert "Order by voice" in html
     assert "Speak" in html and "Type" in html and "Photo" in html
     assert "style=" not in html
 
@@ -520,7 +520,7 @@ def test_shop_page_has_quote_button_and_market_links_quote(tmp_path,
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     html = client.get(f"/s/{slug}").text
-    assert "Get a price quote" in html
+    assert "Order by voice" in html
     assert f"/s/{slug}/quote" in html
     assert "btn-primary" in html
 

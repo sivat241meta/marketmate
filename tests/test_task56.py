@@ -255,21 +255,15 @@ def test_56_04_cart_varieties_match_exactly(tmp_path):
         assert Decimal(str(lines[1]["line_total"])) == Decimal("100.00")
     finally:
         conn.close()
-    # Unknown variety is not_on_list, never a different variety.
+    # Unknown variety is never priced as a different variety; with
+    # nothing priced at all, no order is sent (Task 107).
     resp2 = client.post(
         f"/s/{slug}/quote",
         json={"customer_name": "Test",
               "lines": [{"name_en": "banana", "variety": "nosuch", "qty": 1, "unit": "kg"}]},
     )
-    assert resp2.status_code == 200, resp2.text
-    conn = db.connect(tmp_path / "data")
-    try:
-        row2 = db.get_quote_by_token(conn, resp2.json()["token"])
-        only = json.loads(row2["lines_json"])[0]
-        assert only["status"] == "not_on_list"
-        assert only.get("unit_price") in (None, "")
-    finally:
-        conn.close()
+    assert resp2.status_code == 400, resp2.text
+    assert "have these today" in resp2.json()["error"]
 
 
 def _publish_tamil_shop(tmp_path):

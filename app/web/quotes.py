@@ -75,6 +75,24 @@ def customer_phone_ok(phone: str) -> bool:
                 or _INTL_PHONE_RE.match(phone))
 
 
+#: Quote line statuses that carry a price (needs_qty is priced with an
+#: assumed quantity). An order with none of these is never sent.
+PRICED_STATUSES = ("priced", "needs_qty")
+
+
+def quote_has_priced(quote) -> bool:
+    """True when at least one quote line carries a price."""
+    return any(getattr(line, "status", "") in PRICED_STATUSES
+               for line in quote.lines)
+
+
+def stored_lines_have_priced(raw_lines) -> bool:
+    """True when at least one stored (dict) quote line carries a price."""
+    return any(isinstance(entry, dict)
+               and entry.get("status") in PRICED_STATUSES
+               for entry in (raw_lines or []))
+
+
 def _effective_order_status(status: str) -> str:
     """Customer-facing status: paid reads collected, billed reads new."""
     if status == "paid":
@@ -203,6 +221,24 @@ def _whatsapp_link(shop, raw_lines: list[dict], total: str,
     return f"https://wa.me/{digits}?text={url_quote(text)}"
 
 
+def _empty_session_lines(quote) -> list[dict]:
+    """JSON-safe line summary for a nothing-priced voice/photo session."""
+    return [{"name_en": line.name_en, "variety": line.variety,
+             "qty": str(line.qty), "unit": line.unit}
+            for line in quote.lines]
+
+
+def _store_empty_session(conn, session_id: int, quote, *, settings) -> None:
+    """Record unmatched lines; no order is created for a nothing-priced
+    voice or photo list."""
+    meta = read_quote_meta(Path(settings.data_dir), session_id)
+    meta["empty_lines"] = _empty_session_lines(quote)
+    write_quote_meta(Path(settings.data_dir), session_id, meta)
+    db.set_stage(conn, session_id, "ready")
+    db.set_session_status(conn, session_id, "review",
+                          "nothing on this shop's list matched")
+
+
 def process_quote_voice_session(conn, session_id: int, audio: Path, *,
                                 settings, ledger) -> str | None:
     """Transcribe a spoken list, match it, store the quote. Never raises."""
@@ -231,6 +267,10 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
                                   "We could not hear any items. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
+        if not quote_has_priced(quote):
+            _store_empty_session(conn, session_id, quote,
+                                 settings=settings)
+            return None
         meta = read_quote_meta(Path(settings.data_dir), session_id)
         token = db.create_quote(conn, shop_id=shop_id, quote=quote,
                                 customer_name=meta.get("customer_name"),
@@ -270,6 +310,10 @@ def process_quote_photo_session(conn, session_id: int, image: Path, *,
                                   "We could not read that photo. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
+        if not quote_has_priced(quote):
+            _store_empty_session(conn, session_id, quote,
+                                 settings=settings)
+            return None
         meta = read_quote_meta(Path(settings.data_dir), session_id)
         token = db.create_quote(conn, shop_id=shop_id, quote=quote,
                                 customer_name=meta.get("customer_name"),
@@ -406,6 +450,29 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "ui_lang": language if language in ("ta", "hi", "en") else "en"},
             status_code=status)
 
+    def _empty_context(request, shop, quote_lines, lang="en"):
+        """Nothing-priced page: no order is sent; the customer picks
+        from the shop's list or types/speaks again."""
+        language = _customer_lang(shop, lang)
+        lines = []
+        for line in quote_lines or []:
+            if isinstance(line, dict):
+                name = line.get("name_en", "")
+                variety = line.get("variety") or None
+                qty = _fmt_money(line.get("qty", ""))
+                unit = line.get("unit") or ""
+            else:
+                name = getattr(line, "name_en", "")
+                variety = getattr(line, "variety", None) or None
+                qty = _fmt_money(getattr(line, "qty", ""))
+                unit = getattr(line, "unit", "") or ""
+            lines.append({"display": _display(name, variety),
+                          "qty": qty, "unit": unit})
+        return templates.TemplateResponse(request, "quote_empty.html", {
+            "shop": shop, "lines": lines, "lang": language,
+            "t": get_strings(language),
+            "ui_lang": language if language in ("ta", "hi", "en") else "en"})
+
     @app.get("/s/{slug}/quote")
     def quote_start(request: Request, slug: str, conn: Conn, lang: str = "en"):
         shop = _shop_or_404(conn, slug)
@@ -485,6 +552,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                   lang=language, status=400,
                                   error_field="items")
         quote = build_quote(conn, shop["id"], wanted)
+        if not quote_has_priced(quote):
+            return _empty_context(request, shop, quote.lines,
+                                  lang=language)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                 not_understood=not_understood,
                                 customer_name=name,
@@ -574,6 +644,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return JSONResponse({"error": strings("order.phone_invalid")},
                                 status_code=400)
         quote = build_quote(conn, shop["id"], wanted)
+        if not quote_has_priced(quote):
+            return JSONResponse({"error": strings("order.none_title")},
+                                status_code=400)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                 source="customer", customer_name=name,
                                 customer_phone=phone or None)
@@ -676,6 +749,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return RedirectResponse(
                 f"/q/{meta['token']}{_lang_suffix(language)}",
                 status_code=303)
+        if (meta.get("empty_lines") is not None
+                and session["status"] in ("review", "approved")):
+            return _empty_context(request, shop, meta["empty_lines"],
+                                  lang=language)
         progress = db.session_progress(session)
         return templates.TemplateResponse(request, "quote_status.html", {
             "shop": shop, "session": session, "progress": progress,

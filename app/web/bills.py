@@ -510,19 +510,36 @@ def board_column_for(row) -> str | None:
     return BOARD_COLUMN.get(str(status or "").strip().lower())
 
 
-def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
-    """Big order-status buttons: (status value, label, button kind)."""
+def _order_actions(status: str, lang: str = "en", *,
+                   nothing_priced: bool = False
+                   ) -> list[tuple[str, str, str]]:
+    """Big order-status buttons: (status value, label, button kind).
+
+    For an order with nothing priced, Cancel order is the primary
+    action and the advance step (packing/ready/collected) is secondary.
+    """
     t = t_for(lang)
     if status in ("new", "billed"):
-        return [("packing", t("bill.start_packing"), "primary"),
-                ("cancelled", t("bill.cancel_order"), "ghost")]
-    if status == "packing":
-        return [("ready", t("bill.mark_ready"), "primary"),
-                ("cancelled", t("bill.cancel_order"), "ghost")]
-    if status == "ready":
-        return [("collected", t("bill.mark_collected"), "primary"),
-                ("cancelled", t("bill.cancel_order"), "ghost")]
-    return []
+        advance = ("packing", t("bill.start_packing"))
+    elif status == "packing":
+        advance = ("ready", t("bill.mark_ready"))
+    elif status == "ready":
+        advance = ("collected", t("bill.mark_collected"))
+    else:
+        return []
+    cancel = ("cancelled", t("bill.cancel_order"))
+    if nothing_priced:
+        return [(*cancel, "primary"), (*advance, "ghost")]
+    return [(*advance, "primary"), (*cancel, "ghost")]
+
+
+def _lines_have_priced(raw_lines) -> bool:
+    """True when at least one stored line carries a price."""
+    from app.web.quotes import PRICED_STATUSES
+
+    return any(isinstance(entry, dict)
+               and entry.get("status") in PRICED_STATUSES
+               for entry in (raw_lines or []))
 
 
 def _accept_if_collectable_order(conn, bill) -> None:
@@ -866,6 +883,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         raw = json.loads(row["lines_json"] or "[]")
                     except ValueError:
                         raw = []
+                    if not isinstance(raw, list):
+                        raw = []
                     names = [
                         _display(str(entry.get("name_en", "")),
                                  entry.get("variety"))
@@ -878,7 +897,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     except (InvalidOperation, ValueError):
                         card_total = row["total"]
                     text, _kind = _status_pill(row, ui_lang)
-                    actions = _order_actions(row["status"], ui_lang)
+                    card_nothing = bool(raw) and not _lines_have_priced(raw)
+                    actions = _order_actions(row["status"], ui_lang,
+                                             nothing_priced=card_nothing)
                     av_name = (_row_customer_name(row)
                                or _row_phone(row)
                                or f"#{row['id']}").strip()
@@ -890,6 +911,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "time": _row_time(row, now=now, lang=ui_lang),
                         "pill": text,
                         "next": actions[0] if actions else None,
+                        "nothing_priced": card_nothing,
                         "avatar_initial": av_name[:1].upper() or "#",
                         "avatar_idx": sum(av_name.encode("utf-8")) % 5,
                     })
@@ -971,7 +993,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             and bill_source == "customer")
         is_open_quote = (bill["kind"] == "quote"
                          and bill["status"] in ("new", "packing"))
-        order_actions = (_order_actions(bill["status"], ui_lang)
+        nothing_priced = bool(raw_lines) and not _lines_have_priced(
+            raw_lines)
+        order_actions = (_order_actions(bill["status"], ui_lang,
+                                        nothing_priced=nothing_priced)
                          if bill["kind"] == "quote" or is_customer_bill else [])
         ready_wa_url = None
         ready_no_phone = False
@@ -1026,6 +1051,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "bill_token": bill_token, "public_url": public_url,
             "public_qr": qr_svg(public_url), "ui_lang": ui_lang,
             "order_actions": order_actions,
+            "nothing_priced": nothing_priced,
             "ready_wa_url": ready_wa_url,
             "ready_no_phone": ready_no_phone,
             "price_changed": _row_price_changed(bill),
@@ -1673,12 +1699,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
 
+    def _nothing_priced_bill(bill) -> bool:
+        try:
+            stored = json.loads(bill["lines_json"] or "[]")
+        except ValueError:
+            stored = []
+        return bool(stored) and not _lines_have_priced(stored)
+
     @app.post("/e/{token}/bills/{bill_id}/paid")
     async def bill_paid_post(request: Request, token: str, bill_id: int):
         conn = db.connect(data_dir)
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
+            if _nothing_priced_bill(bill):
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                ui_lang = get_ui_lang(request, shop)
+                return _bill_context(
+                    request, shop, token, fresh, conn,
+                    error=t_for(ui_lang)("bill.nothing_priced"),
+                    status_code=400)
             form = await request.form()
             mode = str(form.get("mode") or "cash").strip().lower() or "cash"
             currency = (shop["currency"] or "INR").upper()
@@ -1720,6 +1760,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                    ui_lang)
             if denied is not None:
                 return denied
+            if _nothing_priced_bill(bill):
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(
+                    request, shop, token, fresh, conn,
+                    error=t_for(ui_lang)("bill.nothing_priced"),
+                    status_code=400)
             form = await request.form()
             name = str(form.get("customer_name") or "")
             phone = str(form.get("customer_phone") or "")

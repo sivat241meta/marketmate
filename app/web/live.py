@@ -65,6 +65,10 @@ START_MESSAGE = (
 )
 NO_ITEMS_MESSAGE = "We could not hear any items. Please try again."
 NO_PRICES_MESSAGE = "No price list yet. Record today's prices first."
+NOTHING_PRICED_MESSAGE = (
+    "This shop doesn't have these today. "
+    "Pick from the list, or speak again."
+)
 STOPPED_MESSAGE = "Stopped at 5 minutes – check what we heard"
 
 # Monotonic clock seam: tests patch app.web.live.monotonic with a fake clock.
@@ -487,6 +491,10 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
                 row = db.get_quote_by_token(conn, token)
                 url = f"/e/{bill_token}/bills/{row['id']}"
                 return ({"type": "done", "bill_url": url}, None)
+            from app.web.quotes import quote_has_priced
+
+            if not quote_has_priced(quote):
+                return (None, NOTHING_PRICED_MESSAGE)
             details = contact or {}
             token = db.create_quote(
                 conn, shop_id=shop_id, quote=quote,

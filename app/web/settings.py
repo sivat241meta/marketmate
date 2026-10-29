@@ -28,6 +28,11 @@ _UPI_RE = re.compile(r"^[a-zA-Z0-9._\-]{2,}@[a-zA-Z]{2,}[a-zA-Z0-9.\-]*$")
 _LANGUAGES = {lang.code for lang in LANGUAGES}
 _CURRENCIES = set(all_currencies())
 
+#: Stored shop-type values with translated labels (``set.type_<value>``).
+#: The settings form renders these as a select; any other stored value
+#: is kept as an extra option so nothing is ever lost.
+SHOP_TYPES = ("vegetable",)
+
 
 def _clean_phone(phone: str) -> str:
     return re.sub(r"[\s\-()]", "", phone or "")
@@ -104,6 +109,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "shop": shop, "token": token, "error": error,
             "error_field": error_field, "saved": saved,
             "languages": LANGUAGES, "currencies": all_currencies(),
+            "shop_types": SHOP_TYPES,
             "seller_url": seller_url,
             "seller_qr": qr_svg(seller_url),
             "rounding_on": db.shop_rounding_enabled(shop),
@@ -204,6 +210,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "error_field": error_field, "saved": False,
                         "languages": LANGUAGES,
                         "currencies": all_currencies(),
+                        "shop_types": SHOP_TYPES,
                         "seller_url": seller_url,
                         "seller_qr": qr_svg(seller_url),
                         "rounding_on": db.shop_rounding_enabled(fresh),

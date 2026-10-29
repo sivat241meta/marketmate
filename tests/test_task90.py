@@ -190,7 +190,7 @@ def test_shop_band_tools_and_hooks(tmp_path):
     assert 'class="hero2"' in html
     assert html.index('class="hero2"') < html.index("data-shop-grid")
     assert "Koyambedu" in html
-    assert "Get a price quote" in html
+    assert "Order by voice" in html
     assert "btn-primary" in html
     assert "wa.me/" in html and "tel:" in html
     assert "said today" in html.lower() or "said_today" not in html

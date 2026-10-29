@@ -19,7 +19,7 @@
 <div class="ready-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
 <div class="alert alert-warn" data-soldout-note{% if not sold_out_any %} hidden{% endif %}>{{ t('order.sold_out_note') }}</div>
 {% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
-{% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
+{% if open_state == "closed" and open_time and order_status == "new" %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">Not understood: {{ not_understood }} – add it from the list</div>{% endif %}
 
 {% if order_status == "cancelled" %}

@@ -5,6 +5,8 @@
 
 /* ---- Shared public header: base .hdr stays hidden, partial shows ---- */
 body.pub > .hdr { display: none; }
+/* No empty band between the top strip and the header (like home). */
+body.pub .content { padding-top: 0; }
 body.pub .hp-header,
 body.pub .hp-sheet { overflow-wrap: break-word; }
 body.pub .hp-header .logo,
@@ -307,6 +309,28 @@ body.pub .float.shop-float .pill.bar { min-height: var(--tap); }
 @media (max-width: 600px) {
   body.pub .float.shop-float { flex-wrap: wrap; }
 }
+/* Bag sheet lines mirror the laptop order column: name left with
+   qty x price muted below, line amount right-aligned; total row
+   label left / amount right. */
+body.pub .sheet .rl {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--line-2);
+}
+body.pub .sheet .rl > div { min-width: 0; }
+body.pub .sheet .rl b { font-weight: 700; overflow-wrap: break-word; }
+body.pub .sheet .rl small { display: block; color: var(--muted); font-size: 12px; }
+body.pub .sheet .rl > b:last-child { text-align: right; white-space: nowrap; flex: none; }
+body.pub .sheet .rt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 10px;
+}
+body.pub .sheet .rt b { font-size: 22px; font-weight: 800; color: var(--ink); }
 @media (min-width: 1000px) {
   body.pub .shop-layout {
     display: grid;
@@ -329,14 +353,24 @@ body.pub .float.shop-float .pill.bar { min-height: var(--tap); }
 }
 
 /* ---- Market page: homepage search card, flat on the page ---- */
-body.pub form.hp-search { margin: 20px 0 0; }
+body.pub form.hp-search { margin: 20px 0 0; min-width: 0; max-width: 100%; }
 body.pub .hp-search .hp-go { min-height: var(--tap); }
+body.pub .hp-search .hp-tabs { max-width: 100%; }
+body.pub form.filters { min-width: 0; max-width: 100%; }
 body.pub .filter-row {
   display: flex;
   gap: 8px;
   overflow-x: auto;
   padding: 12px 2px 4px;
   align-items: center;
+  max-width: 100%;
+}
+body.pub [data-closed-notice] { flex-wrap: wrap; align-items: center; }
+body.pub [data-closed-notice] .pill { flex: none; }
+@media (max-width: 600px) {
+  body.pub .filter-row { flex-wrap: wrap; }
+  body.pub .filter-row .pin-wrap { flex: 1 1 100%; }
+  body.pub .filter-row .pin-wrap input { width: 100%; }
 }
 body.pub .filter-row .chip,
 body.pub .filter-row .seg { flex: none; }

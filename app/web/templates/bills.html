@@ -78,6 +78,7 @@
       <div class="ocard" data-search-row="{{ card.label }} {{ card.names | join(' ') }}">
         <b><span class="av a{{ card.avatar_idx }}" aria-hidden="true">{{ card.avatar_initial }}</span> <a href="/e/{{ token }}/bills/{{ card.id }}">{{ card.label }}</a></b>
         <div class="ln">{{ card.names[:3] | join(" · ") }}{% if card.names | length > 3 %} +{{ card.names | length - 3 }}{% endif %}</div>
+        {% if card.nothing_priced %}<div class="ln card-note" data-nothing-priced>{{ t('bill.nothing_priced') }}</div>{% endif %}
         <div class="ft"><b>{{ card.total | money(shop["currency"]) }}</b>
           {% if card.next %}
           <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ card.id }}/order-status">
