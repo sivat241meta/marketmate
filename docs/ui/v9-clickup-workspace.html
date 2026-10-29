@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarketMate · v9 · ClickUp-style workspace × fresh product grid</title>
+<style>
+@font-face{font-family:"PJS";src:url(http://127.0.0.1:8015/static/fonts/PlusJakartaSans-Variable.ttf) format("truetype");font-weight:200 800}
+@font-face{font-family:"NST";src:url(http://127.0.0.1:8015/static/fonts/NotoSansTamil-Regular.ttf) format("truetype")}
+:root{
+  --ink:#292D34;--ink2:#3C4048;--muted:#656F7D;--line:#E8EAED;--soft:#F7F8F9;--bg:#FAFBFC;--chrome:#1E1F21;--chrome-2:#2C2D31;--chrome-txt:#C8CCD3;
+  --violet:#7B68EE;--violet-ink:#5F55EE;--violet-soft:#F0EEFD;
+  --grad:linear-gradient(90deg,#FD71AF 0%,#7B68EE 50%,#49CCF9 100%);
+  --green:#0F7F3F;--green-soft:#E8F7EE;--amber:#8A5208;--amber-soft:#FFF5E3;--red:#C4363B;--rec:#E5484D;--red-soft:#FDECEC;--blue:#1F5FBF;--blue-soft:#EAF2FF;
+  --r:14px;--sh:0 1px 2px rgba(23,23,28,.05),0 10px 28px rgba(23,23,28,.07)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 "PJS","NST",system-ui,sans-serif}
+.page{max-width:1240px;margin:0 auto;padding:30px 22px 90px}
+h1{font-size:44px;line-height:1.06;letter-spacing:-1.2px;margin:6px 0 10px}
+h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:16px;max-width:820px}
+.sec{margin:46px 0 12px;font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+h2{font-size:26px;letter-spacing:-.5px;margin:0 0 6px}
+.note{color:var(--muted);font-size:13.5px;margin:0 0 14px;max-width:900px}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.tokens{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.tok{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;font-size:12px;display:flex;gap:8px;align-items:center}
+.sw{width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.06)}
+/* phone */
+.phone{width:380px;height:800px;border:10px solid #0d0d10;border-radius:44px;overflow:hidden;background:#fff;position:relative;box-shadow:var(--sh);flex:0 0 auto}
+.phone .scroll{position:absolute;inset:0;overflow:auto;padding-bottom:90px}
+.cap{font-size:12.5px;font-weight:700;color:var(--muted);margin:10px 0 0 6px}
+/* brand */
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;letter-spacing:-.3px}
+.logo i{width:24px;height:24px;border-radius:8px;background:var(--grad);display:inline-block;position:relative}
+.logo i:after{content:"";position:absolute;left:6px;top:6px;width:12px;height:12px;border-radius:4px;background:#fff;opacity:.9;clip-path:polygon(0 60%,40% 100%,100% 0,100% 30%,40% 100%)}
+/* customer top */
+.ctop{padding:12px 14px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:3}
+.ctop .l1{display:flex;justify-content:space-between;align-items:center}
+.loc{font-size:12px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px}
+.open{background:var(--green-soft);color:var(--green);font-weight:700;border-radius:999px;padding:1px 8px;font-size:11px}
+.search{margin-top:10px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--muted);background:var(--soft)}
+.search .mic{margin-left:auto;width:26px;height:26px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px}
+.tabs{display:flex;gap:18px;padding:10px 14px 0;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);overflow:auto;white-space:nowrap}
+.tabs span{padding-bottom:8px}.tabs .on{color:var(--violet-ink);border-bottom:2px solid var(--violet)}
+.trust{margin:10px 14px 0;background:var(--violet-soft);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--violet-ink);display:flex;gap:6px}
+.hd{display:flex;justify-content:space-between;align-items:baseline;padding:14px 14px 8px}
+.hd b{font-size:16px}.hd a{font-size:12.5px;color:var(--violet-ink);font-weight:700;text-decoration:none}
+/* product tile (fresh grid) */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px}
+.grid.two{grid-template-columns:repeat(2,1fr)}
+.hs{display:flex;gap:10px;overflow:auto;padding:0 14px 4px}
+.hs .t{flex:0 0 112px}
+.t{position:relative}
+.pw{position:relative}
+.t .ph{aspect-ratio:1/1;border-radius:12px;background:#fff;border:1px solid var(--line);overflow:hidden;position:relative}
+.t .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.t .ph.cut{background:radial-gradient(circle at 50% 60%,#fff 0,#fff 55%,#F2F3F5 100%)}
+.t .ph.cut img{object-fit:contain;padding:10%;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18))}
+.t .ph.letter{display:grid;place-items:center;background:var(--soft);font-size:28px;font-weight:800;color:var(--violet)}
+.add{position:absolute;right:6px;bottom:-12px;background:#fff;color:var(--violet-ink);border:1.5px solid var(--violet);border-radius:9px;font-weight:800;font-size:12px;padding:5px 12px;box-shadow:0 2px 6px rgba(123,104,238,.18)}
+.step{position:absolute;right:6px;bottom:-12px;background:var(--violet-ink);color:#fff;border-radius:9px;font-weight:800;font-size:12px;padding:5px 8px;display:flex;gap:10px}
+.price{margin-top:18px;display:flex;align-items:center;gap:6px}
+.pp{background:var(--green);color:#fff;font-weight:800;border-radius:7px;padding:1px 7px;font-size:13px}
+.per{color:var(--muted);font-size:11.5px}
+.nm{font-size:12.5px;font-weight:700;line-height:1.3;margin-top:4px}
+.nm small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.var{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;color:var(--violet-ink);background:var(--violet-soft);border-radius:6px;padding:0 6px}
+.cart{position:absolute;left:12px;right:12px;bottom:14px;background:var(--violet-ink);border-top:3px solid transparent;background-clip:padding-box;color:#fff;border-radius:14px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;font-weight:800;box-shadow:0 10px 26px rgba(123,104,238,.35)}
+.cart small{display:block;font-weight:600;opacity:.9;font-size:11px}
+.cart .v{background:rgba(255,255,255,.2);border-radius:10px;padding:6px 10px}
+/* status chips (workspace) */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.chip:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.c-new{background:var(--violet-soft);color:var(--violet-ink)}.c-pack{background:var(--amber-soft);color:var(--amber)}.c-ready{background:var(--green-soft);color:var(--green)}.c-done{background:var(--soft);color:var(--muted)}.c-unpaid{background:var(--red-soft);color:var(--red)}.c-live{background:var(--green-soft);color:var(--green)}.c-todo{background:var(--soft);color:var(--muted)}.c-need{background:var(--amber-soft);color:var(--amber)}
+/* desktop workspace */
+.desk{width:1180px;max-width:100%;height:720px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;display:grid;grid-template-columns:68px 1fr 300px;grid-template-rows:50px 1fr;box-shadow:var(--sh)}
+.desk>.topbar{grid-column:1/-1}
+.rail{background:var(--chrome);color:var(--chrome-txt);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;font-size:10.5px}
+.rail .ic{width:44px;padding:8px 0;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.rail .ic b{font-size:17px;line-height:1}
+.rail .ic.on{background:#38335A;color:#fff}
+.rail .logo-sq{width:30px;height:30px;border-radius:9px;background:var(--grad);margin-bottom:10px}
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--chrome);color:#fff}
+.topbar .ws{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;min-width:260px}
+.topbar .ws i{width:26px;height:26px;border-radius:8px;background:var(--grad);display:inline-block}
+.seg{display:flex;border:1px solid #3A3B40;border-radius:8px;overflow:hidden;font-size:12px}.seg span{padding:4px 9px;color:var(--chrome-txt)}.seg .on{background:#38335A;color:#fff}
+.crumb{font-size:12.5px;color:var(--muted);margin-bottom:4px}.crumb b{color:var(--ink)}
+.kbd{margin:0 auto;border:1px solid #3A3B40;border-radius:9px;padding:6px 12px;color:var(--chrome-txt);font-size:12.5px;width:420px;background:var(--chrome-2)}
+.addrow{padding:8px 10px;color:var(--muted);font-size:12.5px;font-weight:600}.addrow:hover{color:var(--violet-ink);background:var(--soft)}
+.pen{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:11.5px;font-weight:700;padding:2px 8px;color:var(--violet-ink);margin-left:6px;white-space:nowrap}
+.fld{display:block;margin:10px 0 0;font-size:12px;font-weight:700;color:var(--ink2)}.fld input{display:block;width:100%;margin-top:4px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;color:var(--ink)}.fld input.on{border-color:var(--violet);box-shadow:0 0 0 3px var(--violet-soft)}
+.hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+.btn{border-radius:10px;padding:8px 14px;font-weight:800;font-size:13px;border:1px solid var(--line);background:#fff}
+.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.vi{background:var(--violet-ink);color:#fff;border-color:var(--violet-ink)}
+.ttl{padding:16px 18px 0}
+.ttl h3{margin:0;font-size:22px;letter-spacing:-.4px}
+.vtabs{display:flex;gap:4px;margin-top:10px;border-bottom:1px solid var(--line)}
+.vtabs span{padding:8px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.vtabs .on{color:var(--violet-ink);border-bottom:2px solid var(--violet)}
+.list{padding:6px 18px 18px;overflow:auto}
+.grp{margin-top:14px}
+.grp .gh{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--ink2)}
+.grp .gh .n{color:var(--muted);font-weight:600}
+.cols{display:grid;grid-template-columns:1.8fr 1fr .8fr .7fr .9fr;gap:10px;font-size:11.5px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+.it{display:grid;grid-template-columns:1.8fr 1fr .8fr .7fr .9fr;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.it:hover{background:var(--soft)}
+.it .who{display:flex;align-items:center;gap:8px;font-weight:700}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:800;color:#fff}
+.side{border-left:1px solid var(--line);padding:14px;overflow:auto;background:var(--bg)}
+.side h4{margin:0 0 8px;font-size:13px}
+.mini{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px}
+.mini img{width:44px;height:44px;border-radius:9px;object-fit:cover}
+.mini .p{margin-left:auto;font-weight:800}
+/* board */
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px 18px;overflow:auto}
+.colb{background:var(--soft);border-radius:14px;padding:10px}
+.colb .h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;margin-bottom:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;font-size:12.5px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.card b{display:block;font-size:13px}
+.card .ln{color:var(--muted);margin:3px 0 6px}
+.card .ft{display:flex;justify-content:space-between;align-items:center}
+/* seller phone */
+.sp-top{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.sp-h{padding:14px 14px 4px}.sp-h h3{margin:0;font-size:22px;letter-spacing:-.4px}.sp-h p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.task{margin:10px 14px 0;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.task .t1{display:flex;align-items:center;gap:8px;font-weight:800}
+.task .num{width:22px;height:22px;border-radius:7px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px}
+.task p{margin:6px 0 10px;color:var(--muted);font-size:12.5px}
+.task .acts{display:flex;gap:8px;flex-wrap:wrap}
+.bn{position:absolute;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;text-align:center;font-size:10.5px;color:var(--muted);font-weight:700}
+.bn .on{color:var(--ink)}.bn .mic{width:46px;height:46px;border-radius:14px;background:var(--grad);color:#fff;display:grid;place-items:center;margin:-22px auto 2px;font-size:18px;box-shadow:0 8px 18px rgba(123,104,238,.35)}
+.badge{display:inline-block;background:var(--red);color:#fff;border-radius:999px;font-size:9.5px;padding:0 5px;margin-left:2px}
+/* check card */
+.chk{margin:12px 14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+.chk .im{height:190px;overflow:hidden;background:#fff;border-bottom:1px solid var(--line)}
+.chk .im img{height:190px;width:100%;object-fit:cover;display:block}
+.chk .bd{padding:12px}
+.chk h4{margin:6px 0 10px;font-size:20px;letter-spacing:-.3px}
+.opt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt div{border:1.5px solid var(--line);border-radius:12px;padding:14px;text-align:center;font-weight:800;font-size:20px}
+.opt .sel{border-color:var(--violet);background:var(--violet-soft);color:var(--violet-ink)}
+.clip{display:flex;align-items:center;gap:10px;margin-top:10px;background:var(--soft);border-radius:12px;padding:8px 10px;font-size:12.5px}
+.clip .pl{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:11px}
+.wave{flex:1;height:18px;background:repeating-linear-gradient(90deg,#C9CDD4 0 2px,transparent 2px 5px);border-radius:4px}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:640px}
+.ba figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px}
+.ba img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px}
+.ba .cutv{aspect-ratio:1/1;border-radius:10px;background:radial-gradient(circle at 50% 60%,#fff 0,#fff 55%,#F2F3F5 100%);display:grid;place-items:center}
+.ba figcaption{font-size:12.5px;color:var(--muted);margin-top:6px}
+.list-pend li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sec">MarketMate · design v9 · ClickUp colours and layout (preview)</div>
+  <h1>A clean <span class="g">workspace</span> for the seller.<br>A fresh <span class="g">product grid</span> for the customer.</h1>
+  <p class="sub">The seller side now uses ClickUp's colours and layout: ClickUp purple, a dark top bar with a centred search, a dark icon sidebar, list views grouped by status with coloured status pills, List/Board view tabs with a purple underline, and "+ New" rows at the bottom of each group. The customer side borrows quick-commerce product tiles like Zepto's: square white photo tiles, the product cut out on white, an ADD button on the photo's corner, and a green price label. The same ClickUp purple ties the two together. Every small text colour passes the 4.5:1 readability check. Fonts stay as they are (Plus Jakarta Sans + Noto Tamil), so nothing new is downloaded.</p>
+  <div class="tokens">
+    <div class="tok"><span class="sw" style="background:#292D34"></span>Ink #292D34</div><div class="tok"><span class="sw" style="background:#1E1F21"></span>Top bar + sidebar #1E1F21</div>
+    <div class="tok"><span class="sw" style="background:#7B68EE"></span>ClickUp purple #7B68EE (lines, icons)</div><div class="tok"><span class="sw" style="background:#5F55EE"></span>Button purple #5F55EE (white text 5.2:1)</div>
+    <div class="tok"><span class="sw" style="background:linear-gradient(90deg,#FD71AF,#7B68EE,#49CCF9)"></span>Gradient (logo, mic only; never behind text)</div>
+    <div class="tok"><span class="sw" style="background:#0F7F3F"></span>Price green #0F7F3F</div>
+    <div class="tok"><span class="sw" style="background:#F7F8F9"></span>Soft #F7F8F9</div>
+    <div class="tok"><span class="chip c-new">New</span><span class="chip c-pack">Packing</span><span class="chip c-ready">Ready</span><span class="chip c-done">Collected</span><span class="chip c-unpaid">Unpaid</span></div>
+  </div>
+
+  <div class="sec">Customer · shop page</div>
+  <h2>Product tiles like a quick-commerce app</h2>
+  <p class="note">Square white tiles, the photo first, ADD on the photo's corner (it turns into a − 2 + stepper), the price in a green label, the Tamil name with the English name small below, and the banana type as a small violet tag. The bar at the bottom shows the cart. "Prices said by the seller today 06:42" stays at the top: that's our honesty promise.</p>
+  <div class="row">
+    <div>
+    <div class="phone"><div class="scroll">
+      <div class="ctop">
+        <div class="l1"><div class="logo"><i></i>MarketMate</div><span style="font-size:20px">🛍</span></div>
+        <div class="loc"><b style="color:var(--ink)">Anna Nagar Fruits &amp; Vegetables</b> <span class="open">Open now</span></div>
+        <div class="search">🔍 Search "தக்காளி" or "tomato" <span class="mic">🎙</span></div>
+      </div>
+      <div class="tabs"><span class="on">All 10</span><span>🍌 Bananas 5</span><span>🥕 Vegetables 5</span><span>🌿 Greens</span></div>
+      <div class="trust">✓ Prices said by the seller today at 06:42 and checked by them. Nothing guessed.</div>
+      <div class="hd"><b>Bananas</b><a>See all ›</a></div>
+      <div class="hs">
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/poovan.jpg" alt=""></div><span class="step">− 2 +</span></div><div class="price"><span class="pp">₹60</span><span class="per">/kg</span></div><div class="nm">பூவன் பழம்<small>Banana</small></div><span class="var">Poovan</span></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/yelakki.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹100</span><span class="per">/kg</span></div><div class="nm">ஏலக்கி<small>Banana</small></div><span class="var">Yelakki</span></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/redbanana.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹100</span><span class="per">/kg</span></div><div class="nm">செவ்வாழை<small>Banana</small></div><span class="var">Red</span></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/greenbanana.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹40</span><span class="per">/kg</span></div><div class="nm">பச்சை வாழை<small>Banana</small></div><span class="var">Green</span></div>
+      </div>
+      <div class="hd"><b>Vegetables</b><a>See all ›</a></div>
+      <div class="grid">
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/beans.jpg" alt=""></div><span class="step">− ½ +</span></div><div class="price"><span class="pp">₹120</span><span class="per">/kg</span></div><div class="nm">பீன்ஸ்<small>Beans</small></div></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/carrot.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹80</span><span class="per">/kg</span></div><div class="nm">கேரட்<small>Carrot</small></div><span class="var">Ooty</span></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/avarai.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹80</span><span class="per">/kg</span></div><div class="nm">அவரைக்காய்<small>Broad beans</small></div></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/brinjal.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹60</span><span class="per">/kg</span></div><div class="nm">கத்திரிக்காய்<small>Brinjal</small></div><span class="var">Ujala</span></div>
+        <div class="t"><div class="pw"><div class="ph cut"><img src="https://example.invalid/p/pomegranate.jpg" alt=""></div><span class="add">ADD</span></div><div class="price"><span class="pp">₹180</span><span class="per">/kg</span></div><div class="nm">மாதுளை<small>Pomegranate</small></div></div>
+        <div class="t"><div class="pw"><div class="ph letter">வா</div><span class="add">ADD</span></div><div class="price"><span class="pp">₹30</span><span class="per">/piece</span></div><div class="nm">வாழைத்தண்டு<small>Banana stem</small></div></div>
+      </div>
+      <div class="cart"><div>2 items · ₹220<small>Pay at pickup · UPI or cash</small></div><span class="v">View cart ›</span></div>
+    </div></div>
+    <div class="cap">Phone · customer shop page</div>
+    </div>
+
+    <div>
+    <div class="phone"><div class="scroll">
+      <div class="ctop"><div class="l1"><div class="logo"><i></i>MarketMate</div><span style="font-size:13px;font-weight:800;color:var(--violet-ink)">My orders</span></div></div>
+      <div class="sp-h"><p>Anna Nagar Fruits &amp; Vegetables</p><h3>Order #12 is ready 🎉</h3><p>Come to the stall. Pay ₹220 by UPI or cash.</p></div>
+      <div class="task" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between"><b>Status</b><span class="chip c-ready">Ready</span></div>
+        <div style="margin-top:10px;font-size:12.5px">
+          <div style="display:flex;gap:10px;align-items:center;margin:6px 0"><span class="chip c-done">Sent</span><span class="per">10:02</span></div>
+          <div style="display:flex;gap:10px;align-items:center;margin:6px 0"><span class="chip c-done">Accepted</span><span class="per">10:05</span></div>
+          <div style="display:flex;gap:10px;align-items:center;margin:6px 0"><span class="chip c-done">Packing</span><span class="per">10:07</span></div>
+          <div style="display:flex;gap:10px;align-items:center;margin:6px 0"><span class="chip c-ready">Ready</span><span class="per">10:21 · right now</span></div>
+          <div style="display:flex;gap:10px;align-items:center;margin:6px 0"><span class="chip c-todo">Collected</span></div>
+        </div>
+      </div>
+      <div class="task">
+        <b>Your order</b>
+        <div class="mini" style="margin-top:8px"><img src="https://example.invalid/p/poovan.jpg" alt=""><div>பூவன் பழம் · Poovan<br><span class="per">2 kg × ₹60</span></div><span class="p">₹120</span></div>
+        <div class="mini"><img src="https://example.invalid/p/redbanana.jpg" alt=""><div>செவ்வாழை · Red<br><span class="per">1 kg × ₹100</span></div><span class="p">₹100</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:16px;margin-top:6px"><span>Total</span><span>₹220</span></div>
+      </div>
+      <div class="trust">✓ Priced from the shop's own list today, 06:42. Nothing guessed.</div>
+      <div style="display:flex;gap:8px;padding:12px 14px"><span class="btn dark">📞 Call shop</span><span class="btn">WhatsApp</span></div>
+    </div></div>
+    <div class="cap">Phone · customer order (updates by itself)</div>
+    </div>
+
+    <div style="max-width:380px">
+      <div class="sec" style="margin-top:0">Photos like quick-commerce, but real</div>
+      <p class="note">Today a photo is a crop of the video frame, so neighbouring items, boxes and even people get in. v8 cuts the product out with the <b>SAM 3.1 mask</b> (Meta's own parser package) and places it on white with a soft shadow. It's the seller's real produce, not a stock or AI-made image.</p>
+      <div class="ba">
+        <figure><img src="https://example.invalid/p/pomegranate.jpg" alt=""><figcaption>Now: frame crop (pomegranate tile also shows sweet lime and oranges)</figcaption></figure>
+        <figure><div class="cutv"><span style="font-size:13px;color:var(--muted);text-align:center;padding:10px">SAM mask cut-out of just the pomegranates on white<br><b>(built in the photo task, shown after)</b></span></div><figcaption>v8: only the item, centred, on white</figcaption></figure>
+      </div>
+      <ul class="note" style="padding-left:18px;margin-top:10px">
+        <li><b>No product found → no photo</b>, so a frame with a face is never used. In your live test, the "tomato" photo was the front-camera selfie; SAM found no tomato in it.</li>
+        <li>Faces are never published: a frame with a person in it is skipped.</li>
+        <li>The seller can still pick 1 of 3, or take a new photo.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec">Seller · laptop</div>
+  <h2>"Today" as a workspace list</h2>
+  <p class="note">The seller's whole day is one list, grouped like a project board: <b>Morning prices → Orders → Bills → Close day</b>. Each row has a status label, and the right panel shows today's live prices. Every row opens the detail. This is Task 61's "Today home", in the v8 look.</p>
+  <div class="desk">
+    <div class="topbar"><span class="ws"><i></i>Anna Nagar Fruits &amp; Vegetables ▾</span><span class="kbd">🔍 Search items, orders, customers…</span><span class="seg"><span class="on">EN</span><span>தமிழ்</span><span>हिन्दी</span></span><span class="btn vi">🎙 Say today's prices</span></div>
+    <div class="rail">
+      <div class="ic on"><b>⌂</b>Today</div><div class="ic"><b>🎙</b>Prices</div><div class="ic"><b>📦</b>Orders<span class="badge">2</span></div><div class="ic"><b>🧾</b>Bills</div><div class="ic"><b>₹</b>Credit</div><div class="ic"><b>🌙</b>Close</div><div class="ic" style="margin-top:auto"><b>⋯</b>More</div></div>
+    <div class="main">
+      
+      <div class="ttl"><div class="crumb">Anna Nagar Fruits &amp; Vegetables / <b>Today · Thu 29 Oct</b></div><h3>Today</h3><div class="vtabs"><span class="on">List</span><span>Board</span><span>Close day</span></div></div>
+      <div class="list">
+        <div class="grp"><div class="gh">▾ <span class="chip c-live">Live</span> MORNING · PRICES <span class="n">1</span></div>
+          <div class="it"><div class="who">📋 Today's price list</div><div>10 prices since 06:42</div><div><span class="chip c-live">Live</span></div><div>—</div><div><span class="btn" style="padding:4px 10px">Send on WhatsApp</span></div></div>
+        </div>
+        <div class="grp"><div class="gh">▾ <span class="chip c-new">Open</span> ORDERS <span class="n">3</span></div>
+          <div class="cols"><span>Customer</span><span>Items</span><span>Status</span><span>Pickup</span><span>Total</span></div>
+          <div class="it"><div class="who"><span class="av" style="background:#C2337A">P</span>Order #12 · Priya</div><div>Poovan 2 kg, Red 1 kg</div><div><span class="chip c-new">New</span></div><div>10:30</div><div><b>₹220</b></div></div>
+          <div class="it"><div class="who"><span class="av" style="background:#1F5FBF">R</span>Order #11 · Ravi</div><div>Beans ½ kg, Carrot 1 kg</div><div><span class="chip c-pack">Packing</span></div><div>10:15</div><div><b>₹140</b></div></div>
+          <div class="it"><div class="who"><span class="av" style="background:#0F7F3F">M</span>Order #10 · Meena</div><div>Brinjal 1 kg</div><div><span class="chip c-ready">Ready</span></div><div>now</div><div><b>₹60</b></div></div>
+        </div>
+        <div class="grp"><div class="gh">▾ <span class="chip c-done">Today</span> BILLS <span class="n">9 · ₹2,340</span></div>
+          <div class="it"><div class="who">🧾 Bill #9 · walk-in</div><div>Poovan 1 kg, Beans ½ kg</div><div><span class="chip c-unpaid">Unpaid</span></div><div>—</div><div><b>₹120</b></div></div>
+          <div class="it"><div class="who">🧾 Bill #8 · walk-in</div><div>Carrot 2 kg</div><div><span class="chip c-ready">Paid · UPI</span></div><div>—</div><div><b>₹160</b></div></div>
+          <div class="addrow">+ New bill</div>
+        </div>
+        <div class="grp"><div class="gh">▾ <span class="chip c-todo">To do</span> EVENING <span class="n">1</span></div>
+          <div class="it"><div class="who">🌙 Close day</div><div>₹2,340 · cash ₹1,120 · UPI ₹1,220</div><div><span class="chip c-todo">To do</span></div><div>21:00</div><div><span class="btn" style="padding:4px 10px">Close</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="side"><h4>Live prices · 10</h4>
+      <div class="mini"><img src="https://example.invalid/p/poovan.jpg" alt=""><div>பூவன் பழம்<br><span class="per">Poovan · /kg</span></div><span class="p">₹60</span><span class="pen">✎</span></div>
+      <div class="mini"><img src="https://example.invalid/p/yelakki.jpg" alt=""><div>ஏலக்கி<br><span class="per">Yelakki · /kg</span></div><span class="p">₹100</span></div>
+      <div class="mini"><img src="https://example.invalid/p/beans.jpg" alt=""><div>பீன்ஸ்<br><span class="per">/kg</span></div><span class="p">₹120</span></div>
+      <div class="mini"><img src="https://example.invalid/p/carrot.jpg" alt=""><div>கேரட்<br><span class="per">Ooty · /kg</span></div><span class="p">₹80</span></div>
+      <div class="mini"><img src="https://example.invalid/p/brinjal.jpg" alt=""><div>கத்திரிக்காய்<br><span class="per">Ujala · /kg</span></div><span class="p">₹60</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Tap ✎ to change the name. Tap an item: price · sold out · change photo</div>
+    </div>
+  </div>
+
+  <div class="sec">Seller · orders board</div>
+  <h2>Orders as a board: drag along, or tap the next step</h2>
+  <div class="desk" style="height:auto;grid-template-columns:68px 1fr">
+    <div class="topbar"><span class="ws"><i></i>Anna Nagar Fruits &amp; Vegetables ▾</span><span class="kbd">🔍 Search items, orders, customers…</span><span class="seg"><span class="on">EN</span><span>தமிழ்</span><span>हिन्दी</span></span><span class="btn vi">🎙 Say today's prices</span></div>
+    <div class="rail"><div class="ic"><b>⌂</b>Today</div><div class="ic on"><b>📦</b>Orders</div><div class="ic"><b>🧾</b>Bills</div></div>
+    <div class="main">
+      <div class="ttl"><div class="crumb">Anna Nagar Fruits &amp; Vegetables / <b>Orders</b></div><h3>Orders</h3><div class="vtabs"><span>List</span><span class="on">Board</span></div></div>
+      <div class="board">
+        <div class="colb"><div class="h"><span class="chip c-new">New</span> 2</div>
+          <div class="card"><b>#12 · Priya</b><div class="ln">Poovan 2 kg · Red 1 kg</div><div class="ft"><b>₹220</b><span class="btn vi" style="padding:3px 8px;font-size:11.5px">Accept</span></div></div>
+          <div class="card"><b>#13 · 98xxxxx210</b><div class="ln">Carrot 1 kg</div><div class="ft"><b>₹80</b><span class="btn vi" style="padding:3px 8px;font-size:11.5px">Accept</span></div></div></div>
+        <div class="colb"><div class="h"><span class="chip c-pack">Packing</span> 1</div>
+          <div class="card"><b>#11 · Ravi</b><div class="ln">Beans ½ kg · Carrot 1 kg</div><div class="ft"><b>₹140</b><span class="btn" style="padding:3px 8px;font-size:11.5px">Ready ›</span></div></div></div>
+        <div class="colb"><div class="h"><span class="chip c-ready">Ready</span> 1</div>
+          <div class="card"><b>#10 · Meena</b><div class="ln">Brinjal 1 kg</div><div class="ft"><b>₹60</b><span class="btn" style="padding:3px 8px;font-size:11.5px">WhatsApp "ready"</span></div></div></div>
+        <div class="colb"><div class="h"><span class="chip c-done">Collected</span> 5</div>
+          <div class="card" style="opacity:.75"><b>#9 · Arun</b><div class="ln">Paid · UPI</div><div class="ft"><b>₹310</b><span class="per">09:40</span></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">Seller · phone</div>
+  <h2>Same workspace, thumb-sized</h2>
+  <div class="row">
+    <div>
+    <div class="phone"><div class="scroll">
+      <div class="sp-top"><div class="logo"><i></i>MarketMate</div><span class="chip c-live">Shop open</span></div>
+      <div class="sp-h"><p>Thu 29 Oct · Anna Nagar Fruits &amp; Vegetables</p><h3>Good morning 👋</h3><p>₹2,340 sold today · 9 bills · 3 orders</p></div>
+      <div class="task"><div class="t1"><span class="num">1</span>Morning · prices <span class="chip c-live" style="margin-left:auto">Live</span></div><p>10 prices since 06:42. 0 need a tap.</p><div class="acts"><span class="btn dark">Send on WhatsApp</span><span class="btn">Update prices</span></div></div>
+      <div class="task"><div class="t1"><span class="num">2</span>Orders &amp; bills <span class="chip c-new" style="margin-left:auto">2 new</span></div>
+        <div class="it" style="grid-template-columns:1fr auto auto;padding:8px 0"><div class="who"><span class="av" style="background:#C2337A">P</span>#12 · Priya</div><span class="chip c-new">New</span><b>₹220</b></div>
+        <div class="it" style="grid-template-columns:1fr auto auto;padding:8px 0"><div class="who"><span class="av" style="background:#1F5FBF">R</span>#11 · Ravi</div><span class="chip c-pack">Packing</span><b>₹140</b></div>
+        <div class="it" style="grid-template-columns:1fr auto auto;padding:8px 0;border:0"><div class="who">🧾 Bill #9</div><span class="chip c-unpaid">Unpaid</span><b>₹120</b></div>
+        <div class="acts" style="margin-top:8px"><span class="btn dark">+ New bill</span><span class="btn">All orders</span></div></div>
+      <div class="task"><div class="t1"><span class="num">3</span>Evening · close day <span class="chip c-todo" style="margin-left:auto">To do</span></div><p>Cash ₹1,120 · UPI ₹1,220 · Credit ₹0</p></div>
+      <div class="bn"><div class="on">⌂<br>Today</div><div>🧾<br>Bills</div><div><div class="mic">🎙</div>Prices</div><div>📦<br>Orders<span class="badge">2</span></div><div>🌙<br>Close</div></div>
+    </div></div>
+    <div class="cap">Phone · seller Today</div>
+    </div>
+
+    <div>
+    <div class="phone"><div class="scroll">
+      <div class="sp-top"><div class="logo"><i></i>MarketMate</div><span class="chip c-need">1 needs you</span></div>
+      <div class="sp-h"><p>Check prices · 9 of 10 look right</p><h3>One quick check</h3></div>
+      <div class="chk"><div class="im"><img src="https://example.invalid/p/karpooravalli.jpg" alt=""></div>
+        <div class="bd"><span class="chip c-need">Needs you</span> <span class="var">Karpooravalli</span>
+          <div style="margin-top:8px;font-weight:800;font-size:15px">கற்பூரவல்லி வாழைப்பழம் <span class="per" style="font-weight:600">· Karpooravalli banana</span><span class="pen">✎ Edit name</span></div>
+          <h4>Did you say ₹50 or ₹80?</h4>
+          <div class="opt"><div>₹50</div><div class="sel">₹80</div></div>
+          <div class="clip"><span class="pl">▶</span><span class="wave"></span><span>"ஒரு கிலோ எண்பது ரூபாய்"</span></div>
+          <p class="per" style="margin:8px 0 0">50 and 80 sound alike in Tamil. Play your own voice, then tap.</p>
+        </div></div>
+      <div style="margin:0 14px" class="task"><b>Photo</b><div class="hs" style="padding:8px 0 0"><div class="t" style="flex:0 0 74px"><div class="ph cut" style="border-color:var(--violet)"><img src="https://example.invalid/p/karpooravalli.jpg" alt=""></div></div><div class="t" style="flex:0 0 74px"><div class="ph"><img src="https://example.invalid/p/yelakki.jpg" alt=""></div></div><div class="t" style="flex:0 0 74px"><div class="ph letter" style="font-size:20px">📷</div></div></div></div>
+      <div style="position:absolute;left:12px;right:12px;bottom:84px"><span class="btn dark" style="display:block;text-align:center;padding:12px">Approve · prices go live</span></div>
+      <div class="bn"><div>⌂<br>Today</div><div>🧾<br>Bills</div><div><div class="mic">🎙</div>Prices</div><div>📦<br>Orders</div><div>🌙<br>Close</div></div>
+    </div></div>
+    <div class="cap">Phone · check prices (the honesty step)</div>
+    </div>
+
+    <div>
+    <div class="phone"><div class="scroll" style="background:rgba(41,45,52,.45)">
+      <div class="sp-top" style="background:#fff"><div class="logo"><i></i>MarketMate</div><span class="chip c-need">1 needs you</span></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:16px 16px 24px;box-shadow:0 -10px 30px rgba(0,0,0,.15)">
+        <div style="width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px"></div>
+        <div style="display:flex;gap:12px;align-items:center"><img src="https://example.invalid/p/karpooravalli.jpg" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--line)"><div><b style="font-size:17px">Change the name</b><div class="per">Only the name changes. The price stays ₹80/kg.</div></div></div>
+        <label class="fld">Name in Tamil (customers see this)<input class="on" value="கற்பூரவல்லி வாழைப்பழம்"></label>
+        <label class="fld">Name in English<input value="Karpooravalli banana"></label>
+        <label class="fld">Variety (optional)<input value="Karpooravalli"></label>
+        <div class="hint">MarketMate remembers this name: tomorrow's video and your voice bills use it too.</div>
+        <div style="display:flex;gap:10px;margin-top:14px"><span class="btn" style="flex:1;text-align:center;padding:12px">Cancel</span><span class="btn vi" style="flex:2;text-align:center;padding:12px">Save name</span></div>
+      </div>
+    </div></div>
+    <div class="cap">Phone · change a product's name (check page or live list)</div>
+    </div>
+  </div>
+
+  <div class="sec">If you OK this look</div>
+  <ul class="note list-pend">
+    <li><b>Task 64</b>: re-theme everything to v9 (ClickUp colours and layout) (tokens, header, sidebar, bottom nav, chips, tiles, cart bar), keeping every hook and test.</li>
+    <li><b>Task 65</b>: real cut-out photos with SAM masks through Meta's <code>meta-sam-parser</code>, "no product → no photo", never publish faces, and white tiles.</li>
+    <li>Tasks 60–63 (order loop, Today home, credit, near me) are being built now in the current look. v8 restyles them.</li>
+    <li><b>Task 66</b>: change a product's name: on the check page and on the live price list (✎). The price never changes; tomorrow's list and voice bills remember the new name.</li>
+  </ul>
+</div>
+</body>
+</html>

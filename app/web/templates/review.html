@@ -33,10 +33,10 @@
     {{ ui.pill(t('review.needs_you'), "check") }}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main>{% endif %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main></div>{% endif %}
     {% if card.candidate_urls %}
     <p class="muted">{{ t('review.pick_photo') }}</p>
-    <div class="photo-pick" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
+    <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
       {% for url in card.candidate_urls %}
       <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
       {% endfor %}
@@ -71,7 +71,7 @@
     <img class="review-photo" src="{{ card.board_thumb_url }}" alt="{{ t('review.board_photo_alt') }}">
     <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
-    <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a></p>
+    <div class="clip"><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a><span class="wave" aria-hidden="true"></span></div>
     {% endif %}
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>
     {% for line in item.price_lines %}
@@ -129,10 +129,10 @@
     <span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main>{% endif %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main></div>{% endif %}
     {% if card.candidate_urls %}
     <p class="muted">{{ t('review.pick_photo') }}</p>
-    <div class="photo-pick" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
+    <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
       {% for url in card.candidate_urls %}
       <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
       {% endfor %}
@@ -167,7 +167,7 @@
     <img class="review-photo" src="{{ card.board_thumb_url }}" alt="{{ t('review.board_photo_alt') }}">
     <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
-    <p><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a></p>
+    <div class="clip"><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a><span class="wave" aria-hidden="true"></span></div>
     {% endif %}
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>
     {% for line in item.price_lines %}

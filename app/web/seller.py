@@ -431,9 +431,12 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
         else:
             order_label = order_num
         next_status, next_key, pill_key, pill_kind = _OPEN_NEXT[status]
+        av_name = (customer_name or phone or f"#{row['id']}").strip()
         open_orders.append({
             "id": row["id"],
             "label": order_label,
+            "avatar_initial": av_name[:1].upper() or "#",
+            "avatar_idx": sum(av_name.encode("utf-8")) % 5,
             "names": names,
             "count": len(raw) if isinstance(raw, list) else 0,
             "total": format_money(total, currency),

@@ -10,8 +10,11 @@
 <h1 class="big">{{ t(greet_key, name=shop["name"]) }}<br><em>{{ t('sh.sold_today', total=bills.sales_today | money(shop["currency"])) }}</em></h1>
 {% if live %}<p>{{ ui.pill(t('dash.live_pill', count=live_count), "live") }}</p>{% endif %}
 
+<div class="with-side">
+<div class="ws-main">
 {% if not is_staff %}
-<section class="step-card" id="step-morning" aria-label="{{ t('t61.step1_kick') }}">
+<section class="step-card grp" id="step-morning" aria-label="{{ t('t61.step1_kick') }}">
+  <div class="gh"><span aria-hidden="true">▾</span>{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></div>
   <p class="kick"><span class="step-num" aria-hidden="true">1</span> {{ t('t61.step1_kick') }}</p>
   {% if first_run|default(false) %}
   <div class="card start-card" id="say-prices" aria-label="{{ t('gs.kick') }}">
@@ -105,46 +108,54 @@
 
 <section class="step-card" id="step-day" aria-label="{{ t('t61.step2_kick') }}">
   <p class="kick"><span class="step-num" aria-hidden="true">2</span> {{ t('t61.step2_kick') }}</p>
-  <div class="stat-grid step-stats">
-    <a class="stat{% if count_new %} is-gold{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting"><b class="stat-num" data-orders-badge data-orders-keep-zero>{{ count_new }}</b><span class="stat-label">{{ t('sh.new_orders') }}</span></a>
-    <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=packing"><b class="stat-num">{{ count_packing }}</b><span class="stat-label">{{ t('bills.pill_packing') }}</span></a>
-    <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=ready"><b class="stat-num">{{ count_ready }}</b><span class="stat-label">{{ t('bills.pill_ready') }}</span></a>
-    <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=billed"><b class="stat-num">{{ unpaid_count }}</b><span class="stat-label">{{ t('t61.unpaid_bills') }}</span></a>
-    <a class="stat" href="/e/{{ token }}/bills"><b class="stat-num money">{{ bills.sales_today | money(shop["currency"]) }}</b><span class="stat-label">{{ t('bills.sales_today') }}</span></a>
-  </div>
-  {% if can_credit|default(true) and credit_count|default(0) > 0 %}
-  <p><a class="pill gold big" href="/e/{{ token }}/credit">{{ ui.icon("receipt") }}{{ t('t61.credit_to_collect', total=credit_total) }}</a></p>
-  {% endif %}
-  <div class="hero-cta">
-    <a class="pill dark big" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('sh.new_bill') }}</a>
-    <a class="pill ghost big" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.icon("box") }}{{ t('nav.orders') }}<span class="nbadge" data-orders-badge hidden></span></a>
-    <a class="pill ghost big" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
-  </div>
-  {% if open_orders %}
-  {% for order in open_orders %}
-  <div class="order-mini">
-    <div class="order-mini-main">
-      <b>{{ order.label }}</b>
-      {{ ui.pill(order.pill, order.pill_kind) }}
-      {% if order.names %}<p class="order-names">{{ order.names[:3] | join(" · ") }}{% if order.names | length > 3 %} +{{ order.names | length - 3 }}{% endif %}</p>{% endif %}
+  <div class="grp">
+    <div class="gh"><span aria-hidden="true">▾</span><span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></div>
+    {% if open_orders %}
+    {% for order in open_orders %}
+    <div class="order-mini" data-search-row="{{ order.label }} {{ order.names | join(' ') }}">
+      <div class="order-mini-main">
+        <b><span class="av a{{ order.avatar_idx }}" aria-hidden="true">{{ order.avatar_initial }}</span> {{ order.label }}</b>
+        {{ ui.pill(order.pill, order.pill_kind) }}
+        {% if order.names %}<p class="order-names">{{ order.names[:3] | join(" · ") }}{% if order.names | length > 3 %} +{{ order.names | length - 3 }}{% endif %}</p>{% endif %}
+      </div>
+      <div class="order-mini-side">
+        <b class="money">{{ order.total }}</b>
+        {% if order.time %}<span class="muted">{{ order.time }}</span>{% endif %}
+        <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ order.id }}/order-status">
+          <input type="hidden" name="status" value="{{ order.next_status }}">
+          <button class="pill dark sm" type="submit">{{ order.next_label }}</button>
+        </form>
+      </div>
     </div>
-    <div class="order-mini-side">
-      <b class="money">{{ order.total }}</b>
-      {% if order.time %}<span class="muted">{{ order.time }}</span>{% endif %}
-      <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ order.id }}/order-status">
-        <input type="hidden" name="status" value="{{ order.next_status }}">
-        <button class="pill dark sm" type="submit">{{ order.next_label }}</button>
-      </form>
-    </div>
+    {% endfor %}
+    {% else %}
+    <p class="muted">{{ t('t61.no_orders') }}</p>
+    {% endif %}
   </div>
-  {% endfor %}
-  {% else %}
-  <p class="muted">{{ t('t61.no_orders') }}</p>
-  {% endif %}
+  <div class="grp">
+    <div class="gh"><span aria-hidden="true">▾</span><span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></div>
+    <div class="stat-grid step-stats">
+      <a class="stat{% if count_new %} is-new{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting"><b class="stat-num" data-orders-badge data-orders-keep-zero>{{ count_new }}</b><span class="stat-label">{{ t('sh.new_orders') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=packing"><b class="stat-num">{{ count_packing }}</b><span class="stat-label">{{ t('bills.pill_packing') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=ready"><b class="stat-num">{{ count_ready }}</b><span class="stat-label">{{ t('bills.pill_ready') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=billed"><b class="stat-num">{{ unpaid_count }}</b><span class="stat-label">{{ t('t61.unpaid_bills') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills"><b class="stat-num money">{{ bills.sales_today | money(shop["currency"]) }}</b><span class="stat-label">{{ t('bills.sales_today') }}</span></a>
+    </div>
+    {% if can_credit|default(true) and credit_count|default(0) > 0 %}
+    <p><a class="pill cta big" href="/e/{{ token }}/credit">{{ ui.icon("receipt") }}{{ t('t61.credit_to_collect', total=credit_total) }}</a></p>
+    {% endif %}
+    <div class="hero-cta">
+      <a class="pill dark big" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('sh.new_bill') }}</a>
+      <a class="pill ghost big" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.icon("box") }}{{ t('nav.orders') }}<span class="nbadge" data-orders-badge hidden></span></a>
+      <a class="pill ghost big" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
+    </div>
+    <a class="addrow" href="/e/{{ token }}/bills/new">+ {{ t('bills.new_bill') }}</a>
+  </div>
 </section>
 
 {% if not is_staff %}
-<section class="step-card" id="step-evening" aria-label="{{ t('t61.step3_kick') }}">
+<section class="step-card grp" id="step-evening" aria-label="{{ t('t61.step3_kick') }}">
+  <div class="gh"><span aria-hidden="true">▾</span>{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></div>
   <p class="kick"><span class="step-num" aria-hidden="true">3</span> {{ t('t61.step3_kick') }}</p>
   {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
   <div class="stat-grid step-stats">
@@ -167,7 +178,7 @@
   {% endif %}
   {% if items %}
   {% for item in items %}
-  <div class="list-row">
+  <div class="list-row" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
     {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <div class="list-main">
       <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
@@ -244,6 +255,18 @@
   </div>
   {% endif %}
 </details>
+</div>
+<aside class="side-panel today-side" aria-label="{{ t('t64.live_side', n=items | length) }}">
+  <h4>{{ t('t64.live_side', n=items | length) }}</h4>
+  {% for item in items %}
+  <div class="mini" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
+    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.name_local[:1] }}</span>{% endif %}
+    <div><span lang="{{ shop_lang }}">{{ item.name_local }}</span><br><span class="per">{% if item.variety %}{{ item.variety }} · {% endif %}{% if item.lines %}{{ item.lines[0].per }}{% endif %}</span></div>
+    <span class="p">{% if item.lines %}{{ item.lines[0].price | money(shop["currency"]) }}{% endif %}</span>
+  </div>
+  {% endfor %}
+</aside>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>

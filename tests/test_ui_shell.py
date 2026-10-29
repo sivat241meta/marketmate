@@ -11,7 +11,11 @@ ROOT = Path(__file__).resolve().parent.parent
 CSS = ROOT / "app" / "web" / "static" / "app.css"
 BASE = ROOT / "app" / "web" / "templates" / "base.html"
 
-TOKENS = ["--forest", "--leaf", "--cta", "--gold", "--mint", "--bg", "--surface", "--ink", "--muted", "--line", "--danger"]
+# Task 64: v9 tokens (was the Fresh Green set).
+TOKENS = ["--purple", "--purple-ink", "--purple-soft", "--chrome", "--chrome-2",
+          "--chrome-txt", "--green", "--green-soft", "--amber", "--amber-soft",
+          "--red", "--red-soft", "--blue", "--blue-soft", "--bg", "--surface",
+          "--ink", "--muted", "--line"]
 
 
 def make_client(tmp_path):

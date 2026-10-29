@@ -79,14 +79,14 @@ def test_default_follows_shop_language_and_cookie_overrides(tmp_path):
     html_ta = client.get(f"/e/{token_ta}").text
     assert "தமிழ்" in html_ta or "விலை" in html_ta
     html_en = client.get(f"/e/{token_en}").text
-    assert ">Home<" in html_en
+    assert ">Today<" in html_en
     # Cookie overrides shop language.
     client.cookies.set("ui_lang", "hi")
     html_hi = client.get(f"/e/{token_ta}").text
     assert "हिन्दी" in html_hi or "दाम" in html_hi or "बिल" in html_hi
     client.cookies.set("ui_lang", "en")
     html_en_override = client.get(f"/e/{token_ta}").text
-    assert ">Home<" in html_en_override
+    assert ">Today<" in html_en_override
     client.cookies.clear()
     # Toggle present in seller topbar.
     assert 'data-ui-lang="ta"' in html_ta or "ui_lang" in html_ta
@@ -182,8 +182,8 @@ def test_every_seller_template_renders_all_langs(tmp_path):
             resp = client.get(url)
             assert resp.status_code == 200, f"{lang} {url} -> {resp.status_code}"
             if lang == "en":
-                assert ">Home<" in resp.text, f"en {url} missing seller nav"
+                assert ">Today<" in resp.text, f"en {url} missing seller nav"
             else:
-                assert ">Home<" not in resp.text, f"{lang} {url} still English nav"
+                assert ">Today<" not in resp.text, f"{lang} {url} still English nav"
                 assert any(ord(ch) > 127 for ch in resp.text), f"{lang} {url} has no translated script"
             client.cookies.clear()

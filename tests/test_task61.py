@@ -267,8 +267,8 @@ def test_step2_counts_match_seeded_day(tmp_path):
         assert needle in day, (name, day)
     assert "Unpaid bills" in day
     assert format_money(Decimal("66.00"), "INR") in day
-    # New orders go gold when there are any.
-    assert "gold" in day
+    # New orders are highlighted when there are any (Task 64: is-new).
+    assert "is-new" in day
     # Actions.
     assert "New bill" in day
     assert f'href="/e/{token}/bills/new"' in day
@@ -294,7 +294,7 @@ def test_step2_new_orders_plain_at_zero(tmp_path):
     html = client.get(f"/e/{token}").text
     day = section(html, "step-day")
     assert ">0<" in day
-    assert "gold" not in day.split("Unpaid bills")[0]
+    assert "is-new" not in day.split("Unpaid bills")[0]
 
 
 # --- 3. step 3 preview matches close day ------------------------------------

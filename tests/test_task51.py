@@ -165,23 +165,35 @@ def test_meta_blue_fonts_gone_and_unreferenced():
 # --- 2. tokens ---
 
 def test_css_fresh_green_tokens():
+    # Task 64 re-themed the app to v9 (workspace x fresh grid); the Fresh
+    # Green tokens were replaced. This test now pins the v9 tokens.
     css = CSS.read_text()
     for token, value in (
-        ("--forest", "#173F2A"), ("--forest-2", "#1F5135"),
-        ("--leaf", "#4F9A2E"), ("--leaf-ink", "#3E7D22"),
-        ("--cta", "#178A4C"),
-        ("--gold", "#F5C451"), ("--gold-soft", "#FFF4D6"),
-        ("--mint", "#EEF6EE"),
-        ("--bg", "#F7F9F6"), ("--surface", "#fff"),
-        ("--line-2", "#E3E9E1"),
-        ("--ink", "#1B2820"), ("--muted", "#5B6B60"),
-        ("--danger", "#C8372D"),
-        ("--r-card", "22px"), ("--r-pill", "999px"),
+        ("--ink", "#292D34"), ("--ink2", "#3C4048"),
+        ("--muted", "#656F7D"), ("--line", "#E8EAED"),
+        ("--soft", "#F7F8F9"), ("--bg", "#FAFBFC"),
+        ("--surface", "#FFFFFF"),
+        ("--chrome", "#1E1F21"), ("--chrome-2", "#2C2D31"),
+        ("--chrome-line", "#3A3B40"), ("--chrome-txt", "#C8CCD3"),
+        ("--chrome-on", "#38335A"),
+        ("--purple", "#7B68EE"), ("--purple-ink", "#5F55EE"),
+        ("--purple-soft", "#F0EEFD"),
+        ("--green", "#0F7F3F"), ("--green-soft", "#E8F7EE"),
+        ("--amber", "#8A5208"), ("--amber-soft", "#FFF5E3"),
+        ("--red", "#C4363B"), ("--red-soft", "#FDECEC"),
+        ("--blue", "#1F5FBF"), ("--blue-soft", "#EAF2FF"),
+        ("--avatar-0", "#C2337A"), ("--avatar-1", "#1F5FBF"),
+        ("--avatar-2", "#0F7F3F"), ("--avatar-3", "#5F55EE"),
+        ("--avatar-4", "#8A5208"),
+        ("--r-card", "14px"), ("--r-pill", "999px"),
     ):
         assert re.search(rf"{re.escape(token)}\s*:\s*{re.escape(value)}",
                          css, re.IGNORECASE), token
-    assert re.search(r"--line\s*:\s*rgba\(23\s*,\s*63\s*,\s*42\s*,\s*0?\.10\s*\)", css), "--line"
-    assert "23,63,42" in css.replace(" ", ""), "forest-tinted shadow missing"
+    assert "41,45,52" in css.replace(" ", ""), "ink-tinted shadow missing"
+    for gone in ("--forest", "--leaf", "--cta", "--gold", "--mint",
+                 "--gold-soft", "--leaf-ink", "--forest-2", "--danger",
+                 "--violet", "--brand", "--hero"):
+        assert gone not in css, f"{gone} still in app.css"
 
 
 def test_css_has_no_meta_blue():
@@ -213,23 +225,27 @@ def test_css_typography_and_tap_targets():
 
 def test_css_guide_components():
     css = CSS.read_text()
-    # pill buttons: dark / cta / ghost / gold, at least 46px tall
-    for kind in ("dark", "cta", "ghost", "gold"):
-        match = re.search(rf"\.pill\.{kind}\s*\{{[^}}]*\}}", css)
-        assert match, f"missing .pill.{kind}"
-        height = re.search(r"min-height\s*:\s*([\d.]+)px", match.group(0))
-        assert height and float(height.group(1)) >= 46, \
+    # pill buttons: dark / cta / ghost, at least 46px tall (Task 64: gold
+    # was removed; the compact topbar cta at 38px is laptop-only).
+    for kind in ("dark", "cta", "ghost"):
+        matches = re.findall(rf"\.pill\.{kind}\s*\{{[^}}]*\}}", css)
+        assert matches, f"missing .pill.{kind}"
+        heights = [float(m.group(1)) for m in
+                   (re.search(r"min-height\s*:\s*([\d.]+)px", block)
+                    for block in matches) if m]
+        assert heights and max(heights) >= 46, \
             f".pill.{kind} must be at least 46px tall"
     # kicker, headline, trio, notice, search, chips
     assert re.search(r"\.kick\s*\{", css), "missing .kick"
     assert re.search(r"\.kick::before\s*\{", css), "kicker needs the leading line"
     assert re.search(r"h1\.big\s+em\s*\{", css), "missing h1.big em"
     assert re.search(r"\.trio\s*\{", css), "missing .trio"
-    assert re.search(r"\.notice\s*\{[^}]*dashed", css), ".notice must be dashed"
+    assert re.search(r"\.notice\s*\{[^}]*var\(--purple-soft\)", css), \
+        ".notice must be purple-soft"
     assert re.search(r"\.search\s*\{", css), "missing .search"
-    assert re.search(r"\.chip\.on\s*\{[^}]*var\(--forest\)", css) or \
-        re.search(r"\.chip\.is-active\s*\{[^}]*var\(--forest\)", css), \
-        "selected chip must be forest"
+    assert re.search(r"(?<!tabs )\.chip\.on\s*\{[^}]*var\(--ink\)", css) or \
+        re.search(r"\.chip\.is-active\s*\{[^}]*var\(--ink\)", css), \
+        "selected chip must be ink"
     # product card, float bar, band, timeline, receipt, standee, live
     for pattern in (r"\.card\s+\.ph\s*\{", r"\.float\s*\{", r"\.band\s*\{",
                     r"\.gc\s*\{", r"\.tline\s*\{", r"\.rcpt\s*\{", r"\.upi\s*\{",
@@ -238,11 +254,11 @@ def test_css_guide_components():
     # shell
     for pattern in (r"\.ann\s*\{", r"\.hdr\s*\{", r"\.bnav\s*\{", r"\.lang\s*\{"):
         assert re.search(pattern, css), f"missing {pattern}"
-    # needs-a-tap is gold-soft, never blue
-    assert re.search(r"\.pill-check\s*\{[^}]*(--gold-soft|#FFF4D6|#fffbe?f)",
-                     css, re.IGNORECASE), "needs-you pill must use gold-soft"
-    assert re.search(r"\.heard\.need\s*\{[^}]*(--gold-soft|--need-bg|#FFF4D6|#fffbe?f)",
-                     css, re.IGNORECASE), ".heard.need must use gold-soft"
+    # needs-a-tap is amber-soft, never blue (Task 64: was gold-soft)
+    assert re.search(r"pill-check[^}]*(--amber-soft|#FFF5E3)",
+                     css, re.IGNORECASE), "needs-you pill must use amber-soft"
+    assert re.search(r"\.heard\.need\s*\{[^}]*(--amber-soft|--need-bg|#FFF5E3)",
+                     css, re.IGNORECASE), ".heard.need must use amber-soft"
 
 
 def test_templates_have_no_meta_blue():
@@ -348,13 +364,13 @@ def test_seller_desktop_nav_and_cta(tmp_path):
     assert match, "no seller desktop nav rendered"
     nav = match.group(0)
     orders_href = f"/e/{token}/bills?range=today&amp;status=waiting"
-    # Task 61: Home, Orders (badge), Bills, Close day, More.
+    # Task 61: Today, Orders (badge), Bills, Close day, More (Task 64).
     for href in (f"/e/{token}", orders_href, f"/e/{token}/bills",
                  f"/e/{token}/close", f"/e/{token}#more"):
         assert f'href="{href}"' in nav, f"desktop nav missing {href}"
     assert f'href="/e/{token}/live"' not in nav
     assert nav.index(orders_href) < nav.index(f"/e/{token}/bills\">")
-    for label in ("Home", "Bills", "Close day", "More"):
+    for label in ("Today", "Bills", "Close day", "More"):
         assert f">{label}</a>" in nav, f"desktop nav missing {label}"
     assert ">Orders</a>" in nav
     assert "data-orders-badge" in nav
@@ -448,7 +464,7 @@ def test_shell_strings_translated(tmp_path):
 def test_manifest_and_theme_color(tmp_path):
     client = _client(tmp_path)
     body = client.get("/manifest.webmanifest").json()
-    assert body["theme_color"] == "#173F2A"
-    assert body["background_color"] == "#F7F9F6"
+    assert body["theme_color"] == "#1E1F21"
+    assert body["background_color"] == "#FAFBFC"
     html = client.get("/").text
-    assert 'name="theme-color"' in html and "#173F2A" in html
+    assert 'name="theme-color"' in html and "#1E1F21" in html

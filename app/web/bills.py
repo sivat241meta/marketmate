@@ -794,9 +794,50 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "pill_kind": kind,
                     "mode": _mode_label(_row_mode(row), ui_lang),
                 })
+            board = []
+            for board_key, chip in (("waiting", "c-new"),
+                                    ("packing", "c-pack"),
+                                    ("ready", "c-ready"),
+                                    ("collected", "c-done")):
+                cards = []
+                for row in _filtered(conn, shop["id"], "today",
+                                     board_key, now):
+                    try:
+                        raw = json.loads(row["lines_json"] or "[]")
+                    except ValueError:
+                        raw = []
+                    names = [
+                        _display(str(entry.get("name_en", "")),
+                                 entry.get("variety"))
+                        for entry in raw
+                        if isinstance(entry, dict)
+                        and entry.get("name_en")]
+                    try:
+                        card_total = db.bill_display_totals(
+                            shop, row)["rounded"]
+                    except (InvalidOperation, ValueError):
+                        card_total = row["total"]
+                    text, _kind = _status_pill(row, ui_lang)
+                    actions = _order_actions(row["status"], ui_lang)
+                    av_name = (_row_customer_name(row)
+                               or _row_phone(row)
+                               or f"#{row['id']}").strip()
+                    cards.append({
+                        "id": row["id"],
+                        "label": _customer_label(row, ui_lang),
+                        "names": names,
+                        "total": _fmt_money(card_total),
+                        "time": _row_time(row, now=now, lang=ui_lang),
+                        "pill": text,
+                        "next": actions[0] if actions else None,
+                        "avatar_initial": av_name[:1].upper() or "#",
+                        "avatar_idx": sum(av_name.encode("utf-8")) % 5,
+                    })
+                board.append({"key": board_key, "chip": chip,
+                              "cards": cards})
             return templates.TemplateResponse(request, "bills.html", {
                 "shop": shop, "token": token, "range": range_key,
-                "status": status_key, "rows": items,
+                "status": status_key, "rows": items, "board": board,
                 "bills_today": tiles["bills_today"],
                 "sales_today": _fmt_money(tiles["sales_today"]),
                 "sales_cash": _fmt_money(tiles["sales_cash"]),

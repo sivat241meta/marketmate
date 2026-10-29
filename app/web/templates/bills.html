@@ -37,24 +37,74 @@
   <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">{{ t('bills.filter_paid') }}<small>{{ counts.paid }}</small></a>
 </nav>
 
-{% if rows %}
-{% for row in rows %}
-<a class="bill-row rcpt" href="/e/{{ token }}/bills/{{ row.id }}">
-  <span class="row-main">
-    <span class="list-name">{{ row.label }}</span>
-    {% if row.names %}<span class="list-sub">{{ row.names[:2] | join(", ") }}{% if row.names | length > 2 %} +{{ row.names | length - 2 }}{% endif %}</span>{% endif %}
-    <span class="list-sub">{{ row.time }} · {% if row.count == 1 %}{{ t('bills.item_one', count=row.count) }}{% else %}{{ t('bills.item_many', count=row.count) }}{% endif %}</span>
-  </span>
-  <span class="bill-right">
+<div class="vtabs" role="tablist" aria-label="{{ t('bills.title', shop=shop['name']) }}">
+  <button type="button" role="tab" data-view-btn="list" class="on">{{ t('bills.view_list') }}</button>
+  <button type="button" role="tab" data-view-btn="board">{{ t('bills.view_board') }}</button>
+</div>
+<div data-view-list>
+<div class="grp">
+  <div class="gh"><span aria-hidden="true">▾</span>{% if status == "waiting" %}<span class="chip c-new">{{ t('bills.filter_waiting') }}</span>{% elif status == "packing" %}<span class="chip c-pack">{{ t('bills.filter_packing') }}</span>{% elif status == "ready" %}<span class="chip c-ready">{{ t('bills.filter_ready') }}</span>{% elif status == "collected" %}<span class="chip c-done">{{ t('bills.filter_collected') }}</span>{% elif status == "billed" %}<span class="chip c-unpaid">{{ t('bills.filter_billed') }}</span>{% elif status == "paid" %}<span class="chip c-ready">{{ t('bills.filter_paid') }}</span>{% else %}<span class="chip c-done">{{ t('bills.filter_all') }}</span>{% endif %} {{ t('t64.g_bills') }} <span class="n">{{ rows | length }}</span></div>
+  {% if rows %}
+  <div class="cols" aria-hidden="true"><span>{{ t('t64.col_customer') }}</span><span>{{ t('t64.col_items') }}</span><span>{{ t('t64.col_status') }}</span><span>{{ t('t64.col_time') }}</span><span>{{ t('t64.col_total') }}</span></div>
+  {% for row in rows %}
+  <a class="it" href="/e/{{ token }}/bills/{{ row.id }}" data-search-row="{{ row.label }} {{ row.names | join(' ') }}">
+    <span class="who"><span class="list-name">{{ row.label }}</span>{% if row.names %}<span class="list-sub">{{ row.names[:2] | join(", ") }}{% if row.names | length > 2 %} +{{ row.names | length - 2 }}{% endif %}</span>{% endif %}</span>
+    <span class="desk-only">{% if row.count == 1 %}{{ t('bills.item_one', count=row.count) }}{% else %}{{ t('bills.item_many', count=row.count) }}{% endif %}</span>
+    <span>{{ ui.pill(row.pill_text, row.pill_kind) }}{% if row.mode %} {{ ui.pill(row.mode, "info") }}{% endif %}</span>
+    <span class="desk-only">{{ row.time }}</span>
     <span class="bill-total money">{{ row.total | money(shop["currency"]) }}</span>
-    {{ ui.pill(row.pill_text, row.pill_kind) }}
-    {% if row.mode %}{{ ui.pill(row.mode, "info") }}{% endif %}
-  </span>
-</a>
-{% endfor %}
-{% else %}
-{{ ui.empty_state(t('bills.empty_title'), t('bills.empty_text'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "receipt") }}
-{% endif %}
+  </a>
+  {% endfor %}
+  <a class="addrow" href="/e/{{ token }}/bills/new">+ {{ t('bills.new_bill') }}</a>
+  {% else %}
+  {{ ui.empty_state(t('bills.empty_title'), t('bills.empty_text'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "receipt") }}
+  {% endif %}
+</div>
+</div>
+<div data-view-board hidden>
+  <div class="board">
+    {% for col in board %}
+    <section class="colb" aria-label="{% if col.key == 'waiting' %}{{ t('bills.pill_new') }}{% elif col.key == 'packing' %}{{ t('bills.pill_packing') }}{% elif col.key == 'ready' %}{{ t('bills.pill_ready') }}{% else %}{{ t('bills.pill_collected') }}{% endif %}">
+      <div class="h"><span class="chip {{ col.chip }}">{% if col.key == 'waiting' %}{{ t('bills.pill_new') }}{% elif col.key == 'packing' %}{{ t('bills.pill_packing') }}{% elif col.key == 'ready' %}{{ t('bills.pill_ready') }}{% else %}{{ t('bills.pill_collected') }}{% endif %}</span> {{ col.cards | length }}</div>
+      {% for card in col.cards %}
+      <div class="ocard" data-search-row="{{ card.label }} {{ card.names | join(' ') }}">
+        <b><span class="av a{{ card.avatar_idx }}" aria-hidden="true">{{ card.avatar_initial }}</span> <a href="/e/{{ token }}/bills/{{ card.id }}">{{ card.label }}</a></b>
+        <div class="ln">{{ card.names[:3] | join(" · ") }}{% if card.names | length > 3 %} +{{ card.names | length - 3 }}{% endif %}</div>
+        <div class="ft"><b>{{ card.total | money(shop["currency"]) }}</b>
+          {% if card.next %}
+          <form class="inline-form" method="post" action="/e/{{ token }}/bills/{{ card.id }}/order-status">
+            <input type="hidden" name="status" value="{{ card.next[0] }}">
+            <button class="pill cta sm" type="submit">{{ card.next[1] }}</button>
+          </form>
+          {% else %}
+          <span class="per">{{ card.time }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btns = document.querySelectorAll("[data-view-btn]");
+  const list = document.querySelector("[data-view-list]");
+  const board = document.querySelector("[data-view-board]");
+  if (!btns.length || !list || !board) return;
+  function show(name) {
+    const isBoard = name === "board";
+    list.hidden = isBoard;
+    board.hidden = !isBoard;
+    btns.forEach((b) => b.classList.toggle("on", b.getAttribute("data-view-btn") === name));
+    try { localStorage.setItem("mm_bills_view", name); } catch (err) { /* private mode */ }
+  }
+  btns.forEach((b) => b.addEventListener("click", () => show(b.getAttribute("data-view-btn") || "list")));
+  let saved = null;
+  try { saved = localStorage.getItem("mm_bills_view"); } catch (err) { /* private mode */ }
+  show(saved === "board" ? "board" : "list");
+});
+</script>
 
 <div class="section-head"><h2>{{ t('bills.top_today') }}</h2></div>
 {% if top %}

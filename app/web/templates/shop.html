@@ -32,44 +32,42 @@
   {{ ui.icon("tag") }}
   <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length) }}</label>
   <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
+  <a class="mic" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t('shell.order_voice') }}">{{ ui.icon("mic") }}</a>
 </div>
-<div class="chips"><span class="chip on">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
+<div class="chips tabs"><span class="chip on">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
 <p class="notice">{{ ui.icon("check") }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
 
 <div class="grid-products" data-shop-grid>
 {% for row in rows %}
   <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
-    <div class="ph">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
-    <div class="bd">
-      <span class="kk">{% if row.variety %}{{ row.variety }} · {% endif %}{{ t('shop.kicker_fallback', unit=row.unit) }}</span>
-      <h3><span class="tname" lang="{{ shop_lang }}">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</h3>
+    <div class="pw">
+      <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
       {% if not row.sold_out %}
-      <div class="sizes" data-sizes>
-        {% if row.unit == "kg" %}
-        <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
-        {% else %}
-        <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
-        {% endif %}
-      </div>
-      <div class="pr">
-        <div><b>{{ row.price | money(shop["currency"]) }}</b><small>{{ row.price | money(shop["currency"]) }} / {{ row.lines[0].per if row.lines else row.unit }}</small></div>
-        <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
-        <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
-      </div>
-      {% else %}
-      <div class="pr">
-        <div><b>{{ row.price | money(shop["currency"]) }}</b><small>{{ row.price | money(shop["currency"]) }} / {{ row.lines[0].per if row.lines else row.unit }}</small></div>
-        <span class="pill sm ghost">{{ t.sold_out }}</span>
-      </div>
+      <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
+      <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
       {% endif %}
     </div>
+    <div class="price"><span class="pp">{{ row.price | money(shop["currency"]) }}</span><span class="per">/{{ row.lines[0].per if row.lines else row.unit }}</span></div>
+    <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</div>
+    {% if row.variety %}<span class="var">{{ row.variety }}</span>{% endif %}
+    {% if not row.sold_out %}
+    <div class="sizes" data-sizes>
+      {% if row.unit == "kg" %}
+      <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+      {% else %}
+      <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+      {% endif %}
+    </div>
+    {% else %}
+    <div><span class="pill sm ghost">{{ t.sold_out }}</span></div>
+    {% endif %}
   </article>
 {% endfor %}
 </div>
 
 <div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
   <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
-  <button type="button" class="pill gold" data-cart-submit data-cart-view>{{ t('shop.view_order') }}</button>
+  <button type="button" class="pill bar" data-cart-submit data-cart-view>{{ t('shop.view_order') }}</button>
 </div>
 <div class="alert alert-warn" data-cart-error hidden></div>
 <div class="rcpt desk-only" data-cart-summary hidden>

@@ -504,7 +504,10 @@ def test_bills_list_fresh_green(tmp_path):
                source="customer", total="60.00")
     html = client.get(f"/e/{token}/bills").text
     assert 'class="kick"' in html
-    assert "rcpt" in html
+    # Task 64: workspace list rows (were rcpt cards).
+    assert 'class="grp"' in html
+    assert 'class="it"' in html
+    assert 'class="addrow"' in html
     for chip in ("All", "New", "Packing", "Ready", "Unpaid", "Paid"):
         assert chip in html, chip
 
@@ -587,8 +590,10 @@ def test_tags_settings_purchases_fresh_green(tmp_path):
     assert resp.status_code == 200
     assert resp.content[:5] == b"%PDF-"
     src = (ROOT / "app/web/templates/tags.html").read_text()
-    assert "173F2A" in src or "forest" in src.lower()
-    assert "F5C451" in src or "gold" in src.lower()
+    # Task 64: v9 ink band + price green (was forest + gold).
+    assert "5F55EE" in src
+    assert "0F7F3F" in src
+    assert "292D34" in src
     settings = client.get(f"/e/{token}/settings").text
     assert "rcpt" in settings
     assert 'name="upi_id"' in settings

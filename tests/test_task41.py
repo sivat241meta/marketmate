@@ -91,8 +91,8 @@ def test_manifest_served_with_json(tmp_path):
     body = resp.json()
     assert body["name"] == "MarketMate"
     assert body["short_name"] == "MarketMate"
-    assert body["theme_color"] == "#173F2A"
-    assert body["background_color"] == "#F7F9F6"
+    assert body["theme_color"] == "#1E1F21"
+    assert body["background_color"] == "#FAFBFC"
     assert body["display"] == "standalone"
     assert body["start_url"] == "/"
     sizes = {icon["sizes"] for icon in body["icons"]}
@@ -113,7 +113,7 @@ def test_base_links_manifest_and_icons(tmp_path):
     html = client.get("/").text
     assert 'href="/manifest.webmanifest"' in html
     assert 'rel="apple-touch-icon"' in html
-    assert 'name="theme-color"' in html and "#173F2A" in html
+    assert 'name="theme-color"' in html and "#1E1F21" in html
 
 
 def test_icons_exist_with_right_sizes():

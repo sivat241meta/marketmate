@@ -68,10 +68,14 @@
       Array.prototype.forEach.call(buttons, function (btn) {
         var onLabel = btn.getAttribute("data-sound-on") || "Sound on";
         var offLabel = btn.getAttribute("data-sound-off") || "Sound off";
+        var compact = btn.hasAttribute("data-sound-compact");
         function render() {
           var on = soundOn();
-          btn.textContent = on ? onLabel : offLabel;
+          if (!compact) {
+            btn.textContent = on ? onLabel : offLabel;
+          }
           btn.setAttribute("aria-pressed", on ? "true" : "false");
+          btn.classList.toggle("is-off", !on);
         }
         btn.addEventListener("click", function () {
           try {

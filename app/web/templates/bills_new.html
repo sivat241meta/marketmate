@@ -25,10 +25,14 @@
     <div class="bill-split">
       <div class="grid-products tap-grid">
         {% for item in price_items %}
-        <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}">
-          <div class="ph">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+        <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}" data-search-row="{{ item.name_local or item.display }} {{ item.display }} {{ item.variety }}">
+          <div class="pw">
+            <div class="ph{% if not item.photo_url %} letter{% endif %}">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+          </div>
+          <div class="price"><span class="pp">{{ item.unit_price | money(shop["currency"]) }}</span><span class="per">/{{ item.unit }}</span></div>
+          <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ item.name_local or item.display }}</span>{% if item.name_local and item.display %}<small>{{ item.display }}</small>{% endif %}</div>
+          {% if item.variety %}<span class="var">{{ item.variety }}</span>{% endif %}
           <div class="bd tap-main">
-            <h3><span class="tname" lang="{{ shop_lang }}">{{ item.name_local or item.display }}</span>{% if item.name_local and item.display %}<small>{{ item.display }}</small>{% endif %}<small class="line-rate">{{ item.summary }}</small></h3>
             {% if not item.sold_out %}
             <input type="hidden" name="name_en_{{ item.index }}" value="{{ item.value }}">
             <input type="hidden" name="unit_{{ item.index }}" value="{{ item.unit or '' }}">
@@ -70,7 +74,7 @@
     </div>
     <div class="float tap-bar mob-only">
       <div class="t"><b data-tap-summary>{{ t('bn.pick_items') }}</b><small>{{ t('bn.tap') }}</small></div>
-      <button class="pill gold" type="submit">{{ t('bn.make_bill') }}</button>
+      <button class="pill cta" type="submit">{{ t('bn.make_bill') }}</button>
     </div>
   </form>
   <div class="keypad-sheet" data-keypad hidden>

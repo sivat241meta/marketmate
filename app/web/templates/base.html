@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-<meta name="theme-color" content="#173F2A">
+<meta name="theme-color" content="#1E1F21">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% set _path = request.url.path if request is defined else "/" %}
@@ -24,8 +24,17 @@
 {% set _on_bills = _bills_sub and not _on_orders %}
 {% set _on_live = _path == _home ~ "/live" or _path.startswith(_home ~ "/live/") %}
 {% set _on_close = _path == _home ~ "/close" or _path.startswith(_home ~ "/close") %}
+{% set _on_credit = _path == _home ~ "/credit" or _path.startswith(_home ~ "/credit/") %}
 {% endif %}
 {% set _shop_links = _shop_known and not _is_seller and (_path.startswith("/s/") or _path.startswith("/q/")) and _ann %}
+{% macro _lang_seg() %}
+  <span class="lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+  </span>
+{% endmacro %}
+{% macro _mark() %}<span class="mk" aria-hidden="true"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>{% endmacro %}
 <div class="ann">
   <span><span class="dot" aria-hidden="true"></span>{% if _is_seller %}{% if _ann %}{{ t('ann.shop_open') }} · {% if _ann.prices_time %}{{ t('ann.last_prices', time=_ann.prices_time) }}{% else %}{{ t('ann.no_prices') }}{% endif %} · {{ t('ann.need_tap', n=_ann.need) }}{% else %}{{ shop["name"] }} · {{ shop["area"] }}{% endif %}{% elif _shop_known %}{% if _ann and _ann.prices_time %}{{ t('ann.said_today', time=_ann.prices_time, area=shop["area"]) }}{% else %}{{ t('ann.said_notime', area=shop["area"]) }}{% endif %}{% else %}{{ t('ann.public') }}{% endif %}</span>
   {% if _shop_links %}
@@ -34,27 +43,58 @@
     {% if _ann.shop_lang != "en" %}<a href="?lang={{ _ann.shop_lang }}" lang="{{ _ann.shop_lang }}" class="{% if lang|default('en') == _ann.shop_lang %}on{% endif %}">{{ _ann.shop_native }}</a>{% endif %}
   </span>
   {% else %}
-  <span class="lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+  {{ _lang_seg() }}
+  {% endif %}
+</div>
+{% if _is_seller %}
+<div class="topbar">
+  <a class="ws" href="/e/{{ token }}"><i aria-hidden="true"></i><span>{{ shop["name"] }}</span></a>
+  <label class="visually-hidden" for="shell-q">{{ t('shell.search_ph') }}</label>
+  <input class="kbd" type="search" id="shell-q" data-shell-search placeholder="🔍 {{ t('shell.search_ph') }}" autocomplete="off">
+  <span class="seg" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
     <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
     <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
     <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
   </span>
+  {% if not _staff %}
+  <a class="pill cta sm" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('shell.say_prices') }}</a>
   {% endif %}
+  <button class="iconbtn" type="button" data-sound-toggle data-sound-compact data-sound-on="{{ t('alert.sound_on') }}" data-sound-off="{{ t('alert.sound_off') }}" aria-label="{{ t('alert.sound_on') }}">♪</button>
+  <a class="iconbtn" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
 </div>
+<nav class="rail" aria-label="{{ t('nav.seller_label') }}">
+  <span class="logo-sq" aria-hidden="true">{{ ui.icon("check") }}</span>
+  <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.today') }}</span></a>
+  {% if not _staff %}
+  <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  {% endif %}
+  <a class="ic{% if _on_orders %} on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
+  <a class="ic{% if _on_bills %} on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  {% if not _staff or can_credit|default(false) %}
+  <a class="ic{% if _on_credit %} on{% endif %}" href="/e/{{ token }}/credit">{{ ui.icon("tag") }}<span>{{ t('nav.credit') }}</span></a>
+  {% endif %}
+  {% if not _staff %}
+  <a class="ic{% if _on_close %} on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.close') }}</span></a>
+  {% endif %}
+  <a class="ic more" href="/e/{{ token }}#more">{{ ui.icon("settings") }}<span>{{ t('nav.more') }}</span></a>
+</nav>
+{% endif %}
 <header class="hdr">
   <a class="logo" href="{% if _is_seller %}/e/{{ token }}{% elif _shop_known %}/s/{{ shop["slug"] }}{% else %}/{% endif %}" aria-label="MarketMate home">
-    <span class="mk" aria-hidden="true"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19c0-8 6-13 14-14-1 8-6 14-14 14z" fill="#4F9A2E"/><path d="M5 19l8-8" stroke="#3E7D22" stroke-width="2" stroke-linecap="round"/></svg></span>
+    {{ _mark() }}
     <span>MarketMate</span>
   </a>
   {% if _is_seller %}
+  {% if _ann and _ann.need %}<span class="chip c-need seller-status">{{ t('shell.needs_you', n=_ann.need) }}</span>{% elif _ann %}<span class="chip c-live seller-status">{{ t('shell.shop_open') }}</span>{% endif %}
   <nav class="nav" aria-label="{{ t('nav.seller_label') }}">
-    <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ t('nav.home') }}</a>
+    <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ t('nav.today') }}</a>
     <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link><span class="nbadge" data-orders-badge hidden></span>{{ t('nav.orders') }}</a>
     <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
     {% if not _staff %}<a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ t('nav.close') }}</a>{% endif %}
     <a href="/e/{{ token }}#more">{{ t('nav.more') }}</a>
   </nav>
   {% elif _shop_known %}
+  <span class="shop-id"><b>{{ shop["name"] }}</b>{% if _ann and _ann.prices_time %}<span class="chip c-live">{{ t('shell.open_now') }}</span><span class="muted">{{ _ann.prices_time }}</span>{% endif %}</span>
   <nav class="nav" aria-label="{{ t('top.main_nav') }}">
     <a class="{% if _path == "/s/" ~ shop["slug"] %}on{% endif %}" href="/s/{{ shop["slug"] }}">{{ t('shell.todays_prices') }}</a>
     <a class="{% if _path.startswith("/s/" ~ shop["slug"] ~ "/quote") %}on{% endif %}" href="/s/{{ shop["slug"] }}/quote">{{ t('shell.order_voice') }}</a>
@@ -78,26 +118,29 @@
   <button class="pill ghost sm" type="button" data-sound-toggle data-sound-on="{{ t('alert.sound_on') }}" data-sound-off="{{ t('alert.sound_off') }}">{{ t('alert.sound_on') }}</button>
   <a class="circ" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
   {% elif _shop_known %}
+  <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>
   <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.icon("bag") }}</a>
   {% else %}
+  <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>
   <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.icon("bag") }}</a>
   {% endif %}
 </header>
 <div class="shell">
 <main class="content">
+{% if _is_seller %}<div class="crumb">{{ shop["name"] }} / <b>{% block crumb_page %}{% if _here %}{{ t('nav.today') }}{% elif _on_orders %}{{ t('nav.orders') }}{% elif _on_bills %}{{ t('nav.bills') }}{% elif _on_live %}{{ t('nav.prices') }}{% elif _on_close %}{{ t('nav.close') }}{% elif _on_credit %}{{ t('nav.credit') }}{% endif %}{% endblock %}</b></div>{% endif %}
 {% block content %}{% endblock %}
 </main>
 </div>
 {% if _is_seller %}
 <nav class="bnav" aria-label="{{ t('nav.seller_label') }}">
-  <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.home') }}</span></a>
+  <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.today') }}</span></a>
   <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
   {% if not _staff %}
   <a class="mic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live"><span>{{ ui.icon("mic") }}</span>{{ t('nav.live') }}</a>
   {% endif %}
   <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
   {% if not _staff %}
-  <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.day') }}</span></a>
+  <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.close') }}</span></a>
   {% endif %}
 </nav>
 {% endif %}
@@ -142,6 +185,22 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+  const shellSearch = document.querySelector("[data-shell-search]");
+  if (shellSearch) {
+    const rows = Array.prototype.slice.call(
+      document.querySelectorAll("[data-search-row]"));
+    if (!rows.length) {
+      shellSearch.hidden = true;
+    } else {
+      shellSearch.addEventListener("input", () => {
+        const q = shellSearch.value.trim().toLowerCase();
+        rows.forEach((row) => {
+          const text = (row.getAttribute("data-search-row") || "").toLowerCase();
+          row.hidden = q !== "" && !text.includes(q);
+        });
+      });
+    }
+  }
 });
 </script>
 {% if _is_seller %}

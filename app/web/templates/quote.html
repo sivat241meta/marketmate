@@ -9,7 +9,7 @@
 <p class="lead">{{ subtitle }}</p>
 <div data-order-record data-token="{{ token }}" data-shop="{{ shop["name"] }}" data-number="{{ order_id }}" data-total="{{ total_fmt }}" data-date="{{ order_date }}" hidden></div>
 <div data-order-poll data-status-url="{{ status_url }}" hidden></div>
-<div class="gold-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
+<div class="ready-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
 <div class="alert alert-warn" data-soldout-note{% if not sold_out_any %} hidden{% endif %}>{{ t('order.sold_out_note') }}</div>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">Not understood: {{ not_understood }} – add it from the list</div>{% endif %}

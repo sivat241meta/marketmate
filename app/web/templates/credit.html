@@ -7,19 +7,19 @@
 <h2 class="h2s">{{ t('credit.sub', shop=shop["name"]) }}</h2>
 {% if entries %}
 <h1 class="big">{{ headline }}</h1>
+<div class="grp">
+  <div class="gh"><span aria-hidden="true">▾</span><span class="chip c-need">{{ t('bills.pill_credit') }}</span> {{ t('credit.heading') }} <span class="n">{{ entries | length }}</span></div>
+  <div class="cols" aria-hidden="true"><span>{{ t('t64.col_customer') }}</span><span>{{ t('t64.col_items') }}</span><span>{{ t('t64.col_status') }}</span><span>{{ t('t64.col_time') }}</span><span>{{ t('t64.col_total') }}</span></div>
 {% for row in entries %}
-<a class="bill-row rcpt" href="/e/{{ token }}/credit/{{ row.key_quoted }}">
-  <span class="row-main">
-    <span class="list-name">{{ row.name }}</span>
-    <span class="list-sub">{{ row.phone }} · {{ row.bill_count }} {{ t('credit.bills_col') }}</span>
-    <span class="list-sub">{{ t('credit.last_bill') }} {{ row.last_bill }} · {{ t('credit.oldest') }} {{ row.oldest }}</span>
-  </span>
-  <span class="bill-right">
-    <span class="bill-total money">{{ row.balance }}</span>
-    {{ ui.pill(t('credit.view'), "info") }}
-  </span>
+<a class="it" href="/e/{{ token }}/credit/{{ row.key_quoted }}" data-search-row="{{ row.name }} {{ row.phone }}">
+  <span class="who"><span class="list-name">{{ row.name }}</span><span class="list-sub">{{ row.phone }} · {{ row.bill_count }} {{ t('credit.bills_col') }}</span></span>
+  <span class="desk-only">{{ row.bill_count }} {{ t('credit.bills_col') }}</span>
+  <span>{{ ui.pill(t('credit.view'), "info") }}</span>
+  <span class="desk-only">{{ t('credit.last_bill') }} {{ row.last_bill }} · {{ t('credit.oldest') }} {{ row.oldest }}</span>
+  <span class="bill-total money">{{ row.balance }}</span>
 </a>
 {% endfor %}
+</div>
 {% else %}
 {{ ui.empty_state(t('credit.empty_title'), t('credit.empty_text'), None, None, "receipt") }}
 {% endif %}
