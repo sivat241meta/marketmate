@@ -223,18 +223,21 @@ def create_app(settings: Settings) -> FastAPI:
                 saved = _fmt_rate(budget - plan.total)
             lat = lng = None
             slug = None
+            area = ""
             open_state, open_time = "unknown", ""
             if plan.kind in ("single_shop", "partial_shop") and lines:
                 slug = lines[0]["slug"]
                 shop = db.shop_by_slug(conn, slug)
                 if shop is not None:
                     lat, lng = shop["lat"], shop["lng"]
+                    area = shop["area"] or ""
                     status = shop_open_status(shop)
                     open_state, open_time = status["state"], status["time"]
             plan_dicts.append({
                 "kind": plan.kind,
                 "shop": plan.shop,
                 "slug": slug,
+                "area": area,
                 "total": _fmt_rate(plan.total),
                 "currency": plan_currency,
                 "lines": lines,
@@ -275,7 +278,8 @@ def create_app(settings: Settings) -> FastAPI:
 
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None, areas=None,
-                        area="", pincode="", open_now=True, sort="total"):
+                        area="", pincode="", open_now=True, sort="total",
+                        market_empty=False):
         from app.web.i18n import get_strings, get_ui_lang
 
         flat = rows or []
@@ -287,7 +291,8 @@ def create_app(settings: Settings) -> FastAPI:
             "error": error, "searched": searched, "basket": basket,
             "areas": areas or [], "area": area or "",
             "pincode": pincode or "", "open_now": open_now,
-            "sort": sort or "total", "t": get_strings(ui_lang),
+            "sort": sort or "total", "market_empty": market_empty,
+            "t": get_strings(ui_lang),
             "ui_lang": ui_lang})
 
     @app.get("/manifest.webmanifest")
@@ -384,12 +389,17 @@ def create_app(settings: Settings) -> FastAPI:
         listings = find_listings(conn, query, now, area=(area or None),
                                  pincode=(pincode or None),
                                  open_only=open_flag)
+        # Honest empty state: no listed shop has shared prices at all, so
+        # there is no basket to plan (never a "totals 0" card).
+        market_empty = bool(query.wants) and not areas
         return _market_context(
             request, q=q.strip(), query=query,
             rows=_rows_from_listings(listings, now),
-            basket=_build_basket(conn, query, listings, ledger),
+            basket=(None if market_empty
+                    else _build_basket(conn, query, listings, ledger)),
             searched=True, areas=areas, area=area or "",
-            pincode=pincode or "", open_now=open_flag, sort=sort_mode)
+            pincode=pincode or "", open_now=open_flag, sort=sort_mode,
+            market_empty=market_empty)
 
     @app.post("/market/voice")
     async def market_voice(request: Request):
@@ -429,11 +439,15 @@ def create_app(settings: Settings) -> FastAPI:
             wav.unlink(missing_ok=True)
         now = datetime.now(UTC)
         listings = find_listings(conn, query, now)
+        voice_areas = db.listed_areas(conn)
+        market_empty = bool(query.wants) and not voice_areas
         return _market_context(
             request, q=transcript.text, heard=transcript.text, query=query,
             rows=_rows_from_listings(listings, now),
-            basket=_build_basket(conn, query, listings, ledger),
-            searched=True, areas=db.listed_areas(conn))
+            basket=(None if market_empty
+                    else _build_basket(conn, query, listings, ledger)),
+            searched=True, areas=voice_areas,
+            market_empty=market_empty)
 
     return app
 

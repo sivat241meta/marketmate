@@ -1931,6 +1931,78 @@ progress.progress::-moz-progress-bar { background: var(--purple-ink); border-rad
 .basket-lines a { color: var(--purple-ink); }
 .basket .muted { color: var(--muted); }
 
+/* ---- Market v9: one filter row, shop result cards, honest empty state ---- */
+.filters { margin: var(--space-3) 0; }
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.filter-chips .chip { flex: none; }
+label.chip-check { position: relative; cursor: pointer; }
+label.chip-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+label.chip-check input:focus-visible + span {
+  outline: 3px solid var(--purple-ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.filters .seg {
+  display: inline-flex;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 2px;
+  flex: none;
+}
+.filters .seg a {
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 7px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+.filters .seg a.on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.pin-wrap { flex: none; display: inline-flex; }
+.pin-wrap input {
+  width: 7.5rem;
+  min-height: 44px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-chip);
+  padding: 8px 10px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+.basket .rl {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.basket .rl small { display: block; color: var(--muted); font-size: 12px; }
+.basket .price { margin-top: 0; flex: none; }
+.basket .miss, .basket .miss small { color: var(--amber); }
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
 .record-card { text-align: center; }
 .record-card svg { width: 48px; height: 48px; color: var(--ink); }
 .record-actions { display: flex; gap: var(--space-3); justify-content: center; margin: var(--space-3) 0; flex-wrap: wrap; }
@@ -2829,6 +2901,12 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
   }
   /* v9: small buttons reach 44px on phones. */
   .pill.sm { min-height: 44px; }
+  /* Task 69: market filter chips scroll sideways in one row on phones. */
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
 }
 /* Between 900px and the 1000px rail breakpoint the seller bottom nav is
    still visible, so the same lift rules apply. */

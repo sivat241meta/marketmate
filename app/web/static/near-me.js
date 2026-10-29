@@ -112,17 +112,39 @@
 
   function init() {
     var btn = document.getElementById("near-me");
-    var sort = document.getElementById("sort");
+    var sortBox = document.getElementById("sort");
+    var sortInput = document.getElementById("sort-value");
+    var sortLinks = sortBox
+      ? sortBox.querySelectorAll("[data-sort]")
+      : [];
     var status = document.getElementById("near-me-status");
-    if (!btn && !sort) {
+    if (!btn && !sortLinks.length) {
       return;
     }
     var here = null;
-    // The sort select auto-submits without JS; with JS it sorts in place.
-    if (sort) {
-      sort.removeAttribute("onchange");
-      sort.addEventListener("change", function () {
-        if (sort.value === "distance") {
+    function currentSort() {
+      if (sortInput && sortInput.value) {
+        return sortInput.value;
+      }
+      var on = sortBox && sortBox.querySelector("[data-sort].on");
+      return on ? on.getAttribute("data-sort") : "total";
+    }
+    function setSort(mode) {
+      if (sortInput) {
+        sortInput.value = mode;
+      }
+      sortLinks.forEach(function (link) {
+        link.classList.toggle(
+          "on", link.getAttribute("data-sort") === mode);
+      });
+    }
+    // The sort links are plain links without JS; with JS they sort in place.
+    sortLinks.forEach(function (link) {
+      link.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        var mode = link.getAttribute("data-sort") || "total";
+        setSort(mode);
+        if (mode === "distance") {
           locate(function () {
             showDistances(here);
             sortAll(here, true);
@@ -131,7 +153,7 @@
           sortAll(here, false);
         }
       });
-    }
+    });
     function locate(done) {
       if (here) {
         done();
@@ -162,15 +184,13 @@
     if (btn) {
       btn.addEventListener("click", function () {
         locate(function () {
-          if (sort) {
-            sort.value = "distance";
-          }
+          setSort("distance");
           showDistances(here);
           sortAll(here, true);
         });
       });
     }
-    if (sort && sort.value === "distance") {
+    if (sortLinks.length && currentSort() === "distance") {
       locate(function () {
         showDistances(here);
         sortAll(here, true);

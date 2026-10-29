@@ -670,7 +670,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         })
 
     @app.post("/new")
-    def create_shop_post(
+    async def create_shop_post(
         request: Request,
         conn: Conn,
         name: str = Form(...),
@@ -693,6 +693,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 currency = "INR"
         if currency not in _CURRENCIES:
             raise HTTPException(422, "unknown currency")
+        # The "Show my shop" box is on by default; the form always sends
+        # listed=0 plus listed=1 when ticked, so read every value. A post
+        # without the field (old clients) stays listed by default.
+        picked = (await request.form()).getlist("listed")
+        listed = True if not picked else any(
+            str(value or "").strip().lower() in ("1", "on", "true", "yes")
+            for value in picked)
         _, _, token = db.create_shop(
             conn,
             name=name.strip(),
@@ -701,6 +708,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             language=language,
             currency=currency,
             shop_type=type.strip(),
+            listed=listed,
         )
         return RedirectResponse(f"/e/{token}", status_code=303)
 

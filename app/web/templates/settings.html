@@ -68,6 +68,15 @@
       </label>
       <span class="help">{{ t('set.round_help') }}</span>
     </div>
+    {% if not shop["is_judge"] %}
+    <div class="field">
+      <label class="toggle-row" for="set-listed">
+        <input id="set-listed" type="checkbox" name="listed"{% if shop["listed"] %} checked{% endif %}>
+        <span>{{ t('set.listed_label') }}</span>
+      </label>
+      <span class="help">{{ t('set.listed_help') }}</span>
+    </div>
+    {% endif %}
     <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
   </form>
 </section>
@@ -86,6 +95,7 @@
     <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
     {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
     <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
+    {% if not shop["is_judge"] and shop["listed"] %}<input type="hidden" name="listed" value="on">{% endif %}
     {% for day in hours_days %}
     <div class="version-row" data-day-row="{{ day.index }}">
       <div class="row-main"><strong>{{ t('date.day_' ~ (day.index + 1)) }}</strong></div>
@@ -122,6 +132,7 @@
     <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
     {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
     <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
+    {% if not shop["is_judge"] and shop["listed"] %}<input type="hidden" name="listed" value="on">{% endif %}
     <input type="hidden" id="shop-lat" name="lat" value="{{ shop["lat"] if shop["lat"] is not none else "" }}">
     <input type="hidden" id="shop-lng" name="lng" value="{{ shop["lng"] if shop["lng"] is not none else "" }}">
     <p>

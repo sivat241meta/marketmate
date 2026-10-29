@@ -41,27 +41,27 @@
 {% if searched %}
 <form method="get" action="/market" class="filters" data-filters>
   <input type="hidden" name="q" value="{{ q or '' }}">
-  <div class="chips" role="group" aria-label="{{ t('market.all_areas') }}">
+  {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
+  <input type="hidden" name="sort" id="sort-value" value="{{ sort }}">
+  <input type="hidden" name="open_now" value="0">
+  <div class="filter-chips" role="group" aria-label="{{ t('market.all_areas') }}">
     <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}">{{ t('market.all_areas') }}</a>
     {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}">{{ a }}</a>{% endfor %}
-  </div>
-  <div class="filter-row">
-    <label class="fld-inline" for="market-pincode">{{ t('market.pincode') }}</label>
-    <input type="search" id="market-pincode" name="pincode" value="{{ pincode or '' }}" inputmode="numeric" maxlength="6" placeholder="600001">
-    <input type="hidden" name="open_now" value="0">
-    <label class="toggle-row" for="market-open">
+    <label class="chip chip-check{% if open_now %} on{% endif %}" for="market-open">
       <input id="market-open" type="checkbox" name="open_now" value="1"{% if open_now %} checked{% endif %} onchange="this.form.submit()">
       <span>{{ t('market.open_now') }}</span>
     </label>
-    <label class="fld-inline" for="sort">{{ t('market.sort_label') }}</label>
-    <select id="sort" name="sort" onchange="this.form.submit()">
-      <option value="total"{% if sort != "distance" %} selected{% endif %}>{{ t('market.sort_total') }}</option>
-      <option value="distance"{% if sort == "distance" %} selected{% endif %}>{{ t('market.sort_distance') }}</option>
-    </select>
-    <button class="pill ghost sm" type="button" id="near-me">{{ t('market.near_me') }}</button>
-    <span class="muted" id="near-me-status" aria-live="polite"></span>
+    <button class="chip" type="button" id="near-me">{{ t('market.near_me') }}</button>
+    <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
+      <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total">{{ t('market.sort_total') }}</a>
+      <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance">{{ t('market.sort_distance') }}</a>
+    </span>
+    <span class="pin-wrap">
+      <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
+      <input type="search" id="market-pincode" name="pincode" value="{{ pincode or '' }}" inputmode="numeric" maxlength="6" size="6" placeholder="{{ t('market.pincode') }}">
+    </span>
   </div>
-  {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
+  <span class="muted" id="near-me-status" aria-live="polite"></span>
 </form>
 {% endif %}
 
@@ -77,8 +77,14 @@
   {% for plan in basket.plans %}
   <div class="basket card" data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
     <div class="bd">
-      <span class="kk">{% if plan.kind == "split" %}Cheapest split{% elif plan.kind == "partial_shop" %}{{ plan.shop }} · partial{% else %}{{ plan.shop }} · one shop{% endif %}</span>
-      <h3>{% if plan.kind == "split" %}Cheapest split{% else %}{{ plan.shop }}{% endif %}{% if plan.best %} <span class="tag g inline">{{ t('market.best') }}</span>{% endif %}</h3>
+      {% if plan.kind == "split" %}
+      <span class="kk">{{ t('market.cheapest_split') }}</span>
+      <h3>{{ t('market.cheapest_split') }}</h3>
+      {% else %}
+      <span class="kk">{{ plan.shop }} · {% if plan.kind == "partial_shop" %}{{ t('market.partial') }}{% else %}{{ t('market.one_shop') }}{% endif %}</span>
+      <h3>{{ plan.shop }}{% if plan.best %} <span class="chip c-live">{{ t('market.best') }}</span>{% endif %}</h3>
+      {% if plan.area %}<p class="muted">{{ plan.area }}</p>{% endif %}
+      {% endif %}
       {% if plan.open_state == "open" %}<p><span class="pill pill-live" data-open-chip>{% if plan.open_time %}{{ t('hours.open_now', time=plan.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
       {% elif plan.open_state == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if plan.open_time %}{{ t('hours.closed', time=plan.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
       <p class="muted" data-distance-wrap hidden><small data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></p>
@@ -87,15 +93,21 @@
         {% for line in plan.lines %}
         <small>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</small>
         {% endfor %}
-      </div><b>{{ plan.total | money(plan.currency) }}</b></div>
+      </div><div class="price"><span class="pp">{{ plan.total | money(plan.currency) }}</span></div></div>
       {% endif %}
       {% if plan.saved %}<p class="purple-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
       {% if plan.missing %}
       {% if plan.kind == "partial_shop" %}
-      <p class="muted"><small>missing: {{ plan.missing | join(", ") }}</small></p>
+      <p class="miss"><small>{{ t('market.missing', items=(plan.missing | join(", "))) }}</small></p>
       {% else %}
-      <p class="muted"><small>No fresh prices for: {{ plan.missing | join(", ") }}</small></p>
+      <p class="miss"><small>{{ t('market.no_fresh', items=(plan.missing | join(", "))) }}</small></p>
       {% endif %}
+      {% endif %}
+      {% if plan.slug %}
+      <p class="card-actions">
+        <a class="pill ghost sm" href="/s/{{ plan.slug }}">{{ t('market.open_shop') }}</a>
+        <a class="pill cta sm" href="/s/{{ plan.slug }}/quote">{{ t('market.order_items') }}</a>
+      </p>
       {% endif %}
     </div>
   </div>
@@ -104,7 +116,14 @@
 </section>
 {% endif %}
 
-{% if searched and not groups and not error and not basket %}
+{% if market_empty %}
+<section class="card empty-market">
+  <p><b>{{ t('market.empty_title') }}</b></p>
+  <p><a href="/new">{{ t('market.empty_seller') }}</a></p>
+</section>
+{% endif %}
+
+{% if searched and not groups and not error and not basket and not market_empty %}
 <p class="muted">{{ t('market.no_results') }}</p>
 {% endif %}
 <div class="results-grid">

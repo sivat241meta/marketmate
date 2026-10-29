@@ -600,11 +600,12 @@ def update_shop_settings(conn, shop_id: int, *, name: str, area: str,
                          shop_type: str, upi_id: str | None,
                          upi_payee: str | None, round_bills: bool,
                          hours_json=_UNCHANGED, pincode=_UNCHANGED,
-                         lat=_UNCHANGED, lng=_UNCHANGED) -> None:
+                         lat=_UNCHANGED, lng=_UNCHANGED,
+                         listed=_UNCHANGED) -> None:
     """Update editable shop settings. The slug is never changed.
 
-    ``hours_json``/``pincode``/``lat``/``lng`` default to _UNCHANGED and
-    are only written when passed; pass None to clear one.
+    ``hours_json``/``pincode``/``lat``/``lng``/``listed`` default to
+    _UNCHANGED and are only written when passed; pass None to clear one.
     """
     fields = {"name": name, "area": area, "phone": phone,
               "language": language, "currency": currency,
@@ -614,6 +615,8 @@ def update_shop_settings(conn, shop_id: int, *, name: str, area: str,
                        ("pincode", pincode), ("lat", lat), ("lng", lng)):
         if value is not _UNCHANGED:
             fields[key] = value
+    if listed is not _UNCHANGED:
+        fields["listed"] = int(bool(listed))
     columns = ", ".join(f"{key} = ?" for key in fields)
     conn.execute(f"UPDATE shops SET {columns} WHERE id = ?",
                  (*fields.values(), shop_id))
