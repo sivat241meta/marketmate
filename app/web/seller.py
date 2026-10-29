@@ -359,8 +359,19 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
         taps.append({"id": session["id"], "need": need})
         taps_total += need
 
-    orders = []
+    _OPEN_NEXT = {
+        "new": ("packing", "bill.start_packing", "bills.pill_new", "quote"),
+        "packing": ("ready", "bill.mark_ready", "bills.pill_packing",
+                    "packing"),
+        "ready": ("collected", "bill.mark_collected", "bills.pill_ready",
+                  "ready"),
+    }
+    open_orders = []
     week_orders = 0
+    count_new = 0
+    count_packing = 0
+    count_ready = 0
+    unpaid_count = 0
     base = date_cls.fromisoformat(shop_today(shop, now))
     week_start = base - timedelta(days=6)
     currency = shop["currency"] or "INR"
@@ -378,8 +389,18 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
         if (row["kind"] == "quote" and local_day is not None
                 and week_start <= local_day <= base):
             week_orders += 1
-        if not (row["source"] == "customer" and row["kind"] == "quote"
-                and row["status"] == "new"):
+        status = row["status"]
+        customer = row["source"] == "customer"
+        if customer and status == "new" and row["kind"] == "quote":
+            # Same filter as pending.json, so the live badge matches.
+            count_new += 1
+        if customer and status == "packing":
+            count_packing += 1
+        if customer and status == "ready":
+            count_ready += 1
+        if row["kind"] == "bill" and status == "billed":
+            unpaid_count += 1
+        if not (customer and status in _OPEN_NEXT):
             continue
         try:
             raw = json.loads(row["lines_json"] or "[]")
@@ -409,7 +430,8 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
             order_label = f"{order_num} · {phone}"
         else:
             order_label = order_num
-        orders.append({
+        next_status, next_key, pill_key, pill_kind = _OPEN_NEXT[status]
+        open_orders.append({
             "id": row["id"],
             "label": order_label,
             "names": names,
@@ -417,8 +439,12 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
             "total": format_money(total, currency),
             "time": (when.astimezone(IST).strftime("%H:%M")
                      if when else ""),
+            "pill": t(pill_key),
+            "pill_kind": pill_kind,
+            "next_status": next_status,
+            "next_label": t(next_key),
         })
-    orders.sort(key=lambda entry: entry["id"])
+    open_orders.sort(key=lambda entry: entry["id"], reverse=True)
 
     sales_week = Decimal("0.00")
     bills_week = 0
@@ -440,8 +466,14 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
         "greet_key": greet_key,
         "taps": taps,
         "taps_total": taps_total,
-        "taps_first": taps[0]["id"] if taps else None,
-        "orders": orders,
+        "taps_first": next((entry["id"] for entry in taps
+                            if entry["need"]),
+                           taps[0]["id"] if taps else None),
+        "count_new": count_new,
+        "count_packing": count_packing,
+        "count_ready": count_ready,
+        "unpaid_count": unpaid_count,
+        "open_orders": open_orders[:3],
         "week": {
             "sales": format_money(sales_week, currency),
             "bills": bills_week,
@@ -712,12 +744,36 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         home = _home_extras(conn, shop, ui_lang)
         wa_url, wa_text = _price_share(
             conn, shop, ui_lang, app.state.settings.public_base_url)
+        from app.dayclose import day_tiles
+
+        now_local = datetime.now(UTC).astimezone(IST)
+        published_today = False
+        live_since = ""
+        if published_id is not None:
+            when = db.version_time(conn, published_id)
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            local_when = when.astimezone(IST)
+            published_today = local_when.date().isoformat() == today
+            live_since = local_when.strftime("%H:%M")
+        tiles = day_tiles(conn, shop, today)
+        closed_raw = db.day_closed_at(conn, shop["id"], today)
+        closed_at = ""
+        if closed_raw:
+            try:
+                moment = datetime.fromisoformat(closed_raw)
+                if moment.tzinfo is None:
+                    moment = moment.replace(tzinfo=UTC)
+                closed_at = moment.astimezone(IST).strftime("%H:%M")
+            except ValueError:
+                closed_at = ""
         return templates.TemplateResponse(
             request,
             "seller.html",
             {"shop": shop, "sessions": sessions, "versions": versions,
              "notice": _voice_notice(ui_lang), "stock": stock, "token": token,
              "items": items, "live": live, "live_count": live_count,
+             "published_today": published_today, "live_since": live_since,
              "wa_url": wa_url, "wa_text": wa_text,
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
@@ -731,8 +787,21 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "today_label": home["today_label"],
              "greet_key": home["greet_key"],
              "taps": home["taps"], "taps_total": home["taps_total"],
-             "taps_first": home["taps_first"], "orders": home["orders"],
+             "taps_first": home["taps_first"],
+             "count_new": home["count_new"],
+             "count_packing": home["count_packing"],
+             "count_ready": home["count_ready"],
+             "unpaid_count": home["unpaid_count"],
+             "open_orders": home["open_orders"],
              "week": home["week"],
+             "close_preview": {
+                 "sales": format_money(tiles["sales"], currency),
+                 "bills": tiles["bills_count"],
+                 "cash": format_money(tiles["cash"], currency),
+                 "upi": format_money(tiles["upi"], currency),
+             },
+             "close_is_dark": now_local.hour >= 18,
+             "closed_at": closed_at,
              "first_run": published_id is None and not is_staff,
              "has_bills": has_bills, "gs_prices_done": gs_prices_done},
         )

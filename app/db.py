@@ -265,6 +265,11 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             name TEXT NOT NULL, token_hash TEXT UNIQUE NOT NULL,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS day_closes (
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            date TEXT NOT NULL, closed_at TEXT NOT NULL,
+            PRIMARY KEY (shop_id, date)
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -1570,6 +1575,26 @@ def mark_bill_paid(conn, bill_id: int,
                  " paid_at = ?, updated_at = ? WHERE id = ?",
                  (mode, now, now, row["id"]))
     conn.commit()
+
+
+def close_day(conn, shop_id: int, day: str) -> str:
+    """Record the day as closed now; re-closing updates the time."""
+    now = _now()
+    conn.execute(
+        "INSERT INTO day_closes (shop_id, date, closed_at)"
+        " VALUES (?, ?, ?)"
+        " ON CONFLICT (shop_id, date) DO UPDATE SET closed_at = ?",
+        (shop_id, day, now, now))
+    conn.commit()
+    return now
+
+
+def day_closed_at(conn, shop_id: int, day: str) -> str | None:
+    """UTC iso timestamp of the recorded close, or None when still open."""
+    row = conn.execute(
+        "SELECT closed_at FROM day_closes WHERE shop_id = ? AND date = ?",
+        (shop_id, day)).fetchone()
+    return row["closed_at"] if row is not None else None
 
 
 def reopen_bill(conn, bill_id: int) -> None:

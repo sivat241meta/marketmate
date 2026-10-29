@@ -301,8 +301,24 @@ def test_shop_page_share_list_has_no_prices(tmp_path, monkeypatch):
 
 
 def test_upload_card_accepts_audio(tmp_path, monkeypatch):
-    client, _settings = make_client(tmp_path, monkeypatch)
+    from datetime import UTC, datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    client, settings = make_client(tmp_path, monkeypatch)
     token = create_shop(client)
+    # Say-prices step: yesterday's list is live, nothing said today (Task 61).
+    conn = db.connect(Path(settings.data_dir))
+    try:
+        shop = db.shop_by_token(conn, token)
+        version_id = seed_version(conn, shop["id"], [make_draft()],
+                                  published=True)
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
     html = client.get(f"/e/{token}").text
     assert 'accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr"' \
         in html

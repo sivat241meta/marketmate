@@ -141,7 +141,9 @@
     function updateBadges(count) {
       badges.forEach(function (badge) {
         badge.textContent = String(count);
-        badge.hidden = count <= 0;
+        // Task 61: the home count tile keeps its server-rendered zero.
+        var keepZero = badge.dataset && ("ordersKeepZero" in badge.dataset);
+        badge.hidden = count <= 0 && !keepZero;
       });
     }
 

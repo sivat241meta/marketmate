@@ -49,9 +49,8 @@
   {% if _is_seller %}
   <nav class="nav" aria-label="{{ t('nav.seller_label') }}">
     <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ t('nav.home') }}</a>
-    {% if not _staff %}<a class="{% if _on_live %}on{% endif %}" href="/e/{{ token }}/live">{{ t('nav.live_prices') }}</a>{% endif %}
-    <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
     <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link><span class="nbadge" data-orders-badge hidden></span>{{ t('nav.orders') }}</a>
+    <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
     {% if not _staff %}<a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ t('nav.close') }}</a>{% endif %}
     <a href="/e/{{ token }}#more">{{ t('nav.more') }}</a>
   </nav>

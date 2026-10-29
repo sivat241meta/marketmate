@@ -393,9 +393,41 @@ def test_language_check_page_renders_en_ta_hi(tmp_path, monkeypatch):
     assert "किस भाषा में बोला था" in hindi.text
 
 
+def _seed_old_published(tmp_path, token):
+    """Yesterday's published list: home shows the say-prices step (Task 61)."""
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+    from zoneinfo import ZoneInfo
+
+    from app.models import DraftItem, PriceLine, Proof
+
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop = db.shop_by_token(conn, token)
+        draft = DraftItem(
+            name_spoken="tomato", name_local="Tomato", name_en="tomato",
+            variety=None, price_lines=[PriceLine(Decimal(40), Decimal(1),
+                                                "kg")],
+            qty=None, qty_unit=None,
+            proof=Proof(quote="tomato 40", turn_ids=[], start_ms=0,
+                        end_ms=0),
+            confirmed=True)
+        session_id = db.create_session(conn, shop["id"], "video")
+        version_id = db.approve(conn, session_id, [draft])
+        db.set_published(conn, version_id, True)
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def test_upload_form_has_picker(tmp_path, monkeypatch):
     client, _settings = make_client(tmp_path, monkeypatch)
     token = create_shop(client, "en")
+    _seed_old_published(tmp_path, token)
     html = client.get(f"/e/{token}").text
     assert 'name="speak_lang"' in html
     assert "Pick the language you will speak" in html

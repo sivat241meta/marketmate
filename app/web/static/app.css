@@ -2456,3 +2456,123 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
     padding-bottom: var(--bnav-h);
   }
 }
+
+/* ---- Task 61: Today home (morning prices, orders and bills, close day) ---- */
+.step-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.step-card > :first-child { margin-top: 0; }
+.step-card > :last-child { margin-bottom: 0; }
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-right: var(--space-2);
+  vertical-align: 3px;
+}
+.step-stats { grid-template-columns: repeat(3, 1fr); margin: 0; }
+.step-stats .stat { text-decoration: none; }
+a.stat { color: inherit; }
+.stat.is-gold { background: var(--gold-soft); border-color: var(--need-border); }
+.stat.is-gold .stat-num { color: var(--gold-ink); }
+.live-line {
+  background: var(--mint);
+  border-radius: 14px;
+  padding: var(--space-3) var(--space-4);
+  color: var(--forest);
+  font-weight: 800;
+  margin: 0;
+}
+.closed-line {
+  background: var(--mint);
+  border-radius: 14px;
+  padding: var(--space-3) var(--space-4);
+  color: var(--forest);
+  font-weight: 800;
+  margin: 0;
+}
+.mini-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+  margin: 0;
+}
+.mini-links a { color: var(--leaf-ink); font-weight: 700; }
+.mini-links .icon { vertical-align: -4px; }
+.linklike {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--leaf-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: var(--tap);
+}
+.order-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed var(--line-2);
+  padding-top: var(--space-3);
+}
+.order-mini-main { min-width: 0; flex: 1 1 180px; }
+.order-mini-main .order-names { margin: var(--space-1) 0 0; }
+.order-mini-side {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+.list-card,
+.more-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+}
+.list-card > summary,
+.more-card > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: var(--tap);
+}
+.list-card > summary::-webkit-details-marker,
+.more-card > summary::-webkit-details-marker { display: none; }
+.list-card > summary::before,
+.more-card > summary::before {
+  content: "▸";
+  color: var(--leaf-ink);
+  font-weight: 800;
+  margin-right: var(--space-2);
+}
+.list-card[open] > summary::before,
+.more-card[open] > summary::before { content: "▾"; }
+.more-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+@media (min-width: 900px) {
+  .step-stats { grid-template-columns: repeat(5, 1fr); }
+}

@@ -172,6 +172,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             day = shop_today(shop, datetime.now(UTC))
         return _close_context(request, shop, token, day)
 
+    @app.post("/e/{token}/close")
+    def close_day_post(request: Request, token: str, conn: Conn):
+        """Task 61: stamp today closed from the home step card."""
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        day = shop_today(shop, datetime.now(UTC))
+        db.close_day(conn, shop["id"], day)
+        return RedirectResponse(f"/e/{token}/close?date={day}",
+                                status_code=303)
+
     @app.post("/e/{token}/close/wastage")
     async def close_wastage_post(request: Request, token: str):
         conn = db.connect(data_dir)

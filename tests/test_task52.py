@@ -348,17 +348,34 @@ def test_order_rows_wrap():
 
 
 def test_seller_home_has_single_quick_links_grid(tmp_path):
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+
     client = _client(tmp_path)
     token = _create_shop(client)
-    _publish(tmp_path, token, [_draft("tomato", 40)])
+    version_id = _publish(tmp_path, token, [_draft("tomato", 40)])
+    # Say-prices step: yesterday's list is live, nothing said today (Task 61).
+    conn = db.connect(tmp_path / "data")
+    try:
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
     html = client.get(f"/e/{token}").text
     assert "Say today&#39;s prices" in html or "Say today's prices" in html
-    assert html.count("Update by voice") == 1
-    assert html.count("Scan stock photo") == 1
-    assert html.count("Print price tags") == 1
-    assert "/export.csv" in html
-    assert "quick-links" in html
+    # Task 61: quick-link rows are gone; More holds each target once.
+    assert "quick-links" not in html
     assert 'id="more"' in html
+    more = html.split('id="more"')[1]
+    for href in (f"/e/{token}/settings", f"/e/{token}/settings#helpers",
+                 f"/e/{token}/purchases", f"/e/{token}/update#board",
+                 f"/e/{token}/tags.pdf",
+                 f"/e/{token}/v/{version_id}/export.csv",
+                 f"/e/{token}/exports/sales.xlsx?range=today"):
+        assert more.count(f'href="{href}"') == 1, href
     # Old tile grid and raw file input are gone.
     assert "tile-grid" not in html and 'class="tiles ' not in html
     assert 'id="clip"' in html and 'name="video"' in html

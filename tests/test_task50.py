@@ -130,9 +130,11 @@ def test_seller_home_fresh_green(tmp_path):
     assert "₹80" in html or "₹80.00" in html
     assert "Good morning" in html or "Good afternoon" in html \
         or "Good evening" in html
-    # Trio from real numbers.
-    assert "bills today" in html.lower() or "Bills" in html
-    assert "Say today" in html  # dark pill to live
+    # Task 61: three step cards follow the seller's day.
+    assert 'id="step-morning"' in html
+    assert 'id="step-day"' in html
+    assert 'id="step-evening"' in html
+    assert "Say today" in html  # header CTA to live
     assert f'href="/e/{token}/live"' in html
     assert "New bill" in html
     # Gold-soft tap notice with a check link.
@@ -143,14 +145,15 @@ def test_seller_home_fresh_green(tmp_path):
     assert "New orders" in html
     assert "Start packing" in html
     assert "/order-status" in html
-    # Week band with real figures only.
+    # Week band with real figures only (under More).
     assert "This week in numbers" in html
     assert "gcards" in html or "gc " in html or 'class="gc"' in html
-    # Quick links as ghost pills (Task 52: one grid, each target once).
-    for label in ("Update by voice", "Scan stock photo", "Bills",
-                  "Purchases", "Print board", "Print price tags",
-                  "CSV", "Settings", "Shop QR"):
-        assert label in html, label
+    # Everything else lives under More, once each.
+    more = html.split('id="more"')[1]
+    for label in ("Settings", "Helpers", "Purchases", "Board photo",
+                  "Price tags", "CSV", "Excel (.xlsx)",
+                  "Send my link to my WhatsApp"):
+        assert label in more, label
     # Install + recovery cards kept, small; old shop-name card gone.
     assert "Install app" in html
     assert "class=\"shopcard\"" not in html

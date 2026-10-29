@@ -162,8 +162,34 @@ def test_review_html_shows_quote_options_and_names(tmp_path, monkeypatch):
 
 
 def test_upload_page_has_meta_notice(tmp_path, monkeypatch):
+    from datetime import UTC, datetime, timedelta
+    from zoneinfo import ZoneInfo
+
     client = make_client(tmp_path, monkeypatch)
-    assert NOTICE in client.get(create_shop(client)).text
+    location = create_shop(client)
+    # Say-prices step: yesterday's list is live, nothing said today (Task 61).
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop = db.shop_by_token(conn, location.split("/e/")[1])
+        draft = DraftItem(
+            name_spoken="tomato", name_local="தக்காளி", name_en="tomato",
+            variety=None, price_lines=[PriceLine(Decimal(40), Decimal(1),
+                                                "kg")],
+            qty=None, qty_unit=None,
+            proof=Proof(quote="tomato 40", turn_ids=[], start_ms=0,
+                        end_ms=0),
+            confirmed=True)
+        session_id = db.create_session(conn, shop["id"], "video")
+        version_id = db.approve(conn, session_id, [draft])
+        db.set_published(conn, version_id, True)
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
+    assert NOTICE in client.get(location).text
 
 
 def test_approve_blocked_then_resolved(tmp_path, monkeypatch):

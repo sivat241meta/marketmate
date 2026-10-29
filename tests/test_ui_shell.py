@@ -64,10 +64,40 @@ def test_new_shop_has_shell_and_form(tmp_path):
 
 
 def test_seller_dashboard_has_shell_and_actions(tmp_path):
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+    from zoneinfo import ZoneInfo
+
+    from app import db
+    from app.models import DraftItem, PriceLine, Proof
+
     client = make_client(tmp_path)
-    response = client.get(create_shop(client))
+    location = create_shop(client)
+    # Say-prices step: yesterday's list is live, nothing said today (Task 61).
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop = db.shop_by_token(conn, location.split("/e/")[1])
+        draft = DraftItem(
+            name_spoken="tomato", name_local="தக்காளி", name_en="tomato",
+            variety=None, price_lines=[PriceLine(Decimal(40), Decimal(1),
+                                                "kg")],
+            qty=None, qty_unit=None,
+            proof=Proof(quote="tomato 40", turn_ids=[], start_ms=0,
+                        end_ms=0),
+            confirmed=True)
+        session_id = db.create_session(conn, shop["id"], "video")
+        version_id = db.approve(conn, session_id, [draft])
+        db.set_published(conn, version_id, True)
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
+    response = client.get(location)
     assert response.status_code == 200
-    assert_shell(response.text, "Record today")
+    assert_shell(response.text, "Upload video or voice note")
     assert 'action="/e/' in response.text and 'name="video"' in response.text
     assert "/update" in response.text
     assert "Your voice recording is sent to Meta's AI service to be transcribed." in response.text

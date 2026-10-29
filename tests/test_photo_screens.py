@@ -376,11 +376,14 @@ def test_photo_upload_blocked_by_cost_cap(tmp_path, monkeypatch):
 # --- dashboard and shop page ---
 
 def test_dashboard_links_photos_and_scan_tile(tmp_path, monkeypatch):
+    # Task 61: board photo lives under More; the stock-scan page renders.
     client = make_client(tmp_path, monkeypatch, analyse=fake_analyse())
     location = create_shop(client)
     html = client.get(location).text
-    assert f'href="{location}/photos"' in html
-    assert "Scan stock photo" in html
+    assert f'href="{location}/update#board"' in html
+    assert "Board photo" in html
+    photos = client.get(f"{location}/photos").text
+    assert "Scan a stock photo" in photos
 
 
 def test_condition_never_on_public_shop_page(tmp_path, monkeypatch):

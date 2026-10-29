@@ -420,8 +420,40 @@ def test_upload_js_exists_with_xhr_cancel_and_redirect():
     assert "progress" in source.lower()
 
 
+def _seed_old_published(tmp_path, location):
+    """Yesterday's published list: home shows the say-prices step (Task 61)."""
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+    from zoneinfo import ZoneInfo
+
+    from app.models import DraftItem, PriceLine, Proof
+
+    conn = db.connect(tmp_path / "data")
+    try:
+        shop = db.shop_by_token(conn, location.split("/e/")[1])
+        draft = DraftItem(
+            name_spoken="tomato", name_local="தக்காளி", name_en="tomato",
+            variety=None, price_lines=[PriceLine(Decimal(40), Decimal(1),
+                                                "kg")],
+            qty=None, qty_unit=None,
+            proof=Proof(quote="tomato 40", turn_ids=[], start_ms=0,
+                        end_ms=0),
+            confirmed=True)
+        session_id = db.create_session(conn, shop["id"], "video")
+        version_id = db.approve(conn, session_id, [draft])
+        db.set_published(conn, version_id, True)
+        noon = datetime.now(ZoneInfo("Asia/Kolkata")).replace(
+            hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        conn.execute("UPDATE versions SET created_at = ? WHERE id = ?",
+                     (noon.astimezone(UTC).isoformat(), version_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def test_dashboard_form_posts_video_with_progress_ui(tmp_path):
     client, location = _client_with_token(tmp_path)
+    _seed_old_published(tmp_path, location)
     html = client.get(location).text
     assert f'action="{location}/upload"' in html
     assert 'name="video"' in html

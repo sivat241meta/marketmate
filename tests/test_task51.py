@@ -348,11 +348,16 @@ def test_seller_desktop_nav_and_cta(tmp_path):
     assert match, "no seller desktop nav rendered"
     nav = match.group(0)
     orders_href = f"/e/{token}/bills?range=today&amp;status=waiting"
-    for href in (f"/e/{token}", f"/e/{token}/live", f"/e/{token}/bills",
-                 orders_href, f"/e/{token}/close", f"/e/{token}#more"):
+    # Task 61: Home, Orders (badge), Bills, Close day, More.
+    for href in (f"/e/{token}", orders_href, f"/e/{token}/bills",
+                 f"/e/{token}/close", f"/e/{token}#more"):
         assert f'href="{href}"' in nav, f"desktop nav missing {href}"
-    for label in ("Home", "Live prices", "Bills", "Orders", "Close day", "More"):
+    assert f'href="/e/{token}/live"' not in nav
+    assert nav.index(orders_href) < nav.index(f"/e/{token}/bills\">")
+    for label in ("Home", "Bills", "Close day", "More"):
         assert f">{label}</a>" in nav, f"desktop nav missing {label}"
+    assert ">Orders</a>" in nav
+    assert "data-orders-badge" in nav
     assert "Say today&#39;s prices" in html or "Say today's prices" in html
     assert f'href="/e/{token}/live"' in html
     assert f'href="/e/{token}/settings"' in html
