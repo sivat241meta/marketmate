@@ -4,8 +4,13 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('ai.title') }}{% endblock %}
 {% block content %}
-<h1>{{ t('ai.title') }}</h1>
-<p class="muted">{{ t('ai.tagline') }} <a href="{{ honesty_url }}" target="_blank" rel="noopener">{{ t('ai.honesty_link') }}</a></p>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ shop["name"] }}</p>
+    <h1 class="page-title">{{ t('ai.title') }}</h1>
+    <p class="page-sub muted">{{ t('ai.tagline') }} <a href="{{ honesty_url }}" target="_blank" rel="noopener">{{ t('ai.honesty_link') }}</a></p>
+  </div>
+</div>
 
 <div class="stat-grid ai-stats">
   <div class="stat"><span class="stat-icon">{{ ui.obj("call", 28) }}</span><b class="stat-num" data-ai-calls>{{ stats.calls }}</b><span class="stat-label">{{ t('ai.calls_today') }}</span></div>
@@ -33,6 +38,7 @@
 {% endif %}
 {% if processing %}<p class="notice need" data-ai-live>{{ t('ai.live_note') }}</p>{% endif %}
 
+<section class="ssec" aria-label="{{ t('ai.title') }}">
 <div data-ai-list
      data-ai-poll="/e/{{ token }}/ai.json?show={{ kind }}{{ sess_q }}"
      data-ai-since="{{ max_id }}"
@@ -57,9 +63,10 @@
 </section>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('ai.title'), t('ai.empty'), None, None, "photo", "robot") }}
+{{ ui.empty_state(t('ai.title'), t('ai.empty'), "/e/" ~ token ~ "/live", t('sh.say_prices'), "photo", "robot") }}
 {% endif %}
 </div>
+</section>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('ai.js') if static_url is defined else '/static/ai.js' }}"></script>

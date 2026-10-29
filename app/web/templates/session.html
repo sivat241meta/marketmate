@@ -6,8 +6,14 @@
 {% block content %}
 {% set elapsed = progress["elapsed_s"] | round | int %}
 {% if session["status"] == "failed" %}
-<h1>{{ t('sess.failed_title') }}</h1>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.title', id=session["id"]) }}</p>
+    <h1 class="page-title">{{ t('sess.failed_title') }}</h1>
+  </div>
+</div>
 {{ ui.alert(session["message"], "warn") }}
+{% call ui.form_card() %}
 <ol class="vstepper">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}">
@@ -19,27 +25,48 @@
   </li>
   {% endfor %}
 </ol>
-<form method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
-  <button class="btn btn-primary btn-big" type="submit">{{ t('sess.try_again') }}</button>
+{% endcall %}
+{% call ui.action_bar() %}
+<form class="inline-form" method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
+  <button class="pill dark big" type="submit">{{ t('sess.try_again') }}</button>
 </form>
-<p><a href="/e/{{ token }}">{{ t('sess.back_dashboard') }}</a></p>
+<a class="pill ghost" href="/e/{{ token }}">{{ t('sess.back_dashboard') }}</a>
+{% endcall %}
 {% elif session["status"] == "approved" %}
-<h1>{{ t('sess.title', id=session["id"]) }}</h1>
-<p>{{ t('sess.approved_text') }}</p>
-{% if wa_url %}
-<div class="hero-cta">
-  <a class="pill dark" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>
-  <button class="pill ghost" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.title', id=session["id"]) }}</p>
+    <h1 class="page-title">{{ t('sess.approved_text') }}</h1>
+  </div>
 </div>
-{% endif %}
-<p><a class="btn" href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>
-{% elif session["kind"] == "voice_update" and session["status"] == "review" %}
-<h1>{{ t('sess.title', id=session["id"]) }}</h1>
-<p>{{ t('sess.voice_waiting') }}</p>
-<p><a class="btn" href="/e/{{ token }}/update">{{ t('sess.update_by_voice') }}</a></p>
+{% if wa_url %}
+{% call ui.action_bar() %}
+  <a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>
+  <button class="pill ghost" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>
+{% endcall %}
 {% else %}
-<h1>{% if session["kind"] == "photo" %}{{ t('sess.working_photo') }}{% elif session["kind"] == "board" %}{{ t('sess.working_board') }}{% elif session["kind"] == "purchase" %}{{ t('sess.working_purchases') }}{% else %}{{ t('sess.working_video') }}{% endif %}</h1>
-<p class="muted" data-step-count data-step-tmpl="{{ t('sess.step_of', step='__S__', total='__T__') }}">{{ t('sess.step_of', step=progress["step"], total=progress["steps"] | length) }}</p>
+<p><a class="pill dark big" href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>
+{% endif %}
+{% if wa_url %}<p><a href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>{% endif %}
+{% elif session["kind"] == "voice_update" and session["status"] == "review" %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.title', id=session["id"]) }}</p>
+    <h1 class="page-title">{{ t('sess.voice_waiting') }}</h1>
+  </div>
+</div>
+{% call ui.action_bar() %}
+<a class="pill dark big" href="/e/{{ token }}/update">{{ t('sess.update_by_voice') }}</a>
+{% endcall %}
+{% else %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.title', id=session["id"]) }}</p>
+    <h1 class="page-title">{% if session["kind"] == "photo" %}{{ t('sess.working_photo') }}{% elif session["kind"] == "board" %}{{ t('sess.working_board') }}{% elif session["kind"] == "purchase" %}{{ t('sess.working_purchases') }}{% else %}{{ t('sess.working_video') }}{% endif %}</h1>
+    <p class="page-sub muted" data-step-count data-step-tmpl="{{ t('sess.step_of', step='__S__', total='__T__') }}">{{ t('sess.step_of', step=progress["step"], total=progress["steps"] | length) }}</p>
+  </div>
+</div>
+{% call ui.form_card() %}
 <ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/s/{{ session["id"] }}/status">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
@@ -55,6 +82,7 @@
   {% endfor %}
 </ol>
 <p class="muted" data-elapsed data-elapsed-s="{{ t('sess.elapsed_s', s='__S__') }}" data-elapsed-m="{{ t('sess.elapsed_m', m='__M__', s='__S__') }}">{% if elapsed < 60 %}{{ t('sess.elapsed_s', s=elapsed) }}{% else %}{{ t('sess.elapsed_m', m=elapsed // 60, s=elapsed % 60) }}{% endif %}</p>
+{% endcall %}
 <noscript>
 <meta http-equiv="refresh" content="3">
 <p class="muted">{{ t('sess.refresh_note') }}</p>

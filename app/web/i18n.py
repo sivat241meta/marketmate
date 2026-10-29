@@ -1273,6 +1273,10 @@ _ENGLISH: dict[str, str] = {
     "order.next_packing": "Next: the shop packs your items.",
     "order.next_ready": "Next: collect it from the shop.",
     "order.next_collected": "Done. Thank you for shopping!",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "All orders →",
+    "v10.all_bills": "All bills →",
+    "v10.saved": "Saved",
 }
 
 
@@ -2527,6 +2531,10 @@ _TAMIL: dict[str, str] = {
     "order.next_packing": "அடுத்து: கடை உங்கள் பொருட்களைக் கட்டும்.",
     "order.next_ready": "அடுத்து: கடையில் சென்று வாங்குங்கள்.",
     "order.next_collected": "முடிந்தது. வாங்கியதற்கு நன்றி!",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "எல்லா ஆர்டர்களும் →",
+    "v10.all_bills": "எல்லா பில்களும் →",
+    "v10.saved": "சேமிக்கப்பட்டது",
 }
 
 
@@ -3781,6 +3789,10 @@ _HINDI: dict[str, str] = {
     "order.next_packing": "आगे: दुकान आपका सामान पैक करेगी।",
     "order.next_ready": "आगे: दुकान से ले लें।",
     "order.next_collected": "हो गया। खरीदारी के लिए धन्यवाद!",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "सभी ऑर्डर →",
+    "v10.all_bills": "सभी बिल →",
+    "v10.saved": "सहेज लिया",
 }
 
 

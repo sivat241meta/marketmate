@@ -5,8 +5,14 @@
 {% block crumb_page %}{{ t('sess.making_bill') }}{% endblock %}
 {% block content %}
 {% if session["status"] == "failed" %}
-<h1>{{ t('sess.failed_title') }}</h1>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.making_bill_title', shop=shop["name"]) }}</p>
+    <h1 class="page-title">{{ t('sess.failed_title') }}</h1>
+  </div>
+</div>
 {{ ui.alert(session["message"], "warn") }}
+{% call ui.form_card() %}
 <ol class="vstepper">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}">
@@ -15,11 +21,20 @@
   </li>
   {% endfor %}
 </ol>
-<p><a class="btn btn-primary btn-big" href="/e/{{ token }}/bills/new">{{ t('sess.try_again') }}</a></p>
-<p><a href="/e/{{ token }}/bills">{{ t('sess.back_bills') }}</a></p>
+{% endcall %}
+{% call ui.action_bar() %}
+<a class="pill dark big" href="/e/{{ token }}/bills/new">{{ t('sess.try_again') }}</a>
+<a class="pill ghost" href="/e/{{ token }}/bills">{{ t('sess.back_bills') }}</a>
+{% endcall %}
 {% else %}
-<h1>{{ t('sess.making_bill') }}</h1>
-<p class="muted" data-step-count data-step-tmpl="{{ t('sess.step_of', step='__S__', total='__T__') }}">{{ t('sess.step_of', step=progress["step"], total=progress["steps"] | length) }}</p>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('sess.making_bill_title', shop=shop["name"]) }}</p>
+    <h1 class="page-title">{{ t('sess.making_bill') }}</h1>
+    <p class="page-sub muted" data-step-count data-step-tmpl="{{ t('sess.step_of', step='__S__', total='__T__') }}">{{ t('sess.step_of', step=progress["step"], total=progress["steps"] | length) }}</p>
+  </div>
+</div>
+{% call ui.form_card() %}
 <ol class="vstepper" data-stepper data-status-url="/e/{{ token }}/bills/new/{{ session["id"] }}/status" data-bills-base="/e/{{ token }}/bills/">
   {% for step in progress["steps"] %}
   <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
@@ -35,6 +50,7 @@
   {% endfor %}
 </ol>
 <p class="muted" data-elapsed data-elapsed-s="{{ t('sess.elapsed_s', s='__S__') }}">{{ t('sess.elapsed_s', s=progress["elapsed_s"] | round | int) }}</p>
+{% endcall %}
 <noscript>
 <meta http-equiv="refresh" content="3">
 <p class="muted">{{ t('sess.refresh_note') }}</p>

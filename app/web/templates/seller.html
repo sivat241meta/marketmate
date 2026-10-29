@@ -7,10 +7,14 @@
 {% if is_staff %}<div class="alert">{{ t('bill.made_by', name=helper_name) }}</div>{% endif %}
 {% if renamed %}<div class="alert alert-ok" data-rename-notice>{{ t('rename.done') }}</div>{% endif %}
 
-<h1 class="today-title">{{ t('nav.today') }}</h1>
-<p class="muted today-meta">{{ t(greet_word_key) }} · {{ today_label }} · {{ t('t68.sold_today', total=bills.sales_today | money(shop["currency"])) }} · {% if live %}{{ t('dash.live_pill', count=live_count) }}{% else %}{{ t('t68.not_live') }}{% endif %}</p>
+<div class="page-head today-head">
+  <div>
+    <h1 class="today-title">{{ t('nav.today') }}</h1>
+    <p class="muted today-meta">{{ t(greet_word_key) }} · {{ today_label }} · {{ t('t68.sold_today', total=bills.sales_today | money(shop["currency"])) }} · {% if live %}{{ t('dash.live_pill', count=live_count) }}{% else %}{{ t('t68.not_live') }}{% endif %}</p>
+  </div>
+</div>
 
-<div class="with-side">
+<div class="with-side today-wrap">
 <div class="ws-main">
 {% if not is_staff %}
 <section class="step-card grp" id="step-morning" data-grp="morning" aria-label="{{ t('t61.step1_kick') }}">
@@ -130,6 +134,7 @@
     {% else %}
     <p class="muted">{{ t('t61.no_orders') }}</p>
     {% endif %}
+    <p class="grp-more"><a class="hp-more" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ t('v10.all_orders') }}</a></p>
   </div>
   <div class="grp" data-grp="bills">
     <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("receipt") }}<span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></button>
@@ -148,7 +153,6 @@
       <a class="pill ghost big" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.obj("bags", 20) }}{{ t('nav.orders') }}<span class="nbadge" data-orders-badge hidden></span></a>
       <a class="pill ghost big" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
     </div>
-    <a class="addrow" href="/e/{{ token }}/bills/new">+ {{ t('bills.new_bill') }}</a>
   </div>
 </section>
 
@@ -220,7 +224,7 @@
   </div>
   {% endfor %}
   {% else %}
-  {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), None, None, "photo", "mic") }}
+  {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), ("/e/" ~ token ~ "/live") if not is_staff else None, t('sh.say_prices') if not is_staff else None, "photo", "mic") }}
   {% endif %}
 </details>
 
@@ -302,6 +306,19 @@
   {% endfor %}
 </aside>
 </div>
+{% if not is_staff %}
+{% if taps_total %}
+<div class="action-bar today-bar"><a class="pill dark big" href="/e/{{ token }}/s/{{ taps_first }}">{{ t('sh.check_now') }}</a></div>
+{% elif published_today and wa_url %}
+<div class="action-bar today-bar"><a class="pill dark big" href="{{ wa_url }}">{{ t('wa.send_prices') }}</a></div>
+{% elif published_today %}
+<div class="action-bar today-bar"><a class="pill dark big" href="/e/{{ token }}/update">{{ t('t61.update_prices') }}</a></div>
+{% else %}
+<div class="action-bar today-bar"><a class="pill dark big" href="/e/{{ token }}/live">{{ t('sh.say_prices') }}</a></div>
+{% endif %}
+{% else %}
+<div class="action-bar today-bar"><a class="pill dark big" href="/e/{{ token }}/bills/new">{{ t('sh.new_bill') }}</a></div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>

@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app import db
+from app.costs import IST
 from app.dayclose import (
     day_tiles,
     item_code,
@@ -78,6 +79,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         ui_lang = get_ui_lang(request, shop)
         conn = db.connect(data_dir)
         try:
+            closed_raw = db.day_closed_at(conn, shop["id"], day)
             tiles = day_tiles(conn, shop, day)
             items = items_for_day(conn, shop, day)
             if ui_lang in ("ta", "hi"):
@@ -140,6 +142,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 ui_lang, datetime.strptime(day, "%Y-%m-%d").date())
         except (TypeError, ValueError):
             day_label = day
+        closed_at = ""
+        if closed_raw:
+            try:
+                moment = datetime.fromisoformat(closed_raw)
+                if moment.tzinfo is None:
+                    moment = moment.replace(tzinfo=UTC)
+                closed_at = moment.astimezone(IST).strftime("%H:%M")
+            except ValueError:
+                closed_at = ""
         return templates.TemplateResponse(request, "close.html", {
             "shop": shop, "token": token, "day": day, "day_label": day_label,
             "sales": _fmt_money(tiles["sales"], currency),
@@ -160,6 +171,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                            if has_top else ""),
             "rows": rows, "whatsapp_url": url, "whatsapp_text": text,
             "today": shop_today(shop, datetime.now(UTC)),
+            "closed_at": closed_at,
             "ui_lang": ui_lang,
         })
 
@@ -256,8 +268,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             " needs a unit")
                     set_wastage(conn, shop["id"], day, name_en, qty,
                                 unit)
-            return RedirectResponse(f"/e/{token}/close?date={day}",
-                                    status_code=303)
+            return RedirectResponse(
+                f"/e/{token}/close?date={day}&saved=1", status_code=303)
         finally:
             conn.close()
 

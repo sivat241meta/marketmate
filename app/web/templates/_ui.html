@@ -77,11 +77,11 @@
 </div>
 {%- endmacro %}
 
-{% macro select_field(label, name, hint="", required=False, icon=None, error=None, attrs={}) -%}
+{% macro select_field(label, name, hint="", required=False, icon=None, error=None, attrs={}, options=None, value="") -%}
 {% set _id = attrs.get("id", "field-" ~ name) %}
 <div class="field">
   <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
-  <select class="field-input" id="{{ _id }}" name="{{ name }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{{ caller() if caller is defined }}</select>
+  <select class="field-input" id="{{ _id }}" name="{{ name }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{% if options is not none %}{% for opt in options %}{% if opt is string %}<option value="{{ opt }}"{% if opt == value %} selected{% endif %}>{{ opt }}</option>{% else %}<option value="{{ opt[0] }}"{% if opt[0] == value %} selected{% endif %}>{{ opt[1] }}</option>{% endif %}{% endfor %}{% else %}{{ caller() if caller is defined }}{% endif %}</select>
   {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
   {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
 </div>
@@ -98,8 +98,8 @@
 {%- endmacro %}
 
 {% macro form_card(title=None, subtitle=None, cls="") -%}
-<section class="form-card{% if cls %} {{ cls }}{% endif %}">
-  {% if title %}<div class="form-card-head"><h2>{{ title }}</h2>{% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}</div>{% endif %}
+{% if cls %}<section class="form-card {{ cls }}">{% else %}<section class="form-card">{% endif %}
+  {% if title %}<div class="form-card-head"><h2 class="form-card-title">{{ title }}</h2>{% if subtitle %}<p class="form-card-sub muted">{{ subtitle }}</p>{% endif %}</div>{% endif %}
   {{ caller() if caller is defined }}
 </section>
 {%- endmacro %}

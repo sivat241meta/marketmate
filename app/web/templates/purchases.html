@@ -4,12 +4,12 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('pur.heading') }}{% endblock %}
 {% block content %}
-<header class="v10-head">
+<div class="page-head">
   <div>
-    <h1 class="v10-title">{{ t('pur.heading') }}</h1>
-    <p class="v10-sub">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</p>
+    <p class="eyebrow">{{ t('pur.heading') }}</p>
+    <h1 class="page-title">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</h1>
   </div>
-</header>
+</div>
 {% if saved %}{{ ui.toast(t('form.saved')) }}{% endif %}
 {% if error %}{{ ui.error_summary(error) }}{% endif %}
 
@@ -24,6 +24,7 @@
 <p class="notice">{{ notice | safe }}</p>
 {% endcall %}
 
+<div id="add-purchase">
 {% call ui.form_card(t('pur.type_title'), t('pur.type_hint'), cls="rcpt") %}
 <form method="post" action="/e/{{ token }}/purchases/add">
   {{ ui.field(t('pur.item'), "item", required=True, autocomplete="off", error=error if error_field == "item" else None, attrs={"id": "p-item", "placeholder": "onion", "maxlength": "60"}) }}
@@ -37,8 +38,14 @@
   {% endcall %}
 </form>
 {% endcall %}
+</div>
 
-<div class="section-head"><h2>{{ t('pur.bought_today') }}</h2></div>
+<section class="ssec" aria-label="{{ t('pur.bought_today') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('pur.bought_today') }}</h2>
+  </div>
+</div>
 {% if rows %}
 {% for row in rows %}
 <div class="rcpt pur-row">
@@ -52,15 +59,23 @@
 {% endfor %}
 {% else %}
 {{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), "#record", t('pur.say_title'), "mic", "cart") }}
+<p class="muted"><a href="#add-purchase">{{ t('pur.add') }} →</a></p>
 {% endif %}
+</section>
 
 {% if sessions %}
-<div class="section-head"><h2>{{ t('pur.recent') }}</h2></div>
+<section class="ssec" aria-label="{{ t('pur.recent') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('pur.recent') }}</h2>
+  </div>
+</div>
 {% for s in sessions %}
 <div class="session-row">
   <div class="row-main"><a href="/e/{{ token }}/purchases/{{ s["id"] }}">{{ t('pur.purchase_n', id=s["id"]) }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
   {{ ui.pill(s["status"], "live" if s["status"] == "approved" else "check") }}
 </div>
 {% endfor %}
+</section>
 {% endif %}
 {% endblock %}
