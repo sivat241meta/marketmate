@@ -3522,3 +3522,130 @@ body.rdlg-open { overflow: hidden; }
     min-height: 44px;
   }
 }
+
+/* ---- Task 81 landing page: one page, real photos, v9 look ---- */
+body.land .content { max-width: 1040px; }
+body.land .content section { scroll-margin-top: 12px; }
+/* Tamil/Hindi must wrap, never be cut. */
+body.land h1, body.land h2, body.land h3, body.land p, body.land li,
+body.land .pill { overflow-wrap: anywhere; }
+body.land .pill.big { max-width: 100%; }
+
+.land-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 6px 0 18px;
+}
+.land-nav a { font-weight: 600; text-decoration: none; color: var(--ink2); white-space: nowrap; }
+.land-nav a.pill { color: #fff; }
+.land-nav .sp { flex: 1; }
+
+.land-hero { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-hero-txt .notice { margin-top: var(--space-4); }
+
+.land-photo { margin: 0; }
+.land-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border-radius: 20px;
+  background: var(--todo-soft);
+}
+.land-photo.tall img { aspect-ratio: 4 / 3; }
+.land-photo figcaption {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.land-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin-bottom: var(--space-6);
+}
+.land-card h3 { font-size: 16px; margin: var(--space-2) 0 4px; }
+.land-card p { margin: 0; }
+
+.land-split { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.land-split .land-photo img { aspect-ratio: 4 / 3; }
+.land-ticks { list-style: none; padding: 0; margin: var(--space-4) 0 var(--space-6); }
+.land-ticks li { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.land-ticks .obj { flex: none; }
+
+.land-how { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.land-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.land-num {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--purple-ink);
+  color: #fff;
+  font-weight: 800;
+  display: block;
+  text-align: center;
+  line-height: 30px;
+}
+.land-step-ic { flex: none; margin-top: 2px; }
+.land-steps b { display: block; margin-bottom: 2px; }
+.land-steps p { margin: 0; }
+
+.land-cust { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-cust h2.h2s { margin-top: 0; }
+.land-find { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.land-find .field { margin: 0; min-width: 180px; flex: 1; }
+
+.land-day {
+  list-style: none;
+  padding: var(--space-4);
+  margin: 0 0 var(--space-6);
+  display: grid;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-card);
+}
+.land-day li { display: flex; gap: 12px; align-items: flex-start; }
+.land-day b { display: block; margin-bottom: 2px; }
+.land-day p { margin: 0; }
+
+.land-meta {
+  background: var(--todo-soft);
+  border-radius: var(--r-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.land-meta h2.h2s { margin-top: 0; }
+.land-meta ul { list-style: none; padding: 0; margin: 0 0 var(--space-2); }
+.land-meta li { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.land-meta .obj { flex: none; margin-top: 2px; }
+.land-meta .built-with { margin-top: var(--space-3); }
+
+#lost-link { margin-bottom: var(--space-6); }
+
+.land-footer {
+  text-align: center;
+  padding: var(--space-4) 0 var(--space-5);
+  border-top: 1px solid var(--line-2);
+}
+.land-footer p { margin-bottom: 8px; }
+.land-footer .muted { font-size: 13px; }
+
+@media (min-width: 700px) {
+  .land-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 860px) {
+  .land-hero { grid-template-columns: 1fr 1fr; align-items: center; }
+  .land-hero-txt { order: -1; }
+  .land-grid { grid-template-columns: repeat(4, 1fr); }
+  .land-how { grid-template-columns: 1fr 1fr; align-items: center; }
+  .land-cust { grid-template-columns: 2fr 3fr; align-items: center; }
+  .land-day { grid-template-columns: 1fr 1fr 1fr; }
+}
