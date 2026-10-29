@@ -235,6 +235,7 @@ def test_56_04_cart_varieties_match_exactly(tmp_path):
     resp = client.post(
         f"/s/{slug}/quote",
         json={
+            "customer_name": "Test",
             "lines": [
                 {"name_en": "banana", "variety": "poovan", "qty": 2, "unit": "kg"},
                 {"name_en": "banana", "variety": "red", "qty": 1, "unit": "kg"},
@@ -257,7 +258,8 @@ def test_56_04_cart_varieties_match_exactly(tmp_path):
     # Unknown variety is not_on_list, never a different variety.
     resp2 = client.post(
         f"/s/{slug}/quote",
-        json={"lines": [{"name_en": "banana", "variety": "nosuch", "qty": 1, "unit": "kg"}]},
+        json={"customer_name": "Test",
+              "lines": [{"name_en": "banana", "variety": "nosuch", "qty": 1, "unit": "kg"}]},
     )
     assert resp2.status_code == 200, resp2.text
     conn = db.connect(tmp_path / "data")
@@ -362,7 +364,8 @@ def test_56_05_typed_quote_resolves_spark_alias(tmp_path, monkeypatch):
 
     monkeypatch.setattr("app.web.quotes.wanted_from_text", _fake_spark)
     monkeypatch.setattr("app.market.quote.wanted_from_text", _fake_spark)
-    resp = client.post(f"/s/{slug}/quote", data={"items": "qqqzzz 1 kg"})
+    resp = client.post(f"/s/{slug}/quote", data={"items": "qqqzzz 1 kg",
+                                                         "customer_name": "Test"})
     assert resp.status_code in (302, 303), resp.text
     quote_token = resp.headers["location"].split("/q/")[1].split("?")[0]
     conn = db.connect(tmp_path / "data")
@@ -518,7 +521,8 @@ def test_56_10_accept_keeps_order_flow(tmp_path):
     # Customer order: Red banana 1 kg.
     resp = client.post(
         f"/s/{slug}/quote",
-        json={"lines": [{"name_en": "banana", "variety": "red", "qty": 1, "unit": "kg"}]},
+        json={"customer_name": "Test",
+              "lines": [{"name_en": "banana", "variety": "red", "qty": 1, "unit": "kg"}]},
     )
     assert resp.status_code == 200, resp.text
     quote_token = resp.json()["token"]

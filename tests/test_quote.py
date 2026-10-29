@@ -416,8 +416,10 @@ def test_text_quote_post_redirects_to_token(tmp_path, monkeypatch):
         lambda text, **kw: parse_query_json(fake_query_json()))
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
-    response = client.post(f"/s/{slug}/quote",
-                           data={"items": "2 kg tomato, 1 dozen banana"})
+    response = client.post(
+        f"/s/{slug}/quote",
+        data={"items": "2 kg tomato, 1 dozen banana",
+              "customer_name": "Test"})
     assert response.status_code in (302, 303)
     location = response.headers["location"]
     assert location.startswith("/q/")
@@ -441,7 +443,8 @@ def test_quote_page_renders_lines_total_and_whatsapp(tmp_path, monkeypatch):
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
         f"/s/{slug}/quote",
-        data={"items": "2 kg tomato, 1 dozen banana, 3 coconut, dragonfruit"},
+        data={"items": "2 kg tomato, 1 dozen banana, 3 coconut, dragonfruit",
+              "customer_name": "Test"},
     ).headers["location"]
     html = client.get(location).text
     assert "₹36" in html and "₹60" in html and "₹45" in html
@@ -466,7 +469,8 @@ def test_quote_lines_post_recomputes_server_side(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
-        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut"}).headers["location"]
+        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut",
+                                  "customer_name": "Test"}).headers["location"]
     token = location.split("/q/")[1]
     response = client.post(
         f"/q/{token}/lines",
@@ -489,7 +493,8 @@ def test_quote_pdf_renders(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     _, slug, _ = seed_published(tmp_path)
     location = client.post(
-        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut"}).headers["location"]
+        f"/s/{slug}/quote", data={"items": "2 kg tomato, 1 dozen banana, 3 coconut",
+                                  "customer_name": "Test"}).headers["location"]
     pdf = client.get(location + "/pdf")
     assert pdf.status_code == 200
     assert pdf.headers["content-type"] == "application/pdf"
@@ -551,6 +556,7 @@ def test_voice_and_photo_quote_use_background_stages(tmp_path, monkeypatch):
     _, slug, _ = seed_published(tmp_path)
     response = client.post(
         f"/s/{slug}/quote",
+        data={"customer_name": "Test"},
         files={"audio": ("list.webm", b"fake-audio", "audio/webm")})
     assert response.status_code in (302, 303)
     assert "/quote/" in response.headers["location"]
@@ -586,6 +592,7 @@ def test_photo_quote_background_stages(tmp_path, monkeypatch):
     Image.new("RGB", (32, 24), "red").save(buf, "JPEG")
     response = client.post(
         f"/s/{slug}/quote",
+        data={"customer_name": "Test"},
         files={"photo": ("items.jpg", buf.getvalue(), "image/jpeg")})
     assert response.status_code in (302, 303)
     payload = client.get(response.headers["location"] + "/status").json()

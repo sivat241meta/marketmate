@@ -188,8 +188,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function quoteContact() {
+    if (kind !== "quote") {
+      return {};
+    }
+    const scope = (root.closest && root.closest("section")) || document;
+    const nameEl = scope.querySelector("[data-customer-name]");
+    const phoneEl = scope.querySelector("[data-customer-phone]");
+    return {
+      customer_name: nameEl ? nameEl.value.trim() : "",
+      customer_phone: phoneEl ? phoneEl.value.trim() : "",
+    };
+  }
+
   async function start() {
     clearError();
+    let contact = {};
+    if (kind === "quote") {
+      contact = quoteContact();
+      if (!contact.customer_name) {
+        showError(root.getAttribute("data-need-name")
+          || "Please tell the shop your name first.");
+        return;
+      }
+    }
     micBtn.disabled = true;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -206,7 +228,13 @@ document.addEventListener("DOMContentLoaded", () => {
     ws = socket;
     socket.binaryType = "arraybuffer";
     socket.onopen = () => {
-      socket.send(JSON.stringify({ type: "start", kind: kind }));
+      socket.send(JSON.stringify({
+        type: "start",
+        kind: kind,
+        lang: document.documentElement.lang || "en",
+        customer_name: contact.customer_name || undefined,
+        customer_phone: contact.customer_phone || undefined,
+      }));
       setRecording(true);
       micBtn.disabled = false;
     };

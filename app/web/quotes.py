@@ -38,6 +38,7 @@ from app.market.quote import (
 )
 from app.meta.spark import SparkError
 from app.meta.transcribe import transcribe_wav
+from app.outputs.money import format_money
 from app.outputs.quote_pdf import quote_pdf
 from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
@@ -46,6 +47,57 @@ from app.pipeline.run import friendly_error_message
 from app.web.i18n import get_strings, quote_whatsapp_text
 
 MAX_QUOTE_PHOTO_BYTES = 10 * 1024 * 1024
+
+#: Customer contact rules (Task 60): name required, 1-40 chars; phone
+#: optional, a 10-digit Indian mobile or +country digits.
+CUSTOMER_NAME_MAX = 40
+_PHONE_STRIP_RE = re.compile(r"[\s\-()]+")
+_INDIAN_MOBILE_RE = re.compile(r"^[6-9]\d{9}$")
+_INTL_PHONE_RE = re.compile(r"^\+\d{7,15}$")
+
+
+def clean_customer_name(raw) -> str:
+    return str(raw or "").strip()
+
+
+def clean_customer_phone(raw) -> str:
+    return _PHONE_STRIP_RE.sub("", str(raw or "")).strip()
+
+
+def customer_name_ok(name: str) -> bool:
+    return 1 <= len(name or "") <= CUSTOMER_NAME_MAX
+
+
+def customer_phone_ok(phone: str) -> bool:
+    if not phone:
+        return True
+    return bool(_INDIAN_MOBILE_RE.match(phone)
+                or _INTL_PHONE_RE.match(phone))
+
+
+def _effective_order_status(status: str) -> str:
+    """Customer-facing status: paid reads collected, billed reads new."""
+    if status == "paid":
+        return "collected"
+    if status == "billed":
+        return "new"
+    return status
+
+
+def order_steps(status: str, strings) -> list[dict]:
+    """Timeline steps for a customer order status."""
+    effective = _effective_order_status(status)
+    steps = []
+    for key in db.ORDER_STEPS:
+        steps.append({
+            "key": key,
+            "label": strings[f"order.step_{key}"],
+            "done": (db.ORDER_STEPS.index(effective)
+                     >= db.ORDER_STEPS.index(key))
+            if effective in db.ORDER_STEPS else False,
+            "current": effective == key,
+        })
+    return steps
 
 
 def quote_meta_path(data_dir: Path, session_id: int) -> Path:
@@ -178,8 +230,12 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
                                   "We could not hear any items. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
-        token = db.create_quote(conn, shop_id=shop_id, quote=quote)
-        write_quote_meta(Path(settings.data_dir), session_id, {"token": token})
+        meta = read_quote_meta(Path(settings.data_dir), session_id)
+        token = db.create_quote(conn, shop_id=shop_id, quote=quote,
+                                customer_name=meta.get("customer_name"),
+                                customer_phone=meta.get("customer_phone"))
+        meta["token"] = token
+        write_quote_meta(Path(settings.data_dir), session_id, meta)
         db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines quoted")
@@ -212,8 +268,12 @@ def process_quote_photo_session(conn, session_id: int, image: Path, *,
                                   "We could not read that photo. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
-        token = db.create_quote(conn, shop_id=shop_id, quote=quote)
-        write_quote_meta(Path(settings.data_dir), session_id, {"token": token})
+        meta = read_quote_meta(Path(settings.data_dir), session_id)
+        token = db.create_quote(conn, shop_id=shop_id, quote=quote,
+                                customer_name=meta.get("customer_name"),
+                                customer_phone=meta.get("customer_phone"))
+        meta["token"] = token
+        write_quote_meta(Path(settings.data_dir), session_id, meta)
         db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines quoted")
@@ -287,33 +347,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 when = when.replace(tzinfo=UTC)
             prices_time = when.astimezone(IST).strftime("%H:%M")
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
-        steps = []
-        status = row["status"]
         # Paid orders finished the whole flow; show every step done with
         # Collected current. Older accepted rows stuck at "billed" read as
         # "new" (sent, waiting for packing).
-        if status == "paid":
-            effective = "collected"
-        elif status == "billed":
-            effective = "new"
-        else:
-            effective = status
-        for key in db.ORDER_STEPS:
-            steps.append({
-                "key": key,
-                "label": strings[f"order.step_{key}"],
-                "done": (db.ORDER_STEPS.index(effective)
-                         >= db.ORDER_STEPS.index(key))
-                if effective in db.ORDER_STEPS else False,
-                "current": effective == key,
-            })
-        display_status = effective
+        display_status = _effective_order_status(row["status"])
+        steps = order_steps(row["status"], strings)
+        sold_out_any = any(isinstance(entry, dict) and entry.get("sold_out")
+                           for entry in raw_lines)
         from app.web.bills import row_not_understood
 
         return templates.TemplateResponse(request, "quote.html", {
             "shop": shop, "token": row["token"], "order_id": row["id"],
             "lines": lines,
             "total": _fmt_money(row["total"]),
+            "total_fmt": format_money(row["total"], shop["currency"] or "INR"),
+            "order_date": str(row["created_at"] or "")[:10],
+            "status_url": (f"/q/{row['token']}/status.json"
+                           f"{_lang_suffix(language)}"),
+            "sold_out_any": sold_out_any,
             "priced_count": priced_count, "unpriced_count": unpriced_count,
             "not_understood": row_not_understood(row),
             "rel": rel, "prices_time": prices_time,
@@ -365,10 +416,25 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         photo = form.get("photo")
         has_audio = audio is not None and hasattr(audio, "file")
         has_photo = photo is not None and hasattr(photo, "file")
+        strings = get_strings(language)
+        name = clean_customer_name(form.get("customer_name"))
+        phone = clean_customer_phone(form.get("customer_phone"))
+        if not customer_name_ok(name):
+            return _start_context(request, shop,
+                                  strings("order.name_required"),
+                                  lang=language, status=400)
+        if not customer_phone_ok(phone):
+            return _start_context(request, shop,
+                                  strings("order.phone_invalid"),
+                                  lang=language, status=400)
+        contact = {"customer_name": name,
+                   "customer_phone": phone or None}
         if has_audio:
-            return _start_voice_quote(request, shop, audio, conn, lang=language)
+            return _start_voice_quote(request, shop, audio, conn,
+                                      lang=language, contact=contact)
         if has_photo:
-            return _start_photo_quote(request, shop, photo, conn, lang=language)
+            return _start_photo_quote(request, shop, photo, conn,
+                                      lang=language, contact=contact)
         text = str(items or "").strip()
         if not text:
             return _start_context(request, shop, "Tell us what you need first.",
@@ -398,7 +464,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                   lang=language, status=400)
         quote = build_quote(conn, shop["id"], wanted)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
-                                not_understood=not_understood)
+                                not_understood=not_understood,
+                                customer_name=name,
+                                customer_phone=phone or None)
         return RedirectResponse(f"/q/{token}{_lang_suffix(language)}",
                                 status_code=303)
 
@@ -470,9 +538,23 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                      source="cart", variety=variety))
         if not wanted:
             return JSONResponse({"error": "empty cart"}, status_code=400)
+        strings = get_strings(language)
+        name = clean_customer_name(
+            payload.get("customer_name") if isinstance(payload, dict)
+            else None)
+        phone = clean_customer_phone(
+            payload.get("customer_phone") if isinstance(payload, dict)
+            else None)
+        if not customer_name_ok(name):
+            return JSONResponse({"error": strings("order.name_required")},
+                                status_code=400)
+        if not customer_phone_ok(phone):
+            return JSONResponse({"error": strings("order.phone_invalid")},
+                                status_code=400)
         quote = build_quote(conn, shop["id"], wanted)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
-                                source="customer")
+                                source="customer", customer_name=name,
+                                customer_phone=phone or None)
         url = f"/q/{token}{_lang_suffix(language)}"
         return JSONResponse({"token": token, "url": url})
 
@@ -496,7 +578,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 status_code=503)
         return None
 
-    def _start_voice_quote(request, shop, audio, conn, lang="en"):
+    def _start_voice_quote(request, shop, audio, conn, lang="en",
+                           contact=None):
         denied = _guarded(request, shop, conn)
         if denied is not None:
             return denied
@@ -510,13 +593,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         safe_name = Path(getattr(audio, "filename", "") or "list.webm").name
         saved = uploads / f"q{session_id}_{secrets.token_hex(4)}_{safe_name}"
         saved.write_bytes(payload)
-        write_quote_meta(data_dir, session_id, {"token": None})
+        write_quote_meta(data_dir, session_id, {"token": None,
+                                                **(contact or {})})
         jobs.submit(run_quote_voice_job, settings, session_id, str(saved))
         return RedirectResponse(
             f"/s/{shop['slug']}/quote/{session_id}{_lang_suffix(lang)}",
             status_code=303)
 
-    def _start_photo_quote(request, shop, photo: UploadFile, conn, lang="en"):
+    def _start_photo_quote(request, shop, photo: UploadFile, conn, lang="en",
+                           contact=None):
         denied = _guarded(request, shop, conn)
         if denied is not None:
             return denied
@@ -551,7 +636,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         photo_dir.mkdir(parents=True, exist_ok=True)
         saved = photo_dir / f"q{session_id}_{secrets.token_hex(4)}{ext}"
         saved.write_bytes(payload)
-        write_quote_meta(data_dir, session_id, {"token": None})
+        write_quote_meta(data_dir, session_id, {"token": None,
+                                                **(contact or {})})
         jobs.submit(run_quote_photo_job, settings, session_id, str(saved))
         return RedirectResponse(
             f"/s/{shop['slug']}/quote/{session_id}{_lang_suffix(lang)}",
@@ -600,6 +686,35 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if shop is None:
             raise HTTPException(404, "unknown quote")
         return _quote_context(request, shop, row, conn, lang=lang)
+
+    @app.get("/q/{token}/status.json")
+    def quote_status_json(token: str, conn: Conn, lang: str = "en"):
+        """Live order status for the customer's order page poll."""
+        row = db.get_quote_by_token(conn, token)
+        if row is None:
+            raise HTTPException(404, "unknown quote")
+        shop = conn.execute("SELECT * FROM shops WHERE id = ?",
+                            (row["shop_id"],)).fetchone()
+        if shop is None:
+            raise HTTPException(404, "unknown quote")
+        language = _customer_lang(shop, lang)
+        strings = get_strings(language)
+        try:
+            raw_lines = json.loads(row["lines_json"] or "[]")
+        except ValueError:
+            raw_lines = []
+        if not isinstance(raw_lines, list):
+            raw_lines = []
+        sold_out_any = any(isinstance(entry, dict) and entry.get("sold_out")
+                           for entry in raw_lines)
+        return JSONResponse({
+            "status": _effective_order_status(row["status"]),
+            "total": _fmt_money(row["total"]),
+            "total_fmt": format_money(row["total"],
+                                      shop["currency"] or "INR"),
+            "steps": order_steps(row["status"], strings),
+            "sold_out": sold_out_any,
+        })
 
     @app.post("/q/{token}/lines")
     async def quote_lines_post(request: Request, token: str):

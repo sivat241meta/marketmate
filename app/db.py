@@ -240,6 +240,7 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             lines_json TEXT NOT NULL, total TEXT NOT NULL,
             customer_note TEXT, created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL, customer_phone TEXT,
+            customer_name TEXT,
             payment_mode TEXT, paid_at TEXT, total_exact TEXT,
             bill_token TEXT
         );
@@ -287,6 +288,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     quote_columns = {row[1] for row in conn.execute("PRAGMA table_info(quotes)")}
     if "customer_phone" not in quote_columns:
         conn.execute("ALTER TABLE quotes ADD COLUMN customer_phone TEXT")
+    if "customer_name" not in quote_columns:
+        conn.execute("ALTER TABLE quotes ADD COLUMN customer_name TEXT")
     for name, column_type in (("payment_mode", "TEXT"),
                               ("paid_at", "TEXT"),
                               ("total_exact", "TEXT"),
@@ -1087,7 +1090,9 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
                  client_id: str | None = None,
                  priced_version_id: int | None = None,
                  price_changed: bool = False,
-                 not_understood: str | None = None) -> str:
+                 not_understood: str | None = None,
+                 customer_name: str | None = None,
+                 customer_phone: str | None = None) -> str:
     """Store a priced quote; returns its unguessable public token."""
     if source not in _QUOTE_SOURCES:
         raise ValueError(f"unknown quote source: {source}")
@@ -1104,20 +1109,92 @@ def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
         raise ValueError("could not mint a unique quote token")
     now = _now()
     total, total_exact = _store_totals(conn, shop_id, kind, quote.total)
+    name = (customer_name or "").strip() or None
+    phone = (customer_phone or "").strip() or None
     conn.execute(
         "INSERT INTO quotes (shop_id, token, source, kind, status, lines_json,"
         " total, total_exact, customer_note, created_at, updated_at,"
         " created_by, client_id, priced_version_id, price_changed,"
-        " not_understood)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " not_understood, customer_name, customer_phone)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (shop_id, token, source, kind, status,
          json.dumps([_quote_line_to_dict(line) for line in quote.lines]),
          total, total_exact, customer_note, now, now,
          created_by, client_id, priced_version_id,
-         int(bool(price_changed)), not_understood),
+         int(bool(price_changed)), not_understood, name, phone),
     )
     conn.commit()
     return token
+
+
+def set_customer_contact(conn, quote_id: int, *,
+                         customer_name: str | None,
+                         customer_phone: str | None) -> None:
+    """Store the customer contact on an order; blank clears each field."""
+    row = get_quote_by_id(conn, quote_id)
+    if row is None:
+        raise ValueError("unknown order")
+    name = (customer_name or "").strip() or None
+    phone = (customer_phone or "").strip() or None
+    conn.execute("UPDATE quotes SET customer_name = ?, customer_phone = ?,"
+                 " updated_at = ? WHERE id = ?",
+                 (name, phone, _now(), row["id"]))
+    conn.commit()
+
+
+#: Open customer-order statuses a sold-out flag can land on.
+OPEN_ORDER_STATUSES = ("new", "billed", "packing", "ready")
+
+
+def _line_matches_item(line: dict, name_en: str, variety: str | None) -> bool:
+    if not isinstance(line, dict):
+        return False
+    want_name = (name_en or "").strip().lower()
+    got_name = str(line.get("name_en") or "").strip().lower()
+    if not want_name or got_name != want_name:
+        return False
+    want_var = (variety or "").strip().lower()
+    got_var = str(line.get("variety") or "").strip().lower()
+    return got_var == want_var
+
+
+def flag_sold_out_in_open_orders(conn, shop_id: int, name_en: str,
+                                 variety: str | None = None) -> int:
+    """Flag matching lines "sold_out" on every open customer order.
+
+    Only open orders (new/billed/packing/ready) are touched; collected,
+    cancelled and paid rows keep their lines. Returns the number of
+    orders flagged.
+    """
+    flagged = 0
+    for row in list_quotes(conn, shop_id):
+        try:
+            source = row["source"]
+        except (KeyError, IndexError, TypeError):
+            source = None
+        if source != "customer":
+            continue
+        if row["status"] not in OPEN_ORDER_STATUSES:
+            continue
+        try:
+            lines = json.loads(row["lines_json"] or "[]")
+        except ValueError:
+            continue
+        if not isinstance(lines, list):
+            continue
+        changed = False
+        for line in lines:
+            if (_line_matches_item(line, name_en, variety)
+                    and not line.get("sold_out")):
+                line["sold_out"] = True
+                changed = True
+        if changed:
+            conn.execute("UPDATE quotes SET lines_json = ?, updated_at = ?"
+                         " WHERE id = ?",
+                         (json.dumps(lines), _now(), row["id"]))
+            flagged += 1
+    conn.commit()
+    return flagged
 
 
 def set_order_status(conn, quote_id: int, new_status: str) -> None:

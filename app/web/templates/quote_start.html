@@ -21,7 +21,16 @@
       <h3>{{ ui.icon("mic") }} {{ t.speak_list }}</h3>
       <p class="muted" data-needs-internet-hint hidden>needs internet</p>
       <p class="muted">{{ t.speak_help }}</p>
-      <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
+      <div class="field">
+        <label for="quote-name-voice">{{ t('order.name_label') }}</label>
+        <input id="quote-name-voice" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="quote-phone-voice">{{ t('order.phone_label') }}</label>
+        <input id="quote-phone-voice" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+        <span class="help">{{ t('order.phone_note') }}</span>
+      </div>
+      <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-need-name="{{ t('order.name_required') }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
         <div class="live-captions" aria-live="polite">
           <p class="live-last" data-live-order-last></p>
           <p class="live-partial" data-live-order-partial></p>
@@ -50,6 +59,15 @@
         <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
         <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
           <div class="field">
+            <label for="quote-name-upload">{{ t('order.name_label') }}</label>
+            <input id="quote-name-upload" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="quote-phone-upload">{{ t('order.phone_label') }}</label>
+            <input id="quote-phone-upload" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+            <span class="help">{{ t('order.phone_note') }}</span>
+          </div>
+          <div class="field">
             <label class="drop-zone" for="quote-audio">{{ ui.icon("mic") }}<span>{{ t.upload_recording }}</span><strong>Choose recording</strong>
               <input id="quote-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
             </label>
@@ -67,6 +85,15 @@
           <label for="quote-items">{{ t.what_need }}</label>
           <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
         </div>
+        <div class="field">
+          <label for="quote-name-type">{{ t('order.name_label') }}</label>
+          <input id="quote-name-type" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="quote-phone-type">{{ t('order.phone_label') }}</label>
+          <input id="quote-phone-type" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+          <span class="help">{{ t('order.phone_note') }}</span>
+        </div>
         <button class="pill dark big" type="submit">{{ t.get_quote_short }}</button>
       </form>
     </section>
@@ -75,6 +102,15 @@
       <h3>{{ ui.icon("photo") }} {{ t.photo_list }}</h3>
       <p class="muted">{{ t.photo_help }}</p>
       <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
+        <div class="field">
+          <label for="quote-name-photo">{{ t('order.name_label') }}</label>
+          <input id="quote-name-photo" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="quote-phone-photo">{{ t('order.phone_label') }}</label>
+          <input id="quote-phone-photo" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+          <span class="help">{{ t('order.phone_note') }}</span>
+        </div>
         <div class="field">
           <label class="drop-zone" for="quote-photo">{{ ui.icon("photo") }}<span>{{ t.choose_photo }}</span><strong>Choose photo</strong>
             <input id="quote-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
@@ -90,6 +126,7 @@
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
+<script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {

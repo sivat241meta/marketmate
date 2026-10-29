@@ -303,6 +303,13 @@ def create_app(settings: Settings) -> FastAPI:
         return templates.TemplateResponse(
             request, "home.html", {"ui_lang": get_ui_lang(request)})
 
+    @app.get("/my")
+    def my_page(request: Request):
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "my.html", {"ui_lang": get_ui_lang(request)})
+
     @app.get("/share")
     def share_page(request: Request):
         from app.languages import LANGUAGES

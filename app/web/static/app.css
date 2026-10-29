@@ -578,11 +578,59 @@ button.chip {
 .pill-live { background: var(--mint); color: var(--leaf-ink); }
 .pill-live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); }
 .pill-soldout { background: var(--ink); color: #fff; }
+.pill-danger { background: var(--danger); color: #fff; }
 .pill-check { background: var(--gold-soft); color: var(--gold-ink); }
 .pill-info { background: var(--mint); color: var(--ink); }
 .pill-quote { background: var(--forest); color: #fff; }
 .pill-billed { background: transparent; color: var(--leaf-ink); border: 2px solid var(--leaf-ink); }
 .pill-paid { background: var(--cta); color: #fff; }
+
+/* ---- Task 60: new-order alert badge + banners (gold, on-theme) ---- */
+.nbadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--cta);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  margin-left: 6px;
+}
+.nbadge[hidden] { display: none; }
+.nav .nbadge { margin: 0 6px 0 0; }
+.order-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--bnav-h) + 12px);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(23, 63, 42, 0.25);
+}
+.order-banner[hidden] { display: none; }
+.gold-banner {
+  background: var(--gold);
+  color: var(--gold-ink);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-3) 0;
+  font-weight: 800;
+  text-align: center;
+}
+.gold-banner[hidden] { display: none; }
 
 /* ---- Alerts: needs-you is gold-soft, never blue ---- */
 .alert {

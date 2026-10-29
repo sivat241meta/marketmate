@@ -214,7 +214,8 @@ def _build_order_payload(data_dir: Path, shop_id: int, wanted: list,
 async def _run_order_live(websocket: WebSocket, shop: dict,
                           bill_token: str | None, kind: str,
                           settings, data_dir: Path,
-                          created_by: str = "owner") -> None:
+                          created_by: str = "owner",
+                          contact: dict | None = None) -> None:
     """Relay mic audio to Meta realtime; parse each turn into order lines."""
     is_bill = kind == "bill"
     max_seconds = MAX_LIVE_SECONDS if is_bill else MAX_QUOTE_LIVE_SECONDS
@@ -474,8 +475,12 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
                 row = db.get_quote_by_token(conn, token)
                 url = f"/e/{bill_token}/bills/{row['id']}"
                 return ({"type": "done", "bill_url": url}, None)
-            token = db.create_quote(conn, shop_id=shop_id, quote=quote,
-                                    not_understood=not_understood)
+            details = contact or {}
+            token = db.create_quote(
+                conn, shop_id=shop_id, quote=quote,
+                not_understood=not_understood,
+                customer_name=details.get("customer_name"),
+                customer_phone=details.get("customer_phone"))
             return ({"type": "done", "quote_url": f"/q/{token}"}, None)
         finally:
             conn.close()
@@ -1190,5 +1195,37 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 {"type": "error", "message": START_MESSAGE}))
             await websocket.close()
             return
+        from app.web.i18n import t_for as _t_for
+        from app.web.quotes import (
+            clean_customer_name,
+            clean_customer_phone,
+            customer_name_ok,
+            customer_phone_ok,
+        )
+
+        ws_lang = start_data.get("lang") or "en"
+        if ws_lang not in ("en", "ta", "hi"):
+            ws_lang = "en"
+        ws_t = _t_for(ws_lang)
+        contact = {"customer_name": None, "customer_phone": None}
+        raw_name = start_data.get("customer_name")
+        raw_phone = start_data.get("customer_phone")
+        if raw_name is not None or raw_phone is not None:
+            name = clean_customer_name(raw_name)
+            phone = clean_customer_phone(raw_phone)
+            if raw_name is not None and not customer_name_ok(name):
+                await websocket.send_text(json.dumps(
+                    {"type": "error",
+                     "message": ws_t("order.name_required")}))
+                await websocket.close()
+                return
+            if raw_phone is not None and not customer_phone_ok(phone):
+                await websocket.send_text(json.dumps(
+                    {"type": "error",
+                     "message": ws_t("order.phone_invalid")}))
+                await websocket.close()
+                return
+            contact = {"customer_name": name or None,
+                       "customer_phone": phone or None}
         await _run_order_live(websocket, shop, None, "quote", settings,
-                             data_dir)
+                             data_dir, contact=contact)

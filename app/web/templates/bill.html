@@ -28,7 +28,9 @@
     {% endfor %}
   </div>
   {% if ready_wa_url %}
-  <p><a class="pill cta big" href="{{ ready_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_whatsapp') }}</a></p>
+  <p><a class="pill cta big" href="{{ ready_wa_url }}" data-ready-pill>{{ ui.icon("whatsapp") }}{{ t('bill.tell_whatsapp') }}</a></p>
+  {% elif ready_no_phone %}
+  <p class="muted">{{ t('bill.no_phone') }}</p>
   {% endif %}
 </section>
 {% endif %}
@@ -50,6 +52,7 @@
             <span class="line-name">{{ line.display }}{% if line.name_local %} <span class="name-local" lang="ta">{{ line.name_local }}</span>{% endif %}</span>
             {% if line.status == "needs_qty" %}<span class="line-note">{{ ui.pill(t('bill.check_qty'), "check") }} <span class="muted">{{ line.note }}</span></span>{% endif %}
             {% if line.status == "priced" and line.note %}<span class="line-note muted">{{ line.note }}</span>{% endif %}
+            {% if line.sold_out %}<span class="line-note">{{ ui.pill(t('bill.sold_out'), "danger") }} <a class="pill sm ghost" href="{{ line.tell_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_customer') }}</a></span>{% endif %}
             <span class="line-rate money">{{ line.unit_price | money(shop["currency"]) }}<small class="muted"> / {{ line.per_amount }} {{ line.unit }}</small></span>
             {% if is_paid %}
             <span class="muted">{{ line.qty }} {{ line.unit }}</span>

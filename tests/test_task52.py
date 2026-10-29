@@ -236,7 +236,9 @@ _CART_IPS = iter(range(1, 200))
 
 def _post_cart(client, slug, payload):
     ip = f"10.9.9.{next(_CART_IPS)}"
-    return client.post(f"/s/{slug}/quote", json=payload,
+    body = dict(payload)
+    body.setdefault("customer_name", "Test")
+    return client.post(f"/s/{slug}/quote", json=body,
                        headers={"x-forwarded-for": ip})
 
 
@@ -294,7 +296,8 @@ def test_cart_rate_limited_to_429(tmp_path, monkeypatch):
     token = _create_shop(client)
     slug = _slug(tmp_path, token)
     _publish(tmp_path, token, [_draft("tomato", 40)])
-    body = {"lines": [{"name_en": "tomato", "qty": 1, "unit": "kg"}]}
+    body = {"lines": [{"name_en": "tomato", "qty": 1, "unit": "kg"}],
+            "customer_name": "Test"}
     first = client.post(f"/s/{slug}/quote", json=body)
     assert first.status_code == 200, first.text
     second = client.post(f"/s/{slug}/quote", json=body)

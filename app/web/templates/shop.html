@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ shop["name"] }}{% endblock %}
 {% block content %}
+<div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
 <div class="hero2">
   <div class="hero-copy">
     <p class="kick">{{ shop["name"] }}</p>
@@ -75,6 +76,15 @@
   <p class="kick">{{ t('shop.cart_title') }}</p>
   <div data-cart-lines></div>
   <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
+  <div class="field">
+    <label for="cart-name-desk">{{ t('order.name_label') }}</label>
+    <input id="cart-name-desk" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name">
+  </div>
+  <div class="field">
+    <label for="cart-phone-desk">{{ t('order.phone_label') }}</label>
+    <input id="cart-phone-desk" type="tel" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+    <span class="help">{{ t('order.phone_note') }}</span>
+  </div>
   <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
 </div>
 <div class="sheet-wrap" data-cart-sheet hidden>
@@ -84,6 +94,15 @@
     <p class="kick">{{ t('shop.cart_title') }}</p>
     <div data-cart-sheet-lines></div>
     <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-sheet-total></b></div>
+    <div class="field">
+      <label for="cart-name-sheet">{{ t('order.name_label') }}</label>
+      <input id="cart-name-sheet" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="cart-phone-sheet">{{ t('order.phone_label') }}</label>
+      <input id="cart-phone-sheet" type="tel" data-customer-phone autocomplete="tel" placeholder="98765 43210">
+      <span class="help">{{ t('order.phone_note') }}</span>
+    </div>
     <div class="alert alert-warn" data-cart-sheet-error hidden></div>
     <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
     <p><button type="button" class="pill ghost" data-cart-sheet-close aria-label="×">×</button></p>
@@ -235,7 +254,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const sheetErr = sheet ? sheet.querySelector("[data-cart-sheet-error]") : null;
       if (errBox) errBox.hidden = true;
       if (sheetErr) sheetErr.hidden = true;
-      btn.disabled = true;
       function showError(message) {
         if (errBox) {
           errBox.textContent = message;
@@ -246,10 +264,19 @@ document.addEventListener("DOMContentLoaded", () => {
           sheetErr.hidden = false;
         }
       }
+      const nameEl = document.querySelector("[data-customer-name]");
+      const phoneEl = document.querySelector("[data-customer-phone]");
+      const customerName = nameEl ? nameEl.value.trim() : "";
+      const customerPhone = phoneEl ? phoneEl.value.trim() : "";
+      if (!customerName) {
+        showError(nameEl ? (nameEl.getAttribute("data-need-name") || "Please tell the shop your name.") : "Please tell the shop your name.");
+        return;
+      }
+      btn.disabled = true;
       try {
         const resp = await fetch(window.location.pathname + "/quote", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lines }),
+          body: JSON.stringify({ lines, customer_name: customerName, customer_phone: customerPhone }),
         });
         const data = await resp.json();
         if (resp.ok && data.url) {
@@ -274,4 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 </script>
+<script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>
+<script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>
 {% endblock %}

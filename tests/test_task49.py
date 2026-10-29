@@ -165,7 +165,8 @@ def test_cart_submit_priced_from_published_ignores_client_price(tmp_path):
     resp = client.post(
         f"/s/{slug}/quote",
         json={"lines": [{"name_en": "tomato", "qty": 2, "unit": "kg"}],
-              "client_total": 2, "client_price": 1})
+              "client_total": 2, "client_price": 1,
+              "customer_name": "Test"})
     assert resp.status_code in (200, 303)
     if resp.status_code == 303:
         location = resp.headers["location"]

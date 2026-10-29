@@ -398,10 +398,20 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
             phone = (row["customer_phone"] or "").strip() or None
         except (KeyError, IndexError, TypeError):
             phone = None
+        try:
+            customer_name = (row["customer_name"] or "").strip() or None
+        except (KeyError, IndexError, TypeError):
+            customer_name = None
         order_num = t("bills.order_num", id=row["id"])
+        if customer_name:
+            order_label = f"{order_num} · {customer_name}"
+        elif phone:
+            order_label = f"{order_num} · {phone}"
+        else:
+            order_label = order_num
         orders.append({
             "id": row["id"],
-            "label": f"{order_num} · {phone}" if phone else order_num,
+            "label": order_label,
             "names": names,
             "count": len(raw) if isinstance(raw, list) else 0,
             "total": format_money(total, currency),
@@ -1496,6 +1506,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         400, f"unconfirmed change on {change.name_en}")
         new_version_id = apply_changes(conn, shop["id"], base_version_id, changes)
         db.set_published(conn, new_version_id, True)
+        sold_names = {change.name_en for change in changes
+                      if change.action == "sold_out"}
+        if sold_names:
+            for item in db.version_items(conn, new_version_id):
+                if item.sold_out and item.name_en in sold_names:
+                    db.flag_sold_out_in_open_orders(conn, shop["id"],
+                                                    item.name_en,
+                                                    item.variety)
         db.set_session_status(conn, session_id, "approved",
                               f"{len(changes)} changes published")
         return RedirectResponse(f"/e/{token}", status_code=303)
@@ -1526,12 +1544,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if denied is not None:
             return denied
         row = conn.execute(
-            "SELECT items.sold_out, versions.shop_id FROM items"
+            "SELECT items.sold_out, items.name_en, items.variety,"
+            " versions.shop_id FROM items"
             " JOIN versions ON versions.id = items.version_id"
             " WHERE items.id = ?", (item_id,)).fetchone()
         if row is None or row["shop_id"] != shop["id"]:
             raise HTTPException(404, "unknown item")
-        db.set_sold_out(conn, item_id, not bool(row["sold_out"]))
+        now_out = not bool(row["sold_out"])
+        db.set_sold_out(conn, item_id, now_out)
+        if now_out:
+            db.flag_sold_out_in_open_orders(conn, shop["id"], row["name_en"],
+                                            row["variety"])
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.get("/s/{slug}")

@@ -7,7 +7,6 @@ price lines; client totals are always recomputed server side.
 
 import io
 import json
-import re
 import secrets
 import sqlite3
 from datetime import UTC, datetime
@@ -58,9 +57,11 @@ from app.web.i18n import (
     first_grapheme,
     get_ui_lang,
     order_ready_whatsapp_text,
+    sold_out_whatsapp_text,
     stage_friendly,
     stage_label,
     t_for,
+    wa_chat_number,
 )
 
 MAX_BILL_PHOTO_BYTES = 10 * 1024 * 1024
@@ -344,6 +345,17 @@ def _row_phone(row) -> str | None:
     return text or None
 
 
+def _row_customer_name(row) -> str | None:
+    try:
+        value = row["customer_name"]
+    except (KeyError, IndexError, TypeError):
+        value = None
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def _customer_label(row, lang: str = "en") -> str:
     try:
         source = row["source"]
@@ -351,6 +363,9 @@ def _customer_label(row, lang: str = "en") -> str:
         source = None
     if row["kind"] == "quote" or source == "customer":
         label = t_for(lang)("bills.order_num", id=row["id"])
+        name = _row_customer_name(row)
+        if name:
+            return f"{label} · {name}"
         phone = _row_phone(row)
         return f"{label} · {phone}" if phone else label
     return _row_phone(row) or t_for(lang)("bills.walk_in")
@@ -473,6 +488,7 @@ def _bill_lines(raw_lines, photos: dict[str, str] | None = None
             "line_total": _fmt_money(raw.get("line_total")),
             "status": raw.get("status", ""),
             "note": raw.get("note") or "",
+            "sold_out": bool(raw.get("sold_out")),
         })
     return lines, len(lines)
 
@@ -483,7 +499,7 @@ def _bill_text(shop, bill_id: int, raw_lines: list[dict], total: str,
 
 
 def _whatsapp_link(phone: str | None, text: str) -> str:
-    digits = re.sub(r"\D", "", phone or "")
+    digits = wa_chat_number(phone)
     base = f"https://wa.me/{digits}" if digits else "https://wa.me/"
     return f"{base}?text={url_quote(text)}"
 
@@ -812,10 +828,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         order_actions = (_order_actions(bill["status"], ui_lang)
                          if bill["kind"] == "quote" or is_customer_bill else [])
         ready_wa_url = None
+        ready_no_phone = False
         if bill["status"] == "ready" and (
                 bill["kind"] == "quote" or is_customer_bill):
-            ready_wa_url = _whatsapp_link(
-                phone, order_ready_whatsapp_text(shop, str(rounded)))
+            if phone:
+                order_url = (f"{request.app.state.settings.public_base_url}"
+                             f"/q/{bill['token']}")
+                ready_wa_url = _whatsapp_link(
+                    phone, order_ready_whatsapp_text(
+                        shop, str(rounded), order_id=bill["id"],
+                        order_url=order_url))
+            else:
+                ready_no_phone = True
+        for line in lines:
+            line["tell_url"] = None
+            if line.get("sold_out"):
+                line["tell_url"] = _whatsapp_link(
+                    phone, sold_out_whatsapp_text(shop, bill["id"],
+                                                  line["display"]))
         return templates.TemplateResponse(request, "bill.html", {
             "shop": shop, "token": token, "bill": bill, "lines": lines,
             "total": _fmt_money(rounded),
@@ -843,6 +873,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "public_qr": qr_svg(public_url), "ui_lang": ui_lang,
             "order_actions": order_actions,
             "ready_wa_url": ready_wa_url,
+            "ready_no_phone": ready_no_phone,
             "price_changed": _row_price_changed(bill),
             "is_staff": _is_staff(conn, token),
             "made_by": _row_created_by(bill),
@@ -887,6 +918,44 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 } for line in item.price_lines],
             })
         return JSONResponse({"version_id": version_id, "items": items})
+
+    @app.get("/e/{token}/orders/pending.json")
+    def orders_pending_json(request: Request, token: str, conn: Conn):
+        """New (unseen) customer orders for the seller's alert poll.
+
+        Owner only: helpers see bills but not the new-order alert feed.
+        """
+        shop, role, _helper = resolve_or_404(conn, token)
+        if role != "owner":
+            raise HTTPException(403, "Helpers can only make bills")
+        ui_lang = get_ui_lang(request, shop)
+        currency = (shop["currency"] or "INR").upper()
+        orders = []
+        for row in db.list_quotes(conn, shop["id"]):
+            try:
+                source = row["source"]
+            except (KeyError, IndexError, TypeError):
+                source = None
+            if source != "customer" or row["kind"] != "quote":
+                continue
+            if row["status"] != "new":
+                continue
+            try:
+                total = db.bill_display_totals(shop, row)["rounded"]
+                total_text = format_money(total, currency)
+            except (InvalidOperation, ValueError):
+                total_text = format_money(row["total"], currency)
+            orders.append({
+                "id": row["id"],
+                "label": _customer_label(row, ui_lang),
+                "total": total_text,
+                "at": row["created_at"],
+            })
+        orders.sort(key=lambda entry: entry["id"])
+        latest = orders[-1]["id"] if orders else None
+        return JSONResponse(
+            {"new": len(orders), "latest_id": latest, "orders": orders},
+            headers={"Cache-Control": "private, max-age=5"})
 
     @app.get("/e/{token}/bills/new")
     def bills_new_page(request: Request, token: str, conn: Conn):

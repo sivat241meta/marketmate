@@ -5,8 +5,12 @@
 <p class="kick">{{ t('order.kick', id=order_id) }}</p>
 {% set ns = namespace(label="") %}
 {% for step in order_steps %}{% if step.current %}{% set ns.label = step.label %}{% endif %}{% endfor %}
-<h1 class="big">{% if order_status == "cancelled" %}{{ t["order.step_cancelled"] }}{% else %}<em>{{ ns.label }}.</em>{% endif %}</h1>
+<h1 class="big">{% if order_status == "cancelled" %}{{ t["order.step_cancelled"] }}{% else %}<em data-status-heading>{{ ns.label }}.</em>{% endif %}</h1>
 <p class="lead">{{ subtitle }}</p>
+<div data-order-record data-token="{{ token }}" data-shop="{{ shop["name"] }}" data-number="{{ order_id }}" data-total="{{ total_fmt }}" data-date="{{ order_date }}" hidden></div>
+<div data-order-poll data-status-url="{{ status_url }}" hidden></div>
+<div class="gold-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
+<div class="alert alert-warn" data-soldout-note{% if not sold_out_any %} hidden{% endif %}>{{ t('order.sold_out_note') }}</div>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">Not understood: {{ not_understood }} – add it from the list</div>{% endif %}
 
@@ -14,11 +18,11 @@
 <div class="alert alert-warn">{{ t["order.step_cancelled"] }}</div>
 {% else %}
 <div class="rcpt">
-  <div class="tline" aria-label="{{ t["order.status_label"] }}">
+  <div class="tline" aria-label="{{ t["order.status_label"] }}" data-timeline>
     <div class="st d"><i>{{ ui.icon("check") }}</i>{{ t('order.step_sent') }}</div>
     {% for step in order_steps %}
-    <div class="st{% if step.current %} n{% elif step.done %} d{% endif %}">
-      {% if step.current %}<span class="now">{{ t('order.right_now') }}</span>{% endif %}
+    <div class="st{% if step.current %} n{% elif step.done %} d{% endif %}" data-step-key="{{ step.key }}">
+      <span class="now" data-now{% if not step.current %} hidden{% endif %}>{{ t('order.right_now') }}</span>
       <i>{% if step.done or step.current %}{{ ui.icon("check") }}{% endif %}</i>{{ step.label }}
     </div>
     {% endfor %}
@@ -91,4 +95,6 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
+<script src="{{ static_url('order-status.js') if static_url is defined else '/static/order-status.js' }}"></script>
+<script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>
 {% endblock %}

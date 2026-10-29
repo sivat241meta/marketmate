@@ -739,7 +739,7 @@ _ENGLISH: dict[str, str] = {
     "wa.summary_top": "Top: {items}.",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "Margin {margin}.",
-    "wa.order_ready": "Your order from {shop} is ready for pickup. Total Rs.{total}.",
+    "wa.order_ready": "Your order #{id} at {shop} is ready. Total ₹{total}. Pay by UPI or cash at pickup. {url}",
     "wa.link_self": "My MarketMate seller link (keep this safe): {url}",
     # --- WhatsApp-first extras (Task 54) ---
     "wa.send_prices": "Send today's prices on WhatsApp",
@@ -860,6 +860,28 @@ _ENGLISH: dict[str, str] = {
     "gs.step3_t": "Share your shop",
     "gs.step3_d": "Send customers your shop page or its QR.",
     "gs.step3_view": "Open your shop page",
+    # --- Task 60: order loop ---
+    "order.name_label": "Your name",
+    "order.phone_label": "Phone (optional)",
+    "order.phone_note": "Only this shop sees your number.",
+    "order.name_required": "Please tell the shop your name (1–40 characters).",
+    "order.phone_invalid": "That phone number does not look right. Use a 10-digit mobile or +country digits.",
+    "order.ready_banner": "Ready for pickup!",
+    "order.sold_out_note": "Sold out today: the shop will call you or adjust your order.",
+    "alert.new_order": "New order #{id} · {total}",
+    "alert.view": "View",
+    "alert.sound_on": "Sound on",
+    "alert.sound_off": "Sound off",
+    "bill.no_phone": "No phone given",
+    "bill.tell_customer": "Tell customer",
+    "my.title": "My orders & shops",
+    "my.orders": "My orders",
+    "my.shops": "My shops",
+    "my.empty_orders": "No orders yet. Orders you send will show up here.",
+    "my.empty_shops": "No shops yet. Shops you visit will show up here.",
+    "my.clear": "Clear",
+    "my.view": "View",
+    "wa.sold_out_tell": "Your order #{id} at {shop}: {item} is sold out today. We will call you or adjust your order.",
 }
 
 
@@ -1585,7 +1607,7 @@ _TAMIL: dict[str, str] = {
     "wa.summary_top": "நல்லா போனது: {items}.",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "லாபம் {margin}.",
-    "wa.order_ready": "{shop} கடையில் உங்கள் ஆர்டர் எடுக்கத் தயார். மொத்தம் ரூ.{total}.",
+    "wa.order_ready": "உங்கள் ஆர்டர் #{id} ({shop}) தயார். மொத்தம் ₹{total}. எடுக்கும்போது UPI அல்லது பணம் கொடுங்கள். {url}",
     "wa.link_self": "என் MarketMate விற்பனை லிங்க் (பத்திரமாக வையுங்கள்): {url}",
     # --- WhatsApp-first extras (Task 54) ---
     "wa.send_prices": "இன்றைய விலையை வாட்ஸ்அப்பில் அனுப்பு",
@@ -1704,6 +1726,28 @@ _TAMIL: dict[str, str] = {
     "gs.step3_t": "கடையை பகிருங்கள்",
     "gs.step3_d": "வாடிக்கையாளர்களுக்கு கடை பக்கம் அல்லது QR அனுப்புங்கள்.",
     "gs.step3_view": "கடை பக்கத்தை திற",
+    # --- Task 60: order loop ---
+    "order.name_label": "உங்கள் பெயர்",
+    "order.phone_label": "போன் (விருப்பம்)",
+    "order.phone_note": "உங்கள் எண் இந்தக் கடைக்கு மட்டுமே தெரியும்.",
+    "order.name_required": "உங்கள் பெயரை கடைக்குச் சொல்லுங்கள் (1–40 எழுத்துகள்).",
+    "order.phone_invalid": "அந்த போன் எண் சரியாகத் தெரியவில்லை. 10 இலக்க மொபைல் அல்லது +நாடு எண்ணைப் பயன்படுத்துங்கள்.",
+    "order.ready_banner": "எடுத்துச் செல்லத் தயார்!",
+    "order.sold_out_note": "இன்று தீர்ந்துவிட்டது: கடை உங்களை அழைக்கும் அல்லது ஆர்டரை மாற்றும்.",
+    "alert.new_order": "புது ஆர்டர் #{id} · {total}",
+    "alert.view": "பார்க்க",
+    "alert.sound_on": "சத்தம் ஆன்",
+    "alert.sound_off": "சத்தம் ஆஃப்",
+    "bill.no_phone": "போன் எண் தரவில்லை",
+    "bill.tell_customer": "வாடிக்கையாளருக்குச் சொல்",
+    "my.title": "என் ஆர்டர்கள் & கடைகள்",
+    "my.orders": "என் ஆர்டர்கள்",
+    "my.shops": "என் கடைகள்",
+    "my.empty_orders": "இன்னும் ஆர்டர் இல்லை. நீங்கள் அனுப்பும் ஆர்டர்கள் இங்கே தெரியும்.",
+    "my.empty_shops": "இன்னும் கடை இல்லை. நீங்கள் பார்க்கும் கடைகள் இங்கே தெரியும்.",
+    "my.clear": "அழி",
+    "my.view": "பார்க்க",
+    "wa.sold_out_tell": "உங்கள் ஆர்டர் #{id} ({shop}): {item} இன்று தீர்ந்துவிட்டது. உங்களை அழைக்கிறோம் அல்லது ஆர்டரை மாற்றுகிறோம்.",
 }
 
 
@@ -2429,7 +2473,7 @@ _HINDI: dict[str, str] = {
     "wa.summary_top": "खूब बिका: {items}।",
     "wa.summary_top_item": "{label} {qty}{unit} ({amount})",
     "wa.summary_margin": "मुनाफा {margin}।",
-    "wa.order_ready": "{shop} से आपका ऑर्डर लेने के लिए तैयार है। कुल रु.{total}।",
+    "wa.order_ready": "आपका ऑर्डर #{id} ({shop}) तैयार है। कुल ₹{total}। लेते समय UPI या नकद दें। {url}",
     "wa.link_self": "मेरा MarketMate विक्रेता लिंक (संभालकर रखें): {url}",
     # --- WhatsApp-first extras (Task 54) ---
     "wa.send_prices": "आज के भाव WhatsApp पर भेजें",
@@ -2548,6 +2592,28 @@ _HINDI: dict[str, str] = {
     "gs.step3_t": "अपनी दुकान साझा करें",
     "gs.step3_d": "ग्राहकों को दुकान पेज या उसका QR भेजें।",
     "gs.step3_view": "दुकान पेज खोलें",
+    # --- Task 60: order loop ---
+    "order.name_label": "आपका नाम",
+    "order.phone_label": "फ़ोन (वैकल्पिक)",
+    "order.phone_note": "आपका नंबर सिर्फ़ इस दुकान को दिखेगा।",
+    "order.name_required": "कृपया दुकान को अपना नाम बताएँ (1–40 अक्षर)।",
+    "order.phone_invalid": "यह फ़ोन नंबर सही नहीं लग रहा। 10 अंकों का मोबाइल या +देश कोड अंक लिखें।",
+    "order.ready_banner": "लेने के लिए तैयार!",
+    "order.sold_out_note": "आज ख़त्म हो गया: दुकान आपको कॉल करेगी या आपका ऑर्डर बदलेगी।",
+    "alert.new_order": "नया ऑर्डर #{id} · {total}",
+    "alert.view": "देखें",
+    "alert.sound_on": "आवाज़ चालू",
+    "alert.sound_off": "आवाज़ बंद",
+    "bill.no_phone": "फ़ोन नहीं दिया",
+    "bill.tell_customer": "ग्राहक को बताएँ",
+    "my.title": "मेरे ऑर्डर और दुकानें",
+    "my.orders": "मेरे ऑर्डर",
+    "my.shops": "मेरी दुकानें",
+    "my.empty_orders": "अभी कोई ऑर्डर नहीं। आपके भेजे ऑर्डर यहाँ दिखेंगे।",
+    "my.empty_shops": "अभी कोई दुकान नहीं। आपकी देखी दुकानें यहाँ दिखेंगी।",
+    "my.clear": "साफ़ करें",
+    "my.view": "देखें",
+    "wa.sold_out_tell": "आपका ऑर्डर #{id} ({shop}): {item} आज ख़त्म हो गया। हम आपको कॉल करेंगे या ऑर्डर बदलेंगे।",
 }
 
 
@@ -3137,15 +3203,44 @@ def _shop_lang(shop: Any) -> str:
     return code if code in ("ta", "hi") else "en"
 
 
-def order_ready_whatsapp_text(shop: Any, total: Any) -> str:
-    """Short 'ready for pickup' message in the shop's language."""
+def order_ready_whatsapp_text(shop: Any, total: Any, *,
+                              order_id: Any = None,
+                              order_url: str = "") -> str:
+    """'Ready for pickup' message in the shop's language.
+
+    Names the order, the total and the pickup link so the customer can
+    tap straight back to their order.
+    """
     t = t_for(_shop_lang(shop))
     try:
         shop_name = shop["name"]
     except (KeyError, IndexError, TypeError):
         shop_name = getattr(shop, "name", "shop")
-    return t("wa.order_ready", shop=shop_name,
-             total=_fmt_number(total))
+    return t("wa.order_ready", id=order_id, shop=shop_name,
+             total=_fmt_number(total), url=order_url or "")
+
+
+def sold_out_whatsapp_text(shop: Any, order_id: Any, item: str) -> str:
+    """'Sold out today' message in the shop's language."""
+    t = t_for(_shop_lang(shop))
+    try:
+        shop_name = shop["name"]
+    except (KeyError, IndexError, TypeError):
+        shop_name = getattr(shop, "name", "shop")
+    return t("wa.sold_out_tell", id=order_id, shop=shop_name,
+             item=item or "")
+
+
+def wa_chat_number(phone: str | None) -> str:
+    """Digits for a wa.me chat link from a customer phone number.
+
+    A bare 10-digit Indian mobile gets the 91 country code so the
+    chat opens; international numbers keep their own digits.
+    """
+    digits = re.sub(r"\D", "", phone or "")
+    if re.fullmatch(r"[6-9]\d{9}", digits):
+        return "91" + digits
+    return digits
 
 
 def link_self_whatsapp_url(shop: Any, seller_url: str) -> str:
