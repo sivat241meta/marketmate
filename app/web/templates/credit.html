@@ -17,8 +17,8 @@
   <div class="cols" aria-hidden="true"><span>{{ t('t64.col_customer') }}</span><span>{{ t('t64.col_items') }}</span><span>{{ t('t64.col_status') }}</span><span>{{ t('t64.col_time') }}</span><span>{{ t('t64.col_total') }}</span></div>
 {% for row in entries %}
 <a class="it" href="/e/{{ token }}/credit/{{ row.key_quoted }}" data-search-row="{{ row.name }} {{ row.phone }}">
-  <span class="who"><span class="list-name">{{ row.name }}</span><span class="list-sub">{{ row.phone }} · {{ row.bill_count }} {{ t('credit.bills_col') }}</span></span>
-  <span class="desk-only">{{ row.bill_count }} {{ t('credit.bills_col') }}</span>
+  <span class="who"><span class="list-name">{{ row.name }}</span><span class="list-sub">{{ row.phone }} · {{ row.bill_count }} {{ t('credit.bill', count=row.bill_count) }}</span></span>
+  <span class="desk-only">{{ row.bill_count }} {{ t('credit.bill', count=row.bill_count) }}</span>
   <span>{{ ui.pill(t('credit.view'), "info") }}</span>
   <span class="desk-only">{{ t('credit.last_bill') }} {{ row.last_bill }} · {{ t('credit.oldest') }} {{ row.oldest }}</span>
   <span class="bill-total money">{{ row.balance }}</span>

@@ -181,16 +181,33 @@
       clearBtn.addEventListener("click", function () {
         store(ORDERS_KEY, []);
         store(SHOPS_KEY, []);
+        refreshBagBadge();
         render();
       });
     }
     render();
   }
 
+  function refreshBagBadge() {
+    if (typeof document === "undefined" || !document) {
+      return;
+    }
+    var badges = document.querySelectorAll("[data-bag-count]");
+    if (!badges || !badges.length) {
+      return;
+    }
+    var count = load(ORDERS_KEY).length;
+    Array.prototype.forEach.call(badges, function (badge) {
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.hidden = count === 0;
+    });
+  }
+
   function init() {
     if (typeof document === "undefined" || !document) {
       return;
     }
+    refreshBagBadge();
     var visit = document.querySelector("[data-shop-visit]");
     if (visit) {
       rememberShop(visit.getAttribute("data-slug"),

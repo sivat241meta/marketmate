@@ -29,67 +29,71 @@
 <section class="pub-sec" aria-label="{{ t('shell.todays_prices') }}">
   <div class="hp-sec-head">
     <div>
-      <h2 class="h2s">{{ t('shop.summary', n=rows | length, min=summary_min, max=summary_max) }}</h2>
+      <h2 class="h2s">{{ t('shop.summary', n=rows | length, count=rows | length, min=summary_min, max=summary_max) }}</h2>
     </div>
   </div>
   <div class="shop-tools">
     <div class="search tools-search" role="search">
       {{ ui.icon("tag") }}
-      <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length) }}</label>
-      <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
+      <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length, count=rows | length) }}</label>
+      <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length, count=rows | length) }}" autocomplete="off">
       <a class="mic" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t('shell.order_voice') }}">{{ ui.icon("mic") }}</a>
     </div>
     <div class="chip-row"><span class="chip on" aria-current="true">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
   </div>
   <p class="notice">{{ ui.obj("check", 20) }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
 
-  <div class="grid-products" data-shop-grid>
+  <div class="shop-layout">
+    <div class="grid-products" data-shop-grid>
 {% for row in rows %}
-    <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
-      <div class="pw">
-        <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
+      <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
+        <div class="pw">
+          <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
+          {% if not row.sold_out %}
+          <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
+          <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
+          {% endif %}
+        </div>
+        <div class="price"><span class="pp">{{ row.price | money(shop["currency"]) }}</span><span class="per">/{{ row.lines[0].per if row.lines else row.unit }}</span></div>
+        <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</div>
+        {% if row.variety %}<span class="var">{{ row.variety }}</span>{% endif %}
         {% if not row.sold_out %}
-        <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
-        <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
-        {% endif %}
-      </div>
-      <div class="price"><span class="pp">{{ row.price | money(shop["currency"]) }}</span><span class="per">/{{ row.lines[0].per if row.lines else row.unit }}</span></div>
-      <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</div>
-      {% if row.variety %}<span class="var">{{ row.variety }}</span>{% endif %}
-      {% if not row.sold_out %}
-      <div class="sizes" data-sizes>
-        {% if row.unit == "kg" %}
-        <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+        <div class="sizes" data-sizes>
+          {% if row.unit == "kg" %}
+          <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+          {% else %}
+          <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+          {% endif %}
+        </div>
         {% else %}
-        <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+        <div><span class="pill sm ghost">{{ t.sold_out }}</span></div>
         {% endif %}
-      </div>
-      {% else %}
-      <div><span class="pill sm ghost">{{ t.sold_out }}</span></div>
-      {% endif %}
-    </article>
+      </article>
 {% endfor %}
-  </div>
+    </div>
 
-  <div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
-    <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
-    <button type="button" class="pill bar" data-cart-submit data-cart-view>{{ ui.obj("basket", 20) }}{{ t('shop.view_order') }}</button>
-  </div>
-  <div class="alert alert-warn" data-cart-error hidden></div>
-  <div class="rcpt desk-only" data-cart-summary hidden>
-    <p class="kick">{{ t('shop.cart_title') }}</p>
-    <div data-cart-lines></div>
-    <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
-    <div class="field">
-      <label class="field-label" for="cart-name-desk">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
-      <input class="field-input" id="cart-name-desk" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name" required>
-    </div>
-    <div class="field">
-      <label class="field-label" for="cart-phone-desk">{{ t('order.phone_label') }}</label>
-      <input class="field-input" id="cart-phone-desk" type="tel" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="cart-phone-desk-hint">
-      <p class="field-hint" id="cart-phone-desk-hint">{{ t('order.phone_note') }}</p>
-    </div>
-    <div class="action-bar"><button type="button" class="pill cta big" data-cart-submit>{{ t('shop.send_order') }}</button></div>
+    <aside class="shop-side" aria-label="{{ t('shop.cart_title') }}">
+      <div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
+        <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
+        <button type="button" class="pill bar" data-cart-submit data-cart-view>{{ ui.obj("basket", 20) }}{{ t('shop.view_order') }}</button>
+      </div>
+      <div class="alert alert-warn" data-cart-error hidden></div>
+      <div class="rcpt desk-only" data-cart-summary hidden>
+        <p class="kick">{{ t('shop.cart_title') }}</p>
+        <div data-cart-lines></div>
+        <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
+        <div class="field">
+          <label class="field-label" for="cart-name-desk">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+          <input class="field-input" id="cart-name-desk" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="cart-phone-desk">{{ t('order.phone_label') }}</label>
+          <input class="field-input" id="cart-phone-desk" type="tel" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="cart-phone-desk-hint">
+          <p class="field-hint" id="cart-phone-desk-hint">{{ t('order.phone_note') }}</p>
+        </div>
+        <div class="action-bar"><button type="button" class="pill cta big" data-cart-submit>{{ t('shop.send_order') }}</button></div>
+      </div>
+    </aside>
   </div>
   <div class="sheet-wrap" data-cart-sheet hidden>
     <div class="sheet-backdrop" data-cart-sheet-close></div>

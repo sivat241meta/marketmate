@@ -148,7 +148,7 @@ def test_today_header_is_workspace_style(tmp_path):
     assert "Good morning" in html or "Good afternoon" in html \
         or "Good evening" in html
     assert "sold today" in html
-    assert "Live · 1 prices" in html
+    assert "Live · 1 price" in html
     assert '<h1 class="big">' not in html.split('id="step-morning"')[0]
 
 

@@ -286,13 +286,46 @@ body.pub .chip-row .chip.on {
   color: var(--purple-ink);
 }
 
-/* Cart bar: full-width primary on phones, safe-area aware. */
+/* Task 101: cart bar. Bottom-fixed on phones; on laptop (>=1000px)
+   the shop section splits into grid + sticky right column and the bar
+   docks there as an in-flow card that can never overlap the tiles. */
 body.pub .float.shop-float {
+  position: fixed;
+  left: 12px;
+  right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  margin: 0 auto;
+  max-width: 560px;
+  z-index: 8;
 }
 body.pub .float.shop-float .pill.bar { min-height: var(--tap); }
+@media (max-width: 999.98px) {
+  body.pub.is-shop .content:has([data-cart-bar]:not([hidden])) {
+    padding-bottom: 120px;
+  }
+}
 @media (max-width: 600px) {
   body.pub .float.shop-float { flex-wrap: wrap; }
+}
+@media (min-width: 1000px) {
+  body.pub .shop-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+  }
+  body.pub .shop-side {
+    position: sticky;
+    top: 76px;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+  body.pub .float.shop-float {
+    position: static;
+    margin: 0;
+    max-width: none;
+  }
 }
 
 /* ---- Market page: homepage search card, flat on the page ---- */
@@ -452,9 +485,21 @@ body.pub section.hero2 { overflow-wrap: break-word; }
   body.pub .my-card-actions .pill { min-height: var(--tap); }
   body.pub .shop-band-actions .pill.cta { flex: 1; justify-content: center; }
 }
-@media (max-width: 380px) {
-  /* Long translations (e.g. Tamil "Start selling") wrap instead of
-     overflowing the 320px viewport. */
-  body.pub .hp-header { flex-wrap: wrap; row-gap: 8px; }
+/* Task 101: phone header fit. At <=420px "Start selling" goes compact
+   (no FREE badge) and Bag goes icon-only with its count badge, so logo
+   + sell + bag + menu fit a 390px phone. The wrap backstop keeps long
+   translations inside viewports down to 320px. */
+body.pub .hp-bag .nbadge { margin-left: 0; }
+@media (max-width: 420px) {
+  body.pub .hp-header {
+    gap: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
   body.pub .hp-menu-btn { margin-left: auto; }
+  body.pub .hp-sell { font-size: 13px; padding: 8px 10px; }
+  body.pub .hp-sell .free-badge { display: none; }
+  body.pub .hp-bag { padding: 8px; }
+  body.pub .hp-bag .bag-label { display: none; }
 }

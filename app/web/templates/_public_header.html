@@ -39,7 +39,7 @@
   <span class="sp" aria-hidden="true"></span>
   <a class="pill cta sm hp-sell" href="/new">{{ t('hp.start_selling') }}<span class="free-badge">{{ t('hp.free') }}</span></a>
   {% if _ph_shop_known %}
-  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}{{ t('shell.bag') }}</a>
+  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}<span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
   {% endif %}
   <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
   {% if _ph_content_lang %}{{ _ph_links("lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
