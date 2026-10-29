@@ -2112,6 +2112,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             hours_raw = shop["hours_json"]
         except (KeyError, IndexError, TypeError):
             hours_raw = None
+        nearby = []
+        if (shop["area"] or "").strip():
+            candidates = conn.execute(
+                "SELECT * FROM shops WHERE listed = 1 AND area = ?"
+                " AND id != ? ORDER BY id LIMIT 12",
+                (shop["area"], shop["id"])).fetchall()
+            for other in candidates:
+                if len(nearby) >= 4:
+                    break
+                other_version = db.latest_version(
+                    conn, other["id"], published_only=True)
+                if other_version is None:
+                    continue
+                other_open = shop_open_status(other)
+                nearby.append({
+                    "name": other["name"], "slug": other["slug"],
+                    "area": other["area"] or "",
+                    "tile": first_grapheme(other["name"]),
+                    "n_prices": len(db.version_items(conn, other_version)),
+                    "open_state": other_open["state"],
+                    "open_time": other_open["time"],
+                })
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
             "share_url": share_url,
@@ -2124,6 +2146,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "open_state": open_info["state"],
             "open_time": open_info["time"],
             "has_hours": has_hours(hours_raw),
+            "nearby": nearby,
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
 
     @app.get("/s/{slug}/qr.png")

@@ -1217,6 +1217,20 @@ _ENGLISH: dict[str, str] = {
     "hp.no_match": "No areas match that search.",
     "hp.meta_calls": "Sellers can review every AI call on their Meta AI calls page (/e/<token>/ai).",
     "hp.close": "Close",
+    # --- Task 90: v10 customer pages ---
+    "pub.more_shops": "More shops near you",
+    "pub.more_shops_sub": "Other shops in {area} with today's prices",
+    "pub.market_sub": "Today's prices from shops near you.",
+    "pub.my_sub": "Orders and shops on this phone.",
+    "pub.flow_list": "Your list",
+    "pub.flow_name": "Your name",
+    "pub.flow_send": "Send",
+    "pub.max_spend": "Max spend",
+    "pub.no_limit": "No limit",
+    "order.next_new": "Next: the shop accepts your order.",
+    "order.next_packing": "Next: the shop packs your items.",
+    "order.next_ready": "Next: collect it from the shop.",
+    "order.next_collected": "Done. Thank you for shopping!",
 }
 
 
@@ -2415,6 +2429,20 @@ _TAMIL: dict[str, str] = {
     "hp.no_match": "தேடலுக்கு எந்தப் பகுதியும் பொருந்தவில்லை.",
     "hp.meta_calls": "ஒவ்வொரு AI அழைப்பையும் விற்பனையாளர்கள் தங்கள் Meta AI அழைப்புப் பக்கத்தில் (/e/<token>/ai) பார்க்கலாம்.",
     "hp.close": "மூடுக",
+    # --- Task 90: v10 customer pages ---
+    "pub.more_shops": "உங்கள் அருகில் மேலும் கடைகள்",
+    "pub.more_shops_sub": "இன்றைய விலைகளுடன் {area} பகுதியில் உள்ள மற்ற கடைகள்",
+    "pub.market_sub": "உங்கள் அருகில் உள்ள கடைகளின் இன்றைய விலைகள்.",
+    "pub.my_sub": "இந்த போனில் உள்ள ஆர்டர்கள், கடைகள்.",
+    "pub.flow_list": "உங்கள் பட்டியல்",
+    "pub.flow_name": "உங்கள் பெயர்",
+    "pub.flow_send": "அனுப்பு",
+    "pub.max_spend": "அதிகபட்ச செலவு",
+    "pub.no_limit": "வரம்பு இல்லை",
+    "order.next_new": "அடுத்து: கடை உங்கள் ஆர்டரை ஏற்கும்.",
+    "order.next_packing": "அடுத்து: கடை உங்கள் பொருட்களைக் கட்டும்.",
+    "order.next_ready": "அடுத்து: கடையில் சென்று வாங்குங்கள்.",
+    "order.next_collected": "முடிந்தது. வாங்கியதற்கு நன்றி!",
 }
 
 
@@ -3613,6 +3641,20 @@ _HINDI: dict[str, str] = {
     "hp.no_match": "खोज से कोई क्षेत्र नहीं मिला।",
     "hp.meta_calls": "विक्रेता हर AI कॉल अपने Meta AI कॉल पेज (/e/<token>/ai) पर देख सकते हैं।",
     "hp.close": "बंद करें",
+    # --- Task 90: v10 customer pages ---
+    "pub.more_shops": "आपके पास और दुकानें",
+    "pub.more_shops_sub": "आज के भाव के साथ {area} में अन्य दुकानें",
+    "pub.market_sub": "आपके पास की दुकानों के आज के भाव।",
+    "pub.my_sub": "इस फोन पर ऑर्डर और दुकानें।",
+    "pub.flow_list": "आपकी सूची",
+    "pub.flow_name": "आपका नाम",
+    "pub.flow_send": "भेजें",
+    "pub.max_spend": "अधिकतम खर्च",
+    "pub.no_limit": "कोई सीमा नहीं",
+    "order.next_new": "आगे: दुकान आपका ऑर्डर स्वीकार करेगी।",
+    "order.next_packing": "आगे: दुकान आपका सामान पैक करेगी।",
+    "order.next_ready": "आगे: दुकान से ले लें।",
+    "order.next_collected": "हो गया। खरीदारी के लिए धन्यवाद!",
 }
 
 

@@ -1,39 +1,57 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('order.kick', id=order_id) }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<p class="kick">{{ t('order.kick', id=order_id) }}</p>
+{% include "_public_header.html" %}
 {% set ns = namespace(label="") %}
 {% for step in order_steps %}{% if step.current %}{% set ns.label = step.label %}{% endif %}{% endfor %}
-<h1 class="big">{% if order_status == "cancelled" %}{{ t["order.step_cancelled"] }}{% else %}<em data-status-heading>{{ ns.label }}.</em>{% endif %}</h1>
-<p class="lead">{{ subtitle }}</p>
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ t('order.kick', id=order_id) }}</p>
+    <h1>{% if order_status == "cancelled" %}{{ t["order.step_cancelled"] }}{% else %}<em data-status-heading>{{ ns.label }}.</em>{% endif %}</h1>
+    <p class="lead">{{ subtitle }}</p>
+  </div>
+</div>
+
 <div data-order-record data-token="{{ token }}" data-shop="{{ shop["name"] }}" data-number="{{ order_id }}" data-total="{{ total_fmt }}" data-date="{{ order_date }}" hidden></div>
 <div data-order-poll data-status-url="{{ status_url }}" hidden></div>
 <div class="ready-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
 <div class="alert alert-warn" data-soldout-note{% if not sold_out_any %} hidden{% endif %}>{{ t('order.sold_out_note') }}</div>
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
 {% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">Not understood: {{ not_understood }} – add it from the list</div>{% endif %}
 
 {% if order_status == "cancelled" %}
 <div class="alert alert-warn">{{ t["order.step_cancelled"] }}</div>
 {% else %}
-<div class="rcpt">
-  <div class="tline" aria-label="{{ t["order.status_label"] }}" data-timeline>
-    <div class="st d"><i>{{ ui.icon("check") }}</i>{{ t('order.step_sent') }}</div>
-    {% for step in order_steps %}
-    <div class="st{% if step.current %} n{% elif step.done %} d{% endif %}" data-step-key="{{ step.key }}">
-      <span class="now" data-now{% if not step.current %} hidden{% endif %}>{{ t('order.right_now') }}</span>
-      <i>{% if step.done or step.current %}{{ ui.icon("check") }}{% endif %}</i>{{ step.label }}
+<section class="pub-sec" aria-label="{{ t["order.status_label"] }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t["order.status_label"] }}</h2>
     </div>
-    {% endfor %}
   </div>
-</div>
+  <div class="rcpt">
+    <div class="tline" aria-label="{{ t["order.status_label"] }}" data-timeline>
+      <div class="st d"><i>{{ ui.icon("check") }}</i>{{ t('order.step_sent') }}</div>
+      {% for step in order_steps %}
+      <div class="st{% if step.current %} n{% elif step.done %} d{% endif %}" data-step-key="{{ step.key }}">
+        <span class="now" data-now{% if not step.current %} hidden{% endif %}>{{ t('order.right_now') }}</span>
+        <i>{% if step.done or step.current %}{{ ui.icon("check") }}{% endif %}</i>{{ step.label }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% if order_status == "new" %}<p class="next-step">{{ ui.obj("store", 24) }}<span>{{ t('order.next_new') }}</span></p>
+  {% elif order_status == "packing" %}<p class="next-step">{{ ui.obj("bags", 24) }}<span>{{ t('order.next_packing') }}</span></p>
+  {% elif order_status == "ready" %}<p class="next-step">{{ ui.obj("basket", 24) }}<span>{{ t('order.next_ready') }}</span></p>
+  {% elif order_status == "collected" %}<p class="next-step">{{ ui.obj("check", 24) }}<span>{{ t('order.next_collected') }}</span></p>{% endif %}
+</section>
 {% endif %}
 
-<section class="rcpt quote-total" aria-label="{{ t.total }}">
+<section class="rcpt quote-total pub-sec" aria-label="{{ t.total }}">
   <p class="kick">{{ t.your_total }}</p>
-  <div class="rt"><span class="muted">{{ priced_count }} {{ t.priced }}{% if unpriced_count %} · {{ unpriced_count }} {{ t.not_priced }}{% endif %}</span><b class="money" data-total>{{ total | money(shop["currency"]) }}</b></div>
+  <div class="total-big"><span class="muted">{{ priced_count }} {{ t.priced }}{% if unpriced_count %} · {{ unpriced_count }} {{ t.not_priced }}{% endif %}</span><b class="money" data-total>{{ total | money(shop["currency"]) }}</b></div>
 </section>
 
 {% if lines %}
@@ -79,7 +97,7 @@
     </div>
     {% endfor %}
     <div class="rt"><span class="muted">{{ t('order.pay_at_shop') }}</span><b class="money" data-total>{{ total | money(shop["currency"]) }}</b></div>
-    <p><button class="pill ghost" type="submit">{{ t.update_quote }}</button></p>
+    <div class="action-bar"><button class="pill ghost" type="submit">{{ t.update_quote }}</button></div>
   </div>
 </form>
 {% else %}
@@ -87,7 +105,7 @@
 {% endif %}
 
 <p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('order.notice', time=prices_time or rel) }}</span></p>
-<div class="hero-cta">
+<div class="action-bar">
   <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t('order.call_shop') }}</a>
   <a class="pill cta big" href="{{ whatsapp_url }}">{{ ui.obj("chat", 20) }}{{ t.send_whatsapp }}</a>
 </div>
@@ -98,4 +116,5 @@
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('order-status.js') if static_url is defined else '/static/order-status.js' }}"></script>
 <script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

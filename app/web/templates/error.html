@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ title | safe }} — MarketMate{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<div class="empty-state">
+{% include "_public_header.html" %}
+<section class="card hp-empty pub-sec empty-state" aria-label="{{ title | safe }}">
   {{ ui.obj("search", 56) }}
   <h1>{{ title | safe }}</h1>
-  <p>{{ message | safe }}</p>
-  <p><a class="btn btn-secondary" href="/market">{{ t('error.try_samples') }}</a></p>
+  <p class="muted">{{ message | safe }}</p>
+  <p><a class="pill cta" href="/market">{{ t('error.try_samples') }}</a></p>
   <p><a href="/">{{ t('error.back_home') }}</a></p>
-</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

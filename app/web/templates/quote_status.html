@@ -1,50 +1,67 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Working on your quote — {{ shop["name"] }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<p class="kick">{{ shop["name"] }}</p>
+{% include "_public_header.html" %}
 {% if session["status"] == "failed" %}
-<h1 class="big">Something went wrong.</h1>
-{{ ui.alert(session["message"], "warn") }}
-<div class="rcpt">
-<ol class="vstepper">
-  {% for step in progress["steps"] %}
-  <li class="vstep is-{{ step["state"] }}">
-    <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
-    <span class="vmain"><span class="vlabel">{{ step["label"] }}</span></span>
-  </li>
-  {% endfor %}
-</ol>
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ shop["name"] }}</p>
+    <h1>Something went wrong.</h1>
+  </div>
 </div>
-<p><a class="pill dark big" href="/s/{{ shop["slug"] }}/quote">Try again</a></p>
-<p><a href="/s/{{ shop["slug"] }}">Back to {{ shop["name"] }}</a></p>
+<section class="card hp-empty pub-sec">
+  {{ ui.obj("search", 56) }}
+  {{ ui.alert(session["message"], "warn") }}
+  <div class="rcpt">
+  <ol class="vstepper">
+    {% for step in progress["steps"] %}
+    <li class="vstep is-{{ step["state"] }}">
+      <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
+      <span class="vmain"><span class="vlabel">{{ step["label"] }}</span></span>
+    </li>
+    {% endfor %}
+  </ol>
+  </div>
+  <p><a class="pill cta big" href="/s/{{ shop["slug"] }}/quote">Try again</a></p>
+  <p><a href="/s/{{ shop["slug"] }}">Back to {{ shop["name"] }}</a></p>
+</section>
 {% else %}
-<h1 class="big">Working on <em>your quote…</em></h1>
-<p class="muted" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
-<div class="rcpt">
-<ol class="vstepper" data-stepper data-status-url="/s/{{ shop["slug"] }}/quote/{{ session["id"] }}/status">
-  {% for step in progress["steps"] %}
-  <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
-    <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
-    <span class="vmain">
-      <span class="vlabel">{{ step["label"] }}</span>
-      {% if step["state"] == "active" %}
-      {% if progress["detail"] %}<span class="vdetail" data-detail>{{ progress["detail"] }}</span>{% endif %}
-      <span class="vfriendly" data-friendly>{{ friendly }}</span>
-      {% endif %}
-    </span>
-  </li>
-  {% endfor %}
-</ol>
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ shop["name"] }}</p>
+    <h1>Working on <em>your quote…</em></h1>
+    <p class="lead" data-step-count>Step {{ progress["step"] }} of {{ progress["steps"] | length }}</p>
+  </div>
 </div>
-<p class="muted" data-elapsed>Elapsed: {{ progress["elapsed_s"] | round | int }} s</p>
-<noscript>
-<meta http-equiv="refresh" content="3">
-<p class="muted">Working on it… this page refreshes every 3 s.</p>
-</noscript>
+<section class="form-card pub-sec" aria-label="Working on your quote">
+  <div class="rcpt">
+  <ol class="vstepper" data-stepper data-status-url="/s/{{ shop["slug"] }}/quote/{{ session["id"] }}/status">
+    {% for step in progress["steps"] %}
+    <li class="vstep is-{{ step["state"] }}" data-step="{{ step["key"] }}">
+      <span class="vdot" aria-hidden="true">{% if step["state"] == "done" %}✓{% endif %}</span>
+      <span class="vmain">
+        <span class="vlabel">{{ step["label"] }}</span>
+        {% if step["state"] == "active" %}
+        {% if progress["detail"] %}<span class="vdetail" data-detail>{{ progress["detail"] }}</span>{% endif %}
+        <span class="vfriendly" data-friendly>{{ friendly }}</span>
+        {% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ol>
+  </div>
+  <p class="muted" data-elapsed>Elapsed: {{ progress["elapsed_s"] | round | int }} s</p>
+  <noscript>
+  <meta http-equiv="refresh" content="3">
+  <p class="muted">Working on it… this page refreshes every 3 s.</p>
+  </noscript>
+</section>
 {% endif %}
 {% endblock %}
 {% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% if session["status"] not in ("failed", "review", "approved") %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {

@@ -1,127 +1,145 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t.get_quote }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<div class="sheet-wrap">
-  <a class="sheet-backdrop" href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t.back_to }} {{ shop["name"] }}"></a>
-  <div class="sheet" role="dialog" aria-label="{{ t.get_quote }}">
-    <div class="grab" aria-hidden="true"></div>
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
     <p class="kick">{{ shop["name"] }}</p>
-    <h2 class="h2s">{{ t('shell.order_voice') }}</h2>
+    <h1>{{ t('shell.order_voice') }}</h1>
     <p class="lead">{{ shop["area"] }}</p>
-    {% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
-    {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
-
-    <div class="segmented" data-methods role="group" aria-label="{{ t.get_quote }}">
-      <button type="button" data-method="speak" aria-pressed="true">{{ ui.icon("mic") }}Speak</button>
-      <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("tag") }}Type</button>
-      <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
-    </div>
-
-    <section class="method-panel" data-panel="speak" data-needs-internet>
-      <h3>{{ ui.icon("mic") }} {{ t.speak_list }}</h3>
-      <p class="muted" data-needs-internet-hint hidden>needs internet</p>
-      <p class="muted">{{ t.speak_help }}</p>
-      <div class="field">
-        <label for="quote-name-voice">{{ t('order.name_label') }}</label>
-        <input id="quote-name-voice" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
-      </div>
-      <div class="field">
-        <label for="quote-phone-voice">{{ t('order.phone_label') }}</label>
-        <input id="quote-phone-voice" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-        <span class="help">{{ t('order.phone_note') }}</span>
-      </div>
-      <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-need-name="{{ t('order.name_required') }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
-        <div class="live-captions" aria-live="polite">
-          <p class="live-last" data-live-order-last></p>
-          <p class="live-partial" data-live-order-partial></p>
-        </div>
-        <div class="live-controls">
-          <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
-          <p class="muted live-hint" data-live-order-hint>{{ t.tap_speak }}</p>
-        </div>
-        <div class="alert alert-warn" data-live-order-error hidden></div>
-        <div data-live-order-lines hidden>
-          <h3>{{ t.total }}</h3>
-          <div data-live-order-list></div>
-          <p>Total: <strong class="money" data-live-order-total></strong></p>
-        </div>
-        <p><button class="pill dark big" type="button" data-live-order-done hidden>Done</button></p>
-      </div>
-      <details class="card">
-        <summary>{{ t.upload_recording }}</summary>
-        <div class="record-actions">
-          <div class="mic-wrap">
-            <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" data-rec-prompt="Recording… say your shopping list." aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
-            <span class="mic-label">{{ t.speak }}</span>
-          </div>
-          <button class="pill ghost" type="button" id="rec-stop" disabled>{{ t.stop }}</button>
-        </div>
-        <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
-        <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
-          <div class="field">
-            <label for="quote-name-upload">{{ t('order.name_label') }}</label>
-            <input id="quote-name-upload" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
-          </div>
-          <div class="field">
-            <label for="quote-phone-upload">{{ t('order.phone_label') }}</label>
-            <input id="quote-phone-upload" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-            <span class="help">{{ t('order.phone_note') }}</span>
-          </div>
-          <div class="field">
-            <label class="drop-zone" for="quote-audio">{{ ui.icon("mic") }}<span>{{ t.upload_recording }}</span><strong>Choose recording</strong>
-              <input id="quote-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-            </label>
-          </div>
-          <button class="pill ghost" type="submit">{{ t.upload_and_quote }}</button>
-        </form>
-      </details>
-      <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
-    </section>
-
-    <section class="method-panel" data-panel="type">
-      <h3>{{ ui.icon("tag") }} {{ t.type_list }}</h3>
-      <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
-        <div class="field">
-          <label for="quote-items">{{ t.what_need }}</label>
-          <input id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required>
-        </div>
-        <div class="field">
-          <label for="quote-name-type">{{ t('order.name_label') }}</label>
-          <input id="quote-name-type" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="quote-phone-type">{{ t('order.phone_label') }}</label>
-          <input id="quote-phone-type" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-          <span class="help">{{ t('order.phone_note') }}</span>
-        </div>
-        <button class="pill dark big" type="submit">{{ t.get_quote_short }}</button>
-      </form>
-    </section>
-
-    <section class="method-panel" data-panel="photo">
-      <h3>{{ ui.icon("photo") }} {{ t.photo_list }}</h3>
-      <p class="muted">{{ t.photo_help }}</p>
-      <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
-        <div class="field">
-          <label for="quote-name-photo">{{ t('order.name_label') }}</label>
-          <input id="quote-name-photo" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="quote-phone-photo">{{ t('order.phone_label') }}</label>
-          <input id="quote-phone-photo" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-          <span class="help">{{ t('order.phone_note') }}</span>
-        </div>
-        <div class="field">
-          <label class="drop-zone" for="quote-photo">{{ ui.icon("photo") }}<span>{{ t.choose_photo }}</span><strong>Choose photo</strong>
-            <input id="quote-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
-          </label>
-        </div>
-        <button class="pill ghost" type="submit">{{ t.upload_photo_quote }}</button>
-      </form>
-    </section>
+    <ol class="flow-steps" aria-label="{{ t('shell.order_voice') }}">
+      <li class="done"><span class="n" aria-hidden="true">1</span>{{ t('pub.flow_list') }}</li>
+      <li><span class="n" aria-hidden="true">2</span>{{ t('pub.flow_name') }}</li>
+      <li><span class="n" aria-hidden="true">3</span>{{ t('pub.flow_send') }}</li>
+    </ol>
   </div>
 </div>
+
+{% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
+{% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
+
+<div class="pub-sec">
+  <div class="segmented" data-methods role="group" aria-label="{{ t.get_quote }}">
+    <button type="button" data-method="speak" aria-pressed="true">{{ ui.icon("mic") }}Speak</button>
+    <button type="button" data-method="type" aria-pressed="false">{{ ui.icon("tag") }}Type</button>
+    <button type="button" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}Photo</button>
+  </div>
+
+  <section class="method-panel form-card" data-panel="speak" data-needs-internet>
+    <h2 class="h2s">{{ ui.icon("mic") }} {{ t.speak_list }}</h2>
+    <p class="muted" data-needs-internet-hint hidden>needs internet</p>
+    <p class="muted">{{ t.speak_help }}</p>
+    <div class="field">
+      <label class="field-label" for="quote-name-voice">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+      <input class="field-input" id="quote-name-voice" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true" aria-describedby="quote-name-voice-err"{% endif %}>
+      {% if error and error_field == "customer_name" %}<p class="field-error" id="quote-name-voice-err">{{ error }}</p>{% endif %}
+    </div>
+    <div class="field">
+      <label class="field-label" for="quote-phone-voice">{{ t('order.phone_label') }}</label>
+      <input class="field-input" id="quote-phone-voice" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="quote-phone-voice-hint"{% if error and error_field == "customer_phone" %} aria-invalid="true"{% endif %}>
+      <p class="field-hint" id="quote-phone-voice-hint">{{ t('order.phone_note') }}</p>
+      {% if error and error_field == "customer_phone" %}<p class="field-error">{{ error }}</p>{% endif %}
+    </div>
+    <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-need-name="{{ t('order.name_required') }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
+      <div class="live-captions" aria-live="polite">
+        <p class="live-last" data-live-order-last></p>
+        <p class="live-partial" data-live-order-partial></p>
+      </div>
+      <div class="live-controls">
+        <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
+        <p class="muted live-hint" data-live-order-hint>{{ t.tap_speak }}</p>
+      </div>
+      <div class="alert alert-warn" data-live-order-error hidden></div>
+      <div data-live-order-lines hidden>
+        <h3>{{ t.total }}</h3>
+        <div data-live-order-list></div>
+        <p>Total: <strong class="money" data-live-order-total></strong></p>
+      </div>
+      <div class="action-bar"><button class="pill cta big" type="button" data-live-order-done hidden>Done</button></div>
+    </div>
+    <details class="more">
+      <summary>{{ t.upload_recording }}</summary>
+      <div class="record-actions">
+        <div class="mic-wrap">
+          <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" data-rec-prompt="Recording… say your shopping list." aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
+          <span class="mic-label">{{ t.speak }}</span>
+        </div>
+        <button class="pill ghost" type="button" id="rec-stop" disabled>{{ t.stop }}</button>
+      </div>
+      <p class="muted" id="rec-status">{{ t.tap_speak }}</p>
+      <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
+        <div class="field">
+          <label class="field-label" for="quote-name-upload">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+          <input class="field-input" id="quote-name-upload" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true"{% endif %}>
+          {% if error and error_field == "customer_name" %}<p class="field-error">{{ error }}</p>{% endif %}
+        </div>
+        <div class="field">
+          <label class="field-label" for="quote-phone-upload">{{ t('order.phone_label') }}</label>
+          <input class="field-input" id="quote-phone-upload" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="quote-phone-upload-hint"{% if error and error_field == "customer_phone" %} aria-invalid="true"{% endif %}>
+          <p class="field-hint" id="quote-phone-upload-hint">{{ t('order.phone_note') }}</p>
+          {% if error and error_field == "customer_phone" %}<p class="field-error">{{ error }}</p>{% endif %}
+        </div>
+        <div class="field">
+          <label class="drop-zone" for="quote-audio">{{ ui.icon("mic") }}<span>{{ t.upload_recording }}</span><strong>Choose recording</strong>
+            <input id="quote-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+          </label>
+        </div>
+        <div class="action-bar"><button class="pill cta" type="submit">{{ t.upload_and_quote }}</button></div>
+      </form>
+    </details>
+    <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+  </section>
+
+  <section class="method-panel form-card" data-panel="type">
+    <h2 class="h2s">{{ ui.icon("tag") }} {{ t.type_list }}</h2>
+    <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
+      <div class="field">
+        <label class="field-label" for="quote-items">{{ t.what_need }} <span class="req" aria-hidden="true">*</span></label>
+        <input class="field-input" id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required autocomplete="off"{% if error and error_field == "items" %} aria-invalid="true" aria-describedby="quote-items-err"{% endif %}>
+        {% if error and error_field == "items" %}<p class="field-error" id="quote-items-err">{{ error }}</p>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label" for="quote-name-type">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <input class="field-input" id="quote-name-type" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true"{% endif %}>
+        {% if error and error_field == "customer_name" %}<p class="field-error">{{ error }}</p>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label" for="quote-phone-type">{{ t('order.phone_label') }}</label>
+        <input class="field-input" id="quote-phone-type" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="quote-phone-type-hint"{% if error and error_field == "customer_phone" %} aria-invalid="true"{% endif %}>
+        <p class="field-hint" id="quote-phone-type-hint">{{ t('order.phone_note') }}</p>
+        {% if error and error_field == "customer_phone" %}<p class="field-error">{{ error }}</p>{% endif %}
+      </div>
+      <div class="action-bar"><button class="pill cta big" type="submit">{{ t.get_quote_short }}</button></div>
+    </form>
+  </section>
+
+  <section class="method-panel form-card" data-panel="photo">
+    <h2 class="h2s">{{ ui.icon("photo") }} {{ t.photo_list }}</h2>
+    <p class="muted">{{ t.photo_help }}</p>
+    <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
+      <div class="field">
+        <label class="field-label" for="quote-name-photo">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <input class="field-input" id="quote-name-photo" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true"{% endif %}>
+        {% if error and error_field == "customer_name" %}<p class="field-error">{{ error }}</p>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label" for="quote-phone-photo">{{ t('order.phone_label') }}</label>
+        <input class="field-input" id="quote-phone-photo" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="quote-phone-photo-hint"{% if error and error_field == "customer_phone" %} aria-invalid="true"{% endif %}>
+        <p class="field-hint" id="quote-phone-photo-hint">{{ t('order.phone_note') }}</p>
+        {% if error and error_field == "customer_phone" %}<p class="field-error">{{ error }}</p>{% endif %}
+      </div>
+      <div class="field">
+        <label class="drop-zone" for="quote-photo">{{ ui.icon("photo") }}<span>{{ t.choose_photo }}</span><strong>Choose photo</strong>
+          <input id="quote-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
+        </label>
+      </div>
+      <div class="action-bar"><button class="pill cta" type="submit">{{ t.upload_photo_quote }}</button></div>
+    </form>
+  </section>
+</div>
+<p><a href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.back_to }} {{ shop["name"] }}</a></p>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
@@ -129,6 +147,7 @@
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
 <script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const list = document.querySelector("[data-live-order-list]");

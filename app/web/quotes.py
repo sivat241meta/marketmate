@@ -392,12 +392,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         return shop_open_status(shop)
 
-    def _start_context(request, shop, error=None, lang="en", status=200):
+    def _start_context(request, shop, error=None, lang="en", status=200,
+                       error_field=None):
         language = _customer_lang(shop, lang)
         open_info = _open_info(shop)
         return templates.TemplateResponse(
             request, "quote_start.html",
-            {"shop": shop, "error": error, "lang": language,
+            {"shop": shop, "error": error, "error_field": error_field,
+             "lang": language,
              "t": get_strings(language),
              "open_state": open_info["state"],
              "open_time": open_info["time"],
@@ -435,11 +437,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if not customer_name_ok(name):
             return _start_context(request, shop,
                                   strings("order.name_required"),
-                                  lang=language, status=400)
+                                  lang=language, status=400,
+                                  error_field="customer_name")
         if not customer_phone_ok(phone):
             return _start_context(request, shop,
                                   strings("order.phone_invalid"),
-                                  lang=language, status=400)
+                                  lang=language, status=400,
+                                  error_field="customer_phone")
         contact = {"customer_name": name,
                    "customer_phone": phone or None}
         if has_audio:
@@ -451,7 +455,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         text = str(items or "").strip()
         if not text:
             return _start_context(request, shop, "Tell us what you need first.",
-                                  lang=language, status=400)
+                                  lang=language, status=400,
+                                  error_field="items")
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
         ledger.bind(shop_id=shop["id"])
@@ -472,11 +477,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except Exception:  # noqa: BLE001 - typed parse failure is a form error
             return _start_context(request, shop,
                                   "We could not understand that list.",
-                                  lang=language, status=400)
+                                  lang=language, status=400,
+                                  error_field="items")
         if not wanted:
             return _start_context(request, shop,
                                   "We could not understand that list.",
-                                  lang=language, status=400)
+                                  lang=language, status=400,
+                                  error_field="items")
         quote = build_quote(conn, shop["id"], wanted)
         token = db.create_quote(conn, shop_id=shop["id"], quote=quote,
                                 not_understood=not_understood,

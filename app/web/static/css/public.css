@@ -1,0 +1,410 @@
+/* Task 90: v10 customer/public pages. Scoped under body.pub so the
+   homepage and seller pages never change. Tokens, fonts and base
+   components (.card, .pill, .chip, .kick, homepage hp-* styles) come
+   from app.css; this file only composes them for public pages. */
+
+/* ---- Shared public header: base .hdr stays hidden, partial shows ---- */
+body.pub > .hdr { display: none; }
+body.pub .hp-header,
+body.pub .hp-sheet,
+body.pub .ph-shop-strip { overflow-wrap: break-word; }
+body.pub .hp-header .logo,
+body.pub .hp-header .hp-sell,
+body.pub .hp-header .hp-menu-btn { flex: none; }
+body.pub .hp-header { min-width: 0; }
+
+/* Shop strip under the shared header on shop pages. */
+.ph-shop-strip {
+  background: #fff;
+  border-bottom: 1px solid var(--line-2);
+  margin: 0 calc(50% - 50vw);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ph-shop-strip .sp { flex: 1; }
+.ph-shop-name {
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* ---- Page head: eyebrow + title + subtitle + actions ---- */
+.ph-head {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+}
+.ph-head h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.ph-head .lead { margin: 4px 0 0; }
+.ph-head-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+@media (min-width: 900px) {
+  .ph-head { grid-template-columns: 1fr auto; align-items: start; }
+  .ph-head h1 { font-size: 32px; }
+  .ph-head-actions { justify-content: flex-end; }
+}
+
+/* ---- Section rhythm, like the homepage ---- */
+body.pub .pub-sec { margin-top: 48px; min-width: 0; }
+body.pub .pub-sec:first-child { margin-top: 20px; }
+@media (max-width: 600px) {
+  body.pub .pub-sec { margin-top: 40px; }
+}
+
+/* ---- Shared form classes (Task 89 macro names, Task 90 page CSS) ---- */
+body.pub .form-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin: 16px 0;
+  min-width: 0;
+}
+body.pub .form-card > h2,
+body.pub .form-card > h3 { margin-top: 0; }
+body.pub .field { margin: 0 0 16px; min-width: 0; }
+body.pub .field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+body.pub .field-label .req { color: var(--red); }
+body.pub .field-input,
+body.pub .field-select,
+body.pub .field-textarea {
+  width: 100%;
+  min-height: var(--tap);
+  border: 1.5px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+  background: #fff;
+  color: var(--ink);
+}
+body.pub .field-textarea { min-height: 96px; resize: vertical; }
+body.pub .field-hint {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+body.pub .field-error {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--red);
+  margin: 6px 0 0;
+}
+body.pub .field-input[aria-invalid="true"],
+body.pub .field-select[aria-invalid="true"],
+body.pub .field-textarea[aria-invalid="true"] {
+  border-color: var(--red);
+}
+body.pub .action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+body.pub details.more {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+body.pub details.more > summary {
+  font-weight: 700;
+  cursor: pointer;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
+body.pub details.more .form-card { box-shadow: none; margin: 12px 0 4px; }
+
+/* ---- Shop page band (keeps the hero2 class for the phone-order test) ---- */
+body.pub .content > section.hero2 {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin-top: 20px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+body.pub section.hero2 h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+body.pub section.hero2 .area-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 0;
+}
+body.pub section.hero2 .open-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+body.pub section.hero2 .said-line { margin: 0; }
+body.pub .shop-band-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+body.pub .shop-band-actions .pill { min-height: var(--tap); }
+@media (min-width: 900px) {
+  body.pub .content > section.hero2 { grid-template-columns: 1fr auto; align-items: center; }
+  body.pub section.hero2 h1 { font-size: 32px; }
+  body.pub .shop-band-copy { min-width: 0; }
+  body.pub .shop-band-actions { flex-direction: column; align-items: stretch; margin-top: 0; }
+  body.pub .shop-band-actions .pill { justify-content: center; }
+}
+/* The v10 shop page nests its tools in sections, so the old phone flex
+   reordering no longer applies. */
+@media (max-width: 600px) {
+  body.pub .content { display: block; }
+}
+
+/* Sticky search + chips under the header. */
+.shop-tools {
+  position: sticky;
+  top: 72px;
+  z-index: 5;
+  background: var(--bg);
+  padding: 10px 0;
+  margin-top: 20px;
+}
+body.pub .search.tools-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  border-radius: 12px;
+  padding: 6px 6px 6px 12px;
+  margin-bottom: 0;
+}
+.tools-search .icon { flex: none; color: var(--muted); }
+.tools-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 16px;
+  min-height: 40px;
+  background: transparent;
+  color: var(--ink);
+}
+.tools-search .mic {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  color: var(--purple-ink);
+}
+body.pub .chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 2px 4px;
+  margin: 0;
+}
+body.pub .chip-row .chip { flex: none; text-decoration: none; }
+body.pub .chip-row .chip.on {
+  background: var(--purple-soft);
+  border-color: var(--purple-ink);
+  color: var(--purple-ink);
+}
+
+/* Cart bar: full-width primary on phones, safe-area aware. */
+body.pub .float.shop-float {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+body.pub .float.shop-float .pill.bar { min-height: var(--tap); }
+@media (max-width: 600px) {
+  body.pub .float.shop-float { flex-wrap: wrap; }
+}
+
+/* ---- Market page: homepage search card, flat on the page ---- */
+body.pub form.hp-search { margin: 20px 0 0; }
+body.pub .hp-search .hp-go { min-height: var(--tap); }
+body.pub .filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 2px 4px;
+  align-items: center;
+}
+body.pub .filter-row .chip,
+body.pub .filter-row .seg { flex: none; }
+body.pub .result-card { min-width: 0; }
+body.pub .shop-row { min-width: 0; }
+body.pub .rec-row { display: flex; gap: 10px; align-items: center; }
+
+/* ---- Order flow ---- */
+.flow-steps {
+  list-style: none;
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 0;
+  flex-wrap: wrap;
+}
+.flow-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.flow-steps li + li::before { content: "→"; color: var(--line-2); }
+.flow-steps .n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--purple-soft);
+  color: var(--purple-ink);
+  font-size: 13px;
+  flex: none;
+}
+.flow-steps li.done { color: var(--ink); }
+.flow-steps li.done .n { background: var(--purple-ink); color: #fff; }
+
+/* Timeline: same hooks, roomier nodes. Horizontal on laptop, a clear
+   vertical stepper on phones where five labels never fit one row. */
+body.pub .tline { padding-top: 26px; }
+body.pub .tline .st { width: auto; flex: 1; min-width: 0; font-size: 12px; }
+body.pub .tline .st i { width: 30px; height: 30px; }
+body.pub .hp-sec-head > div { flex: 1; min-width: 0; }
+@media (max-width: 600px) {
+  body.pub .tline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 4px 0 4px 4px;
+  }
+  body.pub .tline::before {
+    left: 19px;
+    right: auto;
+    top: 16px;
+    bottom: 16px;
+    border-top: 0;
+    border-left: 2.5px dashed #C8CCD3;
+  }
+  body.pub .tline .st {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 10px;
+    padding: 9px 0;
+    font-size: 13.5px;
+  }
+  body.pub .tline .st i { flex: none; }
+  body.pub .tline .st .now {
+    position: static;
+    order: 3;
+    margin-left: auto;
+    flex: none;
+  }
+}
+body.pub .next-step {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--purple-soft);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-weight: 600;
+  margin: 12px 0 0;
+}
+.total-big {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.total-big .money { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
+
+/* Method picker + panels on the order page. */
+body.pub .segmented { min-width: 0; }
+body.pub .method-panel { scroll-margin-top: 140px; }
+
+/* ---- My orders cards (rendered by my.js into these boxes) ---- */
+.my-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  margin: 12px 0;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.my-card-top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.my-card-title { font-weight: 800; margin: 0; overflow-wrap: break-word; min-width: 0; }
+.my-card-sub { color: var(--muted); font-size: 13.5px; margin: 0; }
+.my-card-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.my-list { display: grid; gap: 0; }
+
+/* ---- Bill / share / error ---- */
+body.pub .bill-qr { text-align: center; }
+body.pub .thanks { text-align: center; }
+
+/* ---- Phones: sticky primary, 48px targets, no sideways scroll ---- */
+body.pub .content { min-width: 0; }
+body.pub .card,
+body.pub .rcpt,
+body.pub .form-card,
+body.pub .my-card,
+body.pub section.hero2 { overflow-wrap: break-word; }
+@media (max-width: 600px) {
+  body.pub .action-bar {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 8;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-lift);
+    padding: 12px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  body.pub .action-bar .pill { flex: 1; min-height: var(--tap); justify-content: center; }
+  body.pub .ph-head-actions .pill { min-height: var(--tap); }
+  body.pub .card-actions .pill { min-height: var(--tap); }
+  body.pub .my-card-actions .pill { min-height: var(--tap); }
+  body.pub .shop-band-actions .pill.cta { flex: 1; justify-content: center; }
+}
+@media (max-width: 380px) {
+  body.pub .ph-shop-strip { flex-wrap: wrap; row-gap: 4px; }
+  body.pub .ph-shop-strip .sp { display: none; }
+  /* Long translations (e.g. Tamil "Start selling") wrap instead of
+     overflowing the 320px viewport. */
+  body.pub .hp-header { flex-wrap: wrap; row-gap: 8px; }
+  body.pub .hp-menu-btn { margin-left: auto; }
+}

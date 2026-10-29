@@ -1,79 +1,129 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Find prices — MarketMate{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<p class="kick">{{ t('market.kick') }}</p>
-<h1 class="big">{{ t('market.headline_a') }} <em>{{ t('market.headline_b') }}</em></h1>
-
-<form method="get" action="/market" class="search">
-  {{ ui.icon("tag") }}
-  <label class="visually-hidden" for="market-q">What do you need?</label>
-  <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="tomato, potato 2 kg, budget ₹100" required>
-  <button class="pill cta sm" type="submit">Search</button>
-  <button class="mic mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25." aria-label="Speak">{{ ui.icon("mic") }}</button>
-</form>
-<div class="hero-cta">
-  <button class="pill ghost sm" type="button" id="rec-stop" disabled hidden>Stop</button>
-  <span class="muted" id="rec-status">Tap Speak and say what you need.</span>
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ t('market.kick') }}</p>
+    <h1>{{ t('market.headline_a') }} {{ t('market.headline_b') }}</h1>
+    <p class="lead">{{ t('pub.market_sub') }}</p>
+  </div>
 </div>
-<details class="card">
-  <summary>Or upload a recording</summary>
-  <form method="post" action="/market/voice" enctype="multipart/form-data">
-    <div class="field">
-      <label for="market-audio">Or upload a recording</label>
-      <input id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-    </div>
-    <button class="pill ghost" type="submit">Upload and search</button>
-  </form>
-</details>
-<p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
 
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+<form id="search" class="hp-search" method="get" action="/market" aria-label="{{ t('hp.search') }}">
+  <div class="hp-tabs" role="tablist" aria-label="{{ t('hp.what') }}">
+    <button type="button" role="tab" aria-selected="true" class="hp-tab on" data-ph="{{ t('hp.ph_all') }}">{{ t('hp.tab_all') }}</button>
+    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_veg') }}">{{ t('hp.tab_veg') }}</button>
+    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_fruit') }}">{{ t('hp.tab_fruit') }}</button>
+    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_greens') }}">{{ t('hp.tab_greens') }}</button>
+    <a class="hp-tab hp-tab-voice" href="#rec-start">{{ t('hp.tab_voice') }}<span class="new-badge">{{ t('hp.new_badge') }}</span></a>
+  </div>
+  <div class="hp-fields">
+    <div class="hp-field hp-what">
+      <label for="market-q">{{ t('hp.what') }}</label>
+      <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="{{ t('hp.ph_all') }}" autocomplete="off">
+      <a class="hp-mic" href="#rec-start" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
+    </div>
+    <div class="hp-field">
+      <label for="market-area">{{ t('hp.area') }}</label>
+      <select id="market-area" name="area" data-near-me="nearme">
+        <option value="">{{ t('hp.all_areas') }}</option>
+        {% for a in areas %}<option value="{{ a }}"{% if area == a %} selected{% endif %}>{{ a }}</option>{% endfor %}
+        <option value="nearme"{% if area == "nearme" %} selected{% endif %}>{{ t('hp.near_me') }}</option>
+      </select>
+    </div>
+    <div class="hp-field">
+      <label for="market-budget">{{ t('pub.max_spend') }}</label>
+      <select id="market-budget" name="budget">
+        <option value="">{{ t('pub.no_limit') }}</option>
+        <option value="100"{% if budget == "100" %} selected{% endif %}>{{ t('hp.budget_n', n='100') }}</option>
+        <option value="200"{% if budget == "200" %} selected{% endif %}>{{ t('hp.budget_n', n='200') }}</option>
+        <option value="500"{% if budget == "500" %} selected{% endif %}>{{ t('hp.budget_n', n='500') }}</option>
+        <option value="1000"{% if budget == "1000" %} selected{% endif %}>{{ t('hp.budget_n', n='1000') }}</option>
+      </select>
+    </div>
+    <button class="pill cta hp-go" type="submit">{{ t('hp.search') }}</button>
+  </div>
+</form>
+
+<section class="pub-sec" aria-label="{{ t('hp.tab_voice') }}">
+  <div class="form-card">
+    <h2 class="h2s">{{ t('hp.tab_voice') }}</h2>
+    <p class="rec-row">
+      <button class="mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25." aria-label="Speak">{{ ui.icon("mic") }}</button>
+      <button class="pill ghost sm" type="button" id="rec-stop" disabled hidden>Stop</button>
+    </p>
+    <p class="muted" id="rec-status">Tap Speak and say what you need.</p>
+    <details class="more">
+      <summary>Or upload a recording</summary>
+      <form method="post" action="/market/voice" enctype="multipart/form-data">
+        <div class="field">
+          <label class="field-label" for="market-audio">Or upload a recording</label>
+          <input class="field-input" id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
+        </div>
+        <div class="action-bar"><button class="pill cta" type="submit">Upload and search</button></div>
+      </form>
+    </details>
+    <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
+  </div>
+</section>
+
+{% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
 {% if heard %}<p class="muted">Heard: {{ heard }}</p>{% endif %}
 {% if chips %}
-<p class="kick">{{ t('market.understood') }}</p>
-<div class="chips">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}</div>
+<section class="pub-sec" aria-label="{{ t('market.understood') }}">
+  <p class="kick">{{ t('market.understood') }}</p>
+  <div class="chip-row">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}</div>
+</section>
 {% endif %}
 {% if unknown %}
 <div class="alert alert-info">Sorry, these words were not understood: {{ unknown | join(", ") }}. Showing the rest instead.</div>
 {% endif %}
 
 {% if searched %}
-<form method="get" action="/market" class="filters" data-filters>
-  <input type="hidden" name="q" value="{{ q or '' }}">
-  {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
-  {% if budget %}<input type="hidden" name="budget" value="{{ budget }}">{% endif %}
-  <input type="hidden" name="sort" id="sort-value" value="{{ sort }}">
-  <input type="hidden" name="open_now" value="0">
-  <div class="filter-chips" role="group" aria-label="{{ t('market.all_areas') }}">
-    <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.all_areas') }}</a>
-    {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ a }}</a>{% endfor %}
-    <label class="chip chip-check{% if open_now %} on{% endif %}" for="market-open">
-      <input id="market-open" type="checkbox" name="open_now" value="1"{% if open_now %} checked{% endif %} onchange="this.form.submit()">
-      {{ ui.obj("clock", 20) }}<span>{{ t('market.open_now') }}</span>
-    </label>
-    <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
-    <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
-      <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
-      <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_distance') }}</a>
-    </span>
-    <span class="pin-wrap">
-      <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
-      <input type="search" id="market-pincode" name="pincode" value="{{ pincode or '' }}" inputmode="numeric" maxlength="6" size="6" placeholder="{{ t('market.pincode') }}">
-    </span>
-  </div>
-  <span class="muted" id="near-me-status" aria-live="polite"></span>
-</form>
+<section class="pub-sec" aria-label="{{ t('market.all_areas') }}">
+  <form method="get" action="/market" class="filters" data-filters>
+    <input type="hidden" name="q" value="{{ q or '' }}">
+    {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
+    {% if budget %}<input type="hidden" name="budget" value="{{ budget }}">{% endif %}
+    <input type="hidden" name="sort" id="sort-value" value="{{ sort }}">
+    <input type="hidden" name="open_now" value="0">
+    <div class="filter-row chip-row" role="group" aria-label="{{ t('market.all_areas') }}">
+      <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.all_areas') }}</a>
+      {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ a }}</a>{% endfor %}
+      <label class="chip chip-check{% if open_now %} on{% endif %}" for="market-open">
+        <input id="market-open" type="checkbox" name="open_now" value="1"{% if open_now %} checked{% endif %} onchange="this.form.submit()">
+        {{ ui.obj("clock", 20) }}<span>{{ t('market.open_now') }}</span>
+      </label>
+      <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
+      <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
+        <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
+        <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_distance') }}</a>
+      </span>
+      <span class="pin-wrap">
+        <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
+        <input type="search" id="market-pincode" name="pincode" value="{{ pincode or '' }}" inputmode="numeric" maxlength="6" size="6" placeholder="{{ t('market.pincode') }}">
+      </span>
+    </div>
+    <span class="muted" id="near-me-status" aria-live="polite"></span>
+  </form>
+</section>
 {% endif %}
 
 {% if basket %}
-<section aria-label="Basket">
-  {% if basket.budget %}
-  <h2 class="h2s">{{ ui.obj("basket") }}Budget basket — {{ basket.budget | money("INR") }}</h2>
-  {% else %}
-  <h2 class="h2s">{{ ui.obj("basket") }}Your basket</h2>
-  {% endif %}
-  <p class="lead">{{ basket.explanation }}</p>
+<section class="pub-sec" aria-label="Basket">
+  <div class="hp-sec-head">
+    <div>
+      {% if basket.budget %}
+      <h2 class="h2s">{{ ui.obj("basket", 28) }}Budget basket — {{ basket.budget | money("INR") }}</h2>
+      {% else %}
+      <h2 class="h2s">{{ ui.obj("basket", 28) }}Your basket</h2>
+      {% endif %}
+      <p class="muted">{{ basket.explanation }}</p>
+    </div>
+  </div>
   <div class="results-grid" data-plans>
   {% for plan in basket.plans %}
   <div class="basket card" data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
@@ -118,34 +168,43 @@
 {% endif %}
 
 {% if market_empty %}
-<section class="card empty-market">
+<section class="card hp-empty empty-market">
   {{ ui.obj("search", 56) }}
   <p><b>{{ t('market.empty_title') }}</b></p>
-  <p><a href="/new">{{ t('market.empty_seller') }}</a></p>
+  <p><a class="pill cta" href="/new">{{ t('market.empty_seller') }}</a></p>
 </section>
 {% endif %}
 
 {% if searched and not groups and not error and not basket and not market_empty %}
-<p class="muted">{{ t('market.no_results') }}</p>
+<section class="card hp-empty">
+  {{ ui.obj("search", 56) }}
+  <p><b>{{ t('market.no_results') }}</b></p>
+  <p><a class="pill cta" href="/market">{{ t('hp.search') }}</a></p>
+</section>
 {% endif %}
-<div class="results-grid">
-{% for group in groups %}
-<section class="card result-card" data-shop-list>
-  <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
-  {% for row in group.rows %}
-  <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
-  <div class="shop-row">
-    <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
-    <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
-  </div>
-  <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>
+{% if groups %}
+<section class="pub-sec" aria-label="{{ t('market.headline_a') }}">
+  <div class="results-grid">
+  {% for group in groups %}
+  <div class="card result-card" data-shop-list>
+    <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
+    {% for row in group.rows %}
+    <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
+    <div class="shop-row">
+      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
+      <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
+    </div>
+    <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>
+    </div>
+    {% endfor %}
   </div>
   {% endfor %}
+  </div>
 </section>
-{% endfor %}
-</div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('near-me.js') if static_url is defined else '/static/near-me.js' }}"></script>
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

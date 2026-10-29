@@ -1,16 +1,36 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('my.title') }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<div data-my-page data-empty-orders="{{ t('my.empty_orders') }}" data-empty-shops="{{ t('my.empty_shops') }}" data-order-pattern="{{ t('bills.order_num', id='{n}') }}">
-  <p class="kick">{{ t('my.title') }}</p>
-  <h1 class="big">{{ t('my.orders') }}</h1>
-  <div data-my-orders></div>
-  <h2 class="h2s">{{ t('my.shops') }}</h2>
-  <div data-my-shops></div>
+{% include "_public_header.html" %}
+<div data-my-page data-empty-orders="{{ t('my.empty_orders') }}" data-empty-shops="{{ t('my.empty_shops') }}" data-order-pattern="{{ t('bills.order_num', id='{n}') }}" data-find-shop="{{ t('hp.nav_find') }}" data-open-label="{{ t('market.open_shop') }}">
+  <div class="ph-head">
+    <div>
+      <h1>{{ t('my.title') }}</h1>
+      <p class="lead">{{ t('pub.my_sub') }}</p>
+    </div>
+  </div>
+  <section class="pub-sec" aria-label="{{ t('my.orders') }}">
+    <div class="hp-sec-head">
+      <div>
+        <h2 class="h2s">{{ t('my.orders') }}</h2>
+      </div>
+    </div>
+    <div class="my-list" data-my-orders></div>
+  </section>
+  <section class="pub-sec" aria-label="{{ t('my.shops') }}">
+    <div class="hp-sec-head">
+      <div>
+        <h2 class="h2s">{{ t('my.shops') }}</h2>
+      </div>
+    </div>
+    <div class="my-list" data-my-shops></div>
+  </section>
   <p><button class="pill ghost" type="button" data-my-clear>{{ t('my.clear') }}</button></p>
 </div>
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

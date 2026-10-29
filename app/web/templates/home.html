@@ -8,40 +8,7 @@
   <span class="hp-today"><span class="dot-live" aria-hidden="true"></span>{{ t('hp.strip_today') }}</span>
 </div>
 
-<header id="site-header" class="hp-header">
-  <a class="logo" href="/" aria-label="MarketMate home">
-    <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
-  </a>
-  <nav class="hp-nav" aria-label="{{ t('top.main_nav') }}">
-    <a href="/market">{{ t('hp.nav_find') }}</a>
-    <a href="#picks">{{ t('hp.nav_picks') }}</a>
-    <a href="#areas">{{ t('hp.nav_areas') }}</a>
-    <a href="#sellers">{{ t('hp.nav_sellers') }}</a>
-    <a href="#how">{{ t('hp.nav_how') }}</a>
-  </nav>
-  <span class="sp" aria-hidden="true"></span>
-  <a class="pill cta sm hp-sell" href="/new">{{ t('hp.start_selling') }}<span class="free-badge">{{ t('hp.free') }}</span></a>
-  <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
-  <span class="lang hp-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
-    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
-    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
-    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
-  </span>
-  <button type="button" class="iconbtn hp-menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}">☰</button>
-</header>
-<nav id="mobile-nav" class="hp-sheet" aria-label="{{ t('top.main_nav') }}" hidden>
-  <a href="/market">{{ t('hp.nav_find') }}</a>
-  <a href="#picks">{{ t('hp.nav_picks') }}</a>
-  <a href="#areas">{{ t('hp.nav_areas') }}</a>
-  <a href="#sellers">{{ t('hp.nav_sellers') }}</a>
-  <a href="#how">{{ t('hp.nav_how') }}</a>
-  <a href="/my">{{ t('hp.my_orders') }}</a>
-  <span class="lang hp-sheet-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
-    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
-    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
-    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
-  </span>
-</nav>
+{% include "_public_header.html" %}
 
 <section id="hero" class="hp-hero" aria-label="{{ t('hp.hero_a') }} {{ hp.area or t('hp.hero_default') }}">
   <div class="hp-band" title="{{ t('land.photo_by', name='Frédéric Barriol') }}">
