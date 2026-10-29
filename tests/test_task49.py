@@ -208,12 +208,12 @@ def test_market_renders(tmp_path):
 def test_home_renders_all_langs(tmp_path):
     client = _client(tmp_path)
     en = client.get("/").text
-    assert "Say your prices." in en
-    assert "We do the rest." in en
+    assert "Say today&#39;s prices." in en or "Say today's prices." in en
+    assert "Sell more." in en
     assert "Start selling" in en
     assert "Find prices" in en
     assert "Lost your link?" in en
-    assert "Built with Meta Muse Spark + Muse Voice" in en
+    assert "Built with Muse Code" in en
     for lang, needle in (("ta", "விலை"), ("hi", "कीमत")):
         client.cookies.set("ui_lang", lang)
         html = client.get("/").text

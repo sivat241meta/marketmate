@@ -5,6 +5,11 @@
 <title>{{ shop["name"] }} — price quote</title>
 <style>
 @font-face {
+  font-family: "Inter";
+  src: url("{{ fonts_uri }}/InterVariable.ttf");
+  font-weight: 100 900;
+}
+@font-face {
   font-family: "Noto Sans";
   src: url("{{ fonts_uri }}/NotoSans-Regular.ttf");
 }
@@ -59,7 +64,8 @@
   src: url("{{ fonts_uri }}/NotoSansKannada-Bold.ttf");
 }
 @page { size: A4; margin: 15mm 12mm; }
-body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; background: #FFFFFF; margin: 0; }
+body { font-family: "Inter", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; background: #FFFFFF; margin: 0; }
+table, .price, .total-row td { font-feature-settings: "tnum" 1; }
 .header { background: #1E1F21; color: #FFFFFF; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; display: flex; align-items: center; gap: 5mm; }
 .header img.brand { height: 14mm; width: 14mm; flex: none; }
 .header h1 { font-size: 26pt; margin: 0; }

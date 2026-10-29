@@ -9,7 +9,7 @@
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <section class="rcpt record-card">
-  {{ ui.icon("mic") }}
+  {{ ui.obj("mic", 28) }}
   <h2>{{ t('pur.say_title') }}</h2>
   <p class="muted">{{ t('pur.say_desc') }}</p>
   <form method="post" action="/e/{{ token }}/purchases/voice" enctype="multipart/form-data">
@@ -60,7 +60,7 @@
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), None, None) }}
+{{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), None, None, "photo", "cart") }}
 {% endif %}
 
 {% if sessions %}

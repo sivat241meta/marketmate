@@ -1,69 +1,118 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
-{% block title %}MarketMate — Say your prices. Get a price board, a shop page and a market listing.{% endblock %}
+{% block title %}MarketMate — {{ t('land.hero_a') }} {{ t('land.hero_b') }}{% endblock %}
+{% block body_class %}land{% endblock %}
 {% block content %}
-<img class="hero-logo" src="/static/brand/logo.svg" alt="MarketMate">
-<h1 class="big">{{ t('home.headline_a') }}<br><em>{{ t('home.headline_b') }}</em></h1>
-<p class="lead">{{ t('home.hero_sub') }}</p>
+<nav class="land-nav" aria-label="{{ t('top.main_nav') }}">
+  <a href="/market">{{ t('land.nav_find') }}</a>
+  <a href="#how">{{ t('land.nav_how') }}</a>
+  <a href="#who">{{ t('land.nav_sellers') }}</a>
+  <span class="sp" aria-hidden="true"></span>
+  <a class="pill cta sm" href="/new">{{ t('land.cta_sell') }}</a>
+</nav>
 
-<div class="trio">
-  <div class="tri"><span class="tile m">{{ ui.icon("mic") }}</span><b>{{ t('home.trio_lang') }}</b><small>{{ t('home.trio_lang_sub') }}</small></div>
-  <div class="tri"><span class="tile y">{{ ui.icon("check") }}</span><b>{{ t('home.trio_honest') }}</b><small>{{ t('home.trio_honest_sub') }}</small></div>
-  <div class="tri"><span class="tile s">{{ ui.icon("receipt") }}</span><b>{{ t('home.trio_bills') }}</b><small>{{ t('home.trio_bills_sub') }}</small></div>
-</div>
+<section id="hero" class="land-hero" aria-label="{{ t('land.hero_a') }}">
+  <figure class="land-photo" title="{{ t('land.photo_by', name='Frédéric Barriol') }}">
+    <img src="{{ static_url('landing/hero.jpg') }}" srcset="{{ static_url('landing/hero-800.jpg') }} 800w, {{ static_url('landing/hero.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 50vw" width="1600" height="1061" alt="{{ t('land.alt_hero') }}" fetchpriority="high">
+    <figcaption>{{ t('land.photo_by', name='Frédéric Barriol') }}</figcaption>
+  </figure>
+  <div class="land-hero-txt">
+    <h1 class="big">{{ t('land.hero_a') }}<br><em>{{ t('land.hero_b') }}</em></h1>
+    <p class="lead">{{ t('land.hero_sub') }}</p>
+    <div class="hero-cta">
+      <a class="pill dark big" href="/new">{{ t('land.cta_sell') }}</a>
+      <a class="pill ghost big" href="/market">{{ t('land.cta_find') }}</a>
+    </div>
+    <p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('land.honest') }}</span></p>
+  </div>
+</section>
 
-<div class="hero-cta">
-  <a class="pill dark big" href="/new">{{ t('top.start_selling') }}</a>
-  <a class="pill ghost big" href="/market">{{ t('top.find_prices') }}</a>
-</div>
+<section id="value" aria-label="{{ t('land.value_t') }}">
+  <h2 class="h2s">{{ t('land.value_t') }}</h2>
+  <div class="land-grid">
+    <div class="card land-card">{{ ui.obj("mic", 28) }}<h3>{{ t('land.v1_t') }}</h3><p class="muted">{{ t('land.v1_d') }}</p></div>
+    <div class="card land-card">{{ ui.obj("check", 28) }}<h3>{{ t('land.v2_t') }}</h3><p class="muted">{{ t('land.v2_d') }}</p></div>
+    <div class="card land-card">{{ ui.obj("receipt", 28) }}<h3>{{ t('land.v3_t') }}</h3><p class="muted">{{ t('land.v3_d') }}</p></div>
+    <div class="card land-card">{{ ui.obj("tag", 28) }}<h3>{{ t('land.v4_t') }}</h3><p class="muted">{{ t('land.v4_d') }}</p></div>
+  </div>
+</section>
 
-<div class="entry-grid">
-  <section class="card entry-card">
-    {{ ui.icon("camera") }}
-    <h2>{{ t('home.f1_t') }}</h2>
-    <p class="muted">{{ t('home.f1_d') }}</p>
-  </section>
-  <section class="card entry-card">
-    {{ ui.icon("check") }}
-    <h2>{{ t('home.f2_t') }}</h2>
-    <p class="muted">{{ t('home.f2_d') }}</p>
-  </section>
-  <section class="card entry-card">
-    {{ ui.icon("share") }}
-    <h2>{{ t('home.f3_t') }}</h2>
-    <p class="muted">{{ t('home.f3_d') }}</p>
-  </section>
-</div>
+<section id="who" aria-label="{{ t('land.who_t') }}">
+  <h2 class="h2s">{{ t('land.who_t') }}</h2>
+  <p class="lead">{{ t('land.who_p') }}</p>
+  <div class="land-split">
+    <figure class="land-photo" title="{{ t('land.photo_by', name='Aditya Sethia') }}">
+      <img src="{{ static_url('landing/banana-cart.jpg') }}" srcset="{{ static_url('landing/banana-cart-800.jpg') }} 800w, {{ static_url('landing/banana-cart.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 25vw" width="1600" height="1164" alt="{{ t('land.alt_cart') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Aditya Sethia') }}</figcaption>
+    </figure>
+    <figure class="land-photo tall" title="{{ t('land.photo_by', name='Abdullah Azeez') }}">
+      <img src="{{ static_url('landing/street-market.jpg') }}" srcset="{{ static_url('landing/street-market-800.jpg') }} 800w, {{ static_url('landing/street-market.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 25vw" width="1600" height="2844" alt="{{ t('land.alt_market') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Abdullah Azeez') }}</figcaption>
+    </figure>
+  </div>
+  <ul class="land-ticks">
+    <li>{{ ui.obj("phone", 20) }}<span>{{ t('land.who_b1') }}</span></li>
+    <li>{{ ui.obj("chat", 20) }}<span>{{ t('land.who_b2') }}</span></li>
+    <li>{{ ui.obj("link", 20) }}<span>{{ t('land.who_b3') }}</span></li>
+  </ul>
+</section>
 
-<div class="entry-grid">
-  <section class="card entry-card">
-    {{ ui.icon("home") }}
-    <h2>Seller: start your shop</h2>
-    <p class="muted">Film your stall, check prices, print your board.</p>
-    <p><a class="pill dark" href="/new">Start as seller</a></p>
-  </section>
-  <section class="card entry-card">
-    {{ ui.icon("tag") }}
-    <h2>Customer: find prices</h2>
-    <p class="muted">Enter a shop name to see today's prices, or search the market.</p>
-    <form method="post" action="/find">
-      <div class="field">
-        <label for="find-slug">Shop name</label>
-        <input id="find-slug" name="slug" placeholder="shop-name" required>
-      </div>
-      <button class="pill ghost" type="submit">Find</button>
-    </form>
-    <p><a href="/market">Search the market</a></p>
-  </section>
-  <section class="card entry-card">
-    {{ ui.icon("check") }}
-    <h2>Judges: try the demo</h2>
-    <p class="muted">Create a demo shop and run a clip end to end.</p>
-    <p><a class="pill ghost" href="/try">Try the demo</a></p>
-  </section>
-</div>
+<section id="how" aria-label="{{ t('land.how_t') }}">
+  <h2 class="h2s">{{ t('land.how_t') }}</h2>
+  <div class="land-how">
+    <ol class="land-steps">
+      <li><span class="land-num" aria-hidden="true">1</span><span class="land-step-ic">{{ ui.obj("video", 28) }}</span><div><b>{{ t('land.h1_t') }}</b><p class="muted">{{ t('land.h1_d') }}</p></div></li>
+      <li><span class="land-num" aria-hidden="true">2</span><span class="land-step-ic">{{ ui.obj("check", 28) }}</span><div><b>{{ t('land.h2_t') }}</b><p class="muted">{{ t('land.h2_d') }}</p></div></li>
+      <li><span class="land-num" aria-hidden="true">3</span><span class="land-step-ic">{{ ui.obj("link", 28) }}</span><div><b>{{ t('land.h3_t') }}</b><p class="muted">{{ t('land.h3_d') }}</p></div></li>
+    </ol>
+    <figure class="land-photo" title="{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}">
+      <img src="{{ static_url('landing/seller-phone.jpg') }}" srcset="{{ static_url('landing/seller-phone-800.jpg') }} 800w, {{ static_url('landing/seller-phone.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 50vw" width="1600" height="1246" alt="{{ t('land.alt_seller') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}</figcaption>
+    </figure>
+  </div>
+</section>
 
-<p class="notice">{{ ui.icon("check") }}<span>Every price comes from the seller's own voice. Nothing is guessed.</span></p>
+<section id="customers" aria-label="{{ t('land.cust_t') }}">
+  <div class="land-cust">
+    <figure class="land-photo tall" title="{{ t('land.photo_by', name='Emil Widlund') }}">
+      <img src="{{ static_url('landing/customer-phone.jpg') }}" srcset="{{ static_url('landing/customer-phone-800.jpg') }} 800w, {{ static_url('landing/customer-phone.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 40vw" width="1600" height="2240" alt="{{ t('land.alt_customer') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Emil Widlund') }}</figcaption>
+    </figure>
+    <div>
+      <h2 class="h2s">{{ t('land.cust_t') }}</h2>
+      <p class="lead">{{ t('land.cust_p') }}</p>
+      <p><a class="pill dark big" href="/market">{{ t('land.cust_cta') }}</a></p>
+      <form class="land-find" method="post" action="/find">
+        <div class="field">
+          <label for="find-slug">{{ t('set.name') }}</label>
+          <input id="find-slug" name="slug" placeholder="shop-name" required>
+        </div>
+        <button class="pill ghost sm" type="submit">{{ t('shell.find_shop') }}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="day" aria-label="{{ t('land.day_t') }}">
+  <h2 class="h2s">{{ t('land.day_t') }}</h2>
+  <ol class="land-day">
+    <li>{{ ui.obj("clock", 28) }}<div><b>{{ t('land.d1_t') }}</b><p class="muted">{{ t('land.d1_d') }}</p></div></li>
+    <li>{{ ui.obj("receipt", 28) }}<div><b>{{ t('land.d2_t') }}</b><p class="muted">{{ t('land.d2_d') }}</p></div></li>
+    <li>{{ ui.obj("moon", 28) }}<div><b>{{ t('land.d3_t') }}</b><p class="muted">{{ t('land.d3_d') }}</p></div></li>
+  </ol>
+</section>
+
+<section id="meta" class="land-meta" aria-label="{{ t('land.meta_t') }}">
+  <h2 class="h2s">{{ t('land.meta_t') }}</h2>
+  <ul>
+    <li>{{ ui.obj("robot", 20) }}<span>{{ t('land.meta_voice') }}</span></li>
+    <li>{{ ui.obj("check", 20) }}<span>{{ t('land.meta_spark') }}</span></li>
+    <li>{{ ui.obj("camera", 20) }}<span>{{ t('land.meta_sam') }}</span></li>
+    <li>{{ ui.obj("settings", 20) }}<span>{{ t('land.meta_open') }}</span></li>
+    <li>{{ ui.obj("ledger", 20) }}<span>{{ t('land.meta_log') }}</span></li>
+  </ul>
+  <p class="built-with">{{ t('land.meta_code') }}</p>
+</section>
 
 <section class="card entry-card" id="lost-link">
   <h2 class="h2s">{{ t('home.lost_title') }}</h2>
@@ -71,5 +120,11 @@
   <p class="muted">{{ t('home.lost_p2') }}</p>
 </section>
 
-<p class="built-with">{{ t('home.built_with') }}</p>
+<footer id="footer" class="land-footer">
+  <p class="muted">{{ t('notice.voice') }}</p>
+  <p><a href="https://github.com/sivat241meta/marketmate">{{ t('land.github') }}</a> · <a href="/try">{{ t('land.demo') }}</a></p>
+  <p class="muted">{{ t('land.photos_credit') }}</p>
+  <p class="muted">{{ t('land.icons_credit') }}</p>
+  <p>{{ t('land.honest') }}</p>
+</footer>
 {% endblock %}

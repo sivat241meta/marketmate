@@ -5,6 +5,11 @@
 <title>{{ t('bpdf.bill', id=bill_id) }} — {{ shop["name"] }}</title>
 <style>
 @font-face {
+  font-family: "Inter";
+  src: url("{{ fonts_uri }}/InterVariable.ttf");
+  font-weight: 100 900;
+}
+@font-face {
   font-family: "Noto Sans";
   src: url("{{ fonts_uri }}/NotoSans-Regular.ttf");
 }
@@ -59,7 +64,8 @@
   src: url("{{ fonts_uri }}/NotoSansKannada-Bold.ttf");
 }
 @page { size: 80mm auto; margin: 5mm 4mm; }
-body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; margin: 0; font-size: 10pt; }
+body { font-family: "Inter", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; margin: 0; font-size: 10pt; }
+table, .qty, .amount, .total { font-feature-settings: "tnum" 1; }
 .shop { text-align: center; border-bottom: 0.5pt dashed #292D34; padding-bottom: 3mm; margin-bottom: 3mm; }
 .shop img.brand { width: 38mm; height: auto; }
 .shop h1 { font-size: 15pt; margin: 0; }

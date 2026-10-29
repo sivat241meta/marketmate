@@ -14,7 +14,7 @@
   <div class="stat"><span class="stat-num money">{{ balance }}</span><span class="stat-label">{{ t('credit.balance_label') }}</span></div>
 </div>
 
-<p><a class="pill cta big" href="{{ reminder_url }}">{{ ui.icon("whatsapp") }}{{ t('credit.remind') }}</a></p>
+<p><a class="pill cta big" href="{{ reminder_url }}">{{ ui.obj("chat", 20) }}{{ t('credit.remind') }}</a></p>
 
 <div class="section-head"><h2>{{ t('credit.bills_title') }}</h2></div>
 {% if bills %}

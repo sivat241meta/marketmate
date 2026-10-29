@@ -2,11 +2,12 @@
    Mobile-first, no external assets. Tokens and components follow
    docs/ui/v9-clickup-workspace.html (owner-approved). */
 @font-face {
-  font-family: "Plus Jakarta Sans";
-  src: url("fonts/PlusJakartaSans-Variable.ttf") format("truetype");
-  font-weight: 200 800;
+  font-family: "Inter";
+  src: url("fonts/InterVariable.woff2") format("woff2"),
+       url("fonts/InterVariable.ttf") format("truetype");
+  font-weight: 100 900;
   font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+25CC, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: "Noto Sans";
@@ -149,7 +150,7 @@
 
 body {
   margin: 0;
-  font-family: "Plus Jakarta Sans", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
+  font-family: "Inter", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
   font-size: 15px;
   color: var(--ink);
   background: var(--bg);
@@ -157,11 +158,12 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: "Plus Jakarta Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
+  font-family: "Inter", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
   color: var(--ink);
   letter-spacing: -0.01em;
+  font-weight: 700;
 }
-h1 { font-size: 1.5rem; margin: 0 0 var(--space-3); }
+h1 { font-size: 1.5rem; margin: 0 0 var(--space-3); letter-spacing: -0.02em; }
 h2 { font-size: 1.2rem; margin: var(--space-5) 0 var(--space-2); }
 h3 { font-size: 1.05rem; margin: var(--space-4) 0 var(--space-2); }
 p { margin: 0 0 var(--space-3); }
@@ -982,7 +984,7 @@ button.chip {
 }
 .card .sz.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .card .pr { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px 8px; margin-top: 2px; flex-wrap: wrap; }
-.card .pr b { font-size: 22px; line-height: 1; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
+.card .pr b { font-size: 22px; line-height: 1; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; }
 .card .pr small { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-top: 3px; }
 /* Green price label + muted per-unit, local name (2 lines max), variety tag. */
 .card .price { margin-top: 18px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -1504,6 +1506,35 @@ span.stepper { align-items: center; margin: 0; }
   flex: none;
   vertical-align: -0.2em;
 }
+/* Real-world object icons (Task 79): Fluent Emoji Flat <img>s. Sizes are
+   fixed per role: 20px inline in buttons, 24px nav, 28px soft squares,
+   56px empty states. Width/height attributes match to avoid layout shift. */
+.obj { flex: none; vertical-align: -0.25em; }
+.rail .ic .obj { width: 24px; height: 24px; }
+.bnav .obj { width: 24px; height: 24px; }
+.bnav .mic .obj { width: 26px; height: 26px; }
+.bnav .mic i.mic-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+.pill.dark .obj, .pill.cta .obj, .pill.ghost .obj, .pill.bar .obj,
+.btn .obj { width: 20px; height: 20px; }
+.stat-icon .obj, .gc .gi .obj, .tri .tile .obj,
+.record-card > .obj, .drop-zone .obj, .entry-card .obj {
+  width: 28px;
+  height: 28px;
+}
+.empty-state .obj, .empty-shop .obj { width: 56px; height: 56px; }
+.notice .obj, .paid-state .obj, .chip .obj, .mini-links .obj,
+.field label .obj { width: 20px; height: 20px; }
+.notice .obj { margin-top: 1px; }
+.gh .obj, .kick .obj, .h2s .obj, .circ .obj { width: 24px; height: 24px; }
+.pill-live .obj, .pill-check .obj { width: 20px; height: 20px; }
 .mic-btn .icon { width: 28px; height: 28px; }
 .empty-state .icon { width: 40px; height: 40px; }
 
@@ -2184,8 +2215,14 @@ svg.boxes rect { fill: none; stroke-width: 3; }
 .line-amount,
 .sticky-total,
 .quote-total-value,
-.receipt-total {
+.receipt-total,
+.card .pr b,
+.card .price .pp,
+.pay-amount,
+.gc b,
+table {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .page-head { margin-bottom: var(--space-3); }
@@ -2436,7 +2473,8 @@ svg.boxes text.box-badge {
 .top-row .top-bar { flex: 2 1 120px; }
 .top-row .list-price { flex: none; }
 
-.empty-shop { text-align: center; }
+.empty-shop, .empty-market { text-align: center; }
+.empty-market .obj { width: 56px; height: 56px; }
 .empty-shop > .icon { width: 44px; height: 44px; color: var(--purple); }
 .empty-shop h2 { margin-top: var(--space-2); }
 
@@ -3500,4 +3538,131 @@ body.rdlg-open { overflow: hidden; }
 .ai-row.is-new { background: var(--green-soft); transition: background 2s; }
 @media (prefers-reduced-motion: reduce) {
   .ai-row.is-new { transition: none; }
+}
+
+/* ---- Task 81 landing page: one page, real photos, v9 look ---- */
+body.land .content { max-width: 1040px; }
+body.land .content section { scroll-margin-top: 12px; }
+/* Tamil/Hindi must wrap, never be cut. */
+body.land h1, body.land h2, body.land h3, body.land p, body.land li,
+body.land .pill { overflow-wrap: anywhere; }
+body.land .pill.big { max-width: 100%; }
+
+.land-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 6px 0 18px;
+}
+.land-nav a { font-weight: 600; text-decoration: none; color: var(--ink2); white-space: nowrap; }
+.land-nav a.pill { color: #fff; }
+.land-nav .sp { flex: 1; }
+
+.land-hero { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-hero-txt .notice { margin-top: var(--space-4); }
+
+.land-photo { margin: 0; }
+.land-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: 50% 30%;
+  border-radius: 20px;
+  background: var(--todo-soft);
+}
+.land-photo.tall img { aspect-ratio: 4 / 3; }
+.land-photo figcaption {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.land-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  margin-bottom: var(--space-6);
+}
+.land-card h3 { font-size: 16px; margin: var(--space-2) 0 4px; }
+.land-card p { margin: 0; }
+
+.land-split { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.land-split .land-photo img { aspect-ratio: 4 / 3; }
+.land-ticks { list-style: none; padding: 0; margin: var(--space-4) 0 var(--space-6); }
+.land-ticks li { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.land-ticks .obj { flex: none; }
+
+.land-how { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.land-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.land-num {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--purple-ink);
+  color: #fff;
+  font-weight: 800;
+  display: block;
+  text-align: center;
+  line-height: 30px;
+}
+.land-step-ic { flex: none; margin-top: 2px; }
+.land-steps b { display: block; margin-bottom: 2px; }
+.land-steps p { margin: 0; }
+
+.land-cust { display: grid; gap: var(--space-4); margin-bottom: var(--space-6); }
+.land-cust h2.h2s { margin-top: 0; }
+.land-find { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.land-find .field { margin: 0; min-width: 180px; flex: 1; }
+
+.land-day {
+  list-style: none;
+  padding: var(--space-4);
+  margin: 0 0 var(--space-6);
+  display: grid;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-card);
+}
+.land-day li { display: flex; gap: 12px; align-items: flex-start; }
+.land-day b { display: block; margin-bottom: 2px; }
+.land-day p { margin: 0; }
+
+.land-meta {
+  background: var(--todo-soft);
+  border-radius: var(--r-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.land-meta h2.h2s { margin-top: 0; }
+.land-meta ul { list-style: none; padding: 0; margin: 0 0 var(--space-2); }
+.land-meta li { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.land-meta .obj { flex: none; margin-top: 2px; }
+.land-meta .built-with { margin-top: var(--space-3); }
+
+#lost-link { margin-bottom: var(--space-6); }
+
+.land-footer {
+  text-align: center;
+  padding: var(--space-4) 0 var(--space-5);
+  border-top: 1px solid var(--line-2);
+}
+.land-footer p { margin-bottom: 8px; }
+.land-footer .muted { font-size: 13px; }
+
+@media (min-width: 700px) {
+  .land-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 860px) {
+  .land-hero { grid-template-columns: 1fr 1fr; align-items: center; }
+  .land-hero-txt { order: -1; }
+  .land-grid { grid-template-columns: repeat(4, 1fr); }
+  .land-how { grid-template-columns: 1fr 1fr; align-items: center; }
+  .land-cust { grid-template-columns: 2fr 3fr; align-items: center; }
+  .land-day { grid-template-columns: 1fr 1fr 1fr; }
 }

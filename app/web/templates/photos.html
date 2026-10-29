@@ -14,15 +14,15 @@
   <p class="muted">{{ t('pho.scan_desc') }}</p>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label class="drop-zone" for="photo-camera">{{ ui.icon("camera") }}<span>{{ t('pho.drop_camera') }}</span><strong>{{ t('pho.choose') }}</strong>
+      <label class="drop-zone" for="photo-camera">{{ ui.obj("camera", 28) }}<span>{{ t('pho.drop_camera') }}</span><strong>{{ t('pho.choose') }}</strong>
         <input id="photo-camera" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
       </label>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ ui.icon("camera") }}{{ t('pho.scan_btn') }}</button>
+    <button class="btn btn-primary btn-big" type="submit">{{ ui.obj("camera", 20) }}{{ t('pho.scan_btn') }}</button>
   </form>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
-      <label class="drop-zone is-small" for="photo-gallery">{{ ui.icon("photo") }}<span>{{ t('pho.gallery_label') }}</span><strong>{{ t('pho.choose') }}</strong>
+      <label class="drop-zone is-small" for="photo-gallery">{{ ui.obj("camera", 28) }}<span>{{ t('pho.gallery_label') }}</span><strong>{{ t('pho.choose') }}</strong>
         <input id="photo-gallery" class="file-hidden" type="file" name="photo" accept="image/*">
       </label>
     </div>
@@ -46,6 +46,6 @@
   {% endfor %}
 </div>
 {% else %}
-{{ ui.empty_state(t('pho.empty_title'), t('pho.empty_text'), None, None) }}
+{{ ui.empty_state(t('pho.empty_title'), t('pho.empty_text'), None, None, "photo", "camera") }}
 {% endif %}
 {% endblock %}

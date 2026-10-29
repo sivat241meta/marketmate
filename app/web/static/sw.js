@@ -6,7 +6,7 @@
  * marked "needs internet" by offline-bills.js when offline.
  */
 
-const CACHE = "mm-shell-v1";
+const CACHE = "mm-shell-v3";
 
 const SHELL = [
   "/static/app.css",
@@ -20,12 +20,48 @@ const SHELL = [
   "/static/pcm-worklet.js",
   "/static/live.js",
   "/static/offline-bills.js",
+  "/static/fonts/InterVariable.woff2",
+  "/static/fonts/InterVariable.ttf",
   "/static/fonts/NotoSansTamil-Regular.ttf",
   "/static/fonts/NotoSansTamil-Bold.ttf",
   "/static/brand/icon-192.png",
   "/static/brand/icon-512.png",
   "/static/brand/logo.svg",
   "/static/brand/mark.svg",
+  "/static/icons/fluent/house.svg",
+  "/static/icons/fluent/mic.svg",
+  "/static/icons/fluent/bags.svg",
+  "/static/icons/fluent/receipt.svg",
+  "/static/icons/fluent/ledger.svg",
+  "/static/icons/fluent/moon.svg",
+  "/static/icons/fluent/cash.svg",
+  "/static/icons/fluent/phone.svg",
+  "/static/icons/fluent/chat.svg",
+  "/static/icons/fluent/call.svg",
+  "/static/icons/fluent/link.svg",
+  "/static/icons/fluent/printer.svg",
+  "/static/icons/fluent/tag.svg",
+  "/static/icons/fluent/camera.svg",
+  "/static/icons/fluent/video.svg",
+  "/static/icons/fluent/basket.svg",
+  "/static/icons/fluent/cart.svg",
+  "/static/icons/fluent/store.svg",
+  "/static/icons/fluent/pin.svg",
+  "/static/icons/fluent/clock.svg",
+  "/static/icons/fluent/check.svg",
+  "/static/icons/fluent/warning.svg",
+  "/static/icons/fluent/bell.svg",
+  "/static/icons/fluent/customer.svg",
+  "/static/icons/fluent/package.svg",
+  "/static/icons/fluent/scale.svg",
+  "/static/icons/fluent/tomato.svg",
+  "/static/icons/fluent/carrot.svg",
+  "/static/icons/fluent/greens.svg",
+  "/static/icons/fluent/chart.svg",
+  "/static/icons/fluent/calendar.svg",
+  "/static/icons/fluent/search.svg",
+  "/static/icons/fluent/settings.svg",
+  "/static/icons/fluent/robot.svg",
 ];
 
 self.addEventListener("install", (event) => {

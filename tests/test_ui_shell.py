@@ -51,8 +51,8 @@ def assert_shell(html, action):
 
 def test_home_has_shell_and_hero(tmp_path):
     html = make_client(tmp_path).get("/").text
-    assert_shell(html, "Say your prices. Get a price board, a shop page and a market listing.")
-    assert "Start as seller" in html or "start your shop" in html.lower()
+    assert_shell(html, "Sell more.")
+    assert "Start selling" in html
     assert "/try" in html
     assert 'action="/find"' in html and 'name="slug"' in html
     assert "Every price comes from the seller" in html
