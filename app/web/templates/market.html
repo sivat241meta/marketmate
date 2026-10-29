@@ -146,7 +146,7 @@
         {% endfor %}
       </div><div class="price"><span class="pp">{{ plan.total | money(plan.currency) }}</span></div></div>
       {% endif %}
-      {% if plan.saved %}<p class="purple-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
+      {% if plan.saved %}<p class="accent-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
       {% if plan.missing %}
       {% if plan.kind == "partial_shop" %}
       <p class="miss"><small>{{ t('market.missing', items=(plan.missing | join(", "))) }}</small></p>

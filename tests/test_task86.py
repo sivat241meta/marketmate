@@ -94,7 +94,7 @@ def test_all_areas_is_a_normal_card(tmp_path):
     assert "repeat(auto-fill, minmax(200px, 1fr))" in grid
 
 
-def test_selected_area_keeps_purple_border(tmp_path):
+def test_selected_area_keeps_accent_border(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
@@ -106,7 +106,7 @@ def test_selected_area_keeps_purple_border(tmp_path):
     koy = [cls for cls, href, body in tiles if "Koyambedu" in body]
     assert koy == [" on"]
     css = _home_css()
-    assert "border-color: var(--purple)" in _rule(css, ".area-tile.on")
+    assert "border-color: var(--accent)" in _rule(css, ".area-tile.on")
 
 
 # --- 3. plurals ---------------------------------------------------------------

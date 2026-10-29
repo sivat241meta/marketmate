@@ -590,10 +590,10 @@ def test_tags_settings_purchases_fresh_green(tmp_path):
     assert resp.status_code == 200
     assert resp.content[:5] == b"%PDF-"
     src = (ROOT / "app/web/templates/tags.html").read_text()
-    # Task 64: v9 ink band + price green (was forest + gold).
-    assert "5F55EE" in src
+    # Task 105: v11 accent-ink band + price green + Meta ink.
+    assert "0064E0" in src
     assert "0F7F3F" in src
-    assert "292D34" in src
+    assert "1C2B33" in src
     settings = client.get(f"/e/{token}/settings").text
     assert "rcpt" in settings
     assert 'name="upi_id"' in settings

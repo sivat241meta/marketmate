@@ -1,8 +1,9 @@
-"""Task 95: "Mm leaves" logo in two colours (purple + green).
+"""Task 95: "Mm leaves" logo in two colours (updated by Task 105).
 
-Pair A (purple #5F55EE + green #1FA34A) is the committed default; the
-script's --pair option regenerates every asset in pairs B/C/D. The dark
-seller chrome uses mark-dark.svg with a lighter left leaf.
+Pair E (Meta blue #0866FF + green #1FA34A, "Market" in #0064E0) is the
+committed default; the script's --pair option regenerates every asset
+in pairs A/B/C/D/E. The dark seller chrome uses mark-dark.svg with a
+lighter left leaf.
 """
 
 from __future__ import annotations
@@ -21,8 +22,12 @@ PAIRS = {
     "B": ("#1FA34A", "#F28C28"),
     "C": ("#1B2A5C", "#1FA34A"),
     "D": ("#5F55EE", "#F28C28"),
+    "E": ("#0866FF", "#1FA34A"),
 }
-DARK_LEFT = {"A": "#7B68EE", "B": "#1FA34A", "C": "#6C7FD8", "D": "#7B68EE"}
+DARK_LEFT = {"A": "#7B68EE", "B": "#1FA34A", "C": "#6C7FD8",
+             "D": "#7B68EE", "E": "#4D9BFF"}
+WORD_LEFT = {"E": "#0064E0"}
+DEFAULT_PAIR = "E"
 
 
 def _load_gen():
@@ -33,10 +38,13 @@ def _load_gen():
     return mod
 
 
-def test_committed_assets_are_pair_A():
+def test_committed_assets_are_pair_E():
     for name in ("mark.svg", "logo.svg"):
         text = (BRAND / name).read_text()
-        assert PAIRS["A"][0] in text and PAIRS["A"][1] in text, name
+        left, right = PAIRS[DEFAULT_PAIR]
+        assert left in text and right in text, name
+    logo = (BRAND / "logo.svg").read_text()
+    assert WORD_LEFT[DEFAULT_PAIR] in logo  # "Market" in #0064E0
 
 
 def test_pair_option_regenerates_every_pair(tmp_path):
@@ -50,6 +58,8 @@ def test_pair_option_regenerates_every_pair(tmp_path):
             assert left in mark and right in mark, pair
             logo = (tmp_path / "logo.svg").read_text()
             assert left in logo and right in logo, pair
+            if pair in WORD_LEFT:
+                assert WORD_LEFT[pair] in logo, pair
             dark = (tmp_path / "mark-dark.svg").read_text()
             assert DARK_LEFT[pair] in dark and right in dark, pair
             assert Image.open(tmp_path / "favicon-16.png").size == (16, 16)
@@ -73,11 +83,11 @@ def _contrast(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
 
 def test_dark_variant_lightens_weak_left_leaf():
     dark = (BRAND / "mark-dark.svg").read_text()
-    assert DARK_LEFT["A"] in dark and PAIRS["A"][1] in dark
+    assert DARK_LEFT["E"] in dark and PAIRS["E"][1] in dark
     chrome = (30, 31, 33)  # #1E1F21 seller top bar / rail
-    assert _contrast((123, 104, 238), chrome) >= 3.5  # #7B68EE readable
-    assert _contrast((123, 104, 238), chrome) > _contrast(
-        (95, 85, 238), chrome)  # lighter than #5F55EE
+    assert _contrast((77, 155, 255), chrome) >= 3.5  # #4D9BFF readable
+    assert _contrast((77, 155, 255), chrome) > _contrast(
+        (8, 102, 255), chrome)  # lighter than #0866FF
 
 
 def test_dark_bar_spots_use_mark_dark():
@@ -102,15 +112,15 @@ def test_app_icons_white_corners_tile_border_and_both_colours():
     assert maskable.getpixel((1, 256)) == (255, 255, 255)
     # Both leaf colours show on the white tile.
     img = Image.open(BRAND / "icon-512.png").convert("RGB")
-    purple = green = 0
+    blue = green = 0
     for x in range(0, 512, 4):
         for y in range(0, 512, 4):
             px = img.getpixel((x, y))
-            if math.dist(px, (95, 85, 238)) < 60:
-                purple += 1
+            if math.dist(px, (8, 102, 255)) < 60:
+                blue += 1
             if math.dist(px, (31, 163, 74)) < 60:
                 green += 1
-    assert purple > 500 and green > 500, (purple, green)
+    assert blue > 500 and green > 500, (blue, green)
 
 
 def test_readme_logo_line_updated():

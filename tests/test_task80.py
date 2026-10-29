@@ -1,11 +1,11 @@
-"""Task 80: refined MarketMate logo (updated by Task 95).
+"""Task 80: refined MarketMate logo (updated by Tasks 95 and 105).
 
 Task 95 replaced the basket mark with direction 3 ("Mm leaves"): a
-lowercase "m" whose two humps peak in outward leaf tips, left leaf purple
-#5F55EE and right leaf green #1FA34A, plus a dark-chrome variant with a
-lighter left leaf. These tests pin the generator outputs (names, sizes,
-transparency, no font-dependent SVG) and check the 16px favicon keeps both
-leaf colours.
+lowercase "m" whose two humps peak in outward leaf tips. Task 105 made
+pair E the default: left leaf Meta blue #0866FF and right leaf green
+#1FA34A, plus a dark-chrome variant with a lighter left leaf. These
+tests pin the generator outputs (names, sizes, transparency, no
+font-dependent SVG) and check the 16px favicon keeps both leaf colours.
 
 No separate small-size variant: the two halves share their middle edge, so
 there is no thin gap to close up at small sizes.
@@ -36,7 +36,7 @@ PNG_SIZES = {
     "icon-maskable-512.png": (512, 512),
 }
 LOGO_HEIGHTS = {"logo-full.png": 160, "logo-full@2x.png": 320}
-LEFT = "#5F55EE"
+LEFT = "#0866FF"
 RIGHT = "#1FA34A"
 
 
@@ -102,11 +102,11 @@ def test_brand_outputs_deterministic():
 
 
 def test_favicon_16keeps_two_colour_groups():
-    """The 16px favicon must not collapse into one blob: the purple and
+    """The 16px favicon must not collapse into one blob: the blue and
     green leaf colours must each own a solid set of pixels."""
     img = Image.open(BRAND / "favicon-16.png").convert("RGBA")
     groups = {
-        "purple": [(95, 85, 238)],
+        "blue": [(8, 102, 255)],
         "green": [(31, 163, 74)],
     }
     counts = dict.fromkeys(groups, 0)
@@ -123,7 +123,7 @@ def test_favicon_16keeps_two_colour_groups():
                         best, dist = name, d
             if dist < 60:
                 counts[best] += 1
-    assert counts["purple"] >= 20, counts
+    assert counts["blue"] >= 20, counts
     assert counts["green"] >= 20, counts
 
 

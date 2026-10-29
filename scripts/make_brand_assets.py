@@ -10,13 +10,15 @@ paths, so the SVG and PNG versions match.
 
 The mark: two abutting leaf-half paths (no gap between them, so small
 sizes keep both colours). The wordmark is Inter ExtraBold as paths with
--1.5% tracking: "Market" in the pair's left colour, "Mate" in the right.
+-1.5% tracking: "Market" in the pair's left colour, "Mate" in the right
+(except pair E, where "Market" uses the deeper #0064E0).
 
 Colour pairs (left, right):
-  A  purple + green  #5F55EE + #1FA34A  (default; left = app primary)
-  B  green + orange  #1FA34A + #F28C28
-  C  navy + green    #1B2A5C + #1FA34A
-  D  purple + orange #5F55EE + #F28C28
+  A  purple + green     #5F55EE + #1FA34A  (left = old app primary)
+  B  green + orange     #1FA34A + #F28C28
+  C  navy + green       #1B2A5C + #1FA34A
+  D  purple + orange    #5F55EE + #F28C28
+  E  meta blue + green  #0866FF + #1FA34A  (default; "Market" in #0064E0)
 
 Outputs (all under app/web/static/brand/):
   logo.svg, mark.svg, mark-dark.svg (lighter left leaf for #1E1F21 chrome),
@@ -28,7 +30,7 @@ Outputs (all under app/web/static/brand/):
   favicon.ico (16+32+48).
 
 Usage:
-  .venv/bin/python scripts/make_brand_assets.py          # pair A (default)
+  .venv/bin/python scripts/make_brand_assets.py          # pair E (default)
   .venv/bin/python scripts/make_brand_assets.py --pair C # switch pair
 """
 
@@ -55,19 +57,27 @@ BORDER = (226, 229, 234)  # #E2E5EA subtle tile border
 
 # --- colour pairs (left leaf, right leaf) ------------------------------------
 PAIRS: dict[str, tuple[str, str]] = {
-    "A": ("#5F55EE", "#1FA34A"),  # purple + green (default)
+    "A": ("#5F55EE", "#1FA34A"),  # purple + green
     "B": ("#1FA34A", "#F28C28"),  # green + orange
     "C": ("#1B2A5C", "#1FA34A"),  # navy + green
     "D": ("#5F55EE", "#F28C28"),  # purple + orange
+    "E": ("#0866FF", "#1FA34A"),  # meta blue + green (default)
+}
+# Wordmark "Market" colour: the pair's left colour, except pair E where the
+# leaf stays Meta blue #0866FF but the wordmark uses the deeper #0064E0.
+WORD_LEFT: dict[str, str] = {
+    "E": "#0064E0",
 }
 # Left leaf on the dark seller chrome (#1E1F21): purple #5F55EE is only
 # 3.3:1 there, so the dark variant uses lighter purple; navy would vanish
 # (1.2:1) so pair C gets a lightened navy; green (5.1:1) stays as is.
+# Meta blue #0866FF is 3.4:1 there, so pair E uses #4D9BFF (5.9:1).
 DARK_LEFT: dict[str, str] = {
     "A": "#7B68EE",
     "B": "#1FA34A",
     "C": "#6C7FD8",
     "D": "#7B68EE",
+    "E": "#4D9BFF",
 }
 INK = "#292D34"  # candidate "Market" colour (kept for reference)
 
@@ -296,23 +306,25 @@ def mark_svg(left: str, right: str) -> str:
     return _svg_doc(DESIGN, DESIGN, f"0 0 {DESIGN} {DESIGN}", body)
 
 
-def lockup_svg(left: str, right: str) -> str:
+def lockup_svg(left: str, right: str, word_left: str | None = None) -> str:
     lay = lockup_layout(left, right)
     grp = "".join(f'<path d="{p.svg_d()}" fill="{p.fill}"/>'
                   for p in build_mark(left, right))
-    wm, _ = wordmark_svg(WORD_CAP, lay["wm_x"], lay["baseline"], left, right)
+    wm, _ = wordmark_svg(WORD_CAP, lay["wm_x"], lay["baseline"],
+                         word_left or left, right)
     vb = (f"{_num(lay['vx0'])} {_num(lay['vy0'])} "
           f"{_num(lay['w'])} {_num(lay['h'])}")
     return _svg_doc(lay["w"], lay["h"], vb, grp + wm)
 
 
-def write_svgs(pair: str = "A") -> None:
+def write_svgs(pair: str = "E") -> None:
     BRAND_DIR.mkdir(parents=True, exist_ok=True)
     left, right = PAIRS[pair]
+    word_left = WORD_LEFT.get(pair, left)
     (BRAND_DIR / "mark.svg").write_text(mark_svg(left, right))
     (BRAND_DIR / "mark-dark.svg").write_text(
         mark_svg(DARK_LEFT[pair], right))
-    (BRAND_DIR / "logo.svg").write_text(lockup_svg(left, right))
+    (BRAND_DIR / "logo.svg").write_text(lockup_svg(left, right, word_left))
 
 
 # --- PNG -----------------------------------------------------------------------
@@ -368,7 +380,8 @@ def render_icon(size: int, box: int, left: str, right: str,
     return out
 
 
-def render_lockup(height: int, left: str, right: str) -> Image.Image:
+def render_lockup(height: int, left: str, right: str,
+                  word_left: str | None = None) -> Image.Image:
     """Full lockup on transparency, `height` px tall."""
     font = inter800()
     cap_units = font["OS/2"].sCapHeight
@@ -389,7 +402,7 @@ def render_lockup(height: int, left: str, right: str) -> Image.Image:
     track = TRACK * WORD_CAP * s
     x = lay["wm_x"] * s - lay["vx0"] * s
     y = lay["baseline"] * s - lay["vy0"] * s
-    for word, colour in (("Market", left), ("Mate", right)):
+    for word, colour in (("Market", word_left or left), ("Mate", right)):
         for ch in word:
             # anchor="ls" puts the advance origin at x, matching the SVG.
             dr.text((x, y), ch, font=pil_font,
@@ -398,9 +411,10 @@ def render_lockup(height: int, left: str, right: str) -> Image.Image:
     return _downscale(img, (width, height))
 
 
-def write_pngs(pair: str = "A") -> None:
+def write_pngs(pair: str = "E") -> None:
     BRAND_DIR.mkdir(parents=True, exist_ok=True)
     left, right = PAIRS[pair]
+    word_left = WORD_LEFT.get(pair, left)
     jobs = [
         ("mark-64.png", render_mark(64, left, right)),
         ("mark-256.png", render_mark(256, left, right)),
@@ -412,8 +426,8 @@ def write_pngs(pair: str = "A") -> None:
         ("icon-512.png", render_icon(512, round(512 * 0.8), left, right)),
         ("icon-maskable-512.png",
          render_icon(512, 400, left, right, border=False)),
-        ("logo-full.png", render_lockup(160, left, right)),
-        ("logo-full@2x.png", render_lockup(320, left, right)),
+        ("logo-full.png", render_lockup(160, left, right, word_left)),
+        ("logo-full@2x.png", render_lockup(320, left, right, word_left)),
     ]
     for name, img in jobs:
         img.save(BRAND_DIR / name)
@@ -426,8 +440,8 @@ def write_pngs(pair: str = "A") -> None:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description="Regenerate MarketMate brand assets.")
-    ap.add_argument("--pair", choices=sorted(PAIRS), default="A",
-                    help="colour pair (default A: purple + green)")
+    ap.add_argument("--pair", choices=sorted(PAIRS), default="E",
+                    help="colour pair (default E: meta blue + green)")
     args = ap.parse_args(argv)
     write_svgs(args.pair)
     write_pngs(args.pair)

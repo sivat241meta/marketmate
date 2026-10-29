@@ -107,7 +107,9 @@ Stored on disk: the SQLite database, item photos, voice clips and the cost ledge
 
 Every commit in this repository was made by Muse Code, Meta's coding agent. 92 of 93 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
 
-Logo: the MarketMate "Mm leaves" mark (purple + green) and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
+Logo: the MarketMate "Mm leaves" mark (Meta blue + green) and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
+
+Design: v11 Meta blue accent (#0866FF, #0064E0) — see [docs/ui/v11-meta-blue-accent.md](docs/ui/v11-meta-blue-accent.md).
 
 Icons: Fluent Emoji (Flat) by Microsoft, MIT licence.
 
