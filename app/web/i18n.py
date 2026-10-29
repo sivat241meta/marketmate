@@ -1153,12 +1153,20 @@ _ENGLISH: dict[str, str] = {
     "hp.picks_empty_d": "Shops near you haven't said today's prices yet. Be the first — it's free.",
     "hp.areas_t": "Explore by market",
     "hp.areas_sub": "Pick a market to filter shops and prices.",
-    "hp.area_counts": "{n} shops · {m} prices today",
+    "hp.area_counts": "{n} {n|hp.shop} · {m} {m|hp.price} today",
+    "hp.shop.one": "shop",
+    "hp.shop.other": "shops",
+    "hp.price.one": "price",
+    "hp.price.other": "prices",
+    "hp.order.one": "order",
+    "hp.order.other": "orders",
     "hp.areas_empty_t": "No markets yet",
     "hp.areas_empty_d": "No shops have said today's prices yet. Start selling and yours can be first.",
     "hp.shops_t": "Shops that joined recently",
+    "hp.shops_sub": "New shops with prices said today.",
+    "hp.slot_t": "Your shop here",
     "hp.new_chip": "New",
-    "hp.prices_today": "{n} prices today",
+    "hp.prices_today": "{n} {n|hp.price} today",
     "hp.shops_empty_t": "No shops yet",
     "hp.shops_empty_d": "Shops that say today's prices will appear here.",
     "hp.chooser_t": "Choose your area",
@@ -2305,12 +2313,20 @@ _TAMIL: dict[str, str] = {
     "hp.picks_empty_d": "அருகிலுள்ள கடைகள் இன்னும் இன்றைய விலைகளைச் சொல்லவில்லை. முதலில் நீங்கள் சொல்லுங்கள் — இலவசம்.",
     "hp.areas_t": "சந்தை வாரியாகப் பாருங்கள்",
     "hp.areas_sub": "கடைகள், விலைகளை வடிகட்ட ஒரு சந்தையைத் தேருங்கள்.",
-    "hp.area_counts": "{n} கடைகள் · இன்று {m} விலைகள்",
+    "hp.area_counts": "{n} {n|hp.shop} · இன்று {m} {m|hp.price}",
+    "hp.shop.one": "கடை",
+    "hp.shop.other": "கடைகள்",
+    "hp.price.one": "விலை",
+    "hp.price.other": "விலைகள்",
+    "hp.order.one": "ஆர்டர்",
+    "hp.order.other": "ஆர்டர்கள்",
     "hp.areas_empty_t": "இன்னும் சந்தைகள் இல்லை",
     "hp.areas_empty_d": "எந்தக் கடையும் இன்றைய விலைகளைச் சொல்லவில்லை. விற்கத் தொடங்குங்கள், உங்கள் கடை முதலில் வரும்.",
     "hp.shops_t": "சமீபத்தில் சேர்ந்த கடைகள்",
+    "hp.shops_sub": "இன்று விலை சொன்ன புதிய கடைகள்.",
+    "hp.slot_t": "உங்கள் கடை இங்கே",
     "hp.new_chip": "புதியது",
-    "hp.prices_today": "இன்று {n} விலைகள்",
+    "hp.prices_today": "இன்று {n} {n|hp.price}",
     "hp.shops_empty_t": "இன்னும் கடைகள் இல்லை",
     "hp.shops_empty_d": "இன்றைய விலைகளைச் சொல்லும் கடைகள் இங்கே தோன்றும்.",
     "hp.chooser_t": "உங்கள் பகுதியைத் தேருங்கள்",
@@ -3457,12 +3473,20 @@ _HINDI: dict[str, str] = {
     "hp.picks_empty_d": "पास की दुकानों ने आज की कीमतें अभी नहीं बताईं। सबसे पहले आप बताएँ — मुफ़्त है।",
     "hp.areas_t": "बाज़ार के हिसाब से देखें",
     "hp.areas_sub": "दुकानें और कीमतें छाँटने के लिए बाज़ार चुनें।",
-    "hp.area_counts": "{n} दुकानें · आज {m} कीमतें",
+    "hp.area_counts": "{n} {n|hp.shop} · आज {m} {m|hp.price}",
+    "hp.shop.one": "दुकान",
+    "hp.shop.other": "दुकानें",
+    "hp.price.one": "कीमत",
+    "hp.price.other": "कीमतें",
+    "hp.order.one": "ऑर्डर",
+    "hp.order.other": "ऑर्डर",
     "hp.areas_empty_t": "अभी बाज़ार नहीं हैं",
     "hp.areas_empty_d": "किसी दुकान ने आज की कीमतें नहीं बताईं। बेचना शुरू करें, आपकी दुकान सबसे पहले दिखेगी।",
     "hp.shops_t": "हाल में जुड़ी दुकानें",
+    "hp.shops_sub": "आज कीमतें बताने वाली नई दुकानें।",
+    "hp.slot_t": "आपकी दुकान यहाँ",
     "hp.new_chip": "नई",
-    "hp.prices_today": "आज {n} कीमतें",
+    "hp.prices_today": "आज {n} {n|hp.price}",
     "hp.shops_empty_t": "अभी दुकानें नहीं हैं",
     "hp.shops_empty_d": "आज की कीमतें बताने वाली दुकानें यहाँ दिखेंगी।",
     "hp.chooser_t": "अपना क्षेत्र चुनें",
@@ -3526,18 +3550,55 @@ def lookup(key: str, lang: str) -> str:
     return _ENGLISH.get(key, key)
 
 
+_PLURAL_UNIT = re.compile(r"\{(\w+)\|([\w.]+)\}")
+
+
+def _has_plural(code: str, key: str) -> bool:
+    """True when ``key.one``/``key.other`` variants exist (else ``count=`` stays a plain format variable, as in ``bills.item_many``)."""
+    table = STRINGS.get(code, _ENGLISH)
+    return (key + ".one" in table or key + ".other" in table
+            or key + ".one" in _ENGLISH or key + ".other" in _ENGLISH)
+
+
+def _plural_word(code: str, key: str, count: Any) -> str:
+    """Unit word for ``count``: ``key.one`` when it equals 1, else ``key.other``."""
+    try:
+        one = int(count) == 1  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        one = False
+    pick = key + (".one" if one else ".other")
+    template = lookup(pick, code)
+    if template == pick:
+        template = lookup(key, code)
+    return template
+
+
 def t_for(lang: str):
-    """Return ``t(key, **vars)`` bound to a language with English fallback."""
+    """Return ``t(key, **vars)`` bound to a language with English fallback.
+
+    Count-aware: ``t(key, count=n)`` picks ``key.one``/``key.other``, and a
+    ``{var|unit.key}`` placeholder inside a template pluralizes by ``var``.
+    """
 
     code = _normalize_lang(lang)
 
     def t(key: str, **vars: Any) -> str:
-        template = lookup(key, code)
+        if "count" in vars and _has_plural(code, key):
+            count = vars.pop("count")
+            vars.setdefault("n", count)
+            template = _plural_word(code, key, count)
+        else:
+            template = lookup(key, code)
         if "default" in vars and template == key:
             default = vars.pop("default")
             template = str(default)
         if not vars:
             return template
+        if "|" in template:
+            template = _PLURAL_UNIT.sub(
+                lambda match: _plural_word(
+                    code, match.group(2), vars.get(match.group(1))),
+                template)
         try:
             return template.format(**vars)
         except (KeyError, IndexError, ValueError):

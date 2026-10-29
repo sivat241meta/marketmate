@@ -37,6 +37,23 @@ def _per_text(per_amount, unit) -> str:
     return ""
 
 
+def _script_lang(text: str | None) -> str:
+    """UI language matching the text's own script: ta/hi for Indic, else en.
+
+    Same Indic ranges as ``app.pipeline.names._has_indic`` (0x0900-0x0DFF),
+    split into Devanagari (hi) and Tamil (ta) so the card can set a ``lang``
+    attribute and CSS ``:lang()`` rules wrap Tamil/Hindi instead of
+    clipping them with an ellipsis.
+    """
+    for char in text or "":
+        code = ord(char)
+        if 0x0B80 <= code <= 0x0BFF:
+            return "ta"
+        if 0x0900 <= code <= 0x097F:
+            return "hi"
+    return "en"
+
+
 def _parse_moment(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -104,8 +121,10 @@ def _pick_cards(entries: list[dict]) -> list[dict]:
                 "name_local": item.name_local,
                 "name_en": item.name_en,
                 "shop_name": shop["name"],
+                "shop_name_lang": _script_lang(shop["name"]),
                 "slug": shop["slug"],
                 "area": shop["area"] or "",
+                "area_lang": _script_lang(shop["area"]),
                 "said": said,
                 "open_state": status["state"],
                 "open_time": status["time"],
@@ -244,6 +263,12 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
         "area": picked,
         "areas": areas,
         "tiles": _area_tiles(entries),
+        "totals": {
+            "n_shops": len(entries),
+            "m_prices": sum(len(item.price_lines)
+                            for entry in entries
+                            for item in entry["items"]),
+        },
         "picks": _pick_cards(scoped),
         "popular": _popular(scoped),
         "shops": _shop_cards(scoped, moment),

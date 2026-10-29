@@ -3773,7 +3773,9 @@ body.home-mkt > .hdr { display: none; }
 .hp-band-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(17, 17, 28, 0.55), rgba(17, 17, 28, 0.35));
+  background:
+    radial-gradient(115% 85% at 50% 38%, rgba(17, 17, 28, 0.62) 0%, rgba(17, 17, 28, 0.28) 55%, rgba(17, 17, 28, 0.12) 100%),
+    linear-gradient(180deg, rgba(17, 17, 28, 0.55), rgba(17, 17, 28, 0.35));
 }
 .hp-hero-in {
   position: relative;
@@ -3931,16 +3933,21 @@ body.home-mkt > .hdr { display: none; }
 .hp-banner-txt h2 { font-size: 20px; margin: 0 0 4px; }
 .hp-banner-txt p { margin: 0; }
 
+/* Task 86: section rhythm — same gap between every homepage section. */
+.home-mkt .content > section + section { margin-top: 64px; }
+/* One heading block everywhere: 26px/800 title, muted subtitle, 16px below. */
+.home-mkt section > h2.h2s { font-size: 26px; }
+.home-mkt section > .lead { margin-bottom: 16px; }
 .hp-sec-head {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 16px;
 }
-.hp-sec-head h2 { margin-bottom: 2px; }
+.hp-sec-head h2 { margin-bottom: 2px; font-size: 26px; font-weight: 800; }
 .hp-sec-head p { margin: 0; }
-.hp-more { font-weight: 700; flex: none; }
+.hp-more { font-weight: 700; flex: none; margin-top: 5px; }
 
 .hp-pick-grid {
   display: grid;
@@ -4006,7 +4013,7 @@ body.home-mkt > .hdr { display: none; }
   white-space: normal;
 }
 .pick-body,
-.shop-body { padding: 12px; display: grid; gap: 4px; align-content: start; }
+.shop-body { padding: 12px; display: grid; gap: 4px; align-content: start; flex: 1; }
 .pick-body p,
 .shop-body p,
 .shop-body h3 { margin: 0; }
@@ -4019,16 +4026,60 @@ body.home-mkt > .hdr { display: none; }
 .pick-card .per,
 .shop-card .per { color: var(--muted); font-size: 12.5px; }
 .pick-card .nm small { display: block; font-weight: 500; color: var(--muted); }
-.shop-line { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.pick-card .shop-name {
+  font-weight: 700;
+  font-size: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pick-card .shop-name:lang(ta),
+.pick-card .shop-name:lang(hi) {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: keep-all;
+}
+.shop-area { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.shop-area span {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shop-area span:lang(ta),
+.shop-area span:lang(hi) {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: keep-all;
+}
 .said-line { font-size: 12.5px; }
 .demo-tag { font-size: 12px; color: var(--muted); font-style: italic; }
 .prices-line { font-weight: 700; font-size: 13.5px; }
 .cheap-line { font-size: 13px; }
 .card-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.pick-card .card-actions,
+.shop-card .card-actions { margin-top: auto; padding-top: 6px; }
+
+.hp-slot {
+  border: 1.5px dashed var(--purple);
+  background: var(--purple-soft);
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  text-align: center;
+  text-decoration: none;
+  padding: 24px 16px;
+  min-height: 200px;
+}
+.hp-slot-t { font-weight: 800; font-size: 16px; color: var(--ink); }
+.hp-slot-cta { font-weight: 700; color: var(--purple-ink); }
 
 .hp-area-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   margin-top: 12px;
 }
@@ -4054,8 +4105,6 @@ body.home-mkt > .hdr { display: none; }
   display: grid;
   place-items: center;
 }
-.hp-reset { justify-self: start; text-decoration: none; }
-
 .hp-shop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -4143,6 +4192,7 @@ body.home-mkt > .hdr { display: none; }
   .hp-pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
+  .home-mkt .content > section + section { margin-top: 40px; }
   .hp-band { min-height: 360px; }
   .hp-headline { font-size: 30px; }
   .hp-banner { flex-direction: column; text-align: center; }

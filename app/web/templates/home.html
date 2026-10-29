@@ -127,12 +127,19 @@
         {% if card.is_demo %}<p class="demo-tag">{{ t('hp.demo') }}</p>{% endif %}
         <p class="price"><span class="pp">{{ card.price | money(card.currency) }}</span><span class="per">/{{ card.per }}</span></p>
         <p class="nm" lang="{{ card.shop_lang }}"><span class="tname">{{ card.name_local }}</span>{% if card.name_en != card.name_local %}<small>{{ card.name_en }}</small>{% endif %}</p>
-        <p class="muted shop-line">{{ ui.obj("pin", 20) }}<span>{{ card.shop_name }} · {{ card.area }}</span></p>
+        <p class="shop-name" lang="{{ card.shop_name_lang }}">{{ card.shop_name }}</p>
+        <p class="muted shop-area" lang="{{ card.area_lang }}">{{ ui.obj("pin", 20) }}<span>{{ card.area }}</span></p>
         <p class="muted said-line">{{ t('hp.said', time=card.said) }}</p>
         <p class="card-actions"><a class="pill ghost sm" href="/s/{{ card.slug }}">{{ t('hp.view') }}</a><a class="pill cta sm" href="/s/{{ card.slug }}/quote">{{ t('hp.order') }}</a></p>
       </div>
     </article>
     {% endfor %}
+    {% if hp.picks|length < 4 %}
+    <a class="pick-card hp-slot" href="/new">
+      <span class="hp-slot-t">{{ t('hp.slot_t') }}</span>
+      <span class="hp-slot-cta">{{ t('hp.start_selling') }} →</span>
+    </a>
+    {% endif %}
   </div>
   {% else %}
   <div class="card hp-empty">
@@ -145,11 +152,19 @@
 </section>
 
 <section id="areas" aria-label="{{ t('hp.areas_t') }}">
-  <h2 class="h2s">{{ t('hp.areas_t') }}</h2>
-  <p class="muted">{{ t('hp.areas_sub') }}</p>
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('hp.areas_t') }}</h2>
+      <p class="muted">{{ t('hp.areas_sub') }}</p>
+    </div>
+  </div>
   {% if hp.tiles %}
   <div class="hp-area-grid">
-    {% if hp.area %}<a class="chip hp-reset" href="/">{{ t('hp.all_areas') }}</a>{% endif %}
+    <a class="area-tile{% if not hp.area %} on{% endif %}" href="/">
+      <span class="tile-ic">{{ ui.obj("pin", 28) }}</span>
+      <b>{{ t('hp.all_areas') }}</b>
+      <small class="muted">{{ t('hp.area_counts', n=hp.totals.n_shops, m=hp.totals.m_prices) }}</small>
+    </a>
     {% for tile in hp.tiles %}
     <a class="area-tile{% if hp.area == tile.name %} on{% endif %}" href="/?area={{ tile.name | urlencode }}">
       <span class="tile-ic">{{ ui.obj("store", 28) }}</span>
@@ -169,7 +184,12 @@
 </section>
 
 <section id="shops" aria-label="{{ t('hp.shops_t') }}">
-  <h2 class="h2s">{{ t('hp.shops_t') }}</h2>
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('hp.shops_t') }}</h2>
+      <p class="muted">{{ t('hp.shops_sub') }}</p>
+    </div>
+  </div>
   {% if hp.shops %}
   <div class="hp-shop-grid">
     {% for shop in hp.shops %}
@@ -189,6 +209,12 @@
       </div>
     </article>
     {% endfor %}
+    {% if hp.shops|length < 4 %}
+    <a class="shop-card hp-slot" href="/new">
+      <span class="hp-slot-t">{{ t('hp.slot_t') }}</span>
+      <span class="hp-slot-cta">{{ t('hp.start_selling') }} →</span>
+    </a>
+    {% endif %}
   </div>
   {% else %}
   <div class="card hp-empty">
