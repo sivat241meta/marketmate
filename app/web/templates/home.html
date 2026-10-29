@@ -1,32 +1,204 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}MarketMate — {{ t('land.hero_a') }} {{ t('land.hero_b') }}{% endblock %}
-{% block body_class %}land{% endblock %}
+{% block body_class %}land home-mkt{% endblock %}
 {% block content %}
-<nav class="land-nav" aria-label="{{ t('top.main_nav') }}">
-  <a href="/market">{{ t('land.nav_find') }}</a>
-  <a href="#how">{{ t('land.nav_how') }}</a>
-  <a href="#who">{{ t('land.nav_sellers') }}</a>
+<div id="strip" class="hp-strip">
+  <button type="button" class="hp-explore" data-chooser-open aria-haspopup="dialog">{{ ui.obj("pin", 20) }}<span>{{ t('hp.strip_exploring', area=(hp.area or t('hp.all_areas'))) }}</span><span aria-hidden="true">▾</span></button>
+  <span class="hp-today"><span class="dot-live" aria-hidden="true"></span>{{ t('hp.strip_today') }}</span>
+</div>
+
+<header id="site-header" class="hp-header">
+  <a class="logo" href="/" aria-label="MarketMate home">
+    <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
+  </a>
+  <nav class="hp-nav" aria-label="{{ t('top.main_nav') }}">
+    <a href="/market">{{ t('hp.nav_find') }}</a>
+    <a href="#picks">{{ t('hp.nav_picks') }}</a>
+    <a href="#areas">{{ t('hp.nav_areas') }}</a>
+    <a href="#sellers">{{ t('hp.nav_sellers') }}</a>
+    <a href="#how">{{ t('hp.nav_how') }}</a>
+  </nav>
   <span class="sp" aria-hidden="true"></span>
-  <a class="pill cta sm" href="/new">{{ t('land.cta_sell') }}</a>
+  <a class="pill cta sm hp-sell" href="/new">{{ t('hp.start_selling') }}<span class="free-badge">{{ t('hp.free') }}</span></a>
+  <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
+  <span class="lang hp-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+  </span>
+  <button type="button" class="iconbtn hp-menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}">☰</button>
+</header>
+<nav id="mobile-nav" class="hp-sheet" aria-label="{{ t('top.main_nav') }}" hidden>
+  <a href="/market">{{ t('hp.nav_find') }}</a>
+  <a href="#picks">{{ t('hp.nav_picks') }}</a>
+  <a href="#areas">{{ t('hp.nav_areas') }}</a>
+  <a href="#sellers">{{ t('hp.nav_sellers') }}</a>
+  <a href="#how">{{ t('hp.nav_how') }}</a>
+  <a href="/my">{{ t('hp.my_orders') }}</a>
+  <span class="lang hp-sheet-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+  </span>
 </nav>
 
-<section id="hero" class="land-hero" aria-label="{{ t('land.hero_a') }}">
-  <figure class="land-photo" title="{{ t('land.photo_by', name='Frédéric Barriol') }}">
-    <img src="{{ static_url('landing/hero.jpg') }}" srcset="{{ static_url('landing/hero-800.jpg') }} 800w, {{ static_url('landing/hero.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 50vw" width="1600" height="1061" alt="{{ t('land.alt_hero') }}" fetchpriority="high">
-    <figcaption>{{ t('land.photo_by', name='Frédéric Barriol') }}</figcaption>
-  </figure>
-  <div class="land-hero-txt">
-    <h1 class="big">{{ t('land.hero_a') }}<br><em>{{ t('land.hero_b') }}</em></h1>
-    <p class="lead">{{ t('land.hero_sub') }}</p>
-    <div class="hero-cta">
-      <a class="pill dark big" href="/new">{{ t('land.cta_sell') }}</a>
-      <a class="pill ghost big" href="/market">{{ t('land.cta_find') }}</a>
+<section id="hero" class="hp-hero" aria-label="{{ t('hp.hero_a') }} {{ hp.area or t('hp.hero_default') }}">
+  <div class="hp-band" title="{{ t('land.photo_by', name='Frédéric Barriol') }}">
+    <img class="hp-band-img" src="{{ static_url('landing/hero.jpg') }}" srcset="{{ static_url('landing/hero-800.jpg') }} 800w, {{ static_url('landing/hero.jpg') }} 1600w" sizes="100vw" width="1600" height="1061" alt="{{ t('land.alt_hero') }}" fetchpriority="high">
+    <div class="hp-band-shade" aria-hidden="true"></div>
+    <div class="hp-hero-in">
+      <h1 class="hp-headline">{{ t('hp.hero_a') }} <span class="hp-place">{{ hp.area or t('hp.hero_default') }}<svg class="icon hp-curve" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10 Q 60 2 110 8 T 196 6" fill="none" stroke="#C4B5FD" stroke-width="5" stroke-linecap="round"/></svg></span> {{ t('hp.hero_b') }}</h1>
+      <p class="hp-sub">{{ t('hp.hero_sub') }}</p>
     </div>
-    <p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('land.honest') }}</span></p>
+    <p class="hp-credit">{{ t('land.photo_by', name='Frédéric Barriol') }}</p>
   </div>
+
+  <form id="search" class="hp-search" method="get" action="/market" aria-label="{{ t('hp.search') }}">
+    <div class="hp-tabs" role="tablist" aria-label="{{ t('hp.what') }}">
+      <button type="button" role="tab" aria-selected="true" class="hp-tab on" data-ph="{{ t('hp.ph_all') }}">{{ t('hp.tab_all') }}</button>
+      <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_veg') }}">{{ t('hp.tab_veg') }}</button>
+      <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_fruit') }}">{{ t('hp.tab_fruit') }}</button>
+      <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_greens') }}">{{ t('hp.tab_greens') }}</button>
+      <a class="hp-tab hp-tab-voice" href="/market#rec-start">{{ t('hp.tab_voice') }}<span class="new-badge">{{ t('hp.new_badge') }}</span></a>
+    </div>
+    <div class="hp-fields">
+      <div class="hp-field hp-what">
+        <label for="hp-q">{{ t('hp.what') }}</label>
+        <input type="search" id="hp-q" name="q" placeholder="{{ t('hp.ph_all') }}" autocomplete="off">
+        <a class="hp-mic" href="/market#rec-start" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
+      </div>
+      <div class="hp-field">
+        <label for="hp-area">{{ t('hp.area') }}</label>
+        <select id="hp-area" name="area" data-near-me="nearme">
+          <option value="">{{ t('hp.all_areas') }}</option>
+          {% for a in hp.areas %}<option value="{{ a.name }}" data-lat="{{ a.lat if a.lat is not none else '' }}" data-lng="{{ a.lng if a.lng is not none else '' }}"{% if hp.area == a.name %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+          <option value="nearme">{{ t('hp.near_me') }}</option>
+        </select>
+      </div>
+      <div class="hp-field">
+        <label for="hp-budget">{{ t('hp.budget') }}</label>
+        <select id="hp-budget" name="budget">
+          <option value="">{{ t('hp.budget_any') }}</option>
+          <option value="100">{{ t('hp.budget_n', n='100') }}</option>
+          <option value="200">{{ t('hp.budget_n', n='200') }}</option>
+          <option value="500">{{ t('hp.budget_n', n='500') }}</option>
+          <option value="1000">{{ t('hp.budget_n', n='1000') }}</option>
+        </select>
+      </div>
+      <button class="pill cta hp-go" type="submit">{{ t('hp.search') }}</button>
+    </div>
+  </form>
+
+  {% if hp.popular %}
+  <p class="hp-popular"><span>{{ t('hp.popular', area=(hp.area or t('hp.all_areas'))) }}</span>
+    {% for chip in hp.popular %}<a class="chip" href="/market?q={{ chip.name | urlencode }}{% if hp.area %}&amp;area={{ hp.area | urlencode }}{% endif %}">{{ chip.name }}</a>{% endfor %}
+  </p>
+  {% endif %}
+  <p class="hp-seller-line"><a href="/new">{{ t('hp.seller_cta') }}</a></p>
+</section>
+<section id="banner" class="hp-banner" aria-label="{{ t('hp.banner_t1') }} {{ t('hp.banner_t2') }}">
+  <span class="hp-banner-ic">{{ ui.obj("chat", 56) }}</span>
+  <div class="hp-banner-txt">
+    <h2>{{ t('hp.banner_t1') }} <span class="purple-ink">{{ t('hp.banner_t2') }}</span></h2>
+    <p class="muted">{{ t('hp.banner_d') }}</p>
+  </div>
+  <a class="pill cta big" href="/new">{{ t('hp.banner_cta') }}</a>
 </section>
 
+<section id="picks" aria-label="{{ t('hp.picks_t') }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('hp.picks_t') }}</h2>
+      <p class="muted">{{ t('hp.picks_sub') }}</p>
+    </div>
+    <a class="hp-more" href="/market{% if hp.area %}?area={{ hp.area | urlencode }}{% endif %}">{{ t('hp.compare') }}</a>
+  </div>
+  {% if hp.picks %}
+  <div class="hp-pick-grid">
+    {% for card in hp.picks %}
+    <article class="pick-card">
+      <div class="pick-photo{% if not card.photo_url %} letter{% endif %}">
+        {% if card.photo_url %}<img src="{{ card.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if card.photo_cutout %} data-cutout class="cut"{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ card.tile }}</span>{% if card.tile_var %}<span class="til-v">{{ card.tile_var }}</span>{% endif %}</span>{% endif %}
+        {% if card.variety %}<span class="chip pick-tag">{{ card.variety }}</span>{% elif card.photo_cutout %}<span class="chip pick-tag">{{ t('hp.cutout') }}</span>{% endif %}
+        {% if card.open_state == "open" %}<span class="pill pill-live pick-open">{{ t('hp.open') }}</span>{% elif card.open_state == "closed" %}<span class="pill sm ghost pick-open">{{ t('hp.closed') }}</span>{% endif %}
+      </div>
+      <div class="pick-body">
+        {% if card.is_demo %}<p class="demo-tag">{{ t('hp.demo') }}</p>{% endif %}
+        <p class="price"><span class="pp">{{ card.price | money(card.currency) }}</span><span class="per">/{{ card.per }}</span></p>
+        <p class="nm" lang="{{ card.shop_lang }}"><span class="tname">{{ card.name_local }}</span>{% if card.name_en != card.name_local %}<small>{{ card.name_en }}</small>{% endif %}</p>
+        <p class="muted shop-line">{{ ui.obj("pin", 20) }}<span>{{ card.shop_name }} · {{ card.area }}</span></p>
+        <p class="muted said-line">{{ t('hp.said', time=card.said) }}</p>
+        <p class="card-actions"><a class="pill ghost sm" href="/s/{{ card.slug }}">{{ t('hp.view') }}</a><a class="pill cta sm" href="/s/{{ card.slug }}/quote">{{ t('hp.order') }}</a></p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card hp-empty">
+    {{ ui.obj("search", 56) }}
+    <p><b>{{ t('hp.picks_empty_t') }}</b></p>
+    <p class="muted">{{ t('hp.picks_empty_d') }}</p>
+    <p><a class="pill cta" href="/new">{{ t('hp.start_selling') }}</a></p>
+  </div>
+  {% endif %}
+</section>
+
+<section id="areas" aria-label="{{ t('hp.areas_t') }}">
+  <h2 class="h2s">{{ t('hp.areas_t') }}</h2>
+  <p class="muted">{{ t('hp.areas_sub') }}</p>
+  {% if hp.tiles %}
+  <div class="hp-area-grid">
+    {% if hp.area %}<a class="chip hp-reset" href="/">{{ t('hp.all_areas') }}</a>{% endif %}
+    {% for tile in hp.tiles %}
+    <a class="area-tile{% if hp.area == tile.name %} on{% endif %}" href="/?area={{ tile.name | urlencode }}">
+      <span class="tile-ic">{{ ui.obj("store", 28) }}</span>
+      <b>{{ tile.name }}</b>
+      <small class="muted">{{ t('hp.area_counts', n=tile.n_shops, m=tile.m_prices) }}</small>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card hp-empty">
+    {{ ui.obj("pin", 56) }}
+    <p><b>{{ t('hp.areas_empty_t') }}</b></p>
+    <p class="muted">{{ t('hp.areas_empty_d') }}</p>
+    <p><a class="pill cta" href="/new">{{ t('hp.start_selling') }}</a></p>
+  </div>
+  {% endif %}
+</section>
+
+<section id="shops" aria-label="{{ t('hp.shops_t') }}">
+  <h2 class="h2s">{{ t('hp.shops_t') }}</h2>
+  {% if hp.shops %}
+  <div class="hp-shop-grid">
+    {% for shop in hp.shops %}
+    <article class="shop-card">
+      <div class="shop-photo{% if not shop.photo_url %} letter{% endif %}">
+        {% if shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if shop.photo_cutout %} data-cutout class="cut"{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ shop.tile }}</span></span>{% endif %}
+        {% if shop.is_new %}<span class="chip c-new shop-new">{{ t('hp.new_chip') }}</span>{% endif %}
+        {% if shop.open_state == "open" %}<span class="pill pill-live shop-open">{{ t('hp.open') }}</span>{% elif shop.open_state == "closed" %}<span class="pill sm ghost shop-open">{{ t('hp.closed') }}</span>{% endif %}
+      </div>
+      <div class="shop-body">
+        {% if shop.is_demo %}<p class="demo-tag">{{ t('hp.demo') }}</p>{% endif %}
+        <h3>{{ shop.name }}</h3>
+        <p class="muted">{{ shop.area }}</p>
+        <p class="prices-line">{{ t('hp.prices_today', n=shop.n_prices) }}</p>
+        {% if shop.cheapest %}<p class="cheap-line">{% for item in shop.cheapest %}{{ item.name | capitalize }} {{ item.price | money(item.currency) }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+        <p class="card-actions"><a class="pill ghost sm" href="/s/{{ shop.slug }}">{{ t('hp.view') }}</a><a class="pill cta sm" href="/s/{{ shop.slug }}/quote">{{ t('hp.order') }}</a></p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card hp-empty">
+    {{ ui.obj("store", 56) }}
+    <p><b>{{ t('hp.shops_empty_t') }}</b></p>
+    <p class="muted">{{ t('hp.shops_empty_d') }}</p>
+    <p><a class="pill cta" href="/new">{{ t('hp.start_selling') }}</a></p>
+  </div>
+  {% endif %}
+</section>
 <section id="value" aria-label="{{ t('land.value_t') }}">
   <h2 class="h2s">{{ t('land.value_t') }}</h2>
   <div class="land-grid">
@@ -60,16 +232,27 @@
 <section id="how" aria-label="{{ t('land.how_t') }}">
   <h2 class="h2s">{{ t('land.how_t') }}</h2>
   <div class="land-how">
-    <ol class="land-steps">
-      <li><span class="land-num" aria-hidden="true">1</span><span class="land-step-ic">{{ ui.obj("video", 28) }}</span><div><b>{{ t('land.h1_t') }}</b><p class="muted">{{ t('land.h1_d') }}</p></div></li>
-      <li><span class="land-num" aria-hidden="true">2</span><span class="land-step-ic">{{ ui.obj("check", 28) }}</span><div><b>{{ t('land.h2_t') }}</b><p class="muted">{{ t('land.h2_d') }}</p></div></li>
-      <li><span class="land-num" aria-hidden="true">3</span><span class="land-step-ic">{{ ui.obj("link", 28) }}</span><div><b>{{ t('land.h3_t') }}</b><p class="muted">{{ t('land.h3_d') }}</p></div></li>
+    <ol class="land-steps hp-steps">
+      <li class="card hp-step"><span class="land-num" aria-hidden="true">1</span><span class="land-step-ic">{{ ui.obj("video", 28) }}</span><div><b>{{ t('land.h1_t') }}</b><p class="muted">{{ t('land.h1_d') }}</p></div></li>
+      <li class="card hp-step"><span class="land-num" aria-hidden="true">2</span><span class="land-step-ic">{{ ui.obj("check", 28) }}</span><div><b>{{ t('land.h2_t') }}</b><p class="muted">{{ t('land.h2_d') }}</p></div></li>
+      <li class="card hp-step"><span class="land-num" aria-hidden="true">3</span><span class="land-step-ic">{{ ui.obj("link", 28) }}</span><div><b>{{ t('land.h3_t') }}</b><p class="muted">{{ t('land.h3_d') }}</p></div></li>
     </ol>
     <figure class="land-photo" title="{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}">
       <img src="{{ static_url('landing/seller-phone.jpg') }}" srcset="{{ static_url('landing/seller-phone-800.jpg') }} 800w, {{ static_url('landing/seller-phone.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 50vw" width="1600" height="1246" alt="{{ t('land.alt_seller') }}" loading="lazy">
       <figcaption>{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}</figcaption>
     </figure>
   </div>
+</section>
+
+<section id="sellers" class="hp-sellers" aria-label="{{ t('land.nav_sellers') }}">
+  <p class="kick">{{ t('land.nav_sellers') }}</p>
+  <h2 class="big">{{ t('land.hero_a') }} <em>{{ t('land.hero_b') }}</em></h2>
+  <p class="lead">{{ t('land.hero_sub') }}</p>
+  <div class="hero-cta">
+    <a class="pill dark big" href="/new">{{ t('land.cta_sell') }}</a>
+    <a class="pill ghost big" href="#how">{{ t('land.nav_how') }}</a>
+  </div>
+  <p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('land.honest') }}</span></p>
 </section>
 
 <section id="customers" aria-label="{{ t('land.cust_t') }}">
@@ -104,13 +287,14 @@
 
 <section id="meta" class="land-meta" aria-label="{{ t('land.meta_t') }}">
   <h2 class="h2s">{{ t('land.meta_t') }}</h2>
-  <ul>
-    <li>{{ ui.obj("robot", 20) }}<span>{{ t('land.meta_voice') }}</span></li>
-    <li>{{ ui.obj("check", 20) }}<span>{{ t('land.meta_spark') }}</span></li>
-    <li>{{ ui.obj("camera", 20) }}<span>{{ t('land.meta_sam') }}</span></li>
-    <li>{{ ui.obj("settings", 20) }}<span>{{ t('land.meta_open') }}</span></li>
-    <li>{{ ui.obj("ledger", 20) }}<span><a href="https://github.com/sivat241meta/marketmate/blob/main/README.md#meta-ai-calls">{{ t('land.meta_log') }}</a></span></li>
-  </ul>
+  <div class="hp-meta-grid">
+    <div class="card hp-meta-card">{{ ui.obj("robot", 24) }}<span>{{ t('land.meta_voice') }}</span></div>
+    <div class="card hp-meta-card">{{ ui.obj("check", 24) }}<span>{{ t('land.meta_spark') }}</span></div>
+    <div class="card hp-meta-card">{{ ui.obj("camera", 24) }}<span>{{ t('land.meta_sam') }}</span></div>
+    <div class="card hp-meta-card">{{ ui.obj("settings", 24) }}<span>{{ t('land.meta_open') }}</span></div>
+  </div>
+  <p class="hp-meta-log">{{ ui.obj("ledger", 20) }}<span><a href="https://github.com/sivat241meta/marketmate/blob/main/README.md#meta-ai-calls">{{ t('land.meta_log') }}</a></span></p>
+  <p class="hp-meta-log"><span>{{ t('hp.meta_calls') }}</span></p>
   <p class="built-with">{{ t('land.meta_code') }}</p>
 </section>
 
@@ -127,4 +311,34 @@
   <p class="muted">{{ t('land.icons_credit') }}</p>
   <p>{{ t('land.honest') }}</p>
 </footer>
+
+<div id="area-chooser" class="hp-modal" hidden role="dialog" aria-modal="true" aria-label="{{ t('hp.chooser_t') }}">
+  <div class="hp-modal-card" role="document">
+    <h2>{{ t('hp.chooser_t') }}</h2>
+    <p class="muted">{{ t('hp.chooser_d') }}</p>
+    <div class="field">
+      <label class="visually-hidden" for="chooser-q">{{ t('hp.chooser_search') }}</label>
+      <input type="search" id="chooser-q" data-chooser-search placeholder="{{ t('hp.chooser_search') }}" autocomplete="off">
+    </div>
+    <p><button type="button" class="pill ghost" data-detect data-detecting="{{ t('hp.detecting') }}" data-fail="{{ t('hp.detect_fail') }}">{{ ui.obj("pin", 20) }}{{ t('hp.detect') }}</button></p>
+    <p class="muted" data-detect-msg aria-live="polite" hidden></p>
+    <div class="hp-choose-grid">
+      {% for tile in hp.tiles %}
+      <button type="button" class="choose-tile" data-pick="{{ tile.name }}" data-area-lat="{{ tile.lat if tile.lat is not none else '' }}" data-area-lng="{{ tile.lng if tile.lng is not none else '' }}" data-name-lower="{{ tile.name | lower }}">
+        {% if tile.photo_url %}<img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150">{% else %}<span class="tile-ic">{{ ui.obj("pin", 28) }}</span>{% endif %}
+        <b>{{ tile.name }}</b>
+        <small class="muted">{{ t('hp.area_counts', n=tile.n_shops, m=tile.m_prices) }}</small>
+      </button>
+      {% endfor %}
+    </div>
+    <p class="muted" data-no-match hidden>{{ t('hp.no_match') }}</p>
+    <p class="hp-modal-actions">
+      <button type="button" class="pill dark" data-skip>{{ t('hp.skip') }}</button>
+      <button type="button" class="pill ghost" data-close>{{ t('hp.close') }}</button>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('home.js') if static_url is defined else '/static/home.js' }}"></script>
 {% endblock %}
