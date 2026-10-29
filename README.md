@@ -25,6 +25,7 @@ Billing:
 
 Customer:
 
+- Marketplace homepage: hero search, top picks, markets, new shops, and an area chooser.
 - Shop page with product tiles and today's prices.
 - Order by voice, text or photo. "My orders" shows status.
 - Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in MarketMate's Find a shop", on for new shops, switch in Settings). The market page has an honest empty state.
@@ -92,7 +93,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1456 tests pass. `.venv/bin/ruff check .` is clean.
+1480 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Deploy
 
