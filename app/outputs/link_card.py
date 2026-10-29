@@ -12,6 +12,8 @@ from app.outputs.qr import qr_png
 
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
+_BRAND_URI = (Path(__file__).resolve().parent.parent
+              / "web" / "static" / "brand").as_uri()
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 
 
@@ -29,5 +31,5 @@ def link_card_pdf(shop: sqlite3.Row, seller_url: str, lang: str = "en") -> bytes
                    + base64.b64encode(qr_png(seller_url)).decode())
     html = template.render(
         shop=shop, seller_url=seller_url, qr_data_uri=qr_data_uri,
-        fonts_uri=_FONTS_URI)
+        fonts_uri=_FONTS_URI, brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()

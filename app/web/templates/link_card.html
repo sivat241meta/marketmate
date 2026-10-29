@@ -67,6 +67,7 @@ body {
   text-align: center;
 }
 h1 { color: #292D34; font-size: 30px; margin: 0 0 4px; }
+h1 img.brand { height: 30px; width: 30px; vertical-align: -5px; margin-right: 8px; }
 .shop { font-size: 20px; margin: 0 0 12px; }
 img.qr { width: 220px; height: 220px; }
 .url { font-size: 13px; word-break: break-all; color: #3C4048; }
@@ -79,7 +80,7 @@ img.qr { width: 220px; height: 220px; }
 </head>
 <body>
 <div class="card">
-  <h1>{{ t('set.keep_safe') }} — MarketMate</h1>
+  <h1><img class="brand" src="{{ brand_uri }}/mark.svg" alt="MarketMate">{{ t('set.keep_safe') }} — MarketMate</h1>
   <p class="shop">{{ shop["name"] }}</p>
   <img class="qr" src="{{ qr_data_uri }}" alt="seller link QR">
   <p class="url">{{ seller_url }}</p>

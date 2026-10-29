@@ -14,7 +14,7 @@ Seller:
 - A check page where every price keeps its voice-clip proof. The seller taps unclear ones, then approves.
 - Approve publishes a version: shop page, WhatsApp price message, price board PDF, shelf tags, CSV and Excel.
 - Edit names on the check page or later. Names are remembered for the next list and for billing.
-- Cut-out photos: whole objects only, cross-checked against the other items' masks and verified by one vision call. No photo is better than a wrong photo.
+- Cut-out photos: whole objects only (a shape test rejects half fruit), cross-checked against the other items' masks and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
 
 Billing:
 
@@ -88,7 +88,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1384 tests pass. `.venv/bin/ruff check .` is clean.
+1404 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Deploy
 
@@ -100,7 +100,9 @@ Stored on disk: the SQLite database, item photos, voice clips and the cost ledge
 
 ## How it was built
 
-Every commit in this repository was made by Muse Code, Meta's coding agent. 87 of 88 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
+Every commit in this repository was made by Muse Code, Meta's coding agent. 92 of 93 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
+
+Logo: the MarketMate basket-M mark and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
 
 ## Limits and next steps
 
