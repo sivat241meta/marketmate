@@ -107,7 +107,6 @@
 {% endif %}
 
 <section class="step-card" id="step-day" aria-label="{{ t('t61.step2_kick') }}">
-  <p class="kick"><span class="step-num" aria-hidden="true">2</span> {{ t('t61.step2_kick') }}</p>
   <div class="grp" data-grp="orders">
     <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("bags") }}<span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></button>
     {% if open_orders %}

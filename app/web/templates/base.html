@@ -98,7 +98,7 @@
     <a href="/e/{{ token }}#more">{{ t('nav.more') }}</a>
   </nav>
   {% elif _shop_known %}
-  <span class="shop-id"><b>{{ shop["name"] }}</b>{% if _ann and _ann.prices_time %}<span class="chip c-live">{{ t('shell.open_now') }}</span><span class="muted">{{ _ann.prices_time }}</span>{% endif %}</span>
+  <span class="shop-id"><b class="shop-name">{{ shop["name"] }}</b>{% if _ann and _ann.prices_time %}<span class="chip c-live">{{ t('shell.open_now') }}</span><span class="muted">{{ _ann.prices_time }}</span>{% endif %}</span>
   <nav class="nav" aria-label="{{ t('top.main_nav') }}">
     <a class="{% if _path == "/s/" ~ shop["slug"] %}on{% endif %}" href="/s/{{ shop["slug"] }}">{{ t('shell.todays_prices') }}</a>
     <a class="{% if _path.startswith("/s/" ~ shop["slug"] ~ "/quote") %}on{% endif %}" href="/s/{{ shop["slug"] }}/quote">{{ t('shell.order_voice') }}</a>

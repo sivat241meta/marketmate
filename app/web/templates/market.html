@@ -42,19 +42,20 @@
 <form method="get" action="/market" class="filters" data-filters>
   <input type="hidden" name="q" value="{{ q or '' }}">
   {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
+  {% if budget %}<input type="hidden" name="budget" value="{{ budget }}">{% endif %}
   <input type="hidden" name="sort" id="sort-value" value="{{ sort }}">
   <input type="hidden" name="open_now" value="0">
   <div class="filter-chips" role="group" aria-label="{{ t('market.all_areas') }}">
-    <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}">{{ t('market.all_areas') }}</a>
-    {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}">{{ a }}</a>{% endfor %}
+    <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.all_areas') }}</a>
+    {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ a }}</a>{% endfor %}
     <label class="chip chip-check{% if open_now %} on{% endif %}" for="market-open">
       <input id="market-open" type="checkbox" name="open_now" value="1"{% if open_now %} checked{% endif %} onchange="this.form.submit()">
       {{ ui.obj("clock", 20) }}<span>{{ t('market.open_now') }}</span>
     </label>
     <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
     <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
-      <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total">{{ t('market.sort_total') }}</a>
-      <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance">{{ t('market.sort_distance') }}</a>
+      <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
+      <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_distance') }}</a>
     </span>
     <span class="pin-wrap">
       <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>

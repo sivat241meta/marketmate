@@ -3,7 +3,7 @@ import secrets
 import sqlite3
 import subprocess
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
 
@@ -29,6 +29,7 @@ from app.pipeline.names import PRODUCE_KEYWORDS
 from app.web import bills as bills_routes
 from app.web import close as close_routes
 from app.web import credit as credit_routes
+from app.web import home_data as home_data_mod
 from app.web import live as live_routes
 from app.web import photos as photo_routes
 from app.web import purchases as purchases_routes
@@ -40,6 +41,21 @@ from app.web import shell as shell_data
 
 def _fmt_rate(value: Decimal) -> str:
     return format(value.quantize(Decimal("0.01")).normalize(), "f")
+
+
+def _parse_budget(value: str | None) -> Decimal | None:
+    """Basket budget from a ``?budget=`` param; None when blank/invalid."""
+    text = (value or "").strip().replace("₹", "").replace(",", "")
+    text = text.replace(" ", "")
+    if not text:
+        return None
+    try:
+        amount = Decimal(text)
+    except InvalidOperation:
+        return None
+    if amount.is_nan() or amount <= 0:
+        return None
+    return amount
 
 
 def build_static_url(static_dir: Path):
@@ -279,7 +295,7 @@ def create_app(settings: Settings) -> FastAPI:
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None, areas=None,
                         area="", pincode="", open_now=True, sort="total",
-                        market_empty=False):
+                        market_empty=False, budget=""):
         from app.web.i18n import get_strings, get_ui_lang
 
         flat = rows or []
@@ -292,6 +308,7 @@ def create_app(settings: Settings) -> FastAPI:
             "areas": areas or [], "area": area or "",
             "pincode": pincode or "", "open_now": open_now,
             "sort": sort or "total", "market_empty": market_empty,
+            "budget": budget or "",
             "t": get_strings(ui_lang),
             "ui_lang": ui_lang})
 
@@ -338,11 +355,14 @@ def create_app(settings: Settings) -> FastAPI:
         )
 
     @app.get("/")
-    def home(request: Request):
+    def home(request: Request, conn: Conn, area: str | None = None):
         from app.web.i18n import get_ui_lang
 
+        data = home_data_mod.home_data(conn, area=area)
         return templates.TemplateResponse(
-            request, "home.html", {"ui_lang": get_ui_lang(request)})
+            request, "home.html", {
+                "ui_lang": get_ui_lang(request),
+                "hp": data})
 
     @app.get("/my")
     def my_page(request: Request):
@@ -367,17 +387,19 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/market")
     def market_page(request: Request, conn: Conn, q: str | None = None,
                     area: str | None = None, pincode: str | None = None,
-                    sort: str | None = None):
+                    sort: str | None = None, budget: str | None = None):
         areas = db.listed_areas(conn)
         # The open-now toggle is on by default; the form always sends
         # open_now=0 plus open_now=1 when ticked, so read every value.
         picked = request.query_params.getlist("open_now")
         open_flag = ("1" in picked) if picked else True
         sort_mode = sort if sort in ("total", "distance") else "total"
+        budget_text = budget or ""
         if not q or not q.strip():
             return _market_context(request, areas=areas, area=area or "",
                                    pincode=pincode or "",
-                                   open_now=open_flag, sort=sort_mode)
+                                   open_now=open_flag, sort=sort_mode,
+                                   budget=budget_text)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
         try:
@@ -387,7 +409,11 @@ def create_app(settings: Settings) -> FastAPI:
             return _market_context(request, q=q.strip(), error=str(exc),
                                    searched=True, areas=areas,
                                    area=area or "", pincode=pincode or "",
-                                   open_now=open_flag, sort=sort_mode)
+                                   open_now=open_flag, sort=sort_mode,
+                                   budget=budget_text)
+        explicit = _parse_budget(budget)
+        if explicit is not None:
+            query.budget = explicit
         now = datetime.now(UTC)
         listings = find_listings(conn, query, now, area=(area or None),
                                  pincode=(pincode or None),
@@ -402,7 +428,7 @@ def create_app(settings: Settings) -> FastAPI:
                     else _build_basket(conn, query, listings, ledger)),
             searched=True, areas=areas, area=area or "",
             pincode=pincode or "", open_now=open_flag, sort=sort_mode,
-            market_empty=market_empty)
+            market_empty=market_empty, budget=budget_text)
 
     @app.post("/market/voice")
     async def market_voice(request: Request):
