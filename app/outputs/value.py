@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from app.models import Item
+from app.pipeline.names import display_name_en
 from app.pipeline.units import convert
 
 
@@ -19,15 +20,10 @@ def _valued_line(lines, qty: Decimal, unit: str):
     return None
 
 
-def stock_value(items: list[Item]) -> tuple[Decimal, list[str]]:
-    """Total stock value plus names left out (no qty, or qty unit converts
-    to none of the item's price-line units). Uses the first convertible line.
-
-    A photo stock estimate wins when it converts to a price line; otherwise
-    the spoken quantity is used exactly as before.
-    """
+def _partition_stock(items: list[Item]) -> tuple[Decimal, list[Item]]:
+    """(Total stock value, items left out of it)."""
     total = Decimal(0)
-    left_out: list[str] = []
+    out: list[Item] = []
     for item in items:
         if item.sold_out:
             continue
@@ -40,12 +36,38 @@ def stock_value(items: list[Item]) -> tuple[Decimal, list[str]]:
                 total += line.price * amount / line.per_amount
                 continue
         if item.qty is None or item.qty_unit is None:
-            left_out.append(item.name_en)
+            out.append(item)
             continue
         found = _valued_line(item.price_lines, item.qty, item.qty_unit)
         if found is None:
-            left_out.append(item.name_en)
+            out.append(item)
             continue
         line, amount = found
         total += line.price * amount / line.per_amount
-    return (total, left_out)
+    return (total, out)
+
+
+def stock_value(items: list[Item]) -> tuple[Decimal, list[str]]:
+    """Total stock value plus names left out (no qty, or qty unit converts
+    to none of the item's price-line units). Uses the first convertible line.
+
+    A photo stock estimate wins when it converts to a price line; otherwise
+    the spoken quantity is used exactly as before.
+    """
+    total, out = _partition_stock(items)
+    return (total, [item.name_en for item in out])
+
+
+def stock_left_out_display(items: list[Item]) -> list[str]:
+    """Left-out names for display: "name (variety)", de-duplicated.
+
+    Five uncounted bananas show once per variety instead of
+    "banana, banana, …".
+    """
+    _, out = _partition_stock(items)
+    display: list[str] = []
+    for item in out:
+        label = display_name_en(item.name_en, item.variety)
+        if label and label not in display:
+            display.append(label)
+    return display

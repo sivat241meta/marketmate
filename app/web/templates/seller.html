@@ -7,16 +7,14 @@
 {% if is_staff %}<div class="alert">{{ t('bill.made_by', name=helper_name) }}</div>{% endif %}
 {% if renamed %}<div class="alert alert-ok" data-rename-notice>{{ t('rename.done') }}</div>{% endif %}
 
-<p class="kick">{{ today_label }}</p>
-<h1 class="big">{{ t(greet_key, name=shop["name"]) }}<br><em>{{ t('sh.sold_today', total=bills.sales_today | money(shop["currency"])) }}</em></h1>
-{% if live %}<p>{{ ui.pill(t('dash.live_pill', count=live_count), "live") }}</p>{% endif %}
+<h1 class="today-title">{{ t('nav.today') }}</h1>
+<p class="muted today-meta">{{ t(greet_word_key) }} · {{ today_label }} · {{ t('t68.sold_today', total=bills.sales_today | money(shop["currency"])) }} · {% if live %}{{ t('dash.live_pill', count=live_count) }}{% else %}{{ t('t68.not_live') }}{% endif %}</p>
 
 <div class="with-side">
 <div class="ws-main">
 {% if not is_staff %}
-<section class="step-card grp" id="step-morning" aria-label="{{ t('t61.step1_kick') }}">
-  <div class="gh"><span aria-hidden="true">▾</span>{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></div>
-  <p class="kick"><span class="step-num" aria-hidden="true">1</span> {{ t('t61.step1_kick') }}</p>
+<section class="step-card grp" id="step-morning" data-grp="morning" aria-label="{{ t('t61.step1_kick') }}">
+  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></button>
   {% if show_hours_nudge|default(false) %}<p class="notice">{{ ui.icon("check") }}<span><a href="/e/{{ token }}/settings">{{ t('hours.nudge') }}</a></span></p>{% endif %}
   {% if first_run|default(false) %}
   <div class="card start-card" id="say-prices" aria-label="{{ t('gs.kick') }}">
@@ -110,8 +108,8 @@
 
 <section class="step-card" id="step-day" aria-label="{{ t('t61.step2_kick') }}">
   <p class="kick"><span class="step-num" aria-hidden="true">2</span> {{ t('t61.step2_kick') }}</p>
-  <div class="grp">
-    <div class="gh"><span aria-hidden="true">▾</span><span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></div>
+  <div class="grp" data-grp="orders">
+    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}<span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></button>
     {% if open_orders %}
     {% for order in open_orders %}
     <div class="order-mini" data-search-row="{{ order.label }} {{ order.names | join(' ') }}">
@@ -134,8 +132,8 @@
     <p class="muted">{{ t('t61.no_orders') }}</p>
     {% endif %}
   </div>
-  <div class="grp">
-    <div class="gh"><span aria-hidden="true">▾</span><span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></div>
+  <div class="grp" data-grp="bills">
+    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}<span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></button>
     <div class="stat-grid step-stats">
       <a class="stat{% if count_new %} is-new{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting"><b class="stat-num" data-orders-badge data-orders-keep-zero>{{ count_new }}</b><span class="stat-label">{{ t('sh.new_orders') }}</span></a>
       <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=packing"><b class="stat-num">{{ count_packing }}</b><span class="stat-label">{{ t('bills.pill_packing') }}</span></a>
@@ -156,9 +154,8 @@
 </section>
 
 {% if not is_staff %}
-<section class="step-card grp" id="step-evening" aria-label="{{ t('t61.step3_kick') }}">
-  <div class="gh"><span aria-hidden="true">▾</span>{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></div>
-  <p class="kick"><span class="step-num" aria-hidden="true">3</span> {{ t('t61.step3_kick') }}</p>
+<section class="step-card grp" id="step-evening" data-grp="evening" aria-label="{{ t('t61.step3_kick') }}">
+  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></button>
   {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
   <div class="stat-grid step-stats">
     <div class="stat"><b class="stat-num money">{{ close_preview.sales }}</b><span class="stat-label">{{ close_preview.bills }} {{ t('close.bills') }}</span></div>
@@ -176,15 +173,19 @@
 <details class="list-card" id="todays-list" open>
   <summary class="section-head"><span>{{ t('dash.todays_list') }}</span>{% if versions %}<a href="/e/{{ token }}/update">{{ t('dash.edit') }}</a>{% endif %}</summary>
   {% if stock %}
+  {% if stock.counted %}
   <p class="muted"><strong>{{ t('dash.stock_total', total=stock.total | money(shop["currency"]), vid=stock.version_id) }}</strong>{% if stock.left_out %} {{ t('dash.stock_left_out', items=stock.left_out | join(", ")) }}{% endif %}</p>
+  {% else %}
+  <p class="muted">{{ t('dash.stock_not_counted') }}</p>
+  {% endif %}
   {% endif %}
   {% if items %}
   {% for item in items %}
   <div class="list-row" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb letter" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
     <div class="list-main">
       <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
-      <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
+      <span class="list-sub">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ t('dash.per', per=item.lines[0].per) }}{% endif %}</span>
       {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
       {% if item.margin_chip %}<span class="list-sub">{{ item.margin_chip }}</span>{% endif %}
       {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
@@ -201,7 +202,7 @@
         </label>
       </form>
       <details class="rename-sheet" data-rename-sheet>
-        <summary class="pen" data-rename-open>{{ t('rename.edit_name') }}</summary>
+        <summary class="pen-icon" data-rename-open aria-label="{{ t('rename.open') }}">{{ ui.icon("pencil") }}</summary>
         <form method="post" action="/e/{{ token }}/item/{{ item.id }}/name" data-rename-form>
           <h3>{{ t('rename.title') }}</h3>
           <p class="muted">{{ t('rename.sub') }}</p>
@@ -277,12 +278,12 @@
   <h4>{{ t('t64.live_side', n=items | length) }}</h4>
   {% for item in items %}
   <div class="mini" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}
-    <div><span lang="{{ shop_lang }}">{{ item.name_local }}</span><br><span class="per">{% if item.variety %}{{ item.variety }} · {% endif %}{% if item.lines %}{{ item.lines[0].per }}{% endif %}</span></div>
+    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
+    <div class="mini-main"><span class="mini-name" lang="{{ shop_lang }}">{{ item.name_local }}</span><span class="per">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ t('dash.per', per=item.lines[0].per) }}{% endif %}</span></div>
     <span class="p">{% if item.lines %}{{ item.lines[0].price | money(shop["currency"]) }}{% endif %}</span>
     {% if not is_staff %}
     <details class="rename-sheet" data-rename-sheet>
-      <summary class="pen" data-rename-open>{{ t('rename.edit_name') }}</summary>
+      <summary class="pen-icon" data-rename-open aria-label="{{ t('rename.open') }}">{{ ui.icon("pencil") }}</summary>
       <form method="post" action="/e/{{ token }}/item/{{ item.id }}/name" data-rename-form>
         <h3>{{ t('rename.title') }}</h3>
         <p class="muted">{{ t('rename.sub') }}</p>
@@ -304,6 +305,7 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
+<script src="{{ static_url('rename-dialog.js') if static_url is defined else '/static/rename-dialog.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-gs-step]").forEach((step) => {
@@ -359,34 +361,30 @@ document.addEventListener("DOMContentLoaded", () => {
     installIos.hidden = false;
     if (installBtn) { installBtn.hidden = true; }
   }
-  document.querySelectorAll("[data-rename-sheet]").forEach((sheet) => {
-    const cancel = sheet.querySelector("[data-rename-cancel]");
-    if (cancel) {
-      cancel.addEventListener("click", () => {
-        sheet.removeAttribute("open");
-      });
+  document.querySelectorAll("[data-grp]").forEach((grp) => {
+    const toggle = grp.querySelector("[data-grp-toggle]");
+    if (!toggle) {
+      return;
     }
-    const form = sheet.querySelector("[data-rename-form]");
-    if (form) {
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const error = form.querySelector("[data-rename-error]");
-        const response = await fetch(form.action, {
-          method: "POST",
-          body: new FormData(form),
-          headers: { Accept: "application/json" },
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          if (error) {
-            error.textContent = data.detail || "";
-            error.hidden = !data.detail;
-          }
-          return;
+    const key = "mm_grp_{{ token }}_" + grp.getAttribute("data-grp");
+    const apply = (collapsed) => {
+      grp.classList.toggle("is-collapsed", collapsed);
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    };
+    let saved = null;
+    try {
+      saved = window.localStorage && localStorage.getItem(key);
+    } catch (err) { /* private mode: groups just stay open */ }
+    apply(saved === "1");
+    toggle.addEventListener("click", () => {
+      const collapsed = !grp.classList.contains("is-collapsed");
+      apply(collapsed);
+      try {
+        if (window.localStorage) {
+          localStorage.setItem(key, collapsed ? "1" : "0");
         }
-        window.location = form.action.split("/item/")[0] + "?renamed=1";
-      });
-    }
+      } catch (err) { /* private mode */ }
+    });
   });
   document.querySelectorAll("[data-item-photo-form]").forEach((form) => {
     form.addEventListener("submit", async (event) => {

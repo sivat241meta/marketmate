@@ -344,6 +344,12 @@ function saveRename(sheet) {
       mark.hidden = false;
     }
   }
+  const dialog = typeof window !== "undefined"
+    ? window.MMRenameDialog : null;
+  if (dialog && dialog.isOpen()) {
+    dialog.close();
+    return;
+  }
   sheet.hidden = true;
 }
 
@@ -413,6 +419,12 @@ document.addEventListener("DOMContentLoaded", () => {
       reset("name_local", current.local);
       reset("name_en", current.en);
       reset("variety", current.variety);
+      const dialog = typeof window !== "undefined"
+        ? window.MMRenameDialog : null;
+      if (dialog) {
+        dialog.open(sheet, button);
+        return;
+      }
       sheet.hidden = false;
       const first = sheet.querySelector('input[name="name_local"]');
       if (first && first.focus) {
@@ -436,6 +448,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const cancel = sheet.querySelector("[data-rename-cancel]");
     if (cancel) {
       cancel.addEventListener("click", () => {
+        const dialog = typeof window !== "undefined"
+          ? window.MMRenameDialog : null;
+        if (dialog) {
+          dialog.close();
+          return;
+        }
         sheet.hidden = true;
       });
     }

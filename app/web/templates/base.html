@@ -64,25 +64,25 @@
 </div>
 <nav class="rail" aria-label="{{ t('nav.seller_label') }}">
   <span class="logo-sq" aria-hidden="true">{{ ui.icon("check") }}</span>
-  <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.today') }}</span></a>
+  <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('rail.today') }}</span></a>
   {% if not _staff %}
-  <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('nav.prices') }}</span></a>
+  <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('rail.prices') }}</span></a>
   {% endif %}
-  <a class="ic{% if _on_orders %} on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
-  <a class="ic{% if _on_bills %} on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="ic{% if _on_orders %} on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('rail.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
+  <a class="ic{% if _on_bills %} on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('rail.bills') }}</span></a>
   {% if not _staff or can_credit|default(false) %}
-  <a class="ic{% if _on_credit %} on{% endif %}" href="/e/{{ token }}/credit">{{ ui.icon("tag") }}<span>{{ t('nav.credit') }}</span></a>
+  <a class="ic{% if _on_credit %} on{% endif %}" href="/e/{{ token }}/credit">{{ ui.icon("tag") }}<span>{{ t('rail.credit') }}</span></a>
   {% endif %}
   {% if not _staff %}
-  <a class="ic{% if _on_close %} on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="ic{% if _on_close %} on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('rail.close') }}</span></a>
   {% endif %}
-  <a class="ic more" href="/e/{{ token }}#more">{{ ui.icon("settings") }}<span>{{ t('nav.more') }}</span></a>
+  <a class="ic more" href="/e/{{ token }}#more">{{ ui.icon("settings") }}<span>{{ t('rail.more') }}</span></a>
 </nav>
 {% endif %}
 <header class="hdr">
   <a class="logo" href="{% if _is_seller %}/e/{{ token }}{% elif _shop_known %}/s/{{ shop["slug"] }}{% else %}/{% endif %}" aria-label="MarketMate home">
     {{ _mark() }}
-    <span>MarketMate</span>
+    <span class="wordmark">MarketMate</span>
   </a>
   {% if _is_seller %}
   {% if _ann and _ann.need %}<span class="chip c-need seller-status">{{ t('shell.needs_you', n=_ann.need) }}</span>{% elif _ann %}<span class="chip c-live seller-status">{{ t('shell.shop_open') }}</span>{% endif %}
@@ -115,7 +115,7 @@
   <a class="pill cta sm desk-only" href="/new">{{ t('top.start_selling') }}</a>
   {% endif %}
   {% if _is_seller %}
-  <button class="pill ghost sm" type="button" data-sound-toggle data-sound-on="{{ t('alert.sound_on') }}" data-sound-off="{{ t('alert.sound_off') }}">{{ t('alert.sound_on') }}</button>
+  <button class="iconbtn" type="button" data-sound-toggle data-sound-compact data-sound-on="{{ t('alert.sound_on') }}" data-sound-off="{{ t('alert.sound_off') }}" aria-label="{{ t('alert.sound_on') }}">♪</button>
   <a class="circ" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
   {% elif _shop_known %}
   <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>

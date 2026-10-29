@@ -198,8 +198,17 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         const span = document.createElement("span");
         span.className = "nophoto";
-        span.textContent = firstGrapheme(
+        const grapheme = document.createElement("span");
+        grapheme.className = "til-g";
+        grapheme.textContent = firstGrapheme(
           item.name_local || item.name_en || "?");
+        span.appendChild(grapheme);
+        if (item.variety) {
+          const sub = document.createElement("span");
+          sub.className = "til-v";
+          sub.textContent = item.variety;
+          span.appendChild(sub);
+        }
         card.appendChild(span);
       }
       const main = document.createElement("div");

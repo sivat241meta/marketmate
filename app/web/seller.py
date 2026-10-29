@@ -42,7 +42,7 @@ from app.outputs.money import format_money
 from app.outputs.pdf import price_board_pdf, price_tags_pdf
 from app.outputs.qr import qr_png
 from app.outputs.time import format_relative
-from app.outputs.value import stock_value
+from app.outputs.value import stock_left_out_display, stock_value
 from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
 from app.pipeline.names import (
@@ -81,6 +81,7 @@ from app.web.i18n import (
     stage_friendly,
     stage_label,
     t_for,
+    tile_variety,
 )
 from app.web.photos import read_photo_meta, run_photo_job
 
@@ -502,6 +503,11 @@ def _home_extras(conn, shop, ui_lang: str) -> dict:
     return {
         "today_label": today_label,
         "greet_key": greet_key,
+        "greet_word_key": {
+            "sh.greet_morning": "t68.greet_morning",
+            "sh.greet_afternoon": "t68.greet_afternoon",
+            "sh.greet_evening": "t68.greet_evening",
+        }.get(greet_key, "t68.greet_afternoon"),
         "taps": taps,
         "taps_total": taps_total,
         "taps_first": next((entry["id"] for entry in taps
@@ -716,9 +722,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         items = []
         if versions:
             latest_items = db.version_items(conn, versions[0]["id"])
-            total, left_out = stock_value(latest_items)
-            stock = {"total": total, "left_out": left_out,
-                     "version_id": versions[0]["id"]}
+            total, _left_out = stock_value(latest_items)
+            stock = {"total": total,
+                     "left_out": stock_left_out_display(latest_items),
+                     "version_id": versions[0]["id"],
+                     "counted": any(
+                         ((item.stock_qty is not None
+                           and item.stock_source)
+                          or (item.qty is not None and item.qty_unit))
+                         for item in latest_items
+                         if not item.sold_out)}
             for item in latest_items:
                 stock_line = None
                 if item.stock_qty is not None and item.stock_source:
@@ -730,6 +743,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "name_en": item.name_en,
                     "tile": first_grapheme(item.name_local or
                                            item.name_en),
+                    "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
                     "photo_cutout": is_cutout_photo(item.photo),
@@ -840,6 +854,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                              if not is_staff else None),
              "today_label": home["today_label"],
              "greet_key": home["greet_key"],
+             "greet_word_key": home["greet_word_key"],
              "taps": home["taps"], "taps_total": home["taps_total"],
              "taps_first": home["taps_first"],
              "count_new": home["count_new"],
@@ -1878,6 +1893,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "name_local": item.name_local,
                     "name_en": item.name_en,
                     "tile": first_grapheme(item.name_local or name),
+                    "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
                     "photo_url": photo_url,
                     "photo_cutout": is_cutout_photo(item.photo),

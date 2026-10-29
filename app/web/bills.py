@@ -62,6 +62,7 @@ from app.web.i18n import (
     stage_friendly,
     stage_label,
     t_for,
+    tile_variety,
     wa_chat_number,
 )
 
@@ -476,6 +477,39 @@ def row_not_understood(row) -> str | None:
     return text or None
 
 
+#: Board column for each customer-order status (Task 68). The board shows
+#: customer orders (source "customer", quotes and accepted bills alike):
+#: new/waiting/billed -> New, accepted/packing -> Packing, ready ->
+#: Ready, collected/paid -> Collected. Cancelled, credit and walk-in
+#: seller rows never appear on the board.
+BOARD_COLUMN = {
+    "new": "waiting",
+    "waiting": "waiting",
+    "billed": "waiting",
+    "accepted": "packing",
+    "packing": "packing",
+    "ready": "ready",
+    "collected": "collected",
+    "paid": "collected",
+}
+
+
+def board_column_for(row) -> str | None:
+    """Board column key for a quotes row, or None when it is not a
+    customer order (walk-in bills, cancelled and credit rows)."""
+    try:
+        source = row["source"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    if source != "customer":
+        return None
+    try:
+        status = row["status"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    return BOARD_COLUMN.get(str(status or "").strip().lower())
+
+
 def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
     """Big order-status buttons: (status value, label, button kind)."""
     t = t_for(lang)
@@ -584,6 +618,7 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
             "display": display,
             "name_local": display_name_local(item.name_local, item.variety),
             "tile": first_grapheme(item.name_local or display),
+            "tile_var": tile_variety(item.variety),
             "unit": first.unit if first is not None else "",
             "summary": summary,
             "sold_out": item.sold_out,
@@ -804,13 +839,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "mode": _mode_label(_row_mode(row), ui_lang),
                 })
             board = []
+            today_rows = _filtered(conn, shop["id"], "today", "all", now)
             for board_key, chip in (("waiting", "c-new"),
                                     ("packing", "c-pack"),
                                     ("ready", "c-ready"),
                                     ("collected", "c-done")):
                 cards = []
-                for row in _filtered(conn, shop["id"], "today",
-                                     board_key, now):
+                for row in today_rows:
+                    if board_column_for(row) != board_key:
+                        continue
                     try:
                         raw = json.loads(row["lines_json"] or "[]")
                     except ValueError:

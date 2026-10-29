@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ shop["name"] }}{% endblock %}
+{% block body_class %}is-shop{% endblock %}
 {% block content %}
 <div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
 <div class="hero2">
@@ -43,7 +44,7 @@
 {% for row in rows %}
   <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
     <div class="pw">
-      <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ row.tile }}</span>{% endif %}</div>
+      <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
       {% if not row.sold_out %}
       <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
       <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>

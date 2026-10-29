@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('sess.making_bill_title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
+{% block crumb_page %}{{ t('sess.making_bill') }}{% endblock %}
 {% block content %}
 {% if session["status"] == "failed" %}
 <h1>{{ t('sess.failed_title') }}</h1>

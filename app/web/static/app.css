@@ -336,7 +336,7 @@ img { max-width: 100%; }
     left: 0;
     top: 50px;
     bottom: 0;
-    width: 72px;
+    width: 80px;
     z-index: 30;
     background: var(--chrome);
     color: var(--chrome-txt);
@@ -353,7 +353,7 @@ img { max-width: 100%; }
   body:has(.rail) .ann,
   body:has(.rail) .hdr { display: none; }
   body:has(.rail) .shell,
-  body:has(.rail) .footer { margin-left: 72px; }
+  body:has(.rail) .footer { margin-left: 80px; }
   .topbar .ws {
     display: flex;
     align-items: center;
@@ -436,7 +436,7 @@ img { max-width: 100%; }
   }
   .rail .logo-sq .icon { width: 18px; height: 18px; }
   .rail .ic {
-    width: 56px;
+    width: 64px;
     padding: 8px 0;
     border-radius: 12px;
     display: flex;
@@ -447,8 +447,14 @@ img { max-width: 100%; }
     text-decoration: none;
     text-align: center;
     line-height: 1.2;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: keep-all;
     position: relative;
+  }
+  .rail .ic span:not(.nbadge) {
+    font-size: 10px;
+    overflow-wrap: normal;
+    word-break: keep-all;
   }
   .rail .ic .icon { width: 20px; height: 20px; }
   .rail .ic.on { background: var(--chrome-on); color: #fff; }
@@ -2975,7 +2981,8 @@ a.stat { color: inherit; }
   font-size: 12.5px;
   font-weight: 800;
   color: var(--ink2);
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 .grp .gh .n { color: var(--muted); font-weight: 600; }
 .grp .cols, .grp .it { grid-template-columns: 1.8fr 1fr 0.8fr 0.7fr 0.9fr; }
@@ -3181,3 +3188,221 @@ details.rename-sheet > form {
 }
 .rename-actions { display: flex; gap: 10px; margin-top: 14px; }
 .rename-actions .btn { flex: 1; }
+
+/* ---- Task 68: v9 polish ----
+   Tamil/Hindi text wraps at word boundaries: never inside a word,
+   never overflows, never cut with an ellipsis. */
+.list-name,
+.list-sub,
+.mini-name,
+.mini .per,
+.til-v,
+.today-meta,
+.it,
+.ocard,
+.order-names,
+.order-top b,
+.order-bottom b,
+.question,
+h1.big,
+h2.h2s,
+.hdr .crumb,
+.hdr .shop-id,
+.crumb,
+.card .var,
+.card .bd h3,
+.topbar .ws {
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.list-name { hyphens: manual; }
+/* Shop + tap-grid names are never clamped in Tamil/Hindi. */
+.card .nm:lang(ta), .card .nm:lang(hi) {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+/* Seller laptop: content fills the width right of the rail. */
+@media (min-width: 1000px) {
+  body:has(.rail) .content {
+    max-width: 1440px;
+    margin: 0;
+    padding: 24px;
+  }
+}
+/* Today workspace header: 26px title + one muted line. */
+.today-title {
+  font-size: 26px;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.today-meta { margin: 0 0 12px; }
+@media (max-width: 999.98px) {
+  .today-title { font-size: 22px; }
+}
+/* Today groups: the header is a collapse toggle with an SVG chevron. */
+button.gh {
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 4px 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+}
+.grp.is-collapsed > :not(.gh) { display: none; }
+.grp.is-collapsed .gh .chev { transform: rotate(-90deg); }
+.gh .chev { flex: none; }
+/* Seller rows: 44px photo/tile, name block, price, icon button. */
+.list-row { flex-wrap: wrap; }
+.list-row .list-thumb { width: 44px; height: 44px; }
+.list-thumb.letter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  text-align: center;
+  padding: 2px;
+}
+.list-action { display: contents; }
+.list-row details[data-rename-sheet],
+.mini details[data-rename-sheet] { margin: 0; flex: none; }
+.list-row details[data-rename-sheet][open],
+.mini details[data-rename-sheet][open] {
+  flex: 1 1 100%;
+  order: 30;
+  margin-top: 8px;
+}
+.mini { flex-wrap: wrap; }
+.mini-main { flex: 1; min-width: 0; }
+.mini-name { display: block; font-weight: 700; }
+.mini .per { display: block; }
+.mini .nophoto, .heard .nophoto, .card .ph .nophoto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  gap: 1px;
+  text-align: center;
+  padding: 2px;
+}
+.til-g { font-weight: 800; }
+.til-v { font-size: 9px; font-weight: 700; }
+.card .ph .nophoto .til-v { font-size: 11px; }
+/* Icon-only rename opener: 32px ghost. */
+.pen-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--purple-ink);
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+  font: inherit;
+}
+.pen-icon:hover { background: var(--purple-soft); }
+summary.pen-icon { list-style: none; }
+summary.pen-icon::-webkit-details-marker { display: none; }
+summary.pen-icon::marker { content: ""; }
+.pen-icon .icon { width: 18px; height: 18px; }
+/* Shared rename dialog: centred on laptop, bottom sheet on phones. */
+.rdlg-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.rdlg-wrap[hidden] { display: none; }
+.rdlg-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 25, 0.5);
+}
+.rdlg {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 18px;
+  box-shadow: var(--shadow-lift);
+}
+.rdlg > .rename-sheet, .rdlg > form[data-rename-form] {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+body.rdlg-open { overflow: hidden; }
+@media (max-width: 600px) {
+  .rdlg-wrap { align-items: flex-end; padding: 0; }
+  .rdlg { max-width: 100%; border-radius: 16px 16px 0 0; max-height: 92vh; }
+}
+/* Today's list card: left-aligned title. */
+#todays-list > summary { justify-content: flex-start; text-align: left; }
+#todays-list > summary a { margin-left: auto; }
+/* Phone seller top: one bar — mark + chip left, icon buttons right. */
+.hdr .iconbtn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  flex: none;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 0;
+}
+.hdr .iconbtn.is-off { opacity: 0.45; text-decoration: line-through; }
+@media (max-width: 999.98px) {
+  body.is-seller .hdr { flex-wrap: nowrap; gap: 10px; padding: 10px 12px; }
+  body.is-seller .hdr .wordmark { display: none; }
+  body.is-seller .hdr .seller-status { margin-left: 0; }
+}
+/* Phone shop: products first — search, tabs, notice, grid, then hero. */
+@media (max-width: 600px) {
+  body.is-shop .hdr { flex-wrap: nowrap; gap: 8px; padding: 8px 12px; }
+  body.is-shop .hdr .wordmark { display: none; }
+  body.is-shop .hdr .shop-id { flex: 1; min-width: 0; font-size: 12px; }
+  body.is-shop .content { display: flex; flex-direction: column; }
+  body.is-shop .content > .search { order: 1; }
+  body.is-shop .content > .chips { order: 2; }
+  body.is-shop .content > .notice { order: 3; }
+  body.is-shop .content > p.kick,
+  body.is-shop .content > h2.h2s { order: 4; }
+  body.is-shop .content > [data-shop-grid] { order: 5; }
+  body.is-shop .content > .float,
+  body.is-shop .content > .alert,
+  body.is-shop .content > .sheet-wrap,
+  body.is-shop .content > .rcpt { order: 6; }
+  body.is-shop .content > .hero2 { order: 10; margin-top: 18px; }
+  body.is-shop .hero2 h1.big { font-size: 22px; line-height: 1.2; }
+  body.is-shop .hero2 .pill.big {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+}

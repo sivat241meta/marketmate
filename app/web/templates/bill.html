@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
+{% block crumb_page %}{{ t('bill.heading', id=bill["id"]) }}{% endblock %}
 {% block content %}
 <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bill.back') }}</a></p>
 <p class="kick">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>

@@ -11,6 +11,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
+from app.pipeline.names import repair_local_name
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
 _SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo",
@@ -372,8 +373,76 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_wastage_shop_date_item"
         " ON wastage(shop_id, date, name_en)")
+    _repair_markless_names(conn)
     conn.commit()
     return conn
+
+
+def _repair_markless_names(conn) -> int:
+    """One-time repair of local names stored without vowel signs.
+
+    Runs inside connect(); each fixed row stops matching, so existing
+    rows are repaired once. Names the seller chose with Task 66 — a
+    chosen_names entry for the item's key, or a name_changes row for
+    the item itself — are never touched, and only Tamil shops are
+    repaired, since the canonical list is Tamil.
+    """
+    try:
+        rows = conn.execute(
+            "SELECT items.id AS id, items.name_en AS name_en,"
+            " items.name_local AS name_local, items.variety AS variety,"
+            " items.match_key AS match_key,"
+            " versions.shop_id AS shop_id, shops.language AS language"
+            " FROM items"
+            " JOIN versions ON versions.id = items.version_id"
+            " JOIN shops ON shops.id = versions.shop_id").fetchall()
+    except sqlite3.Error:
+        return 0
+    fixed = 0
+    for row in rows:
+        try:
+            language = row["language"]
+        except (KeyError, IndexError, TypeError):
+            language = None
+        if language != "ta":
+            continue
+        try:
+            local = row["name_local"]
+            english = row["name_en"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        repaired = repair_local_name(english, local)
+        if repaired is None or repaired == local:
+            continue
+        try:
+            variety = row["variety"]
+            match_key = row["match_key"]
+            shop_id = row["shop_id"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        key = str(match_key or english or "").strip().lower()
+        var = str(variety or "").strip().lower()
+        try:
+            chosen = conn.execute(
+                "SELECT 1 FROM chosen_names WHERE shop_id = ?"
+                " AND match_key = ? AND variety = ?",
+                (shop_id, key, var)).fetchone()
+        except sqlite3.Error:
+            continue
+        if chosen is not None:
+            continue
+        try:
+            renamed = conn.execute(
+                "SELECT 1 FROM name_changes WHERE item_id = ?",
+                (row["id"],)).fetchone()
+        except sqlite3.Error:
+            continue
+        if renamed is not None:
+            continue
+        conn.execute("UPDATE items SET name_local = ? WHERE id = ?",
+                     (repaired, row["id"]))
+        fixed += 1
+    return fixed
 
 
 def _slugify(name: str) -> str:

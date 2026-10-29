@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('phr.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
+{% block crumb_page %}{{ t('phr.heading') }}{% endblock %}
 {% block content %}
 <header class="page-head">
   <p class="back-link"><a href="/e/{{ token }}/photos">{{ t('phr.back') }}</a></p>

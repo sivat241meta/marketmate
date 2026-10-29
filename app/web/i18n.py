@@ -76,6 +76,14 @@ _ENGLISH: dict[str, str] = {
     "nav.day": "Day",
     "nav.more": "More",
     "nav.today": "Today",
+    # --- laptop rail: short labels that never wrap mid-word (Task 68) ---
+    "rail.today": "Today",
+    "rail.prices": "Prices",
+    "rail.orders": "Orders",
+    "rail.bills": "Bills",
+    "rail.credit": "Credit",
+    "rail.close": "Close",
+    "rail.more": "More",
     # --- Fresh Green shell: announcement bar + header (Task 51) ---
     "ann.shop_open": "Shop is open",
     "ann.last_prices": "last prices {time}",
@@ -124,6 +132,7 @@ _ENGLISH: dict[str, str] = {
     "dash.tile_settings": "Settings",
     "dash.stock_total": "{total} in stock (version {vid})",
     "dash.stock_left_out": "Not counted: {items}",
+    "dash.stock_not_counted": "Stock not counted",
     "dash.todays_list": "Today's list",
     "dash.edit": "Edit",
     "dash.sold_out": "Sold out",
@@ -312,6 +321,7 @@ _ENGLISH: dict[str, str] = {
     "review.approve_failed": "Approve failed.",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ Edit name",
+    "rename.open": "Rename",
     "rename.title": "Change the name",
     "rename.sub": "Only the name changes. The price stays.",
     "rename.local": "Name in {lang}",
@@ -511,6 +521,12 @@ _ENGLISH: dict[str, str] = {
     "t64.col_status": "Status",
     "t64.col_time": "Time",
     "t64.col_total": "Total",
+    # --- v9 polish (Task 68): Today header meta line ---
+    "t68.greet_morning": "Good morning",
+    "t68.greet_afternoon": "Good afternoon",
+    "t68.greet_evening": "Good evening",
+    "t68.sold_today": "{total} sold today",
+    "t68.not_live": "Not live yet",
     "bills.order_num": "Order #{id}",
     "bills.pill_billed": "Billed",
     "bills.pill_paid": "Paid",
@@ -1076,6 +1092,13 @@ _TAMIL: dict[str, str] = {
     "nav.day": "கணக்கு",
     "nav.more": "மேலும்",
     "nav.today": "இன்று",
+    "rail.today": "இன்று",
+    "rail.prices": "விலை",
+    "rail.orders": "ஆர்டர்",
+    "rail.bills": "பில்",
+    "rail.credit": "கடன்",
+    "rail.close": "முடிவு",
+    "rail.more": "மேலும்",
     # --- Fresh Green shell: announcement bar + header (Task 51) ---
     "ann.shop_open": "கடை திறந்திருக்கு",
     "ann.last_prices": "கடைசி விலை {time}",
@@ -1124,6 +1147,7 @@ _TAMIL: dict[str, str] = {
     "dash.tile_settings": "செட்டிங்",
     "dash.stock_total": "ஸ்டாக் {total} (பதிப்பு {vid})",
     "dash.stock_left_out": "எண்ணலை: {items}",
+    "dash.stock_not_counted": "ஸ்டாக் எண்ணவில்லை",
     "dash.todays_list": "இன்றைய பட்டியல்",
     "dash.edit": "மாற்று",
     "dash.sold_out": "தீர்ந்தது",
@@ -1311,6 +1335,7 @@ _TAMIL: dict[str, str] = {
     "review.approve_failed": "ஒப்புதல் முடியலை.",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ பெயரை மாற்று",
+    "rename.open": "பெயரை மாற்று",
     "rename.title": "பெயரை மாற்று",
     "rename.sub": "பெயர் மட்டும் மாறும். விலை மாறாது.",
     "rename.local": "{lang} பெயர்",
@@ -1510,6 +1535,11 @@ _TAMIL: dict[str, str] = {
     "t64.col_status": "நிலை",
     "t64.col_time": "நேரம்",
     "t64.col_total": "மொத்தம்",
+    "t68.greet_morning": "காலை வணக்கம்",
+    "t68.greet_afternoon": "மதிய வணக்கம்",
+    "t68.greet_evening": "மாலை வணக்கம்",
+    "t68.sold_today": "இன்று {total} விற்பனை",
+    "t68.not_live": "நேரலை இல்லை",
     "bills.order_num": "ஆர்டர் #{id}",
     "bills.pill_billed": "பில்",
     "bills.pill_paid": "வசூல்",
@@ -2071,6 +2101,13 @@ _HINDI: dict[str, str] = {
     "nav.orders": "ऑर्डर",
     "nav.day": "हिसाब",
     "nav.more": "और",
+    "rail.today": "आज",
+    "rail.prices": "दाम",
+    "rail.orders": "ऑर्डर",
+    "rail.bills": "बिल",
+    "rail.credit": "उधार",
+    "rail.close": "बंद",
+    "rail.more": "और",
     "nav.today": "आज",
     # --- Fresh Green shell: announcement bar + header (Task 51) ---
     "ann.shop_open": "दुकान खुली है",
@@ -2120,6 +2157,7 @@ _HINDI: dict[str, str] = {
     "dash.tile_settings": "सेटिंग",
     "dash.stock_total": "स्टॉक {total} (संस्करण {vid})",
     "dash.stock_left_out": "गिना नहीं: {items}",
+    "dash.stock_not_counted": "स्टॉक गिना नहीं",
     "dash.todays_list": "आज की सूची",
     "dash.edit": "बदलिए",
     "dash.sold_out": "खत्म",
@@ -2307,6 +2345,7 @@ _HINDI: dict[str, str] = {
     "review.approve_failed": "पक्का नहीं हो पाया।",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ नाम बदलें",
+    "rename.open": "नाम बदलें",
     "rename.title": "नाम बदलें",
     "rename.sub": "सिर्फ़ नाम बदलेगा. दाम वही रहेगा.",
     "rename.local": "{lang} में नाम",
@@ -2506,6 +2545,11 @@ _HINDI: dict[str, str] = {
     "t64.col_status": "स्थिति",
     "t64.col_time": "समय",
     "t64.col_total": "कुल",
+    "t68.greet_morning": "सुप्रभात",
+    "t68.greet_afternoon": "नमस्ते",
+    "t68.greet_evening": "शुभ संध्या",
+    "t68.sold_today": "आज {total} बिका",
+    "t68.not_live": "लाइव नहीं",
     "bills.order_num": "ऑर्डर #{id}",
     "bills.pill_billed": "बिल",
     "bills.pill_paid": "वसूल",
@@ -3449,6 +3493,29 @@ def first_grapheme(name: str | None) -> str:
         else:
             break
     return cluster.upper()
+
+
+def tile_variety(variety: str | None) -> str:
+    """Variety line shown under the grapheme inside a letter tile.
+
+    The local word when known ("poovan" -> "பூவன்"), else the variety
+    as stored, title-cased. Empty when the item has no variety, so the
+    tile stays a single grapheme.
+    """
+    from app.pipeline.names import variety_local_name
+
+    text = str(variety or "").strip()
+    if not text:
+        return ""
+    parts = [part.strip() for part in text.split("/")]
+    out = []
+    for part in parts:
+        local = variety_local_name(part) if part else None
+        if local:
+            out.append(local)
+        elif part:
+            out.append(part[:1].upper() + part[1:])
+    return " / ".join(out)
 
 
 def photo_button_text(action: str | None, lang: str = "en") -> str:

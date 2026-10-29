@@ -5,7 +5,12 @@ from decimal import Decimal, InvalidOperation
 from app.languages import currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine, Proof, Transcript
-from app.pipeline.names import CANONICAL_NAMES, VARIETY_ALIASES, resolve_name
+from app.pipeline.names import (
+    CANONICAL_NAMES,
+    VARIETY_ALIASES,
+    repair_local_name,
+    resolve_name,
+)
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
@@ -195,10 +200,18 @@ def _proof_times(quote: str, turn_ids: list, transcript: Transcript) -> tuple[in
 
 def _local_name(raw: dict, name_en: str, name_spoken: str,
                 language: str) -> str:
-    """Model's name_local, falling back to the Tamil list or what was said."""
+    """Model's name_local, falling back to the Tamil list or what was said.
+
+    Tamil names stored without vowel signs are repaired to the
+    canonical spelling; seller-chosen names are applied later by
+    apply_chosen_names, so they always win.
+    """
     said_local = raw.get("name_local")
     if isinstance(said_local, str) and said_local.strip():
-        return said_local.strip()
+        local = said_local.strip()
+        if language == "ta":
+            return repair_local_name(name_en, local) or local
+        return local
     if language == "ta" and name_en in CANONICAL_NAMES:
         return CANONICAL_NAMES[name_en]
     return name_spoken

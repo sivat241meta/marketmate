@@ -1,5 +1,9 @@
 """Canonical produce names: English key -> (Tamil script, romanised Tamil)."""
 
+from __future__ import annotations
+
+import unicodedata
+
 _ITEMS: tuple[tuple[str, str, str], ...] = (
     ("tomato", "தக்காளி", "thakkali"),
     ("onion", "பெரிய வெங்காயம்", "vengayam"),
@@ -463,3 +467,46 @@ def qualified_name(name_en: str | None, variety: str | None = None) -> str:
     if base and text:
         return f"{base} ({text})"
     return base
+
+
+def _strip_marks(text: str) -> str:
+    """Text without combining marks (unicodedata category M*)."""
+    return "".join(
+        char for char in text
+        if not unicodedata.category(char).startswith("M"))
+
+
+def _has_marks(text: str) -> bool:
+    return any(unicodedata.category(char).startswith("M")
+               for char in text)
+
+
+def _has_indic(text: str) -> bool:
+    """True when any character sits in the Indic script blocks."""
+    return any(0x0900 <= ord(char) <= 0x0DFF for char in text)
+
+
+def repair_local_name(name_en: str | None,
+                      name_local: str | None) -> str | None:
+    """Fix a local name stored without its vowel signs (Task 68).
+
+    The speech model sometimes drops combining marks, storing e.g.
+    "அவரககய" for broad beans instead of "அவரைக்காய்". When the English
+    name maps to a canonical entry and the local name equals the
+    canonical name with its combining marks removed — or is an Indic
+    string with no combining marks at all while the canonical one has
+    some — the canonical local name is returned. Anything else,
+    including every seller-chosen name, passes through untouched.
+    """
+    if name_local is None:
+        return None
+    canonical = CANONICAL_NAMES.get(str(name_en or "").strip().lower())
+    if not canonical:
+        return name_local
+    local = str(name_local)
+    if local.strip() == _strip_marks(canonical):
+        return canonical
+    if (_has_marks(canonical) and _has_indic(local)
+            and not _has_marks(local)):
+        return canonical
+    return name_local
