@@ -215,6 +215,38 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     audio_only = not is_live and not (all_frames or [])
     if not is_live and not audio_only:
         db.set_stage(conn, session_id, "photos")
+    # Video path, first pass: pick each item's frame and pool up front, so
+    # the photo step knows the other items' picked frames (cross-check).
+    video_prep: dict[int, tuple] = {}
+    if not use_live_frames and not audio_only:
+        for pos, entry in enumerate(items):
+            start_ms, end_ms = item_window(entry, transcript.turns)
+            picked, matches = pick_best_frame(
+                entry, frames_for_window(all_frames or [], start_ms, end_ms),
+                ledger=ledger, settings=settings)
+            pool = list(all_frames or [])
+            near = sum(1 for f in pool if abs(f.t_ms - picked.t_ms) <= 1000)
+            if video is not None and near < 3:
+                try:
+                    dense = extract_window_frames(
+                        Path(video), picked.t_ms,
+                        session_dir / "frames" / f"dense_{pos}")
+                except Exception:  # noqa: BLE001 - dense frames are optional
+                    dense = []
+                pool = pool + dense
+            video_prep[pos] = (picked, matches, pool)
+    # Task 67: the session's visual-noun cache survives reprocessing.
+    noun_cache: dict[str, str] = {}
+    nouns_path = session_dir / "visual_nouns.json"
+    if not use_live_frames and not audio_only and nouns_path.is_file():
+        try:
+            loaded = json.loads(nouns_path.read_text())
+        except (OSError, ValueError):
+            # A bad cache is remade on the next run.
+            loaded = {}
+        if isinstance(loaded, dict):
+            noun_cache = {str(k): str(v) for k, v in loaded.items()
+                          if isinstance(v, str)}
     for index, item in enumerate(items):
         if not is_live and not audio_only:
             db.set_stage(conn, session_id, "photos",
@@ -237,26 +269,17 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             item.proof.audio_clip = str(clip)
             continue
         else:
-            start_ms, end_ms = item_window(item, transcript.turns)
-            frame, matches = pick_best_frame(
-                item, frames_for_window(all_frames or [], start_ms, end_ms),
-                ledger=ledger, settings=settings)
+            frame, matches, pool = video_prep[index]
             matched.append(matches)
-            pool = list(all_frames or [])
-            near = sum(1 for f in pool if abs(f.t_ms - frame.t_ms) <= 1000)
-            if video is not None and near < 3:
-                try:
-                    dense = extract_window_frames(
-                        Path(video), frame.t_ms,
-                        session_dir / "frames" / f"dense_{index}")
-                except Exception:  # noqa: BLE001 - dense frames are optional
-                    dense = []
-                pool = pool + dense
             ranked = window_frames(pool, frame)
             saved = make_candidates(
                 pool, frame, item.name_en,
                 photo_dir / f"s{session_id}_{index}",
-                ledger=ledger, settings=settings)
+                ledger=ledger, settings=settings,
+                session_items=[entry.name_en for entry in items],
+                picked_frames=[(entry.name_en, video_prep[pos][0])
+                               for pos, entry in enumerate(items)],
+                noun_cache=noun_cache)
             if saved:
                 item.photo = saved[0]
                 item.photo_candidates = list(saved)
@@ -279,6 +302,11 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
         clip = cut_audio_clip(wav_path, item.proof.start_ms, item.proof.end_ms,
                               clip_dir / f"item_{index}.m4a")
         item.proof.audio_clip = str(clip)
+    if not use_live_frames and not audio_only and noun_cache:
+        try:
+            nouns_path.write_text(json.dumps(noun_cache, sort_keys=True))
+        except OSError:
+            pass  # The cache is a nice-to-have.
     db.set_stage(conn, session_id, "checking")
     for item, matches in zip(items, matched):
         item.flags.extend(check_item(item, previous, language=language,

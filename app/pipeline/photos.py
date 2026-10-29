@@ -4,9 +4,11 @@ import io
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageFilter, ImageOps, ImageStat
+from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
 
+from app.costs import CostCapExceeded
 from app.meta.sam import SamError, SamInstance, find_boxes, find_instances
+from app.meta.spark import chat_json, image_part
 from app.models import Box, Frame
 
 #: Card photo ratio, long side cap and JPEG quality for item photos.
@@ -38,6 +40,26 @@ CUTOUT_LOW_OFFSET = 20
 #: Candidate file suffixes: cut-out first (default), Task 59 crop second.
 CUTOUT_SUFFIX = "_cut"
 ORIGINAL_SUFFIX = "_orig"
+#: Task 67: whole objects only. A box within this frame fraction of any
+#: edge is cut off; mask components under this fraction of the main
+#: instance's area are slivers; neighbours must touch the main one, be
+#: whole, and pass these confidence and area gates (at most two).
+EDGE_MARGIN = 0.02
+SLIVER_FRACTION = 0.04
+NEIGHBOUR_CONFIDENCE = 0.45
+NEIGHBOUR_AREA_FRACTION = 0.45
+MAX_NEIGHBOURS = 2
+#: Task 67: a target instance whose mask overlaps another item's instance
+#: by this IoU or more, with the other noun more confident, is dropped.
+CROSS_IOU = 0.5
+#: Task 67: per-item budget (SAM calls) and cross-check scope: at most two
+#: extra nouns, from items whose picked frame is within ±2 s or the same
+#: picture.
+MAX_SAM_PER_ITEM = 6
+MAX_OTHER_NOUNS = 2
+SHARE_WINDOW_MS = 2000
+#: Task 67: post-resize alpha feather radius, in pixels.
+FEATHER_RADIUS = 1.5
 
 
 class BadPhotoUpload(ValueError):
@@ -183,6 +205,87 @@ def _intersects(box: Box, area: tuple[int, int, int, int]) -> bool:
                 or box.y2 < top or box.y1 > bottom)
 
 
+def _mask_raster_at(inst: SamInstance) -> tuple[bytes, int, int] | None:
+    """Decoded (raster, width, height), None when the mask is unusable."""
+    if inst.mask is None:
+        return None
+    try:
+        raster = bytes(inst.mask.raster())
+    except SamError:
+        return None
+    if len(raster) != inst.mask.width * inst.mask.height:
+        return None
+    return raster, inst.mask.width, inst.mask.height
+
+
+def _mask_iou(first: SamInstance, second: SamInstance) -> float | None:
+    """IoU of the two masks placed at their boxes, None when unusable."""
+    decoded = (_mask_raster_at(first), _mask_raster_at(second))
+    if decoded[0] is None or decoded[1] is None:
+        return None
+    (raster_a, wa, ha), (raster_b, wb, hb) = decoded
+    left = max(first.box.x1, second.box.x1)
+    top = max(first.box.y1, second.box.y1)
+    right = min(first.box.x2, second.box.x2)
+    bottom = min(first.box.y2, second.box.y2)
+    if right < left or bottom < top:
+        return 0.0
+    inter = 0
+    for y in range(top, bottom + 1):
+        for x in range(left, right + 1):
+            ax, ay = x - first.box.x1, y - first.box.y1
+            bx, by = x - second.box.x1, y - second.box.y1
+            if (0 <= ax < wa and 0 <= ay < ha and raster_a[ay * wa + ax]
+                    and 0 <= bx < wb and 0 <= by < hb
+                    and raster_b[by * wb + bx]):
+                inter += 1
+    union = sum(raster_a) + sum(raster_b) - inter
+    return inter / union if union else None
+
+
+def instances_iou(first: SamInstance, second: SamInstance) -> float:
+    """Mask IoU of two instances, falling back to box IoU without masks."""
+    iou = _mask_iou(first, second)
+    if iou is not None:
+        return iou
+    left = max(first.box.x1, second.box.x1)
+    top = max(first.box.y1, second.box.y1)
+    right = min(first.box.x2, second.box.x2)
+    bottom = min(first.box.y2, second.box.y2)
+    inter = max(right - left + 1, 0) * max(bottom - top + 1, 0)
+    if not inter:
+        return 0.0
+    union = _box_area(first.box) + _box_area(second.box) - inter
+    return inter / union if union else 0.0
+
+
+def _more_confident(other: SamInstance, target: SamInstance) -> bool:
+    """True when the other instance is strictly more confident.
+
+    A missing confidence never decides: the comparison needs both.
+    """
+    mine, theirs = target.box.confidence, other.box.confidence
+    return (mine is not None and theirs is not None and theirs > mine)
+
+
+def drop_confused(targets: list[SamInstance],
+                  others: list[SamInstance]) -> list[SamInstance]:
+    """Drop target instances that are really another item (Task 67).
+
+    A target instance goes when another noun's instance overlaps it by
+    IoU ≥ 0.5 with the higher confidence.
+    """
+    kept = []
+    for target in targets:
+        confused = any(
+            _more_confident(other, target)
+            and instances_iou(target, other) >= CROSS_IOU
+            for other in others)
+        if not confused:
+            kept.append(target)
+    return kept
+
+
 def main_cluster(instances: list[SamInstance]) -> list[SamInstance]:
     """Largest instance plus instances touching it, up to ``MAX_CLUSTER``."""
     if not instances:
@@ -203,6 +306,164 @@ def cluster_box(cluster: list[SamInstance]) -> tuple[int, int, int, int]:
     """Union of the cluster's boxes as (left, top, right, bottom)."""
     return (min(i.box.x1 for i in cluster), min(i.box.y1 for i in cluster),
             max(i.box.x2 for i in cluster), max(i.box.y2 for i in cluster))
+
+
+def touches_edge(box: Box, width: int, height: int) -> bool:
+    """True when the box is cut off by the frame (within 2% of any edge)."""
+    margin_x, margin_y = EDGE_MARGIN * width, EDGE_MARGIN * height
+    return (box.x1 < margin_x or box.y1 < margin_y
+            or box.x2 > width - 1 - margin_x
+            or box.y2 > height - 1 - margin_y)
+
+
+def mask_ones(inst: SamInstance) -> int | None:
+    """Foreground pixel count of the instance's mask, None when missing."""
+    if inst.mask is None:
+        return None
+    try:
+        return sum(inst.mask.raster())
+    except SamError:
+        return None
+
+
+def instance_area(inst: SamInstance) -> int:
+    """Mask pixel area when the mask decodes, else the box area."""
+    return mask_ones(inst) or _box_area(inst.box)
+
+
+def _neighbours_8(x: int, y: int, width: int, height: int):
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dx or dy:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < width and 0 <= ny < height:
+                    yield ny * width + nx
+
+
+def _label_foreground(raster: bytes, width: int, height: int,
+                      ) -> tuple[list[int], dict[int, int]]:
+    """8-connected foreground labels and {label: pixel count} sizes."""
+    labels = [0] * (width * height)
+    sizes: dict[int, int] = {}
+    current = 0
+    for pos, bit in enumerate(raster):
+        if not bit or labels[pos]:
+            continue
+        current += 1
+        size = 0
+        stack = [pos]
+        labels[pos] = current
+        while stack:
+            cell = stack.pop()
+            size += 1
+            x, y = cell % width, cell // width
+            for nxt in _neighbours_8(x, y, width, height):
+                if raster[nxt] and not labels[nxt]:
+                    labels[nxt] = current
+                    stack.append(nxt)
+        sizes[current] = size
+    return labels, sizes
+
+
+def _fill_small_holes(bits: bytearray, width: int, height: int,
+                      min_area: int) -> None:
+    """Fill interior background regions smaller than ``min_area`` in place.
+
+    The background reachable from the border (4-connected) stays; the
+    rest is holes.
+    """
+    reached = bytearray(width * height)
+    stack = [x for x in range(width) if not bits[x]]
+    stack += [x for x in range((height - 1) * width, width * height)
+              if not bits[x]]
+    stack += [y * width for y in range(height) if not bits[y * width]]
+    stack += [(y + 1) * width - 1 for y in range(height)
+              if not bits[(y + 1) * width - 1]]
+    for pos in stack:
+        reached[pos] = 1
+    while stack:
+        cell = stack.pop()
+        x, y = cell % width, cell // width
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < width and 0 <= ny < height:
+                nxt = ny * width + nx
+                if not bits[nxt] and not reached[nxt]:
+                    reached[nxt] = 1
+                    stack.append(nxt)
+    for pos in range(width * height):
+        if bits[pos] or reached[pos]:
+            continue
+        hole = [pos]
+        reached[pos] = 1
+        stack = [pos]
+        while stack:
+            cell = stack.pop()
+            x, y = cell % width, cell // width
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if 0 <= nx < width and 0 <= ny < height:
+                    nxt = ny * width + nx
+                    if not bits[nxt] and not reached[nxt]:
+                        reached[nxt] = 1
+                        hole.append(nxt)
+                        stack.append(nxt)
+        if len(hole) < min_area:
+            for cell in hole:
+                bits[cell] = 1
+
+
+def clean_raster(raster: bytes, width: int, height: int,
+                 main_area: int) -> bytes:
+    """Only the largest component kept; small holes filled.
+
+    Every other component is a sliver of neighbouring fruit and goes
+    (anything under 4% of the main area most of all). Interior holes
+    under 4% of the main area are filled.
+    """
+    if len(raster) != width * height:
+        return raster
+    labels, sizes = _label_foreground(raster, width, height)
+    if not sizes:
+        return bytes(raster)
+    floor = max(1, round(SLIVER_FRACTION * main_area))
+    biggest = max(sizes, key=lambda label: sizes[label])
+    bits = bytearray(width * height)
+    for pos, label in enumerate(labels):
+        if label == biggest:
+            bits[pos] = 1
+    _fill_small_holes(bits, width, height, floor)
+    return bytes(bits)
+
+
+def _score(inst: SamInstance) -> float:
+    """Ranking score: confidence × sqrt(area); unknown confidence is 1."""
+    confidence = inst.box.confidence if inst.box.confidence is not None else 1.0
+    return confidence * instance_area(inst) ** 0.5
+
+
+def select_whole(instances: list[SamInstance],
+                 frame_size: tuple[int, int]) -> list[SamInstance]:
+    """Main-first cluster of whole instances only (Task 67).
+
+    Edge-touching instances are dropped whenever a whole one exists, and
+    a cut-off object is never the main one: with no whole instance there
+    is no cluster. The main instance maximises confidence × sqrt(area);
+    up to two neighbours join it when they touch or overlap it, are
+    whole, and pass the 0.45 confidence and 45%-of-main-area gates.
+    """
+    width, height = frame_size
+    whole = [inst for inst in instances
+             if not touches_edge(inst.box, width, height)]
+    if not whole:
+        return []
+    main = max(whole, key=_score)
+    floor = NEIGHBOUR_AREA_FRACTION * instance_area(main)
+    neighbours = [
+        inst for inst in sorted(whole, key=_score, reverse=True)
+        if inst is not main
+        and _passes(inst.box.confidence, NEIGHBOUR_CONFIDENCE)
+        and instance_area(inst) >= floor
+        and _touches(main.box, inst.box)]
+    return [main, *neighbours[:MAX_NEIGHBOURS]]
 
 
 def face_blocks_frame(faces: list[Box], *,
@@ -234,16 +495,49 @@ def _paste_clipped(canvas: Image.Image, tile: Image.Image,
     canvas.paste(tile.crop(keep), (max(left, 0), max(top, 0)))
 
 
+def _erase_islands(matte: Image.Image, seeds: list[tuple[int, int]]
+                   ) -> Image.Image:
+    """Keep only matte foreground connected (8-way) to a seed pixel."""
+    width, height = matte.size
+    pixels = matte.load()
+    kept = Image.new("L", matte.size, 0)
+    out = kept.load()
+    seen = bytearray(width * height)
+    stack = [(x, y) for x, y in seeds
+             if 0 <= x < width and 0 <= y < height and pixels[x, y]]
+    for x, y in stack:
+        seen[y * width + x] = 1
+    while stack:
+        x, y = stack.pop()
+        out[x, y] = 255
+        for ny in (y - 1, y, y + 1):
+            if not 0 <= ny < height:
+                continue
+            for nx in (x - 1, x, x + 1):
+                if (nx, ny) == (x, y) or not 0 <= nx < width:
+                    continue
+                pos = ny * width + nx
+                if pixels[nx, ny] and not seen[pos]:
+                    seen[pos] = 1
+                    stack.append((nx, ny))
+    return kept
+
+
 def place_masks(frame_size: tuple[int, int],
-                cluster: list[SamInstance]) -> Image.Image:
+                cluster: list[SamInstance], *, clean: bool = False
+                ) -> Image.Image:
     """Union of the cluster's decoded masks at their box positions.
 
     Each mask is box-local; when its raster differs from the box size (a
     pixel or two off), it is scaled to the box. Raises ``NoCutout`` when
-    no mask decodes.
+    no mask decodes. With ``clean``, each mask keeps only its largest
+    component (Task 67) and alpha islands unconnected to a kept
+    instance are erased.
     """
     matte = Image.new("L", frame_size, 0)
     placed = 0
+    seeds: list[tuple[int, int]] = []
+    main_area = instance_area(cluster[0]) if clean and cluster else 0
     for inst in cluster:
         if inst.mask is None:
             continue
@@ -251,6 +545,20 @@ def place_masks(frame_size: tuple[int, int],
             raster = inst.mask.raster()
         except SamError:
             continue
+        if clean:
+            raster = clean_raster(bytes(raster), inst.mask.width,
+                                  inst.mask.height, main_area)
+            try:
+                first = raster.index(1)
+            except ValueError:
+                continue
+            want_w = max(inst.box.x2 - inst.box.x1 + 1, 1)
+            want_h = max(inst.box.y2 - inst.box.y1 + 1, 1)
+            seeds.append((
+                inst.box.x1 + round(first % inst.mask.width
+                                    * want_w / inst.mask.width),
+                inst.box.y1 + round(first // inst.mask.width
+                                    * want_h / inst.mask.height)))
         mask = Image.frombytes(
             "L", (inst.mask.width, inst.mask.height),
             bytes(255 if bit else 0 for bit in raster))
@@ -266,31 +574,51 @@ def place_masks(frame_size: tuple[int, int],
         placed += 1
     if not placed:
         raise NoCutout("no usable mask in cluster")
+    if clean:
+        matte = _erase_islands(matte, seeds)
     return matte
 
 
+def defringe(rgb: Image.Image, alpha: Image.Image) -> Image.Image:
+    """Drop dark old-background pixels caught along the matte edge.
+
+    Pixels with partial alpha that are very dark (fringe from the
+    removed background) go fully transparent.
+    """
+    edge = alpha.point(lambda value: 255 if 8 < value < 200 else 0)
+    dark = rgb.convert("L").point(lambda value: 255 if value < 60 else 0)
+    fringe = ImageChops.darker(edge, dark)  # both are 0/255: min() is AND
+    return ImageChops.subtract(alpha, fringe)
+
+
 def cutout_from_instances(image: Path, cluster: list[SamInstance],
-                          out: Path) -> Path:
+                          out: Path, *, clean: bool = False) -> Path:
     """Quick-commerce tile: masked product on a 900×900 white canvas.
 
     The product fits 78% of the canvas, sits slightly low, and gets a
     soft contact shadow (blurred alpha, 6% opacity). Raises ``NoCutout``
-    when no mask decodes.
+    when no mask decodes. With ``clean``, masks are component-cleaned
+    (Task 67), the edge is defringed, and the alpha gets a 1–2 px
+    feather.
     """
     with Image.open(image) as img:
         rgb = img.convert("RGB")
-    matte = place_masks(rgb.size, cluster).filter(
+    matte = place_masks(rgb.size, cluster, clean=clean).filter(
         ImageFilter.GaussianBlur(1.5))
     bounds = matte.getbbox()
     if bounds is None:  # pragma: no cover - place_masks guarantees pixels
         raise NoCutout("empty matte")
     tight = rgb.crop(bounds)
     alpha = matte.crop(bounds)
+    if clean:
+        alpha = defringe(tight, alpha)
     scale = CUTOUT_SIZE * CUTOUT_FIT / max(tight.size)
     size = (max(1, round(tight.width * scale)),
             max(1, round(tight.height * scale)))
     tight = tight.resize(size, Image.LANCZOS)
     alpha = alpha.resize(size, Image.LANCZOS)
+    if clean:
+        alpha = alpha.filter(ImageFilter.GaussianBlur(FEATHER_RADIUS))
     left = (CUTOUT_SIZE - size[0]) // 2
     top = (CUTOUT_SIZE - size[1]) // 2 + CUTOUT_LOW_OFFSET
     shadow = Image.new("L", (CUTOUT_SIZE, CUTOUT_SIZE), 0)
@@ -389,6 +717,108 @@ def _frame_size(image: Path) -> tuple[int, int]:
         return img.size
 
 
+class _BudgetOut(Exception):
+    """The per-item SAM budget (``MAX_SAM_PER_ITEM``) is spent."""
+
+
+def _sam_call(used: list[int], func, *args, **kwargs):
+    """One budgeted SAM call; raises ``_BudgetOut`` past the per-item cap."""
+    if used[0] >= MAX_SAM_PER_ITEM:
+        raise _BudgetOut
+    used[0] += 1
+    return func(*args, **kwargs)
+
+
+_VISUAL_NOUN_PROMPT = (
+    "You sell fresh produce at an Indian market stall. For each item below, "
+    "give a short visual noun: 2-3 plain English words a vision model would "
+    "use for this item in a market stall photo.\nItems: {items}\n\n"
+    'Return only JSON shaped like: {{"{first}": "red tomato"}}'
+)
+
+
+def _clean_noun(value, fallback: str) -> str:
+    if not isinstance(value, str):
+        return fallback
+    words = value.strip().split()
+    if not words:
+        return fallback
+    return " ".join(words[:4])
+
+
+def ensure_visual_nouns(names: list[str], cache: dict, *,
+                        ledger, settings) -> dict[str, str]:
+    """Short visual noun per item, asked once per session and cached.
+
+    One Spark text call covers every name missing from ``cache`` (the
+    session's cache); cached names never re-ask. Returns
+    {name: visual noun}, falling back to the name itself per item.
+    """
+    missing = [name for name in dict.fromkeys(names) if name not in cache]
+    if missing:
+        prompt = _VISUAL_NOUN_PROMPT.format(
+            items=", ".join(missing), first=missing[0])
+        data = chat_json([{"role": "user", "content": prompt}],
+                         ledger=ledger, settings=settings,
+                         reasoning_effort="low")
+        answers = data if isinstance(data, dict) else {}
+        lowered = {str(key).strip().lower(): value
+                   for key, value in answers.items()}
+        for name in missing:
+            cache[name] = _clean_noun(lowered.get(name.strip().lower()), name)
+    return {name: cache.get(name, name) for name in names}
+
+
+def _other_nouns(noun: str, picked: Frame,
+                 picked_frames: list[tuple[str, Frame]]) -> list[str]:
+    """At most two other items' nouns likely to share the picked frame.
+
+    Candidates are other items whose picked frame is the same picture
+    or within ±2 s; same-picture items come first.
+    """
+    want = noun.strip().lower()
+    scored = []
+    for name, frame in picked_frames or []:
+        if name.strip().lower() == want:
+            continue
+        same = str(frame.path) == str(picked.path)
+        delta = abs(frame.t_ms - picked.t_ms)
+        if same or delta <= SHARE_WINDOW_MS:
+            scored.append((not same, delta, name))
+    scored.sort(key=lambda entry: (entry[0], entry[1]))
+    nouns = []
+    for _, _, name in scored:
+        if name not in nouns:
+            nouns.append(name)
+        if len(nouns) >= MAX_OTHER_NOUNS:
+            break
+    return nouns
+
+
+def verify_cutout(cutout: Path, target: str, candidates: list[str], *,
+                  ledger, settings) -> str:
+    """One Spark vision call: which session item does the cut-out show?
+
+    Returns the matched item name (lower-cased) or ``"none"``.
+    """
+    names = [name for name in dict.fromkeys(candidates) if name]
+    instruction = (
+        "Look at this product cut-out photo (one product on a white "
+        "background). Which ONE of these items does it show? "
+        + ", ".join(names)
+        + '. Reply with exactly one of the item names, or "none" if it '
+        'shows something else or is unclear. Return only JSON shaped '
+        'like: {"item": "tomato"}')
+    data = chat_json([{"role": "user", "content": [
+        {"type": "text", "text": instruction},
+        image_part(Path(cutout))]}],
+        ledger=ledger, settings=settings, reasoning_effort="low")
+    answer = data.get("item") if isinstance(data, dict) else None
+    if isinstance(answer, str) and answer.strip():
+        return answer.strip().lower()
+    return "none"
+
+
 def _choose_frame(frames: list[Frame], noun: str, *,
                   ledger, settings) -> tuple[Frame, list[SamInstance]] | None:
     """First tried frame with product instances and no blocking face.
@@ -442,16 +872,141 @@ def window_frames(frames: list[Frame], picked: Frame,
     return rank_by_sharpness(nearby)
 
 
+def _clean_frame_paths(out_stem: Path) -> tuple[Path, Path]:
+    parent = out_stem.parent
+    return (parent / f"{out_stem.name}{CUTOUT_SUFFIX}.jpg",
+            parent / f"{out_stem.name}{ORIGINAL_SUFFIX}.jpg")
+
+
+def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
+                     names: list[str], out_stem: Path, used: list[int], *,
+                     ledger, settings) -> list[str] | None:
+    """One frame's clean candidates, or None when the frame fails a gate.
+
+    Gates in order: target instances exist, a whole cluster selects, no
+    face blocks, cross-check survivors remain, the cut-out verifies as
+    the target item. Without decodable masks the original 4:3 crop is
+    offered alone when it still contains the target per SAM.
+    """
+    noun = nouns[0]
+    instances: list[SamInstance] = []
+    for target_noun in nouns:
+        found = _sam_call(used, find_instances, frame.path, target_noun,
+                          ledger=ledger, settings=settings,
+                          detail=f"target:{target_noun}")
+        passing = [inst for inst in found
+                   if _passes(inst.box.confidence, PRODUCT_CONFIDENCE)]
+        if passing:
+            instances = passing
+            break
+    if not instances:
+        return None
+    size = _frame_size(frame.path)
+    cluster = select_whole(instances, size)
+    if not cluster:
+        return None
+    faces = _sam_call(used, find_boxes, frame.path, FACE_NOUN,
+                      ledger=ledger, settings=settings, detail="face")
+    boxes = [inst.box for inst in cluster]
+    if face_blocks_frame(faces, frame_size=size,
+                         crop_area=crop_box(boxes, *size),
+                         cluster=cluster_box(cluster)):
+        return None
+    if others:
+        rival: list[SamInstance] = []
+        for other in others:
+            found = _sam_call(used, find_instances, frame.path, other,
+                              ledger=ledger, settings=settings,
+                              detail=f"cross:{other}")
+            rival.extend(inst for inst in found
+                         if _passes(inst.box.confidence, PRODUCT_CONFIDENCE))
+        cluster = select_whole(drop_confused(instances, rival), size)
+        if not cluster:
+            return None
+        boxes = [inst.box for inst in cluster]
+    cut_path, orig_path = _clean_frame_paths(out_stem)
+    try:
+        cutout_from_instances(frame.path, cluster, cut_path, clean=True)
+    except NoCutout:
+        if _intersects(cluster[0].box, crop_box(boxes, *size)):
+            return [str(crop_to_boxes(frame.path, boxes, orig_path))]
+        return None
+    try:
+        answer = verify_cutout(cut_path, noun, names, ledger=ledger,
+                               settings=settings)
+    except CostCapExceeded:
+        raise
+    except Exception:  # noqa: BLE001 - a failed check fails the frame
+        answer = None
+    if answer != noun.strip().lower():
+        cut_path.unlink(missing_ok=True)
+        return None
+    saved = [str(cut_path)]
+    if _intersects(cluster[0].box, crop_box(boxes, *size)):
+        saved.append(str(crop_to_boxes(frame.path, boxes, orig_path)))
+    return saved
+
+
+def _make_candidates_clean(frames: list[Frame], picked: Frame, noun: str,
+                           out_stem: Path, names: list[str],
+                           picked_frames, noun_cache: dict | None, *,
+                           ledger, settings, count: int) -> list[str]:
+    """Task 67 candidates: whole objects, cross-checked, Spark-verified.
+
+    Tries the English name first, then the session's visual noun; tries
+    frames sharpest-first and stops at the first cut-out that verifies
+    as the target. At most ``MAX_SAM_PER_ITEM`` SAM calls; [] (letter
+    tile) when no frame passes every gate.
+    """
+    try:
+        visual = ensure_visual_nouns(
+            names, noun_cache if noun_cache is not None else {},
+            ledger=ledger, settings=settings).get(noun, noun)
+    except CostCapExceeded:
+        raise
+    except Exception:  # noqa: BLE001 - nouns fall back to English
+        visual = noun
+    nouns = [noun]
+    if visual.strip().lower() not in ("", noun.strip().lower()):
+        nouns.append(visual.strip())
+    ranked = window_frames(frames, picked)
+    seen: set[str] = set()
+    distinct = []
+    for frame in ranked:
+        key = str(frame.path)
+        if key not in seen:
+            seen.add(key)
+            distinct.append(frame)
+    others = _other_nouns(noun, picked, picked_frames)
+    used = [0]
+    for frame in distinct[:max(count, 1)]:
+        try:
+            saved = _try_clean_frame(frame, nouns, others, names, out_stem,
+                                     used, ledger=ledger, settings=settings)
+        except _BudgetOut:
+            return []
+        if saved is not None:
+            return saved
+    return []
+
+
 def make_candidates(frames: list[Frame], picked: Frame, noun: str,
                     out_stem: Path, *, ledger, settings,
-                    count: int = 3) -> list[str]:
+                    count: int = 3, session_items=None,
+                    picked_frames=None, noun_cache=None) -> list[str]:
     """Cut-out (default) plus the Task 59 4:3 crop ("Original").
 
     Probes the sharpest ``count`` frames for the noun; the first frame
     with product instances and no blocking face wins. Returns [] (no
     photo) when no frame qualifies: never a centre crop for automatic
-    photos.
+    photos. With ``session_items`` (Task 67), whole objects only,
+    cross-checked against the session's other items and Spark-verified.
     """
+    if session_items is not None:
+        return _make_candidates_clean(
+            frames, picked, noun, out_stem, list(session_items),
+            picked_frames, noun_cache, ledger=ledger, settings=settings,
+            count=count)
     ranked = window_frames(frames, picked)
     seen: set[str] = set()
     distinct = []

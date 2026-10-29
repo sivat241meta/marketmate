@@ -79,9 +79,19 @@ def fakes(monkeypatch):
     def fake_find_faces(image, noun, **kwargs):
         return []
 
+    def fake_photo_chat_json(messages, **kwargs):
+        content = messages[-1]["content"]
+        if isinstance(content, list):
+            content = " ".join(p.get("text", "") for p in content
+                               if isinstance(p, dict))
+        if "visual noun" in content:
+            return {}
+        return {"item": "none"}
+
     monkeypatch.setattr("app.pipeline.run.transcribe_wav", fake_transcribe)
     monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
     monkeypatch.setattr("app.pipeline.frames.chat_json", fake_chat_json)
+    monkeypatch.setattr("app.pipeline.photos.chat_json", fake_photo_chat_json)
     monkeypatch.setattr("app.pipeline.photos.find_instances",
                         fake_find_instances)
     monkeypatch.setattr("app.pipeline.photos.find_boxes", fake_find_faces)

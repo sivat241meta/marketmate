@@ -221,15 +221,16 @@ def _request_text(image: Path, noun: str, *, ledger: CostLedger,
     return "".join(chunks)
 
 
-def find_boxes(image: Path, noun: str, *, ledger: CostLedger, settings: Settings) -> list[Box]:
+def find_boxes(image: Path, noun: str, *, ledger: CostLedger, settings: Settings,
+               detail: str = "find_boxes") -> list[Box]:
     """Segment every instance of noun in image via SAM 3.1; log cost."""
     return parse_sam_text(_request_text(
-        image, noun, ledger=ledger, settings=settings, detail="find_boxes"))
+        image, noun, ledger=ledger, settings=settings, detail=detail))
 
 
 def find_instances(image: Path, noun: str, *, ledger: CostLedger,
-                   settings: Settings) -> list[SamInstance]:
+                   settings: Settings, detail: str = "find_instances"
+                   ) -> list[SamInstance]:
     """Like find_boxes, but each box keeps its decoded mask."""
     return parse_sam_response(_request_text(
-        image, noun, ledger=ledger, settings=settings,
-        detail="find_instances"))
+        image, noun, ledger=ledger, settings=settings, detail=detail))
