@@ -139,7 +139,11 @@
   <aside class="bill-actions" aria-label="Bill actions">
     {% if is_quote %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/accept">
+      {% if bill["status"] == "packing" %}
+      <button class="pill cta big" type="submit">{{ ui.obj("cash", 20) }}{{ t('bill.take_payment') }}</button>
+      {% else %}
       <button class="pill cta big" type="submit">{{ ui.obj("check", 20) }}{% if bill["source"] == "customer" %}{{ t('bill.accept_order') }}{% else %}{{ t('bill.accept_quote') }}{% endif %}</button>
+      {% endif %}
     </form>
     {% elif is_billed %}
     <section class="form-card" aria-label="{{ t('bill.collect') }}">
@@ -295,49 +299,5 @@
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('tap-chips.js') if static_url is defined else '/static/tap-chips.js' }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[data-cash]").forEach((box) => {
-    const total = parseFloat(box.getAttribute("data-total") || "0") || 0;
-    const input = box.querySelector("[data-cash-gave]");
-    const back = box.querySelector("[data-cash-back]");
-    if (!input || !back) { return; }
-    function fmt(value) {
-      const rounded = Math.round(value * 100) / 100;
-      return "₹" + rounded.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-    }
-    function refresh() {
-      const gave = parseFloat(input.value || "0") || 0;
-      const due = Math.max(0, gave - total);
-      back.textContent = fmt(due);
-    }
-    input.addEventListener("input", refresh);
-    box.querySelectorAll("[data-cash-chip]").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        const kind = chip.getAttribute("data-cash-chip");
-        if (kind === "exact") {
-          input.value = String(Math.round(total * 100) / 100);
-        } else {
-          input.value = kind;
-        }
-        refresh();
-      });
-    });
-    const keys = box.querySelector("[data-cash-keys]");
-    if (keys) {
-      keys.querySelectorAll("[data-key]").forEach((key) => {
-        key.addEventListener("click", () => {
-          const k = key.getAttribute("data-key");
-          const current = input.value || "";
-          if (k === "clear") { input.value = ""; }
-          else if (k === "back") { input.value = current.slice(0, -1); }
-          else { input.value = (current === "0" ? "" : current) + k; }
-          refresh();
-        });
-      });
-    }
-    refresh();
-  });
-});
-</script>
+<script src="{{ static_url('cash.js') if static_url is defined else '/static/cash.js' }}"></script>
 {% endblock %}

@@ -85,7 +85,7 @@ td { border-bottom: 0.5pt solid #E8EAED; padding: 2.5mm; font-size: 10pt; }
 <h1>{{ shop["name"] }} — {{ t('close.heading') }}</h1>
 <p class="meta">{{ day }}</p>
 <div class="tiles">
-  <div class="tile"><div class="num">{{ tiles.sales_fmt }}</div><div class="label">{{ t('cpdf.sales_bills', n=tiles.bills_count) }}</div></div>
+  <div class="tile"><div class="num">{{ tiles.sales_fmt }}</div><div class="label">{{ t('cpdf.sales_bills', n=tiles.bills_count, count=tiles.bills_count) }}</div></div>
   <div class="tile"><div class="num">{{ tiles.cash_fmt }}</div><div class="label">{{ t('close.cash') }}</div></div>
   <div class="tile"><div class="num">{{ tiles.upi_fmt }}</div><div class="label">{{ t('close.upi') }}</div></div>
   <div class="tile"><div class="num">{{ tiles.card_fmt }}</div><div class="label">{{ t('close.card') }}</div></div>

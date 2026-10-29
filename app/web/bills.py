@@ -525,6 +525,18 @@ def _order_actions(status: str, lang: str = "en") -> list[tuple[str, str, str]]:
     return []
 
 
+def _accept_if_collectable_order(conn, bill) -> None:
+    """Accept a packing/ready order so a posted payment can land on it.
+
+    Task 101: Ready orders show the payment panel directly and packing
+    orders relabel the accept button "Take payment", so the posted
+    payment must work without a prior accept click. New orders still
+    need an explicit accept.
+    """
+    if bill["kind"] == "quote" and bill["status"] in ("packing", "ready"):
+        db.accept_quote_as_bill(conn, bill["id"])
+
+
 def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
     """Map lower-cased item name to its public photo URL (display only)."""
     urls: dict[str, str] = {}
@@ -929,9 +941,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         currency = (shop["currency"] or "INR").upper()
         is_inr = currency == "INR"
         upi_id = db.shop_upi_id(shop)
+        # Task 101: a Ready order shows the payment panel directly
+        # instead of the accept button (no extra click).
+        ready_to_collect = (bill["kind"] == "quote"
+                            and bill["status"] == "ready")
         upi_url = None
         upi_qr = None
-        if is_inr and upi_id and bill["kind"] == "bill":
+        if is_inr and upi_id and (bill["kind"] == "bill"
+                                   or ready_to_collect):
             upi_url = build_upi_url(upi_id, db.shop_upi_payee(shop),
                                     rounded, bill["id"], shop["name"])
             upi_qr = qr_svg(upi_url)
@@ -953,7 +970,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         is_customer_bill = (bill["kind"] == "bill"
                             and bill_source == "customer")
         is_open_quote = (bill["kind"] == "quote"
-                         and bill["status"] in ("new", "packing", "ready"))
+                         and bill["status"] in ("new", "packing"))
         order_actions = (_order_actions(bill["status"], ui_lang)
                          if bill["kind"] == "quote" or is_customer_bill else [])
         ready_wa_url = None
@@ -994,10 +1011,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 phone, _bill_text(shop, bill["id"], raw_lines,
                                   str(rounded), ui_lang)),
             "is_quote": is_open_quote,
-            "is_billed": (bill["kind"] == "bill" and (
+            "is_billed": ((bill["kind"] == "bill" and (
                 bill["status"] == "billed" or (
                     is_customer_bill
-                    and bill["status"] in ("packing", "ready")))),
+                    and bill["status"] in ("packing", "ready"))))
+                or ready_to_collect),
             "is_paid": bill["status"] == "paid",
             "is_credit": bill["status"] == "credit",
             "can_credit": can_credit,
@@ -1673,6 +1691,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                      " for this shop",
                                      status_code=400)
             try:
+                _accept_if_collectable_order(conn, bill)
                 db.mark_bill_paid(conn, bill["id"], mode)
             except ValueError as exc:
                 fresh = _bill_of_shop(conn, shop["id"], bill_id)
@@ -1711,6 +1730,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     error=t_for(ui_lang)("bill.credit_need_both"),
                     status_code=400)
             try:
+                _accept_if_collectable_order(conn, bill)
                 db.mark_bill_credit(conn, bill["id"], name, phone)
             except ValueError as exc:
                 fresh = _bill_of_shop(conn, shop["id"], bill_id)

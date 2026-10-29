@@ -187,7 +187,7 @@
   <div class="results-grid">
   {% for group in groups %}
   <div class="card result-card" data-shop-list>
-    <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} shops</small></div>
+    <div class="result-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} {{ t('hp.shop', count=group.rows | length) }}</small></div>
     {% for row in group.rows %}
     <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
     <div class="shop-row">

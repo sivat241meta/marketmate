@@ -25,7 +25,7 @@
 
 <section class="ssec" aria-label="{{ t('close.today_numbers') }}">
 <div class="stat-grid">
-  <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ sales }}</b><span class="stat-label">{{ bills_count }} {{ t('close.bills') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ sales }}</b><span class="stat-label">{{ bills_count }} {{ t('close.bill', count=bills_count) }}</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><b class="stat-num money">{{ cash }}</b><span class="stat-label">{{ t('close.cash') }}</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.obj("phone", 28) }}</span><b class="stat-num money">{{ upi }}</b><span class="stat-label">{{ t('close.upi') }}</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.obj("check", 28) }}</span><b class="stat-num money">{% if margin_known %}{{ margin }}{% else %}—{% endif %}</b><span class="stat-label">{{ t('close.margin') }}</span></div>

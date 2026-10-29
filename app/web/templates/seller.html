@@ -95,7 +95,7 @@
     <p class="notice">{{ notice | safe }}</p>
   </div>
   {% else %}
-  <p class="live-line"><span aria-hidden="true">✓</span> {{ t('t61.live_status', n=live_count, time=live_since) }}</p>
+  <p class="live-line"><span aria-hidden="true">✓</span> {{ t('t61.live_status', n=live_count, count=live_count, time=live_since) }}</p>
   <div class="hero-cta">
     {% if wa_url %}<a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>{% endif %}
     <a class="pill ghost big" href="/e/{{ token }}/update">{{ ui.obj("mic", 20) }}{{ t('t61.update_prices') }}</a>
@@ -161,7 +161,7 @@
   <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("moon") }}{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></button>
   {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
   <div class="stat-grid step-stats">
-    <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ close_preview.sales }}</b><span class="stat-label">{{ close_preview.bills }} {{ t('close.bills') }}</span></div>
+    <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ close_preview.sales }}</b><span class="stat-label">{{ close_preview.bills }} {{ t('close.bill', count=close_preview.bills) }}</span></div>
     <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><b class="stat-num money">{{ close_preview.cash }}</b><span class="stat-label">{{ t('close.cash') }}</span></div>
     <div class="stat"><span class="stat-icon">{{ ui.obj("phone", 28) }}</span><b class="stat-num money">{{ close_preview.upi }}</b><span class="stat-label">{{ t('close.upi') }}</span></div>
   </div>

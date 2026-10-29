@@ -313,7 +313,7 @@ def test_seller_announcement_uses_real_data(tmp_path):
     expected = _prices_hhmm(tmp_path, version_id)
     assert "Shop is open" in html
     assert f"last prices {expected}" in html
-    assert "1 need a tap" in html
+    assert "1 needs a tap" in html
 
 
 def test_customer_announcement_uses_real_data(tmp_path):

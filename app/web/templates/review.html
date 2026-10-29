@@ -7,7 +7,7 @@
 <div class="page-head review-progress">
   <div>
     <p class="eyebrow">{{ t('review.title') }}</p>
-    {% if need_count %}<h1 class="page-title">{{ t('review.head_need', n=need_count) }}</h1>{% else %}<h1 class="page-title">{{ t('review.head_all') }}</h1>{% endif %}
+    {% if need_count %}<h1 class="page-title">{{ t('review.head_need', n=need_count, count=need_count) }}</h1>{% else %}<h1 class="page-title">{{ t('review.head_all') }}</h1>{% endif %}
     <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
   </div>
   <div class="page-actions">
