@@ -296,9 +296,35 @@ function headlineNames(card) {
   };
 }
 
+function renameCardFor(sheet) {
+  const direct = sheet.closest ? sheet.closest(".card") : null;
+  if (direct) {
+    return direct;
+  }
+  // While the rename dialog is open the sheet sits in a box under
+  // document.body, so DOM ancestry cannot find the card. The sheet and
+  // its card share the item index instead (data-item / data-card).
+  const item = sheet.dataset ? sheet.dataset.item : null;
+  if (item === null || item === undefined || item === "") {
+    return null;
+  }
+  const form = typeof document !== "undefined"
+    ? document.getElementById("review-form") : null;
+  const scope = form
+    || (typeof document !== "undefined" ? document : null);
+  return scope ? scope.querySelector(`.card[data-card="${item}"]`) : null;
+}
+
 function saveRename(sheet) {
-  const card = sheet.closest(".card");
+  const dialog = typeof window !== "undefined"
+    ? window.MMRenameDialog : null;
+  const card = renameCardFor(sheet);
   if (!card) {
+    if (dialog && dialog.isOpen()) {
+      // Restores the sheet to its home in the card.
+      dialog.close();
+      return;
+    }
     sheet.hidden = true;
     return;
   }
@@ -344,8 +370,6 @@ function saveRename(sheet) {
       mark.hidden = false;
     }
   }
-  const dialog = typeof window !== "undefined"
-    ? window.MMRenameDialog : null;
   if (dialog && dialog.isOpen()) {
     dialog.close();
     return;
