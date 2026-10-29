@@ -498,8 +498,11 @@ def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
         return urls
     for item in db.version_items(conn, version_id):
         if item.photo and item.name_en:
-            urls[item.name_en.strip().lower()] = (
-                "/m/" + Path(item.photo).name)
+            url = "/m/" + Path(item.photo).name
+            urls[item.name_en.strip().lower()] = url
+            key = db.match_key_of(item).strip().lower()
+            if key:
+                urls.setdefault(key, url)
     return urls
 
 
@@ -512,6 +515,11 @@ def _bill_lines(raw_lines, photos: dict[str, str] | None = None
         if not isinstance(raw, dict):
             continue
         variety = raw.get("variety") or None
+        photo_url = photos.get(
+            str(raw.get("match_key") or "").strip().lower())
+        if photo_url is None:
+            photo_url = photos.get(
+                str(raw.get("name_en", "")).strip().lower())
         lines.append({
             "index": index,
             "name_en": raw.get("name_en", ""),
@@ -519,8 +527,7 @@ def _bill_lines(raw_lines, photos: dict[str, str] | None = None
             "display": _display(raw.get("name_en", ""), variety),
             "name_local": display_name_local(raw.get("name_local", ""),
                                              variety),
-            "photo_url": photos.get(
-                str(raw.get("name_en", "")).strip().lower()),
+            "photo_url": photo_url,
             "qty": _fmt_money(raw.get("qty", "")),
             "unit": raw.get("unit") or "",
             "unit_price": _fmt_money(raw.get("unit_price")),
@@ -1192,7 +1199,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             wanted, not_understood = wanted_local_first(
                 text, price_items, shop["language"] or "ta",
-                ledger=ledger, settings=app.state.settings)
+                ledger=ledger, settings=app.state.settings,
+                aliases=db.shop_name_aliases(conn, shop["id"]))
         except CostCapExceeded:
             return _new_error(request, shop, token, conn,
                               BUDGET_EXHAUSTED_MESSAGE, 503)

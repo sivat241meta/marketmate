@@ -213,10 +213,21 @@ def _shop_sold_out(item) -> bool:
     return bool(getattr(item, "sold_out", False))
 
 
+def _shop_key(item) -> str:
+    if isinstance(item, dict):
+        return str(item.get("match_key") or item.get("name_en", ""))
+    if isinstance(item, str):
+        return item
+    return str(getattr(item, "match_key", None)
+               or getattr(item, "name_en", ""))
+
+
 def _find_shop_item(name_en: str, shop_items) -> object | None:
     want = _canonical(name_en)
     for item in shop_items or []:
         if _canonical(_shop_name(item)) == want:
+            return item
+        if _canonical(_shop_key(item)) == want:
             return item
     return None
 

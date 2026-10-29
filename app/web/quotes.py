@@ -447,7 +447,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             wanted, not_understood = wanted_local_first(
                 text, price_items, shop["language"] or "ta",
-                ledger=ledger, settings=app.state.settings)
+                ledger=ledger, settings=app.state.settings,
+                aliases=db.shop_name_aliases(conn, shop["id"]))
         except (SparkError, CostCapExceeded) as exc:
             message = (BUDGET_EXHAUSTED_MESSAGE
                        if isinstance(exc, CostCapExceeded) else str(exc))

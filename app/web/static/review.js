@@ -33,6 +33,7 @@ function collectCards(form) {
     names[card.dataset.card] = {
       local: local.textContent.trim(),
       en: en.textContent.trim(),
+      variety: card.dataset.renamed ? (card.dataset.variety || null) : null,
     };
   });
   const byItem = {};
@@ -63,7 +64,7 @@ function collectCards(form) {
       name_spoken: names[key] ? names[key].en : "",
       name_local: names[key] ? names[key].local : "",
       name_en: names[key] ? names[key].en : "",
-      variety: null,
+      variety: names[key] ? (names[key].variety || null) : null,
       price_lines: lines.map((line) => ({
         said: "", price: line.price ?? null,
         per_amount: line.per_amount ?? null, unit: line.unit ?? null,
@@ -283,6 +284,69 @@ function updateApprove(form) {
   }
 }
 
+function headlineNames(card) {
+  const head = card ? card.querySelector("h2") : null;
+  const local = head ? head.querySelector(".name-local") : null;
+  const en = head ? head.querySelector(".name-en") : null;
+  const line = card ? card.querySelector("[data-variety-line]") : null;
+  return {
+    local: local ? local.textContent.trim() : "",
+    en: en ? en.textContent.trim() : "",
+    variety: line ? line.textContent.trim() : (card.dataset.variety || ""),
+  };
+}
+
+function saveRename(sheet) {
+  const card = sheet.closest(".card");
+  if (!card) {
+    sheet.hidden = true;
+    return;
+  }
+  const current = headlineNames(card);
+  const pick = (name, fallback) => {
+    const input = sheet.querySelector(`input[name="${name}"]`);
+    const typed = input ? input.value.trim() : "";
+    return typed || fallback;
+  };
+  const local = pick("name_local", current.local);
+  const en = pick("name_en", current.en);
+  const variety = pick("variety", current.variety);
+  const changed = local !== current.local || en !== current.en
+    || variety !== current.variety;
+  card.querySelectorAll(".name-local").forEach((node) => {
+    node.textContent = local;
+  });
+  card.querySelectorAll(".name-en").forEach((node) => {
+    node.textContent = en;
+  });
+  let line = card.querySelector("[data-variety-line]");
+  if (variety) {
+    if (!line) {
+      line = document.createElement("p");
+      line.className = "muted";
+      line.setAttribute("data-variety-line", "");
+      const head = card.querySelector("h2");
+      if (head && head.parentNode) {
+        head.parentNode.insertBefore(line, head.nextSibling);
+      } else {
+        card.appendChild(line);
+      }
+    }
+    line.textContent = variety;
+  } else if (line) {
+    line.remove();
+  }
+  card.dataset.variety = variety;
+  if (changed) {
+    card.dataset.renamed = "1";
+    const mark = card.querySelector("[data-renamed-mark]");
+    if (mark) {
+      mark.hidden = false;
+    }
+  }
+  sheet.hidden = true;
+}
+
 function revealNeedsConfirm(form, needs) {
   let firstCard = null;
   for (const need of needs || []) {
@@ -331,6 +395,50 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   form.querySelectorAll(".card[data-card]").forEach((card) => {
     card.dataset.initialLines = String(card.querySelectorAll(".line").length);
+  });
+  form.querySelectorAll("[data-rename-open]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".card");
+      const sheet = card ? card.querySelector("[data-rename-form]") : null;
+      if (!sheet) {
+        return;
+      }
+      const current = headlineNames(card);
+      const reset = (name, value) => {
+        const input = sheet.querySelector(`input[name="${name}"]`);
+        if (input) {
+          input.value = value;
+        }
+      };
+      reset("name_local", current.local);
+      reset("name_en", current.en);
+      reset("variety", current.variety);
+      sheet.hidden = false;
+      const first = sheet.querySelector('input[name="name_local"]');
+      if (first && first.focus) {
+        first.focus();
+      }
+    });
+  });
+  form.querySelectorAll("[data-rename-form]").forEach((sheet) => {
+    const save = sheet.querySelector("[data-rename-save]");
+    if (save) {
+      save.addEventListener("click", () => {
+        saveRename(sheet);
+      });
+    }
+    sheet.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveRename(sheet);
+      }
+    });
+    const cancel = sheet.querySelector("[data-rename-cancel]");
+    if (cancel) {
+      cancel.addEventListener("click", () => {
+        sheet.hidden = true;
+      });
+    }
   });
   form.querySelectorAll("[data-card-toggle]").forEach((toggle) => {
     toggle.addEventListener("click", () => {

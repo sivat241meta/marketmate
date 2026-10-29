@@ -142,6 +142,7 @@ def parse_board_json(data: dict, image_path: Path | str) -> list[DraftItem]:
             name_local=_local_name(raw, name_en, spoken or name_en),
             name_en=name_en,
             variety=None,
+            match_key=name_en,
             price_lines=[line],
             qty=None,
             qty_unit=None,

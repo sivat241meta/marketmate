@@ -100,6 +100,7 @@ def _as_draft(change: Change) -> DraftItem:
         name_local=CANONICAL_NAMES.get(change.name_en, change.name_en),
         name_en=change.name_en,
         variety=None,
+        match_key=change.name_en,
         price_lines=change.price_lines,
         qty=change.qty,
         qty_unit=change.qty_unit,
@@ -156,9 +157,15 @@ def parse_update_json(data: dict, transcript: Transcript,
                       current: list[Item], *, language: str = "ta",
                       ledger=None, settings=None) -> list[Change]:
     """Build flagged changes from model JSON; unknown turns fall back to quotes."""
-    current_map = {item.name_en: item for item in current}
-    previous = {item.name_en: item.price_lines[0] for item in current
-                if item.price_lines}
+    current_map = {}
+    for item in current:
+        current_map.setdefault(db.match_key_of(item), item)
+        current_map.setdefault(item.name_en, item)
+    previous = {}
+    for item in current:
+        if item.price_lines:
+            previous.setdefault(db.match_key_of(item), item.price_lines[0])
+            previous.setdefault(item.name_en, item.price_lines[0])
     changes: list[Change] = []
     for raw in data.get("changes") or []:
         name_en = raw.get("name_en") or "other"
@@ -244,10 +251,12 @@ def change_from_dict(raw: dict) -> Change:
 def _insert_item(conn, version_id: int, name_local: str, name_en: str,
                  variety: str | None, qty: Decimal | None, qty_unit: str | None,
                  photo: str | None, sold_out: bool, proof: Proof,
-                 lines: list[PriceLine]) -> None:
+                 lines: list[PriceLine],
+                 match_key: str | None = None) -> None:
     # Shared copy path lives in app.db so approve() reuses it.
     db.insert_version_item(conn, version_id, name_local, name_en, variety,
-                           qty, qty_unit, photo, sold_out, proof, lines)
+                           qty, qty_unit, photo, sold_out, proof, lines,
+                           match_key=match_key or name_en)
 
 
 def apply_changes(conn, shop_id: int, base_version_id: int,
@@ -269,8 +278,12 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
             "variety": item.variety, "qty": item.qty, "qty_unit": item.qty_unit,
             "photo": item.photo, "sold_out": item.sold_out,
             "proof": item.proof, "lines": list(item.price_lines),
+            "match_key": db.match_key_of(item),
         })
-    index = {entry["name_en"]: entry for entry in working}
+    index = {}
+    for entry in working:
+        index.setdefault(entry["match_key"], entry)
+        index.setdefault(entry["name_en"], entry)
     for change in changes:
         entry = index.get(change.name_en)
         if entry is None:
@@ -279,7 +292,9 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
                 "name_en": change.name_en, "variety": None,
                 "qty": None, "qty_unit": None, "photo": None,
                 "sold_out": False, "proof": change.proof, "lines": [],
+                "match_key": change.name_en,
             }
+            db.apply_chosen_names(conn, shop_id, [entry])
             working.append(entry)
             index[change.name_en] = entry
         entry["proof"] = change.proof
@@ -309,6 +324,6 @@ def apply_changes(conn, shop_id: int, base_version_id: int,
         _insert_item(conn, new_id, entry["name_local"], entry["name_en"],
                      entry["variety"], entry["qty"], entry["qty_unit"],
                      entry["photo"], entry["sold_out"], entry["proof"],
-                     entry["lines"])
+                     entry["lines"], entry.get("match_key"))
     conn.commit()
     return new_id

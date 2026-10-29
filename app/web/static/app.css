@@ -3114,3 +3114,46 @@ a.it:hover { background: var(--soft); }
 .review-card .im { background: #fff; border-bottom: 1px solid var(--line); }
 .review-card .im .review-photo { border-radius: 0; margin-bottom: 0; }
 .photo-strip { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0 0; }
+/* Rename sheet (Task 66): inline on the check page, <details> on live lists. */
+.pen {
+  border: 1px solid var(--line-2);
+  background: #fff;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 2px 8px;
+  color: var(--purple-ink);
+  margin-left: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-block;
+}
+summary.pen { list-style: none; }
+summary.pen::-webkit-details-marker { display: none; }
+.rename-sheet {
+  border: 1.5px solid var(--line-2);
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  margin: 10px 0;
+  background: #fff;
+}
+details.rename-sheet { padding: 0; border: 0; margin: 6px 0 0; background: none; }
+details.rename-sheet > form {
+  border: 1.5px solid var(--line-2);
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  margin-top: 8px;
+  background: #fff;
+}
+.rename-sheet h3 { margin: 0; font-size: 1.05rem; }
+.rename-sheet .muted { margin: 2px 0 4px; }
+.fld { display: block; margin-top: 10px; font-size: 0.85rem; font-weight: 700; }
+.fld input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 1rem;
+}
+.rename-actions { display: flex; gap: 10px; margin-top: 14px; }
+.rename-actions .btn { flex: 1; }

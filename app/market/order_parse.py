@@ -222,13 +222,18 @@ def _display_name(item) -> str:
 
 
 def _shop_canon(item) -> str:
-    """An item's canonical name_en (synonym-aware, normalized)."""
-    key = _norm(str(_field(item, "name_en") or ""))
+    """An item's canonical matching key (synonym-aware, normalized)."""
+    raw = _field(item, "match_key") or _field(item, "name_en") or ""
+    key = _norm(str(raw))
     return SYNONYMS.get(key, key)
 
 
-def _shop_exact(items) -> dict[str, int]:
-    """Normalized full shop name (English or local) -> item index."""
+def _shop_exact(items, aliases=None) -> dict[str, int]:
+    """Normalized full shop name (English or local) -> item index.
+
+    ``aliases`` is the shop's seller-chosen (text, matching key,
+    variety) list; each alias points at its renamed item.
+    """
     exact: dict[str, int] = {}
     for idx, item in enumerate(items):
         for name in (str(_field(item, "name_en") or ""),
@@ -238,6 +243,19 @@ def _shop_exact(items) -> dict[str, int]:
                 continue
             for variant in _plural_variants(key):
                 exact.setdefault(variant, idx)
+    for text, key, variety in aliases or []:
+        normed = _norm(str(text or ""))
+        if not normed:
+            continue
+        want_var = str(variety or "").strip().lower()
+        for idx, item in enumerate(items):
+            if _shop_canon(item) != _norm(str(key or "")):
+                continue
+            if (_shop_variety(item) or "").strip().lower() != want_var:
+                continue
+            for variant in _plural_variants(normed):
+                exact.setdefault(variant, idx)
+            break
     return exact
 
 
@@ -627,6 +645,7 @@ def item_like_leftovers(leftover_words: list[str],
 
 
 def parse_order(text: str, price_list_items, language: str | None = "en",
+                aliases=None,
                 ) -> tuple[list[WantedLine], list[str]]:
     """Parse an order into wanted lines plus leftover original words."""
     items = list(price_list_items or [])
@@ -637,7 +656,7 @@ def parse_order(text: str, price_list_items, language: str | None = "en",
         decimal_comma = bool(get_language(language or "en").decimal_comma)
     except (KeyError, ImportError, AttributeError):
         decimal_comma = False
-    exact = _shop_exact(items)
+    exact = _shop_exact(items, aliases)
     tokens, to_orig, display = _tokenize(text or "")
     occurrences: list[tuple[int, int, str, object]] = []
     pos = 0
@@ -752,7 +771,7 @@ def _resolve_spark_line(line, full_text: str):
 
 
 def wanted_local_first(text: str, price_list_items, language: str | None,
-                       *, ledger, settings):
+                       *, ledger, settings, aliases=None):
     """Typed-order lines: free local parse first, Spark only for leftovers.
 
     Mirrors live billing: parse_order handles everything on the price list;
@@ -764,7 +783,8 @@ def wanted_local_first(text: str, price_list_items, language: str | None,
 
     items = list(price_list_items or [])
     try:
-        local, leftover = parse_order(text or "", items, language or "en")
+        local, leftover = parse_order(text or "", items, language or "en",
+                                      aliases=aliases)
     except Exception:  # noqa: BLE001 - one bad parse falls back to Spark
         local, leftover = [], [text or ""]
     seen = {(str(w.name_en or "").strip().lower(),

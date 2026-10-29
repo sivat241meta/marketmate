@@ -1,6 +1,22 @@
 "use strict";
 /* Live prices: camera preview + mic PCM relay over our WebSocket. */
 
+function firstGrapheme(name) {
+  const text = (name || "").trim();
+  if (!text) {
+    return "";
+  }
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const parts = new Intl.Segmenter(
+      undefined, { granularity: "grapheme" }).segment(text);
+    for (const part of parts) {
+      return part.segment.toUpperCase();
+    }
+  }
+  const match = /^\P{Mark}\p{Mark}*/u.exec(text);
+  return (match ? match[0] : text[0]).toUpperCase();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.querySelector("[data-live]");
   if (!root) {
@@ -182,7 +198,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         const span = document.createElement("span");
         span.className = "nophoto";
-        span.textContent = (item.name_local || item.name_en || "?").slice(0, 1);
+        span.textContent = firstGrapheme(
+          item.name_local || item.name_en || "?");
         card.appendChild(span);
       }
       const main = document.createElement("div");

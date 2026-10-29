@@ -197,6 +197,14 @@ def _price_items_for(data_dir: Path, shop_id: int) -> list:
         conn.close()
 
 
+def _aliases_for(data_dir: Path, shop_id: int) -> list:
+    conn = db.connect(data_dir)
+    try:
+        return db.shop_name_aliases(conn, shop_id)
+    finally:
+        conn.close()
+
+
 def _build_order_payload(data_dir: Path, shop_id: int, wanted: list,
                          event: str) -> dict:
     conn = db.connect(data_dir)
@@ -225,6 +233,7 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
     shop_id = shop["id"]
     ledger = CostLedger(data_dir / "costs.db", settings.daily_budget_usd)
     price_items = _price_items_for(data_dir, shop_id)
+    shop_aliases = _aliases_for(data_dir, shop_id)
 
     await websocket.send_text(json.dumps({"type": "ready"}))
     realtime = RealtimeASR(settings=settings, ledger=ledger,
@@ -310,7 +319,8 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
                                      "text": str(text)})
                     try:
                         local, leftover = parse_order(
-                            str(text), price_items, language)
+                            str(text), price_items, language,
+                            aliases=shop_aliases)
                     except Exception:  # noqa: BLE001 - one bad turn
                         local, leftover = [], [str(text)]
                     turn_texts[turn_id] = str(text)
@@ -431,7 +441,7 @@ async def _run_order_live(websocket: WebSocket, shop: dict,
     if full_text.strip():
         try:
             full_local, full_leftover = parse_order(
-                full_text, price_items, language)
+                full_text, price_items, language, aliases=shop_aliases)
         except Exception:  # noqa: BLE001 - keep the per-turn lines
             wanted = _overall()
         else:

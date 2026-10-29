@@ -277,6 +277,24 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             mode TEXT NOT NULL, at TEXT NOT NULL,
             created_by TEXT
         );
+        CREATE TABLE IF NOT EXISTS chosen_names (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            match_key TEXT NOT NULL, variety TEXT NOT NULL DEFAULT '',
+            name_local TEXT NOT NULL, name_en TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (shop_id, match_key, variety)
+        );
+        CREATE TABLE IF NOT EXISTS name_changes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            item_id INTEGER,
+            old_local TEXT NOT NULL, old_en TEXT NOT NULL,
+            old_variety TEXT,
+            new_local TEXT NOT NULL, new_en TEXT NOT NULL,
+            new_variety TEXT,
+            created_at TEXT NOT NULL
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -297,6 +315,21 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     for name in ("stock_qty", "stock_unit", "stock_source"):
         if name not in item_columns:
             conn.execute(f"ALTER TABLE items ADD COLUMN {name} TEXT")
+    if "match_key" not in item_columns:
+        conn.execute("ALTER TABLE items ADD COLUMN match_key TEXT")
+    conn.execute(
+        "UPDATE items SET match_key = name_en"
+        " WHERE match_key IS NULL OR match_key = ''")
+    for row in conn.execute(
+            "SELECT id, data FROM drafts").fetchall():
+        try:
+            raw = json.loads(row["data"])
+        except ValueError:
+            continue
+        if isinstance(raw, dict) and not raw.get("match_key"):
+            raw["match_key"] = raw.get("name_en")
+            conn.execute("UPDATE drafts SET data = ? WHERE id = ?",
+                         (json.dumps(raw), row["id"]))
     quote_columns = {row[1] for row in conn.execute("PRAGMA table_info(quotes)")}
     if "customer_phone" not in quote_columns:
         conn.execute("ALTER TABLE quotes ADD COLUMN customer_phone TEXT")
@@ -642,6 +675,7 @@ def _draft_to_json(item: DraftItem) -> str:
     return json.dumps({
         "name_spoken": item.name_spoken, "name_local": item.name_local,
         "name_en": item.name_en, "variety": item.variety,
+        "match_key": getattr(item, "match_key", None) or item.name_en,
         "price_lines": [{"price": _decimal_to_str(line.price),
                          "per_amount": _decimal_to_str(line.per_amount),
                          "unit": line.unit, "said": line.said}
@@ -666,6 +700,7 @@ def _draft_from_json(data: str) -> DraftItem:
         name_local=raw.get("name_local", raw.get("name_ta", "")),
         name_en=raw["name_en"],
         variety=raw["variety"],
+        match_key=raw.get("match_key") or raw["name_en"],
         price_lines=[PriceLine(
             Decimal(line["price"]) if line["price"] is not None else None,
             Decimal(line["per_amount"]) if line["per_amount"] is not None else None,
@@ -685,6 +720,10 @@ def _draft_from_json(data: str) -> DraftItem:
 
 
 def save_drafts(conn, session_id: int, items: list[DraftItem]) -> None:
+    row = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
+                       (session_id,)).fetchone()
+    if row is not None:
+        apply_chosen_names(conn, row["shop_id"], items)
     conn.execute("DELETE FROM drafts WHERE session_id = ?", (session_id,))
     conn.executemany(
         "INSERT INTO drafts (session_id, item_index, data) VALUES (?, ?, ?)",
@@ -698,6 +737,153 @@ def load_drafts(conn, session_id: int) -> list[DraftItem]:
         "SELECT data FROM drafts WHERE session_id = ? ORDER BY item_index",
         (session_id,)).fetchall()
     return [_draft_from_json(row["data"]) for row in rows]
+
+
+def match_key_of(item) -> str:
+    """Canonical matching key: the pipeline's name, never the seller's.
+
+    Falls back to name_en for in-memory drafts that predate Task 66.
+    """
+    key = getattr(item, "match_key", None) or getattr(item, "name_en", "")
+    if isinstance(item, dict):
+        key = item.get("match_key") or item.get("name_en", "")
+    return str(key or "")
+
+
+def _chosen_variety(variety: str | None) -> str:
+    return str(variety or "").strip().lower()
+
+
+def save_chosen_name(conn, shop_id: int, match_key: str,
+                     variety: str | None, name_local: str,
+                     name_en: str) -> None:
+    """Remember a seller-chosen name for the next price session."""
+    key = str(match_key or "").strip().lower()
+    if not key:
+        return
+    conn.execute(
+        "INSERT INTO chosen_names (shop_id, match_key, variety, name_local,"
+        " name_en, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT (shop_id, match_key, variety) DO UPDATE SET"
+        " name_local = excluded.name_local, name_en = excluded.name_en,"
+        " updated_at = excluded.updated_at",
+        (shop_id, key, _chosen_variety(variety), name_local, name_en,
+         _now()))
+    conn.commit()
+
+
+def chosen_name_for(conn, shop_id: int, match_key: str,
+                    variety: str | None):
+    """The seller's chosen names for a (matching key, variety), if any."""
+    return conn.execute(
+        "SELECT * FROM chosen_names WHERE shop_id = ? AND match_key = ?"
+        " AND variety = ?",
+        (shop_id, str(match_key or "").strip().lower(),
+         _chosen_variety(variety))).fetchone()
+
+
+def apply_chosen_names(conn, shop_id: int, items: list) -> set[int]:
+    """Rewrite draft display names from the seller's chosen names.
+
+    Only the display names change; the matching key, variety, prices and
+    proof are untouched. Returns the indices that used a chosen name.
+    """
+    used: set[int] = set()
+    for index, item in enumerate(items or []):
+        if isinstance(item, dict):
+            variety = item.get("variety")
+            if not item.get("match_key"):
+                item["match_key"] = item.get("name_en")
+        else:
+            variety = item.variety
+            if not getattr(item, "match_key", None):
+                item.match_key = item.name_en
+        chosen = chosen_name_for(conn, shop_id, match_key_of(item), variety)
+        if chosen is None:
+            continue
+        if isinstance(item, dict):
+            item["name_local"] = chosen["name_local"]
+            item["name_en"] = chosen["name_en"]
+        else:
+            item.name_local = chosen["name_local"]
+            item.name_en = chosen["name_en"]
+        used.add(index)
+    return used
+
+
+def uses_chosen_name(conn, shop_id: int, item) -> bool:
+    """True when a draft's display names equal the seller's chosen names."""
+    try:
+        variety = item.variety
+        local = item.name_local
+        english = item.name_en
+    except AttributeError:
+        if not isinstance(item, dict):
+            return False
+        variety = item.get("variety")
+        local = item.get("name_local")
+        english = item.get("name_en")
+    chosen = chosen_name_for(conn, shop_id, match_key_of(item), variety)
+    return (chosen is not None and chosen["name_local"] == local
+            and chosen["name_en"] == english)
+
+
+def shop_name_aliases(conn, shop_id: int) -> list[tuple[str, str, str | None]]:
+    """Seller-chosen (alias text, matching key, variety) for one shop.
+
+    Both the local and the English chosen names match the renamed item
+    in voice and typed bills.
+    """
+    out: list[tuple[str, str, str | None]] = []
+    for row in conn.execute(
+            "SELECT match_key, variety, name_local, name_en FROM chosen_names"
+            " WHERE shop_id = ?", (shop_id,)).fetchall():
+        variety = row["variety"] or None
+        for text in (row["name_local"], row["name_en"]):
+            if str(text or "").strip():
+                out.append((str(text), row["match_key"], variety))
+    return out
+
+
+def rename_item(conn, item_id: int, name_local: str, name_en: str,
+                variety: str | None) -> tuple[str, str, str | None]:
+    """Rename one published item in place; prices stay untouched.
+
+    Returns the old (name_local, name_en, variety). The matching key is
+    never changed by a rename.
+    """
+    row = conn.execute(
+        "SELECT name_local, name_en, variety FROM items WHERE id = ?",
+        (item_id,)).fetchone()
+    if row is None:
+        raise ValueError("unknown item")
+    old = (row["name_local"], row["name_en"], row["variety"])
+    conn.execute(
+        "UPDATE items SET name_local = ?, name_en = ?, variety = ?"
+        " WHERE id = ?",
+        (name_local, name_en, variety, item_id))
+    conn.commit()
+    return old
+
+
+def log_name_change(conn, shop_id: int, item_id: int | None,
+                    old: tuple[str, str, str | None],
+                    new: tuple[str, str, str | None]) -> None:
+    """Audit one rename: shop, item, old -> new, time. Never customer-facing."""
+    conn.execute(
+        "INSERT INTO name_changes (shop_id, item_id, old_local, old_en,"
+        " old_variety, new_local, new_en, new_variety, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (shop_id, item_id, old[0], old[1], old[2],
+         new[0], new[1], new[2], _now()))
+    conn.commit()
+
+
+def list_name_changes(conn, shop_id: int):
+    """This shop's rename audit rows, oldest first."""
+    return conn.execute(
+        "SELECT * FROM name_changes WHERE shop_id = ? ORDER BY id",
+        (shop_id,)).fetchall()
 
 
 _MERGE_KINDS = {"video", "live", "board"}
@@ -800,10 +986,11 @@ def ensure_session_base(conn, session_id: int) -> int | None:
 def session_replaces(session_item, base_item) -> bool:
     """True when a session item replaces a base item.
 
-    Match on name_en; when both carry a variety, it must match too.
+    Match on the matching key (never the seller's display names); when
+    both carry a variety, it must match too.
     """
-    sess_name = str(getattr(session_item, "name_en", "") or "").strip().lower()
-    base_name = str(getattr(base_item, "name_en", "") or "").strip().lower()
+    sess_name = match_key_of(session_item).strip().lower()
+    base_name = match_key_of(base_item).strip().lower()
     if not sess_name or sess_name != base_name:
         return False
     sess_var = str(getattr(session_item, "variety", "") or "").strip().lower()
@@ -826,7 +1013,7 @@ def carried_from_base(session_items: list, base_items: list) -> list:
 def insert_version_item(conn, version_id: int, name_local: str, name_en: str,
                         variety: str | None, qty, qty_unit: str | None,
                         photo: str | None, sold_out: bool, proof: Proof,
-                        lines: list) -> None:
+                        lines: list, match_key: str | None = None) -> None:
     """Insert one item row plus its price lines.
 
     Shared copy helper: approve() reuses the same logic as
@@ -846,10 +1033,12 @@ def insert_version_item(conn, version_id: int, name_local: str, name_en: str,
     lines = fixed
     cursor = conn.execute(
         "INSERT INTO items (version_id, name_local, name_en, variety, qty, qty_unit,"
-        " photo, sold_out, proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " photo, sold_out, proof, match_key)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (version_id, name_local, name_en, variety, _decimal_to_str(qty),
          qty_unit, photo, int(bool(sold_out)),
-         json.dumps(_proof_to_json(proof))))
+         json.dumps(_proof_to_json(proof)),
+         match_key or name_en))
     item_id = cursor.lastrowid
     conn.executemany(
         "INSERT INTO price_lines (item_id, price, per_amount, unit, said)"
@@ -948,11 +1137,13 @@ def approve(conn, session_id: int, items: list[DraftItem],
         priced = [line for line in item.price_lines if line.price is not None]
         insert_version_item(conn, version_id, item.name_local, item.name_en,
                             item.variety, item.qty, item.qty_unit, item.photo,
-                            False, item.proof, priced)
+                            False, item.proof, priced,
+                            match_key_of(item))
     for base in kept:
         insert_version_item(conn, version_id, base.name_local, base.name_en,
                             base.variety, base.qty, base.qty_unit, base.photo,
-                            base.sold_out, base.proof, list(base.price_lines))
+                            base.sold_out, base.proof, list(base.price_lines),
+                            match_key_of(base))
     conn.commit()
     return version_id
 
@@ -991,6 +1182,7 @@ def version_items(conn, version_id: int) -> list[Item]:
                        if _row_get(row, "stock_qty") is not None else None),
             stock_unit=_row_get(row, "stock_unit"),
             stock_source=_row_get(row, "stock_source"),
+            match_key=(_row_get(row, "match_key") or row["name_en"]),
         ))
     return items
 
@@ -1073,6 +1265,7 @@ def _quote_line_to_dict(line) -> dict:
     return {
         "name_en": line.name_en,
         "name_local": line.name_local,
+        "match_key": getattr(line, "match_key", None),
         "qty": str(line.qty),
         "unit": line.unit,
         "unit_price": str(line.unit_price) if line.unit_price is not None else None,
@@ -1163,12 +1356,16 @@ def set_customer_contact(conn, quote_id: int, *,
 OPEN_ORDER_STATUSES = ("new", "billed", "packing", "ready")
 
 
-def _line_matches_item(line: dict, name_en: str, variety: str | None) -> bool:
+def _line_matches_item(line: dict, name_en: str, variety: str | None,
+                       match_key: str | None = None) -> bool:
     if not isinstance(line, dict):
         return False
-    want_name = (name_en or "").strip().lower()
-    got_name = str(line.get("name_en") or "").strip().lower()
-    if not want_name or got_name != want_name:
+    want = {(name_en or "").strip().lower(), (match_key or "").strip().lower()}
+    want.discard("")
+    got = {str(line.get("name_en") or "").strip().lower(),
+           str(line.get("match_key") or "").strip().lower()}
+    got.discard("")
+    if not want or not (want & got):
         return False
     want_var = (variety or "").strip().lower()
     got_var = str(line.get("variety") or "").strip().lower()
@@ -1176,7 +1373,8 @@ def _line_matches_item(line: dict, name_en: str, variety: str | None) -> bool:
 
 
 def flag_sold_out_in_open_orders(conn, shop_id: int, name_en: str,
-                                 variety: str | None = None) -> int:
+                                 variety: str | None = None,
+                                 match_key: str | None = None) -> int:
     """Flag matching lines "sold_out" on every open customer order.
 
     Only open orders (new/billed/packing/ready) are touched; collected,
@@ -1201,7 +1399,7 @@ def flag_sold_out_in_open_orders(conn, shop_id: int, name_en: str,
             continue
         changed = False
         for line in lines:
-            if (_line_matches_item(line, name_en, variety)
+            if (_line_matches_item(line, name_en, variety, match_key)
                     and not line.get("sold_out")):
                 line["sold_out"] = True
                 changed = True
@@ -1884,14 +2082,23 @@ def record_credit_payment(conn, shop, customer_key: str, amount_raw,
 
 
 def last_prices(conn, shop_id: int) -> dict[str, PriceLine]:
-    """name_en -> first price line of the latest approved version."""
+    """name_en -> first price line of the latest approved version.
+
+    Keyed by both the display name and the matching key, so price-jump
+    checks keep working after a rename.
+    """
     version_id = latest_version(conn, shop_id)
     if version_id is None:
         return {}
     prices: dict[str, PriceLine] = {}
     for item in version_items(conn, version_id):
-        if item.price_lines and item.name_en not in prices:
+        if not item.price_lines:
+            continue
+        if item.name_en not in prices:
             prices[item.name_en] = item.price_lines[0]
+        key = match_key_of(item)
+        if key and key not in prices:
+            prices[key] = item.price_lines[0]
     return prices
 
 

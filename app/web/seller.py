@@ -197,7 +197,13 @@ def _draft_from_client(raw: dict, stored=None):
         item.name_local = stored.name_local
     if not (item.name_en or "").strip():
         item.name_en = stored.name_en
-    item.variety = stored.variety
+    # Renames may change the variety; empty keeps the stored value.
+    if not (item.variety or "").strip():
+        item.variety = stored.variety
+    else:
+        item.variety = item.variety.strip()
+    # A rename never changes the matching key.
+    item.match_key = db.match_key_of(stored) or stored.name_en
     item.qty_unit = stored.qty_unit
     item.range_said = stored.range_said
     item.photo = stored.photo
@@ -257,6 +263,29 @@ def _action_label(action: str, lang: str = "en") -> str:
     if key is None:
         return _ACTION_LABELS.get(action, action)
     return t_for(lang)(key)
+
+
+def _current_map(current: list):
+    """Current items by matching key and display name (renames keep both)."""
+    mapping = {}
+    for item in current or []:
+        mapping.setdefault(db.match_key_of(item), item)
+        mapping.setdefault(item.name_en, item)
+    return mapping
+
+
+_FIELD_KEYS = {"local": "rename.field_local", "en": "rename.field_en",
+               "variety": "rename.field_variety"}
+
+
+def _rename_error(ui_lang: str, exc) -> str:
+    """Translated rename rejection from a NameValidationError."""
+    t = t_for(ui_lang)
+    params = dict(exc.params or {})
+    field = params.get("field")
+    if field in _FIELD_KEYS:
+        params["field"] = t(_FIELD_KEYS[field])
+    return t(exc.key, **params)
 
 
 def _translated_progress(session, lang: str = "en") -> tuple[dict, str]:
@@ -693,6 +722,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "id": item.id,
                     "name_local": item.name_local,
                     "name_en": item.name_en,
+                    "tile": first_grapheme(item.name_local or
+                                           item.name_en),
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
                     "sold_out": item.sold_out,
@@ -744,6 +775,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         currency=currency, lang=ui_lang)
             entry["margin_chip"] = margin_chip
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
+        try:
+            shop_native = get_language(shop["language"]).native_name
+        except KeyError:
+            shop_native = shop["language"]
         home = _home_extras(conn, shop, ui_lang)
         wa_url, wa_text = _price_share(
             conn, shop, ui_lang, app.state.settings.public_base_url)
@@ -783,6 +818,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "shop_url": f"/s/{shop['slug']}",
              "max_upload_bytes": app.state.settings.max_upload_bytes,
              "bills": bills, "shop_lang": shop["language"],
+             "shop_native": shop_native,
              "languages": LANGUAGES,
              "spent_today": spent, "ui_lang": ui_lang,
              "is_staff": is_staff, "helper_name": helper_name,
@@ -811,6 +847,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "has_bills": has_bills, "gs_prices_done": gs_prices_done,
              "credit_total": format_money(credit_total, currency),
              "credit_count": credit_count,
+             "renamed": request.query_params.get("renamed") == "1",
              "can_credit": can_credit},
         )
 
@@ -1070,8 +1107,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
         stopped = (session["message"] == STOPPED_MESSAGE
                    if session["message"] else False)
+        try:
+            shop_native = get_language(shop["language"]).native_name
+        except KeyError:
+            shop_native = shop["language"]
         context = {"shop": shop, "session": session, "token": token,
                    "progress": progress, "shop_lang": shop["language"],
+                   "shop_native": shop_native,
                    "friendly": friendly, "ui_lang": ui_lang,
                    "stopped_note": STOPPED_MESSAGE if stopped else None}
         if session["status"] == "approved":
@@ -1135,6 +1177,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         ),
                         "proof_json": json.dumps(proof),
                         "needs_decision": _needs_decision(item),
+                        "own_name": db.uses_chosen_name(conn, shop["id"],
+                                                        item),
                         "board_only": _board_only(item),
                         "quote_html": _highlight_quote(item.proof.quote),
                         "price_summary": _price_summary(
@@ -1235,9 +1279,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return JSONResponse({"photo_url": _photo_url(str(out))})
 
     @app.post("/e/{token}/s/{session_id}/approve")
-    def approve(token: str, session_id: int, body: dict, conn: Conn):
+    def approve(request: Request, token: str, session_id: int, body: dict,
+                conn: Conn):
         shop = _owner_or_403_exc(conn, token)
         _session_of_shop(conn, shop["id"], session_id)
+        ui_lang = get_ui_lang(request, shop)
         raw_items = body.get("items", [])
         confirmed = set(body.get("confirmed", []))
         carried_raw = body.get("carried", None)
@@ -1256,10 +1302,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             saved_drafts = db.load_drafts(conn, session_id)
         except Exception:  # noqa: BLE001 - missing drafts keep variety empty
             saved_drafts = []
+        from app.pipeline.namecheck import (
+            NameValidationError,
+            validate_names,
+        )
+
         items = []
         for index, raw in enumerate(raw_items):
             stored = saved_drafts[index] if index < len(saved_drafts) else None
             item = _draft_from_client(raw, stored)
+            if stored is not None and (
+                    item.name_local != stored.name_local
+                    or item.name_en != stored.name_en
+                    or (item.variety or None) != (stored.variety or None)):
+                try:
+                    local, english, variety = validate_names(
+                        item.name_local, item.name_en, item.variety,
+                        shop["language"])
+                except NameValidationError as exc:
+                    raise HTTPException(
+                        400, _rename_error(ui_lang, exc))
+                item.name_local, item.name_en = local, english
+                item.variety = variety or stored.variety
             if item.proof.source == "board_photo":
                 kept = [
                     flag for flag in check_item(
@@ -1288,6 +1352,26 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                              "needs_confirm": exc.needs_confirm},
                 )
             raise HTTPException(400, str(exc))
+        try:
+            new_items = db.version_items(conn, version_id)
+        except Exception:  # noqa: BLE001 - audit is best effort
+            new_items = []
+        for index, item in enumerate(items):
+            stored = saved_drafts[index] if index < len(saved_drafts) else None
+            if stored is None:
+                continue
+            if (item.name_local == stored.name_local
+                    and item.name_en == stored.name_en
+                    and (item.variety or None) == (stored.variety or None)):
+                continue
+            db.save_chosen_name(conn, shop["id"], db.match_key_of(item),
+                                item.variety, item.name_local, item.name_en)
+            fresh_id = (new_items[index].id
+                        if index < len(new_items) else None)
+            db.log_name_change(
+                conn, shop["id"], fresh_id,
+                (stored.name_local, stored.name_en, stored.variety),
+                (item.name_local, item.name_en, item.variety))
         db.set_published(conn, version_id, True)
         return RedirectResponse(f"/e/{token}/s/{session_id}/live",
                                 status_code=303)
@@ -1495,7 +1579,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         db.set_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(changes)} changes heard")
-        current_map = {item.name_en: item for item in current}
+        current_map = _current_map(current)
         return templates.TemplateResponse(request, "update.html", {
             "shop": shop, "token": token, "mode": "confirm",
             "session_id": session_id,
@@ -1540,9 +1624,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if len(raw_items) != len(changes):
                 raise HTTPException(400, "confirm form is out of date; record again")
             current = db.version_items(conn, base_version_id)
-            current_map = {item.name_en: item for item in current}
-            previous = {item.name_en: item.price_lines[0] for item in current
-                        if item.price_lines}
+            current_map = _current_map(current)
+            previous = {}
+            for _item in current:
+                if _item.price_lines:
+                    previous.setdefault(db.match_key_of(_item),
+                                        _item.price_lines[0])
+                    previous.setdefault(_item.name_en,
+                                        _item.price_lines[0])
             for index, (change, raw) in enumerate(zip(changes, raw_items)):
                 draft = _draft_from_client(raw)
                 if change.action == "set_price":
@@ -1570,9 +1659,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 except (TypeError, ValueError):
                     continue
             current = db.version_items(conn, base_version_id)
-            current_map = {item.name_en: item for item in current}
-            previous = {item.name_en: item.price_lines[0] for item in current
-                        if item.price_lines}
+            current_map = _current_map(current)
+            previous = {}
+            for _item in current:
+                if _item.price_lines:
+                    previous.setdefault(db.match_key_of(_item),
+                                        _item.price_lines[0])
+                    previous.setdefault(_item.name_en,
+                                        _item.price_lines[0])
             for index, change in enumerate(changes):
                 change.flags = flags_for_change(
                     change, current_map, previous, language=shop["language"],
@@ -1587,10 +1681,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                       if change.action == "sold_out"}
         if sold_names:
             for item in db.version_items(conn, new_version_id):
-                if item.sold_out and item.name_en in sold_names:
+                if item.sold_out and db.match_key_of(item) in sold_names:
                     db.flag_sold_out_in_open_orders(conn, shop["id"],
                                                     item.name_en,
-                                                    item.variety)
+                                                    item.variety,
+                                                    db.match_key_of(item))
         db.set_session_status(conn, session_id, "approved",
                               f"{len(changes)} changes published")
         return RedirectResponse(f"/e/{token}", status_code=303)
@@ -1615,6 +1710,67 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         db.set_published(conn, version_id, False)
         return RedirectResponse(f"/e/{token}", status_code=303)
 
+    @app.post("/e/{token}/item/{item_id}/name")
+    async def rename_live_item(request: Request, token: str, item_id: int,
+                               conn: Conn):
+        """Rename one live-list item in place: names only, never prices.
+
+        Owner only, like price edits. Works as a plain form post (303
+        back with a "Name changed" notice) and as JSON for the sheet.
+        """
+        from app.pipeline.namecheck import (
+            NameValidationError,
+            validate_names,
+        )
+
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        row = conn.execute(
+            "SELECT items.id, items.name_local, items.name_en,"
+            " items.variety, items.match_key, versions.shop_id FROM items"
+            " JOIN versions ON versions.id = items.version_id"
+            " WHERE items.id = ?", (item_id,)).fetchone()
+        if row is None or row["shop_id"] != shop["id"]:
+            raise HTTPException(404, "unknown item")
+        if request.headers.get("content-type", "").startswith(
+                "application/json"):
+            body = await request.json()
+            raw_local = body.get("name_local", "")
+            raw_en = body.get("name_en", "")
+            raw_variety = body.get("variety", "")
+        else:
+            form = await request.form()
+            raw_local = form.get("name_local", "")
+            raw_en = form.get("name_en", "")
+            raw_variety = form.get("variety", "")
+        wants_json = "application/json" in request.headers.get("accept", "")
+        try:
+            local, english, variety = validate_names(
+                raw_local, raw_en, raw_variety or None, shop["language"])
+        except NameValidationError as exc:
+            message = _rename_error(ui_lang, exc)
+            if wants_json:
+                return JSONResponse({"detail": message}, status_code=400)
+            raise HTTPException(400, message)
+        old = db.rename_item(conn, item_id, local, english, variety)
+        try:
+            match_key = row["match_key"]
+        except (KeyError, IndexError, TypeError):
+            match_key = None
+        db.save_chosen_name(conn, shop["id"], match_key or row["name_en"],
+                            variety, local, english)
+        db.log_name_change(conn, shop["id"], item_id, old,
+                           (local, english, variety))
+        if wants_json:
+            return JSONResponse({
+                "ok": True, "name_local": local, "name_en": english,
+                "variety": variety,
+                "notice": t_for(ui_lang)("rename.done"),
+            })
+        return RedirectResponse(f"/e/{token}?renamed=1", status_code=303)
+
     @app.post("/e/{token}/item/{item_id}/soldout")
     def toggle_soldout(request: Request, token: str, item_id: int, conn: Conn):
         shop, denied = _owner_page(request, conn, token)
@@ -1622,7 +1778,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return denied
         row = conn.execute(
             "SELECT items.sold_out, items.name_en, items.variety,"
-            " versions.shop_id FROM items"
+            " items.match_key, versions.shop_id FROM items"
             " JOIN versions ON versions.id = items.version_id"
             " WHERE items.id = ?", (item_id,)).fetchone()
         if row is None or row["shop_id"] != shop["id"]:
@@ -1630,8 +1786,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         now_out = not bool(row["sold_out"])
         db.set_sold_out(conn, item_id, now_out)
         if now_out:
+            try:
+                match_key = row["match_key"]
+            except (KeyError, IndexError, TypeError):
+                match_key = None
             db.flag_sold_out_in_open_orders(conn, shop["id"], row["name_en"],
-                                            row["variety"])
+                                            row["variety"],
+                                            match_key or row["name_en"])
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.get("/s/{slug}")

@@ -73,6 +73,7 @@ class DraftItem:
     photo_candidates: list[str] = field(default_factory=list)
     condition_hint: str | None = None
     confirmed: bool = False
+    match_key: str | None = None
 
 
 @dataclass
@@ -91,6 +92,7 @@ class Item:
     stock_qty: Decimal | None = None
     stock_unit: str | None = None
     stock_source: str | None = None
+    match_key: str | None = None
 
 
 @dataclass

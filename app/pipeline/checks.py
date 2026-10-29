@@ -162,6 +162,9 @@ def _sound_alike_rates(item: DraftItem, line: PriceLine,
     """(heard rate, alternative rate, previous rate); None when incomparable."""
     prev_line = (previous or {}).get(item.name_en)
     if prev_line is None:
+        prev_line = (previous or {}).get(
+            getattr(item, "match_key", None) or item.name_en)
+    if prev_line is None:
         return (None, None, None)
     heard = rate(line)
     alt = rate(PriceLine(Decimal(alt_value), line.per_amount, line.unit))
@@ -176,6 +179,9 @@ def _per_amount_sound_alike_rates(item: DraftItem, line: PriceLine,
                                   previous: dict[str, PriceLine]):
     """(heard rate, alternative rate, previous rate) varying per_amount."""
     prev_line = (previous or {}).get(item.name_en)
+    if prev_line is None:
+        prev_line = (previous or {}).get(
+            getattr(item, "match_key", None) or item.name_en)
     if prev_line is None:
         return (None, None, None)
     heard = rate(line)
@@ -490,7 +496,8 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
                     options.append(label)
             flags.append(Flag(field="unit", code="UNIT_MISSING",
                               message="price is missing its unit", options=options))
-        if line.unit == "piece" and item.name_en in WEIGHT_ITEMS:
+        if line.unit == "piece" and (getattr(item, "match_key", None)
+            or item.name_en) in WEIGHT_ITEMS:
             flags.append(Flag(
                 field="unit", code="UNIT_ODD",
                 message="usually sold by weight - is per piece right?",
@@ -501,6 +508,9 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
                               blocking=False))
 
     prev_line = (previous or {}).get(item.name_en)
+    if prev_line is None:
+        prev_line = (previous or {}).get(
+            getattr(item, "match_key", None) or item.name_en)
     if prev_line is not None:
         current = next((r for line in item.price_lines if (r := rate(line)) is not None),
                        None)

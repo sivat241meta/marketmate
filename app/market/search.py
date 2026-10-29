@@ -181,7 +181,8 @@ def find_listings(conn: sqlite3.Connection, query: Query,
             stale = ((now - _as_aware(updated_at)).total_seconds()
                      > STALE_AFTER_HOURS * 3600)
             for item in db.version_items(conn, version_id):
-                if item.name_en != want.name_en or item.sold_out:
+                if (db.match_key_of(item) != want.name_en
+                        and item.name_en != want.name_en) or item.sold_out:
                     continue
                 line = _display_line(item.price_lines)
                 if line is None:

@@ -5,6 +5,7 @@
 {% block content %}
 {% if shop["is_judge"] %}<div class="alert alert-warn">{{ t('dash.test_shop') }}</div>{% endif %}
 {% if is_staff %}<div class="alert">{{ t('bill.made_by', name=helper_name) }}</div>{% endif %}
+{% if renamed %}<div class="alert alert-ok" data-rename-notice>{{ t('rename.done') }}</div>{% endif %}
 
 <p class="kick">{{ today_label }}</p>
 <h1 class="big">{{ t(greet_key, name=shop["name"]) }}<br><em>{{ t('sh.sold_today', total=bills.sales_today | money(shop["currency"])) }}</em></h1>
@@ -198,6 +199,21 @@
           <input id="item-photo-{{ item.id }}" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" data-item-photo-input onchange="this.form.requestSubmit()" required>
         </label>
       </form>
+      <details class="rename-sheet" data-rename-sheet>
+        <summary class="pen" data-rename-open>{{ t('rename.edit_name') }}</summary>
+        <form method="post" action="/e/{{ token }}/item/{{ item.id }}/name" data-rename-form>
+          <h3>{{ t('rename.title') }}</h3>
+          <p class="muted">{{ t('rename.sub') }}</p>
+          <label class="fld">{{ t('rename.local', lang=shop_native) }}<input name="name_local" lang="{{ shop_lang }}" value="{{ item.name_local }}" maxlength="40" required autocomplete="off"></label>
+          <label class="fld">{{ t('rename.en') }}<input name="name_en" lang="en" value="{{ item.name_en }}" maxlength="40" required autocomplete="off"></label>
+          <label class="fld">{{ t('rename.variety') }}<input name="variety" value="{{ item.variety or '' }}" maxlength="30" autocomplete="off"></label>
+          <div class="rename-actions">
+            <button type="button" class="btn btn-small btn-ghost" data-rename-cancel>{{ t('rename.cancel') }}</button>
+            <button type="submit" class="btn btn-small btn-primary">{{ t('rename.save') }}</button>
+          </div>
+          <p class="form-error" data-rename-error hidden></p>
+        </form>
+      </details>
     </div>
     {% endif %}
   </div>
@@ -260,9 +276,26 @@
   <h4>{{ t('t64.live_side', n=items | length) }}</h4>
   {% for item in items %}
   <div class="mini" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.name_local[:1] }}</span>{% endif %}
+    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}
     <div><span lang="{{ shop_lang }}">{{ item.name_local }}</span><br><span class="per">{% if item.variety %}{{ item.variety }} · {% endif %}{% if item.lines %}{{ item.lines[0].per }}{% endif %}</span></div>
     <span class="p">{% if item.lines %}{{ item.lines[0].price | money(shop["currency"]) }}{% endif %}</span>
+    {% if not is_staff %}
+    <details class="rename-sheet" data-rename-sheet>
+      <summary class="pen" data-rename-open>{{ t('rename.edit_name') }}</summary>
+      <form method="post" action="/e/{{ token }}/item/{{ item.id }}/name" data-rename-form>
+        <h3>{{ t('rename.title') }}</h3>
+        <p class="muted">{{ t('rename.sub') }}</p>
+        <label class="fld">{{ t('rename.local', lang=shop_native) }}<input name="name_local" lang="{{ shop_lang }}" value="{{ item.name_local }}" maxlength="40" required autocomplete="off"></label>
+        <label class="fld">{{ t('rename.en') }}<input name="name_en" lang="en" value="{{ item.name_en }}" maxlength="40" required autocomplete="off"></label>
+        <label class="fld">{{ t('rename.variety') }}<input name="variety" value="{{ item.variety or '' }}" maxlength="30" autocomplete="off"></label>
+        <div class="rename-actions">
+          <button type="button" class="btn btn-small btn-ghost" data-rename-cancel>{{ t('rename.cancel') }}</button>
+          <button type="submit" class="btn btn-small btn-primary">{{ t('rename.save') }}</button>
+        </div>
+        <p class="form-error" data-rename-error hidden></p>
+      </form>
+    </details>
+    {% endif %}
   </div>
   {% endfor %}
 </aside>
@@ -325,6 +358,35 @@ document.addEventListener("DOMContentLoaded", () => {
     installIos.hidden = false;
     if (installBtn) { installBtn.hidden = true; }
   }
+  document.querySelectorAll("[data-rename-sheet]").forEach((sheet) => {
+    const cancel = sheet.querySelector("[data-rename-cancel]");
+    if (cancel) {
+      cancel.addEventListener("click", () => {
+        sheet.removeAttribute("open");
+      });
+    }
+    const form = sheet.querySelector("[data-rename-form]");
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const error = form.querySelector("[data-rename-error]");
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (error) {
+            error.textContent = data.detail || "";
+            error.hidden = !data.detail;
+          }
+          return;
+        }
+        window.location = form.action.split("/item/")[0] + "?renamed=1";
+      });
+    }
+  });
   document.querySelectorAll("[data-item-photo-form]").forEach((form) => {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();

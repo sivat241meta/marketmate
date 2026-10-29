@@ -54,6 +54,7 @@ class QuoteLine:
     status: str
     note: str | None = None
     variety: str | None = None
+    match_key: str | None = None
 
 
 @dataclass
@@ -115,19 +116,31 @@ def _match_shop_item(shop_items, by_name: dict, want_name: str,
     """Shop item for a wanted (name, variety).
 
     A requested variety matches exactly; an unknown variety is None (the
-    caller renders "not on this list"), never a different variety.
+    caller renders "not on this list"), never a different variety. The
+    name matches the display name, the local name or the matching key,
+    so renamed items are still found.
     """
+    from app import db as _db
+
     base, from_name = _split_display(want_name)
     variety = want_variety or from_name
     if variety:
         want = variety.strip().lower()
         for item in shop_items:
-            if _canonical(item.name_en) != _canonical(base):
+            names = {_canonical(item.name_en),
+                     _canonical(_db.match_key_of(item))}
+            if _canonical(base) not in names:
                 continue
             if (item.variety or "").strip().lower() == want:
                 return item
         return None
-    return by_name.get(_canonical(base))
+    hit = by_name.get(_canonical(base))
+    if hit is not None:
+        return hit
+    for item in shop_items:
+        if _canonical(_db.match_key_of(item)) == _canonical(base):
+            return item
+    return None
 
 
 def _positive(value: Decimal | None) -> Decimal | None:
@@ -359,11 +372,26 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
     shop_items = _db.version_items(conn, version_id)
     by_name: dict[str, object] = {}
     for item in shop_items:
-        key = _canonical(item.name_en)
-        if key not in by_name:
-            by_name[key] = item
+        for key in (_canonical(item.name_en),
+                    _canonical(_db.match_key_of(item)),
+                    _canonical(item.name_local)):
+            if key and key not in by_name:
+                by_name[key] = item
+    aliases: dict[str, tuple[str, str | None]] = {}
+    for text, key, variety in _db.shop_name_aliases(conn, shop_id):
+        normed = text.strip().lower()
+        if normed:
+            aliases[normed] = (key, variety)
     lines: list[QuoteLine] = []
     for item in wanted:
+        alias = aliases.get((item.name_en or "").strip().lower())
+        if alias is not None and _match_shop_item(
+                shop_items, by_name, item.name_en, item.variety) is None:
+            key, variety = alias
+            item = WantedLine(
+                name_en=key, qty=item.qty, unit=item.unit,
+                source=item.source, amount=item.amount,
+                options=item.options, variety=variety or item.variety)
         if item.options and len(item.options) >= 2:
             candidates = sorted(
                 {opt for opt in item.options
@@ -406,7 +434,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 unit=item.unit or fallback_unit,
                 unit_price=None, per_amount=None, line_total=None,
                 status="sold_out", note=None,
-                variety=getattr(shop_item, "variety", None)))
+                variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
             continue
         priced = [line for line in shop_item.price_lines
                   if line.price is not None and line.per_amount is not None
@@ -417,7 +446,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 qty=item.qty if item.qty is not None else Decimal(1),
                 unit=item.unit, unit_price=None, per_amount=None,
                 line_total=None, status="not_on_list", note=None,
-                variety=getattr(shop_item, "variety", None)))
+                variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
             continue
         picked = None
         if item.unit is not None:
@@ -446,7 +476,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                     unit=item.unit, unit_price=None, per_amount=None,
                     line_total=None, status="not_on_list",
                     note=f"sold per {', '.join(sold_units)}",
-                    variety=getattr(shop_item, "variety", None)))
+                    variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
                 continue
         else:
             picked = priced[0]
@@ -457,9 +488,11 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 qty=qty, unit=unit, unit_price=picked.price,
                 per_amount=picked.per_amount, line_total=total,
                 status="priced", note=note,
-                variety=getattr(shop_item, "variety", None)))
+                variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
             continue
-        is_weight = _canonical(shop_item.name_en) in WEIGHT_ITEMS
+        is_weight = (
+            _canonical(_db.match_key_of(shop_item)) in WEIGHT_ITEMS)
         qty = item.qty
         unit = item.unit or picked.unit
         if qty is None:
@@ -480,7 +513,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
                 qty=qty, unit=item.unit, unit_price=None, per_amount=None,
                 line_total=None, status="not_on_list",
                 note=f"sold per {', '.join(sold_units)}",
-                variety=getattr(shop_item, "variety", None)))
+                variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
             continue
         note = None
         if status == "needs_qty":
@@ -490,7 +524,8 @@ def build_quote_for_version(conn: sqlite3.Connection, shop_id: int,
             qty=qty, unit=unit, unit_price=picked.price,
             per_amount=picked.per_amount, line_total=total,
             status=status, note=note,
-            variety=getattr(shop_item, "variety", None)))
+            variety=getattr(shop_item, "variety", None),
+                match_key=_db.match_key_of(shop_item)))
     total = sum((line.line_total for line in lines
                  if line.line_total is not None), Decimal("0.00"))
     if total == 0:
