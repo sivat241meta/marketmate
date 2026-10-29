@@ -159,8 +159,8 @@ def test_phone_shop_section_order_and_compact_band(tmp_path):
     assert html.count('class="act-ic"') == 4
     assert html.count('class="act-short"') == 4
     assert html.count('class="act-full"') == 4
-    assert "Get a price quote" in html
-    assert "Get quote" in html
+    assert "Order by voice" in html
+    assert ">Order</span>" in html
     # Shop name once: in the band, never in the shared header.
     assert "T93 Store" not in _header(html)
     # Tiles follow the tools in the same DOM order phones show.

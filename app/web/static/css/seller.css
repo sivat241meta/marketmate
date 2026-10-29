@@ -202,6 +202,20 @@ body.is-seller .chip.on small { color: #fff; }
   .bill-cta .pill.big { flex: 1 1 100%; justify-content: center; }
   .sticky-bar.bill-bar { flex-wrap: wrap; }
 }
+/* Bill pay bar on phones: total on its own line, pay buttons share
+   rows and wrap their labels; every target stays 44px+. */
+@media (max-width: 480px) {
+  .sticky-bar.bill-bar .sticky-total {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .sticky-bar.bill-bar form,
+  .sticky-bar.bill-bar > a.pill { flex: 1 1 140px; min-width: 0; }
+  .sticky-bar.bill-bar .pill { width: 100%; min-height: 44px; font-size: 14px; }
+  .band .gcards, .choice, .contact-grid, .tiles-four {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
 .bill-layout,
 .live-columns,
 .today-wrap .with-side { min-width: 0; }

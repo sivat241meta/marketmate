@@ -12,7 +12,7 @@
     <h1 class="page-title">{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</h1>
     {% elif is_credit|default(false) %}
     <h1 class="page-title">{{ t('bill.credit_state') }} · {{ total | money(shop["currency"]) }}</h1>
-    {% elif is_quote %}
+    {% elif is_quote or nothing_priced %}
     <h1 class="page-title">{{ t('bill.heading', id=bill["id"]) }} · {{ total | money(shop["currency"]) }}</h1>
     {% else %}
     <h1 class="page-title">{{ t('bill.to_collect', total=total | money(shop["currency"])) }}</h1>
@@ -23,6 +23,7 @@
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 {% if price_changed %}<div class="alert alert-warn">{{ t('bill.price_changed') }}</div>{% endif %}
 {% if not_understood %}<div class="alert alert-warn">{{ t('bill.not_understood', items=not_understood) }}</div>{% endif %}
+{% if nothing_priced %}<div class="alert alert-warn" data-nothing-priced>{{ t('bill.nothing_priced') }}</div>{% endif %}
 {% if order_actions %}
 <section class="card" aria-label="{{ t('bill.order_status') }}">
   <h2>{{ t('bill.order_status') }}</h2>
@@ -145,7 +146,7 @@
       <button class="pill cta big" type="submit">{{ ui.obj("check", 20) }}{% if bill["source"] == "customer" %}{{ t('bill.accept_order') }}{% else %}{{ t('bill.accept_quote') }}{% endif %}</button>
       {% endif %}
     </form>
-    {% elif is_billed %}
+    {% elif is_billed and not nothing_priced %}
     <section class="form-card" aria-label="{{ t('bill.collect') }}">
       <h2 class="form-card-title">{{ t('bill.collect') }}</h2>
       {% if is_inr and upi_qr %}
@@ -258,7 +259,7 @@
   </aside>
 </div>
 
-{% if is_billed %}
+{% if is_billed and not nothing_priced %}
 <div class="sticky-bar bill-bar action-bar">
   <span class="sticky-total money" data-total>{{ total | money(shop["currency"]) }}</span>
   {% for value, label in pay_modes %}

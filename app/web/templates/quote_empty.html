@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('order.none_title') }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}pub{% endblock %}
+{% block content %}
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ shop["name"] }}</p>
+    <h1>{{ t('order.none_title') }}</h1>
+    <p class="lead">{{ t('order.try_again') }}</p>
+  </div>
+</div>
+
+<section class="pub-sec" aria-label="{{ t('order.none_title') }}" data-quote-empty>
+  {% if lines %}
+  <div class="rcpt" aria-label="Quote lines">
+    {% for line in lines %}
+    <div class="rl receipt-line is-muted">
+      <div>
+        <b>{{ line.display }}</b>
+        <small>{{ line.qty }} {{ line.unit }} · {{ t.not_on_list }}</small>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="action-bar">
+    <a class="pill cta big" href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t('order.see_list') }}</a>
+    <a class="pill ghost big" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t('order.try_again') }}</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
+{% endblock %}

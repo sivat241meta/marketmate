@@ -15,7 +15,7 @@ from app import db
 from app.costs import IST
 from app.languages import get_language
 
-# Price sessions sitting in "review" are what "N need a tap" counts.
+# Price sessions sitting in "review" are what "N lists to check" counts.
 _PRICE_REVIEW_KINDS = ("video", "live", "board", "voice_update")
 
 _SKIP_SUFFIXES = (".pdf", ".csv", ".png", ".json", ".webmanifest", ".js")

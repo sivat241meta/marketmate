@@ -840,6 +840,14 @@ button.chip {
 .pill.sm { padding: 8px 14px; min-height: 38px; font-size: 14px; }
 .pill.big { padding: 15px 24px; font-size: 16px; min-height: 54px; }
 .pill.dark svg, .pill.cta svg, .pill.ghost svg, .pill.bar svg { width: 18px; height: 18px; flex: none; }
+/* Long Tamil/Hindi button labels wrap instead of pushing the page
+   sideways on phones; status badges keep their single line. */
+@media (max-width: 480px) {
+  .pill.cta, .pill.ghost, .pill.dark, .pill.bar {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
 
 /* ---- Task 60: new-order alert badge + banners ---- */
 .nbadge {
@@ -1046,6 +1054,7 @@ button.chip {
 .hero2 { display: flex; flex-direction: column; gap: 14px; }
 .hero-copy { display: flex; flex-direction: column; gap: 14px; }
 .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero-cta > * { min-width: 0; }
 .hero2 + .kick { margin-top: var(--space-5); }
 .hero-photo img {
   width: 100%;
@@ -1947,6 +1956,9 @@ progress.progress::-moz-progress-bar { background: var(--accent-ink); border-rad
   min-height: var(--tap);
 }
 .shop-row .best { margin-left: 6px; }
+/* Market rows: flex/grid children shrink instead of widening the page. */
+.shop-row > *, .result-head > *, .basket .rl > *,
+.hp-sec-head > *, .hp-fields > * { min-width: 0; }
 .basket {
   background: #fff;
   color: var(--ink);
@@ -2231,7 +2243,10 @@ table {
 .page-head .muted { margin: 0; }
 .back-link { margin: 0 0 var(--space-2); }
 
-.bill-layout { display: grid; gap: var(--space-4); }
+.bill-layout { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); }
+.bill-layout > *, .bill-actions > * { min-width: 0; }
+.bill-actions select, .receipt-card select { max-width: 100%; }
+.receipt-total > *, .receipt-round > * { min-width: 0; }
 .receipt-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -2611,8 +2626,9 @@ svg.boxes text.box-badge {
 }
 .keypad-keys {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
+  width: 100%;
   max-width: 420px;
   margin: 0 auto;
 }
@@ -2725,6 +2741,8 @@ svg.boxes text.box-badge {
 .is-done .step-dot { background: var(--accent); border-color: var(--accent); }
 .is-current .step-dot { background: var(--amber-soft); border-color: var(--ink); }
 .order-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.order-actions form { min-width: 0; }
+.order-actions .pill { min-width: 0; }
 
 /* ---- Tap list rows + close-day items table ---- */
 .tap-list { border-top: 2px dashed var(--line-2); border-bottom: 2px dashed var(--line-2); }
@@ -2863,6 +2881,14 @@ button.pill { font: inherit; cursor: pointer; }
 .tap-panel h2 { margin-top: 0; }
 .bill-split { display: grid; gap: var(--space-4); }
 .tap-grid { align-content: start; }
+/* Tap-billing tiles use steppers + chips, not the photo-corner ADD: the
+   ADD button is an in-flow first-tap target, never absolutely placed. */
+.tap-grid .card .add {
+  position: static;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 44px;
+}
 .tap-grid .card { margin: 0; }
 .tap-grid .bd h3 { overflow-wrap: anywhere; }
 .tap-grid .bd h3 .tname { display: block; -webkit-line-clamp: unset; overflow: visible; }
@@ -3187,6 +3213,7 @@ a.stat { color: inherit; }
 .ocard b .av { display: inline-grid; vertical-align: -5px; margin-right: 2px; }
 .ocard b a { color: inherit; }
 .ocard .ln { color: var(--muted); margin: 3px 0 6px; }
+.ocard .card-note { color: var(--amber); font-weight: 700; }
 .ocard .ft { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 /* Laptop side panel mini rows (live prices). */
 .mini {
@@ -3753,7 +3780,22 @@ body.home-mkt > .hdr { display: none; }
 }
 .hp-orders { display: none; }
 .hp-header > .lang { display: none; }
-.hp-menu-btn { display: inline-grid; }
+.hp-menu-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  flex: none;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 0;
+}
 .hp-sheet {
   background: #fff;
   border-bottom: 1px solid var(--line-2);

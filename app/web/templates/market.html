@@ -112,6 +112,12 @@
 </section>
 {% endif %}
 
+{% if closed_notice and not basket %}
+<section class="pub-sec" aria-label="{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}">
+  <p class="notice need" data-closed-notice><span>{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}</span> <a class="pill ghost sm" href="{{ closed_notice.url }}">{{ t('market.show_all') }}</a></p>
+</section>
+{% endif %}
+
 {% if basket %}
 <section class="pub-sec" aria-label="Basket">
   <div class="hp-sec-head">
@@ -121,7 +127,11 @@
       {% else %}
       <h2 class="h2s">{{ ui.obj("basket", 28) }}Your basket</h2>
       {% endif %}
+      {% if closed_notice %}
+      <p class="notice need" data-closed-notice><span>{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}</span> <a class="pill ghost sm" href="{{ closed_notice.url }}">{{ t('market.show_all') }}</a></p>
+      {% else %}
       <p class="muted">{{ basket.explanation }}</p>
+      {% endif %}
     </div>
   </div>
   <div class="results-grid" data-plans>
@@ -147,7 +157,7 @@
       </div><div class="price"><span class="pp">{{ plan.total | money(plan.currency) }}</span></div></div>
       {% endif %}
       {% if plan.saved %}<p class="accent-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
-      {% if plan.missing %}
+      {% if plan.missing and not closed_notice %}
       {% if plan.kind == "partial_shop" %}
       <p class="miss"><small>{{ t('market.missing', items=(plan.missing | join(", "))) }}</small></p>
       {% else %}
@@ -175,7 +185,7 @@
 </section>
 {% endif %}
 
-{% if searched and not groups and not error and not basket and not market_empty %}
+{% if searched and not groups and not error and not basket and not market_empty and not closed_notice %}
 <section class="card hp-empty">
   {{ ui.obj("search", 56) }}
   <p><b>{{ t('market.no_results') }}</b></p>
@@ -191,7 +201,7 @@
     {% for row in group.rows %}
     <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
     <div class="shop-row">
-      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">Get quote</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
+      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
       <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
     </div>
     <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>

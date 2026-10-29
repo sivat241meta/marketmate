@@ -260,7 +260,7 @@ def test_todays_list_row_structure(tmp_path):
     _publish(tmp_path, token, [_draft()])
     html = client.get(f"/e/{token}").text
     assert "list-thumb letter" in html
-    assert "banana · poovan · per 1 kg" in html
+    assert "banana · poovan · 1 kg" in html
     assert "mini-main" in html
     css = CSS.read_text()
     assert ".list-row .list-thumb { width: 44px" in css

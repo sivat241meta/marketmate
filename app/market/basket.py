@@ -10,6 +10,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from app.costs import CostCapExceeded
 from app.market.search import Listing, Want
 from app.meta.spark import SparkError, chat_json
+from app.outputs.money import format_money
 from app.pipeline.checks import WEIGHT_ITEMS
 from app.pipeline.units import convert
 
@@ -180,21 +181,33 @@ def _fmt_money(value: Decimal) -> str:
     return format(value.normalize(), "f")
 
 
+def _plan_currency(plan: BasketPlan) -> str:
+    if plan.lines:
+        return plan.lines[0].listing.currency or "INR"
+    return "INR"
+
+
 def _plans_payload(plans: list[BasketPlan], budget: Decimal | None) -> dict:
+    """Plans with money pre-formatted (₹180), so the reply keeps it."""
     return {
-        "budget": str(budget) if budget is not None else None,
+        "budget": (format_money(budget, "INR")
+                   if budget is not None else None),
         "plans": [
             {
                 "kind": plan.kind,
                 "shop": plan.shop,
-                "total": str(plan.total),
+                "total": format_money(plan.total,
+                                      _plan_currency(plan)),
                 "lines": [
                     {
                         "item": line.want.name_en,
                         "shop": line.listing.shop_name,
-                        "cost": str(line.cost),
-                        "rate": (str(line.listing.rate)
-                                 if line.listing.rate is not None else None),
+                        "cost": format_money(
+                            line.cost, line.listing.currency or "INR"),
+                        "rate": (format_money(
+                            line.listing.rate,
+                            line.listing.currency or "INR")
+                            if line.listing.rate is not None else None),
                         "rate_unit": line.listing.rate_unit,
                     }
                     for line in plan.lines
@@ -209,15 +222,19 @@ def _plans_payload(plans: list[BasketPlan], budget: Decimal | None) -> dict:
 def build_basket_messages(plans: list[BasketPlan],
                           budget: Decimal | None) -> list[dict]:
     """Prompt asking for 2-3 friendly sentences as JSON."""
-    payload = json.dumps(_plans_payload(plans, budget))
+    payload = json.dumps(_plans_payload(plans, budget),
+                        ensure_ascii=False)
     system = (
         "You write a friendly 2-3 sentence explanation of a market "
-        "budget basket. Use only the rupee numbers given; never invent prices."
+        "budget basket. Use only the money amounts given, always with "
+        "their currency sign; never invent prices."
     )
     user = (
         f"Basket plans JSON: {payload}\n\n"
         "Write 2-3 friendly sentences about the cheapest option and the "
-        "budget. Reuse the rupee numbers from the JSON exactly. "
+        "budget. Reuse the money amounts from the JSON exactly, keeping "
+        "each amount's currency sign on every amount (₹180, never "
+        "bare 180). "
         'Return only JSON like {"explanation": "..."}.'
     )
     return [
@@ -296,7 +313,13 @@ def template_explanation(plans: list[BasketPlan],
 
 def explain_basket(plans: list[BasketPlan], budget: Decimal | None, *,
                    ledger, settings) -> str:
-    """Friendly explanation; falls back to a template on foreign numbers."""
+    """Friendly explanation; falls back to a template on foreign numbers.
+
+    When no plan covers any item there is nothing to explain, so this
+    never calls Spark (the market page shows a fixed sentence instead).
+    """
+    if not any(plan.lines for plan in plans):
+        return template_explanation(plans, budget)
     allowed = _allowed_numbers(plans, budget)
     try:
         data = chat_json(build_basket_messages(plans, budget),

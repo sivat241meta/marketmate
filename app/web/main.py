@@ -43,6 +43,42 @@ def _fmt_rate(value: Decimal) -> str:
     return format(value.quantize(Decimal("0.01")).normalize(), "f")
 
 
+def _closed_with_items(conn, query, listings, now, area, pincode) -> int:
+    """Distinct closed shops with fresh listings the open filter hides.
+
+    ``listings`` is the open-filtered result; wants it covers need no
+    notice. Only wants missing there count, and only fresh listings
+    from closed shops (unknown-hours shops are never filtered out).
+    """
+    covered = {row.name_en for row in listings if not row.stale}
+    missing = {want.name_en for want in query.wants} - covered
+    if not missing:
+        return 0
+    unfiltered = find_listings(conn, query, now, area=(area or None),
+                               pincode=(pincode or None),
+                               open_only=False)
+    return len({row.slug for row in unfiltered
+                if not row.stale and row.name_en in missing
+                and row.open_state == "closed"})
+
+
+def _open_all_url(*, q: str, area: str, pincode: str, sort: str,
+                  budget: str) -> str:
+    """Same market search with the Open-now filter unticked."""
+    from urllib.parse import urlencode
+
+    params = [("q", q)]
+    if area:
+        params.append(("area", area))
+    if pincode:
+        params.append(("pincode", pincode))
+    params.append(("open_now", "0"))
+    params.append(("sort", sort))
+    if budget:
+        params.append(("budget", budget))
+    return "/market?" + urlencode(params)
+
+
 def _parse_budget(value: str | None) -> Decimal | None:
     """Basket budget from a ``?budget=`` param; None when blank/invalid."""
     text = (value or "").strip().replace("₹", "").replace(",", "")
@@ -277,7 +313,8 @@ def create_app(settings: Settings) -> FastAPI:
             "plans": plan_dicts,
         }
 
-    def _build_basket(conn, query, listings, ledger):
+    def _build_basket(conn, query, listings, ledger, *, empty_text,
+                      closed_text=""):
         if not query.wants:
             return None
         has_qty = any(want.amount is not None for want in query.wants)
@@ -288,14 +325,21 @@ def create_app(settings: Settings) -> FastAPI:
             partial = best_partial_shop(query.wants, listings)
             if partial is not None:
                 plans = [*plans, partial]
-        explanation = explain_basket(plans, query.budget, ledger=ledger,
-                                     settings=app.state.settings)
+        if closed_text:
+            # Open-now hides matching closed shops: fixed sentence, no call.
+            explanation = closed_text
+        elif not any(plan.lines for plan in plans):
+            # No plan covers any item: fixed sentence, never a Spark call.
+            explanation = empty_text
+        else:
+            explanation = explain_basket(plans, query.budget, ledger=ledger,
+                                         settings=app.state.settings)
         return _basket_dict(plans, query.budget, explanation, conn)
 
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None, areas=None,
-                        area="", pincode="", open_now=True, sort="total",
-                        market_empty=False, budget=""):
+                        area="", pincode="", open_now=False, sort="total",
+                        market_empty=False, budget="", closed_notice=None):
         from app.web.i18n import get_strings, get_ui_lang
 
         flat = rows or []
@@ -308,7 +352,7 @@ def create_app(settings: Settings) -> FastAPI:
             "areas": areas or [], "area": area or "",
             "pincode": pincode or "", "open_now": open_now,
             "sort": sort or "total", "market_empty": market_empty,
-            "budget": budget or "",
+            "budget": budget or "", "closed_notice": closed_notice,
             "t": get_strings(ui_lang),
             "ui_lang": ui_lang})
 
@@ -389,10 +433,10 @@ def create_app(settings: Settings) -> FastAPI:
                     area: str | None = None, pincode: str | None = None,
                     sort: str | None = None, budget: str | None = None):
         areas = db.listed_areas(conn)
-        # The open-now toggle is on by default; the form always sends
+        # The open-now toggle is off by default; the form always sends
         # open_now=0 plus open_now=1 when ticked, so read every value.
         picked = request.query_params.getlist("open_now")
-        open_flag = ("1" in picked) if picked else True
+        open_flag = ("1" in picked) if picked else False
         sort_mode = sort if sort in ("total", "distance") else "total"
         budget_text = budget or ""
         if not q or not q.strip():
@@ -421,14 +465,40 @@ def create_app(settings: Settings) -> FastAPI:
         # Honest empty state: no listed shop has shared prices at all, so
         # there is no basket to plan (never a "totals 0" card).
         market_empty = bool(query.wants) and not areas
+        from app.web.i18n import get_strings, get_ui_lang
+
+        strings = get_strings(get_ui_lang(request))
+        closed_n = (0 if (market_empty or not open_flag)
+                    else _closed_with_items(conn, query, listings, now,
+                                            area, pincode))
+        closed_text = (strings("market.closed_have", n=closed_n,
+                               count=closed_n) if closed_n else "")
+        empty_text = closed_text or strings("market.none_today")
+        basket = (None if market_empty
+                  else _build_basket(conn, query, listings, ledger,
+                                     empty_text=empty_text,
+                                     closed_text=closed_text))
+        rows = _rows_from_listings(listings, now)
+        closed_notice = None
+        if open_flag and closed_n:
+            if ((basket is None
+                 or not any(plan["lines"] for plan in basket["plans"]))
+                    and not rows):
+                # Open-now hides everything matching: notice, not an
+                # empty basket or a "No fresh prices" card.
+                basket = None
+            closed_notice = {
+                "n": closed_n,
+                "url": _open_all_url(q=q.strip(), area=area or "",
+                                     pincode=pincode or "",
+                                     sort=sort_mode, budget=budget_text),
+            }
         return _market_context(
-            request, q=q.strip(), query=query,
-            rows=_rows_from_listings(listings, now),
-            basket=(None if market_empty
-                    else _build_basket(conn, query, listings, ledger)),
+            request, q=q.strip(), query=query, rows=rows, basket=basket,
             searched=True, areas=areas, area=area or "",
             pincode=pincode or "", open_now=open_flag, sort=sort_mode,
-            market_empty=market_empty, budget=budget_text)
+            market_empty=market_empty, budget=budget_text,
+            closed_notice=closed_notice)
 
     @app.post("/market/voice")
     async def market_voice(request: Request):
@@ -470,11 +540,17 @@ def create_app(settings: Settings) -> FastAPI:
         listings = find_listings(conn, query, now)
         voice_areas = db.listed_areas(conn)
         market_empty = bool(query.wants) and not voice_areas
+        from app.web.i18n import get_strings, get_ui_lang
+
+        # Voice search never filters by open hours, so there is no
+        # closed-shops sentence here; empty baskets get the fixed line.
+        voice_empty = get_strings(get_ui_lang(request))("market.none_today")
         return _market_context(
             request, q=transcript.text, heard=transcript.text, query=query,
             rows=_rows_from_listings(listings, now),
             basket=(None if market_empty
-                    else _build_basket(conn, query, listings, ledger)),
+                    else _build_basket(conn, query, listings, ledger,
+                                       empty_text=voice_empty)),
             searched=True, areas=voice_areas,
             market_empty=market_empty)
 
