@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<title>MarketMate</title>
+<defs>
+<linearGradient id="mmg" gradientUnits="userSpaceOnUse" color-interpolation="sRGB" x1="66" y1="226" x2="446" y2="474">
+<stop offset="0" stop-color="#8CD03A"/>
+<stop offset="0.5" stop-color="#22A955"/>
+<stop offset="1" stop-color="#1F6FD6"/>
+</linearGradient>
+</defs>
+<path d="M121 265A135 135 0 0 1 391 265" fill="none" stroke="#2DB34A" stroke-width="30" stroke-linecap="round"/>
+<polygon points="123.87,232.48 151.18,231.05 173.37,223.06 191.02,209.27 204.14,189.68 212.13,163.52 212.13,163.52 184.82,164.95 162.63,172.94 144.98,186.73 131.86,206.32 123.87,232.48" fill="#2DB34A"/>
+<polygon points="281.17,163.5 293.81,190.42 310.95,209.53 332.08,221.73 357.2,227.02 386.83,224.5 386.83,224.5 374.19,197.58 357.05,178.47 335.92,166.27 310.8,160.98 281.17,163.5" fill="#1F9D44"/>
+<polygon points="210.25,184.81 229.99,196.54 248.96,201.02 267.26,199.1 284.88,190.77 301.75,175.19 301.75,175.19 282.01,163.46 263.04,158.98 244.74,160.9 227.12,169.23 210.25,184.81" fill="#8CD03A"/>
+<circle cx="180" cy="252" r="44" fill="#F59E0B"/>
+<circle cx="272" cy="268" r="54" fill="#E8442E"/>
+<polygon points="272,196 277.29,210.72 292.92,211.2 280.56,220.78 284.93,235.8 272,227 259.07,235.8 263.44,220.78 251.08,211.2 266.71,210.72" fill="#2DB34A"/>
+<line x1="272" y1="200" x2="272" y2="188" stroke="#2DB34A" stroke-width="9" stroke-linecap="round"/>
+<polygon points="158,428 158,272 66,272 66,428" fill="url(#mmg)"/>
+<polygon points="83.45,308.07 227.45,422.07 284.55,349.93 140.55,235.93" fill="url(#mmg)"/>
+<polygon points="284.55,422.07 428.55,308.07 371.45,235.93 227.45,349.93" fill="url(#mmg)"/>
+<polygon points="354,272 354,428 446,428 446,272" fill="url(#mmg)"/>
+<circle cx="112" cy="428" r="46" fill="url(#mmg)"/>
+<circle cx="112" cy="272" r="46" fill="url(#mmg)"/>
+<circle cx="256" cy="386" r="46" fill="url(#mmg)"/>
+<circle cx="400" cy="272" r="46" fill="url(#mmg)"/>
+<circle cx="400" cy="428" r="46" fill="url(#mmg)"/>
+</svg>

@@ -22,8 +22,10 @@ const SHELL = [
   "/static/offline-bills.js",
   "/static/fonts/NotoSansTamil-Regular.ttf",
   "/static/fonts/NotoSansTamil-Bold.ttf",
-  "/static/icons/icon-192.png",
-  "/static/icons/icon-512.png",
+  "/static/brand/icon-192.png",
+  "/static/brand/icon-512.png",
+  "/static/brand/logo.svg",
+  "/static/brand/mark.svg",
 ];
 
 self.addEventListener("install", (event) => {

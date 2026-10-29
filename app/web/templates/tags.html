@@ -75,6 +75,7 @@ body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Not
   overflow: hidden;
 }
 .tag-band { background: #5F55EE; color: #fff; font-size: 9pt; font-weight: bold; padding: 2mm 5mm; }
+.tag-band img.brand { height: 4mm; width: 4mm; vertical-align: -1mm; margin-right: 2mm; }
 .tag-body { padding: 2.5mm 5mm 0 5mm; }
 .tag-local { font-size: 22pt; font-weight: bold; line-height: 1.1; padding-right: 17mm; overflow-wrap: anywhere; word-break: break-word; color: #292D34; }
 .tag-en { font-size: 10pt; color: #656F7D; margin-top: 1mm; padding-right: 17mm; overflow-wrap: anywhere; word-break: break-word; }
@@ -91,7 +92,7 @@ body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Not
 <div class="sheet">
 {% for tag in page %}
 <div class="tag">
-  <div class="tag-band">{{ shop["name"] }}</div>
+  <div class="tag-band"><img class="brand" src="{{ brand_uri }}/mark.svg" alt="MarketMate">{{ shop["name"] }}</div>
   <div class="tag-body">
     <img class="tag-qr" src="{{ qr_data_uri }}" alt="shop QR code">
     <div class="tag-local">{{ tag.name_local }}</div>

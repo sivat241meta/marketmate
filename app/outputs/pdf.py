@@ -13,6 +13,8 @@ from app.outputs.qr import qr_png
 
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
+_BRAND_URI = (Path(__file__).resolve().parent.parent
+              / "web" / "static" / "brand").as_uri()
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 
 
@@ -78,7 +80,8 @@ def price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
                    + base64.b64encode(qr_png(shop_url)).decode())
     html = template.render(
         shop=shop, rows=_rows(items), at=at.strftime("%d %b %Y, %H:%M"),
-        shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI)
+        shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI,
+        brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()
 
 
@@ -122,5 +125,6 @@ def price_tags_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
     pages = [tags[index:index + 8] for index in range(0, len(tags), 8)] or [[]]
     html = template.render(
         shop=shop, pages=pages, at=at.strftime("%d %b %Y"),
-        shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI)
+        shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI,
+        brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()
