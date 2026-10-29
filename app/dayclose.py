@@ -14,6 +14,8 @@ from app.costs import IST
 __all__ = [
     "bills_for_day",
     "bills_for_range",
+    "credit_payments_for_day",
+    "credit_payments_for_range",
     "day_tiles",
     "get_wastage",
     "item_code",
@@ -102,7 +104,8 @@ def _bills_all(conn: sqlite3.Connection, shop_id: int):
 def bills_for_day(conn, shop_id: int, day: str, tz: ZoneInfo) -> list:
     out = []
     for row in _bills_all(conn, shop_id):
-        if row["kind"] != "bill" or row["status"] not in ("billed", "paid"):
+        if row["kind"] != "bill" or row["status"] not in (
+                "billed", "paid", "credit"):
             continue
         if local_day_of(row["created_at"], tz) != day:
             continue
@@ -115,13 +118,51 @@ def bills_for_range(conn, shop_id: int, start: str, end: str,
                     tz: ZoneInfo) -> list:
     out = []
     for row in _bills_all(conn, shop_id):
-        if row["kind"] != "bill" or row["status"] not in ("billed", "paid"):
+        if row["kind"] != "bill" or row["status"] not in (
+                "billed", "paid", "credit"):
             continue
         day = local_day_of(row["created_at"], tz)
         if day is None or not (start <= day <= end):
             continue
         out.append(row)
     out.sort(key=lambda r: r["id"])
+    return out
+
+
+def credit_payments_for_day(conn, shop_id: int, day: str,
+                             tz: ZoneInfo) -> list:
+    """Credit collections whose local day is ``day``, oldest first."""
+    from app import db as _db
+
+    out = []
+    for payment in _db.list_credit_payments(conn, shop_id):
+        try:
+            when = payment["at"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        if local_day_of(when, tz) != day:
+            continue
+        out.append(payment)
+    out.sort(key=lambda p: p["id"])
+    return out
+
+
+def credit_payments_for_range(conn, shop_id: int, start: str, end: str,
+                               tz: ZoneInfo) -> list:
+    """Credit collections in the inclusive local-day range, oldest first."""
+    from app import db as _db
+
+    out = []
+    for payment in _db.list_credit_payments(conn, shop_id):
+        try:
+            when = payment["at"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        day = local_day_of(when, tz)
+        if day is None or not (start <= day <= end):
+            continue
+        out.append(payment)
+    out.sort(key=lambda p: p["id"])
     return out
 
 
@@ -194,6 +235,8 @@ def day_tiles(conn, shop, day: str) -> dict:
     upi = Decimal("0.00")
     card = Decimal("0.00")
     unpaid = Decimal("0.00")
+    credit_given = Decimal("0.00")
+    credit_collected = Decimal("0.00")
     for row in bills:
         try:
             amount = _db.bill_display_totals(shop, row)["rounded"]
@@ -208,8 +251,21 @@ def day_tiles(conn, shop, day: str) -> dict:
                 upi += amount
             elif mode == "card":
                 card += amount
+        elif row["status"] == "credit":
+            credit_given += amount
         else:
             unpaid += amount
+    for payment in credit_payments_for_day(conn, shop_id, day, tz):
+        try:
+            collected = Decimal(str(payment["amount"]))
+        except (InvalidOperation, ValueError, AttributeError):
+            continue
+        credit_collected += collected
+        mode = str(_row_get(payment, "mode", "") or "").lower()
+        if mode == "cash":
+            cash += collected
+        elif mode == "upi":
+            upi += collected
     spent = pur.spent_on(conn, shop_id, day)
     # Gross margin: sales minus sold qty * purchase cost per unit.
     costs = _cost_map_for_day(conn, shop_id, day)
@@ -266,6 +322,8 @@ def day_tiles(conn, shop, day: str) -> dict:
         "upi": _quantize_money(upi),
         "card": _quantize_money(card),
         "unpaid": _quantize_money(unpaid),
+        "credit_given": _quantize_money(credit_given),
+        "credit_collected": _quantize_money(credit_collected),
         "spent": _quantize_money(spent),
         "margin": margin,
         "cogs": cogs,

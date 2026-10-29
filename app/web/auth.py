@@ -41,3 +41,26 @@ def created_by_for(role: str, helper_name: str | None) -> str:
     if role == "staff" and helper_name:
         return helper_name
     return "owner"
+
+
+def staff_credit_allowed(conn: sqlite3.Connection, role: str,
+                         token: str) -> bool:
+    """True when the actor may use credit: owners always, staff if granted."""
+    if role == "owner":
+        return True
+    return db.helper_can_credit(conn, token)
+
+
+def credit_or_403(request: Request, templates: Jinja2Templates,
+                  role: str, token: str, conn: sqlite3.Connection,
+                  ui_lang: str = "en"):
+    """None when credit is allowed; a friendly 403 page otherwise."""
+    if staff_credit_allowed(conn, role, token):
+        return None
+    t = t_for(ui_lang)
+    return templates.TemplateResponse(
+        request, "error.html",
+        {"title": t("error.credit_title"),
+         "message": t("error.credit_message"),
+         "ui_lang": ui_lang},
+        status_code=403)

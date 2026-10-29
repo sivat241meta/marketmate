@@ -171,6 +171,32 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
 
+    @app.post("/e/{token}/settings/helpers/{helper_id}/credit")
+    async def helper_credit(request: Request, token: str, helper_id: int):
+        """Grant or revoke one helper's credit permission (default off)."""
+        conn = db.connect(data_dir)
+        try:
+            shop, denied = _owner_page(request, conn, token)
+            if denied is not None:
+                return denied
+            form = await request.form()
+            try:
+                helper_key = int(helper_id)
+            except (TypeError, ValueError):
+                return _context(request, shop, token,
+                                error="unknown helper")
+            try:
+                db.set_helper_credit(conn, shop["id"], helper_key,
+                                     str(form.get("can_credit") or "")
+                                     .strip().lower() in ("1", "on",
+                                                          "true", "yes"))
+            except ValueError as exc:
+                return _context(request, shop, token, error=str(exc))
+            return RedirectResponse(f"/e/{token}/settings#helpers",
+                                    status_code=303)
+        finally:
+            conn.close()
+
     @app.post("/e/{token}/settings/helpers/{helper_id}/remove")
     async def helper_remove(request: Request, token: str, helper_id: int):
         conn = db.connect(data_dir)

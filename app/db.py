@@ -270,6 +270,13 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             date TEXT NOT NULL, closed_at TEXT NOT NULL,
             PRIMARY KEY (shop_id, date)
         );
+        CREATE TABLE IF NOT EXISTS credit_payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_id INTEGER NOT NULL REFERENCES shops(id),
+            customer_key TEXT NOT NULL, amount TEXT NOT NULL,
+            mode TEXT NOT NULL, at TEXT NOT NULL,
+            created_by TEXT
+        );
     """)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     for name, column_type in _STAGE_COLUMNS:
@@ -315,6 +322,11 @@ def connect(data_dir: Path) -> sqlite3.Connection:
         "PRAGMA table_info(versions)")}
     if "source" not in version_columns:
         conn.execute("ALTER TABLE versions ADD COLUMN source TEXT")
+    helper_columns = {row[1] for row in conn.execute(
+        "PRAGMA table_info(helpers)")}
+    if "can_credit" not in helper_columns:
+        conn.execute("ALTER TABLE helpers ADD COLUMN can_credit INTEGER"
+                     " NOT NULL DEFAULT 0")
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_bill_token"
         " ON quotes(bill_token) WHERE bill_token IS NOT NULL")
@@ -1040,7 +1052,7 @@ def load_photo_checks(conn, shop_id: int) -> list[sqlite3.Row]:
 _QUOTE_SOURCES = {"customer", "seller"}
 _QUOTE_KINDS = {"quote", "bill"}
 _QUOTE_STATUSES = {"new", "packing", "ready", "collected", "billed", "paid",
-                   "cancelled"}
+                   "cancelled", "credit"}
 
 # Order status for customer orders: new -> packing -> ready -> collected,
 # or cancelled from any open state. Accepted orders are kind=bill but keep
@@ -1268,8 +1280,38 @@ def create_helper(conn, shop_id: int, name: str) -> tuple[int, str]:
 
 def list_helpers(conn, shop_id: int) -> list:
     return conn.execute(
-        "SELECT id, shop_id, name, created_at FROM helpers"
+        "SELECT id, shop_id, name, created_at,"
+        " COALESCE(can_credit, 0) AS can_credit FROM helpers"
         " WHERE shop_id = ? ORDER BY id", (shop_id,)).fetchall()
+
+
+def set_helper_credit(conn, shop_id: int, helper_id: int,
+                      allowed: bool) -> None:
+    """Grant or revoke the credit permission for one helper (default off)."""
+    row = conn.execute(
+        "SELECT * FROM helpers WHERE id = ? AND shop_id = ?",
+        (helper_id, shop_id)).fetchone()
+    if row is None:
+        raise ValueError("unknown helper")
+    conn.execute("UPDATE helpers SET can_credit = ? WHERE id = ?",
+                 (int(bool(allowed)), row["id"]))
+    conn.commit()
+
+
+def helper_can_credit(conn, token: str) -> bool:
+    """True when a staff token carries the credit permission.
+
+    Owners always pass (caller checks the role first); unknown tokens fail.
+    """
+    digest = hashlib.sha256((token or "").encode()).hexdigest()
+    row = conn.execute("SELECT * FROM helpers WHERE token_hash = ?",
+                       (digest,)).fetchone()
+    if row is None:
+        return False
+    try:
+        return bool(row["can_credit"])
+    except (KeyError, IndexError, TypeError):
+        return False
 
 
 def remove_helper(conn, shop_id: int, helper_id: int) -> None:
@@ -1435,7 +1477,7 @@ def _ensure_bill_editable(row) -> None:
         status = row["status"]
     except (KeyError, IndexError, TypeError):
         return
-    if status == "paid":
+    if status in ("paid", "credit"):
         raise ValueError(PAID_LOCK_MESSAGE)
 
 
@@ -1598,11 +1640,11 @@ def day_closed_at(conn, shop_id: int, day: str) -> str | None:
 
 
 def reopen_bill(conn, bill_id: int) -> None:
-    """Reopen a paid bill for corrections: back to billed, payment cleared."""
+    """Reopen a paid/credit bill for corrections: billed, payment cleared."""
     row = get_quote_by_id(conn, bill_id)
     if row is None:
         raise ValueError("unknown bill")
-    if row["status"] != "paid":
+    if row["status"] not in ("paid", "credit"):
         raise ValueError("only paid bills can be reopened")
     conn.execute("UPDATE quotes SET status = 'billed', payment_mode = NULL,"
                  " paid_at = NULL, updated_at = ? WHERE id = ?",
@@ -1631,6 +1673,214 @@ def set_bill_phone(conn, bill_id: int, phone: str | None) -> str | None:
                  (stored, _now(), row["id"]))
     conn.commit()
     return stored
+
+
+_CREDIT_PHONE_STRIP_RE = re.compile(r"[\s\-()]+")
+
+
+def normalize_credit_phone(raw: str | None) -> str:
+    """Normalise a credit phone to 10-digit Indian form or +country digits.
+
+    Raises ValueError when blank or invalid.
+    """
+    text = _CREDIT_PHONE_STRIP_RE.sub("", str(raw or "")).strip()
+    if re.fullmatch(r"[6-9]\d{9}", text):
+        return text
+    if re.fullmatch(r"\+\d{7,15}", text):
+        return text
+    raise ValueError("that phone number does not look right")
+
+
+def clean_credit_name(raw: str | None) -> str:
+    return str(raw or "").strip()
+
+
+def mark_bill_credit(conn, bill_id: int, customer_name: str | None,
+                     customer_phone: str | None) -> str:
+    """Give a bill on credit (udhaar): status + payment_mode become credit.
+
+    Needs the customer's name (1-40 chars) and a normalised phone. The bill
+    locks like a paid bill. Returns the customer_key (normalised phone).
+    """
+    row = get_quote_by_id(conn, bill_id)
+    if row is None:
+        raise ValueError("unknown bill")
+    if row["kind"] != "bill":
+        raise ValueError("only bills can be given on credit; accept it first")
+    if row["status"] in ("paid", "credit"):
+        raise ValueError(PAID_LOCK_MESSAGE)
+    name = clean_credit_name(customer_name)
+    if not 1 <= len(name) <= 40:
+        raise ValueError("give the customer's name for a credit bill")
+    key = normalize_credit_phone(customer_phone)
+    now = _now()
+    conn.execute(
+        "UPDATE quotes SET status = 'credit', payment_mode = 'credit',"
+        " paid_at = ?, customer_name = ?, customer_phone = ?,"
+        " updated_at = ? WHERE id = ?",
+        (now, name, key, now, row["id"]))
+    conn.commit()
+    return key
+
+
+def list_credit_payments(conn, shop_id: int,
+                         customer_key: str | None = None) -> list:
+    """Credit collections for a shop, oldest first (optionally one customer)."""
+    if customer_key is None:
+        return conn.execute(
+            "SELECT * FROM credit_payments WHERE shop_id = ?"
+            " ORDER BY id", (shop_id,)).fetchall()
+    return conn.execute(
+        "SELECT * FROM credit_payments WHERE shop_id = ? AND customer_key = ?"
+        " ORDER BY id", (shop_id, customer_key)).fetchall()
+
+
+def credit_bills_for_customer(conn, shop_id: int,
+                              customer_key: str) -> list:
+    """Credit bills for one normalised phone, oldest first."""
+    out = []
+    for row in list_quotes(conn, shop_id):
+        if row["kind"] != "bill" or row["status"] != "credit":
+            continue
+        try:
+            phone = str(row["customer_phone"] or "").strip()
+        except (KeyError, IndexError, TypeError):
+            phone = ""
+        if not phone:
+            continue
+        try:
+            normalised = normalize_credit_phone(phone)
+        except ValueError:
+            if phone != customer_key:
+                continue
+            normalised = phone
+        if normalised == customer_key:
+            out.append(row)
+    out.sort(key=lambda r: r["id"])
+    return out
+
+
+def _credit_amount(shop, row) -> Decimal:
+    try:
+        return bill_display_totals(shop, row)["rounded"]
+    except (InvalidOperation, ValueError):
+        try:
+            return Decimal(str(row["total"]))
+        except (InvalidOperation, ValueError):
+            return Decimal("0.00")
+
+
+def credit_balance_for(conn, shop, customer_key: str) -> dict:
+    """Bills minus payments for one customer; every figure from stored rows."""
+    bills = credit_bills_for_customer(conn, shop["id"], customer_key)
+    payments = list_credit_payments(conn, shop["id"], customer_key)
+    bills_total = sum((_credit_amount(shop, row) for row in bills),
+                      Decimal("0.00"))
+    paid_total = Decimal("0.00")
+    for payment in payments:
+        try:
+            paid_total += Decimal(str(payment["amount"]))
+        except (InvalidOperation, ValueError):
+            continue
+    balance = (bills_total - paid_total).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP)
+    name = ""
+    for row in reversed(bills):
+        try:
+            candidate = str(row["customer_name"] or "").strip()
+        except (KeyError, IndexError, TypeError):
+            candidate = ""
+        if candidate:
+            name = candidate
+            break
+    return {"customer_key": customer_key, "name": name,
+            "phone": customer_key, "bills": bills, "payments": payments,
+            "bills_total": bills_total.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "paid_total": paid_total.quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "balance": balance, "bill_count": len(bills)}
+
+
+def credit_balances(conn, shop) -> list[dict]:
+    """Customers with an open balance, largest balance first.
+
+    Each entry carries the credit bills, payments, running balance, the
+    last bill date and the oldest unpaid date (ISO strings from stored
+    created_at values).
+    """
+    keys: dict[str, list] = {}
+    for row in list_quotes(conn, shop["id"]):
+        if row["kind"] != "bill" or row["status"] != "credit":
+            continue
+        try:
+            phone = str(row["customer_phone"] or "").strip()
+        except (KeyError, IndexError, TypeError):
+            phone = ""
+        if not phone:
+            continue
+        try:
+            key = normalize_credit_phone(phone)
+        except ValueError:
+            continue
+        keys.setdefault(key, []).append(row)
+    for payment in list_credit_payments(conn, shop["id"]):
+        keys.setdefault(str(payment["customer_key"]), [])
+    out = []
+    for key in keys:
+        entry = credit_balance_for(conn, shop, key)
+        if entry["balance"] <= 0:
+            continue
+        stamps = [str(row["created_at"]) for row in entry["bills"]
+                  if row["created_at"]]
+        entry["last_bill_at"] = max(stamps) if stamps else ""
+        entry["oldest_unpaid_at"] = min(stamps) if stamps else ""
+        out.append(entry)
+    out.sort(key=lambda e: (e["balance"], e["customer_key"]), reverse=True)
+    return out
+
+
+def credit_total_to_collect(conn, shop) -> tuple[Decimal, int]:
+    """(total open balance, customer count) from stored credit rows."""
+    total = Decimal("0.00")
+    entries = credit_balances(conn, shop)
+    for entry in entries:
+        total += entry["balance"]
+    return (total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            len(entries))
+
+
+def record_credit_payment(conn, shop, customer_key: str, amount_raw,
+                          mode_raw, created_by: str | None = None,
+                          at: str | None = None) -> int:
+    """Record a credit collection; partial allowed, never over the balance.
+
+    Returns the payment id. Raises ValueError for bad amounts, modes or
+    overpayments.
+    """
+    key = normalize_credit_phone(customer_key)
+    mode = str(mode_raw or "").strip().lower()
+    if mode not in ("cash", "upi"):
+        raise ValueError("payment mode must be cash or UPI")
+    try:
+        amount = Decimal(str(amount_raw).strip())
+    except (InvalidOperation, ValueError, AttributeError):
+        raise ValueError("that amount does not look right") from None
+    if amount.is_nan() or amount <= 0:
+        raise ValueError("that amount does not look right")
+    amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    entry = credit_balance_for(conn, shop, key)
+    if not entry["bills"]:
+        raise ValueError("no credit bills for this customer")
+    if amount > entry["balance"]:
+        raise ValueError("that is more than the balance")
+    stamp = at or _now()
+    cursor = conn.execute(
+        "INSERT INTO credit_payments (shop_id, customer_key, amount, mode,"
+        " at, created_by) VALUES (?, ?, ?, ?, ?, ?)",
+        (shop["id"], key, str(amount), mode, stamp, created_by))
+    conn.commit()
+    return cursor.lastrowid
 
 
 def last_prices(conn, shop_id: int) -> dict[str, PriceLine]:
@@ -1724,6 +1974,7 @@ def _delete_shop_rows(conn, shop_id: int) -> None:
     conn.execute("DELETE FROM versions WHERE shop_id = ?", (shop_id,))
     conn.execute("DELETE FROM photo_checks WHERE shop_id = ?", (shop_id,))
     conn.execute("DELETE FROM quotes WHERE shop_id = ?", (shop_id,))
+    conn.execute("DELETE FROM credit_payments WHERE shop_id = ?", (shop_id,))
     conn.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
 
 

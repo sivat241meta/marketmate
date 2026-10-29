@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ name }} · {{ t('credit.heading') }} — {{ shop["name"] }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block content %}
+<p class="back-link"><a href="/e/{{ token }}/credit">{{ t('credit.back') }}</a></p>
+<p class="kick">{{ t('credit.heading') }} · {{ phone }}</p>
+<h1 class="big">{{ name }}</h1>
+{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+
+<div class="stat-grid">
+  <div class="stat"><span class="stat-num money">{{ bills_total }}</span><span class="stat-label">{{ t('credit.total_bills') }}</span></div>
+  <div class="stat"><span class="stat-num money">{{ paid_total }}</span><span class="stat-label">{{ t('credit.total_paid') }}</span></div>
+  <div class="stat"><span class="stat-num money">{{ balance }}</span><span class="stat-label">{{ t('credit.balance_label') }}</span></div>
+</div>
+
+<p><a class="pill cta big" href="{{ reminder_url }}">{{ ui.icon("whatsapp") }}{{ t('credit.remind') }}</a></p>
+
+<div class="section-head"><h2>{{ t('credit.bills_title') }}</h2></div>
+{% if bills %}
+<div class="table-scroll">
+<table class="close-table">
+  <tr><th>{{ t('credit.bill_col') }}</th><th>{{ t('credit.date_col') }}</th><th>{{ t('credit.amount_col') }}</th><th>{{ t('credit.receipt') }}</th></tr>
+  {% for bill in bills %}
+  <tr>
+    <td><a href="/e/{{ token }}/bills/{{ bill.id }}">#{{ bill.id }}</a></td>
+    <td>{{ bill.day }}</td>
+    <td class="money">{{ bill.amount }}</td>
+    <td><a href="{{ bill.receipt_url }}">{{ t('credit.receipt') }}</a></td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="muted">{{ t('credit.no_bills') }}</p>
+{% endif %}
+
+<div class="section-head"><h2>{{ t('credit.payments_title') }}</h2></div>
+{% if payments %}
+<div class="table-scroll">
+<table class="close-table">
+  <tr><th>{{ t('credit.date_col') }}</th><th>{{ t('credit.amount_col') }}</th><th>{{ t('credit.mode') }}</th></tr>
+  {% for payment in payments %}
+  <tr>
+    <td>{{ payment.day }}</td>
+    <td class="money">{{ payment.amount }}</td>
+    <td>{% if payment.mode == "cash" %}{{ t('bills.cash') }}{% elif payment.mode == "upi" %}{{ t('bills.upi') }}{% else %}{{ payment.mode }}{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}
+<p class="muted">{{ t('credit.no_payments') }}</p>
+{% endif %}
+
+<div class="section-head"><h2>{{ t('credit.running') }}</h2></div>
+{% if ledger %}
+<div class="table-scroll">
+<table class="close-table">
+  <tr><th>{{ t('credit.date_col') }}</th><th>{{ t('credit.amount_col') }}</th><th>{{ t('credit.balance') }}</th></tr>
+  {% for entry in ledger %}
+  <tr>
+    <td>{{ entry.day }}{% if entry.label %} · {{ entry.label }}{% endif %}</td>
+    <td class="money">{{ entry.amount }}</td>
+    <td class="money">{{ entry.running }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+<section class="card" aria-label="{{ t('credit.received') }}">
+  <h2>{{ t('credit.received') }}</h2>
+  <form method="post" action="/e/{{ token }}/credit/{{ key_quoted }}/pay">
+    <div class="field">
+      <label for="credit-amount">{{ t('credit.amount') }}</label>
+      <input id="credit-amount" type="number" min="0.01" step="any" name="amount" value="{{ balance_plain }}" max="{{ balance_plain }}" required inputmode="decimal">
+    </div>
+    <div class="field">
+      <label for="credit-mode">{{ t('credit.mode') }}</label>
+      <select id="credit-mode" name="mode">
+        <option value="cash">{{ t('bills.cash') }}</option>
+        <option value="upi">{{ t('bills.upi') }}</option>
+      </select>
+    </div>
+    <button class="pill dark" type="submit">{{ t('credit.record') }}</button>
+  </form>
+</section>
+{% endblock %}

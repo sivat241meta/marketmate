@@ -86,6 +86,7 @@
 <section class="rcpt" id="helpers">
   <h2>{{ t('set.add_helper') }}</h2>
   <p class="muted">{{ t('set.helper_desc') }}</p>
+  <p class="muted">{{ t('set.helper_credit_desc') }}</p>
   {% if just_created %}
   <div class="alert">{{ t('set.helper_once') }}</div>
   <div class="qr-wrap">{{ just_created.qr | safe }}</div>
@@ -95,6 +96,13 @@
   {% for helper in helpers %}
   <div class="version-row">
     <div class="row-main"><strong>{{ helper["name"] }}</strong></div>
+    <form class="inline-form" method="post" action="/e/{{ token }}/settings/helpers/{{ helper["id"] }}/credit">
+      <label class="toggle-row" for="credit-{{ helper["id"] }}">
+        <input id="credit-{{ helper["id"] }}" type="checkbox" name="can_credit" value="1"{% if helper["can_credit"] %} checked{% endif %}>
+        <span>{{ t('set.helper_credit') }}</span>
+      </label>
+      <button class="btn btn-small btn-secondary" type="submit">{{ t('set.helper_credit_save') }}</button>
+    </form>
     <form class="inline-form" method="post" action="/e/{{ token }}/settings/helpers/{{ helper["id"] }}/remove">
       <button class="btn btn-small btn-ghost" type="submit">{{ t('set.helper_remove') }}</button>
     </form>

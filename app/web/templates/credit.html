@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('credit.title', shop=shop["name"]) }}{% endblock %}
+{% block body_class %}is-seller{% endblock %}
+{% block content %}
+<p class="kick">{{ t('credit.heading') }}</p>
+<h2 class="h2s">{{ t('credit.sub', shop=shop["name"]) }}</h2>
+{% if entries %}
+<h1 class="big">{{ headline }}</h1>
+{% for row in entries %}
+<a class="bill-row rcpt" href="/e/{{ token }}/credit/{{ row.key_quoted }}">
+  <span class="row-main">
+    <span class="list-name">{{ row.name }}</span>
+    <span class="list-sub">{{ row.phone }} · {{ row.bill_count }} {{ t('credit.bills_col') }}</span>
+    <span class="list-sub">{{ t('credit.last_bill') }} {{ row.last_bill }} · {{ t('credit.oldest') }} {{ row.oldest }}</span>
+  </span>
+  <span class="bill-right">
+    <span class="bill-total money">{{ row.balance }}</span>
+    {{ ui.pill(t('credit.view'), "info") }}
+  </span>
+</a>
+{% endfor %}
+{% else %}
+{{ ui.empty_state(t('credit.empty_title'), t('credit.empty_text'), None, None, "receipt") }}
+{% endif %}
+{% endblock %}

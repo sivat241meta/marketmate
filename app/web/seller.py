@@ -757,6 +757,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             published_today = local_when.date().isoformat() == today
             live_since = local_when.strftime("%H:%M")
         tiles = day_tiles(conn, shop, today)
+        credit_total, credit_count = db.credit_total_to_collect(conn, shop)
+        can_credit = (not is_staff) or db.helper_can_credit(conn, token)
         closed_raw = db.day_closed_at(conn, shop["id"], today)
         closed_at = ""
         if closed_raw:
@@ -803,7 +805,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
              "close_is_dark": now_local.hour >= 18,
              "closed_at": closed_at,
              "first_run": published_id is None and not is_staff,
-             "has_bills": has_bills, "gs_prices_done": gs_prices_done},
+             "has_bills": has_bills, "gs_prices_done": gs_prices_done,
+             "credit_total": format_money(credit_total, currency),
+             "credit_count": credit_count,
+             "can_credit": can_credit},
         )
 
     def _version_of_shop(conn, shop_id: int, version_id: int):

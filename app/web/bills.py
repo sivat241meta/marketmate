@@ -102,7 +102,8 @@ def _row_mode(row) -> str | None:
 def _mode_label(mode: str | None, lang: str = "en") -> str:
     t = t_for(lang)
     return {"cash": t("bills.cash"), "upi": t("bills.upi"),
-            "card": t("bills.card")}.get((mode or "").lower(), "")
+            "card": t("bills.card"),
+            "credit": t("bills.credit")}.get((mode or "").lower(), "")
 
 
 def bill_meta_path(data_dir: Path, session_id: int) -> Path:
@@ -184,10 +185,11 @@ def _ist_date(value: str | None):
 def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
     """Today's tiles: bill count, sales, quotes waiting, average bill.
 
-    Bills today counts kind=bill rows with status billed/paid created
-    today (IST). Sales today sums their rounded display totals. Quotes
-    waiting counts customer quotes with status new (all time). Average
-    is sales / bills. Cash/UPI/Card split paid bills today by mode.
+    Bills today counts kind=bill rows with status billed/paid/credit
+    created today (IST). Sales today sums their rounded display totals.
+    Quotes waiting counts customer quotes with status new (all time).
+    Average is sales / bills. Cash/UPI/Card split paid bills today by
+    mode, plus credit collections in that mode.
     """
     moment = now if now is not None else datetime.now(UTC)
     if moment.tzinfo is None:
@@ -200,12 +202,15 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
     cash = Decimal("0.00")
     upi = Decimal("0.00")
     card = Decimal("0.00")
+    credit_given = Decimal("0.00")
+    credit_collected = Decimal("0.00")
     waiting = 0
     for row in db.list_quotes(conn, shop_id):
         if (row["source"] == "customer" and row["kind"] == "quote"
                 and row["status"] == "new"):
             waiting += 1
-        if (row["kind"] == "bill" and row["status"] in ("billed", "paid")
+        if (row["kind"] == "bill"
+                and row["status"] in ("billed", "paid", "credit")
                 and _ist_date(row["created_at"]) == today):
             bills_today += 1
             try:
@@ -216,6 +221,8 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
             except (InvalidOperation, ValueError):
                 continue
             sales += amount
+            if row["status"] == "credit":
+                credit_given += amount
             if row["status"] == "paid":
                 mode = _row_mode(row)
                 if mode == "cash":
@@ -224,6 +231,26 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
                     upi += amount
                 elif mode == "card":
                     card += amount
+    for payment in db.list_credit_payments(conn, shop_id):
+        try:
+            when = payment["at"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        if _ist_date(when) != today:
+            continue
+        try:
+            amount = Decimal(str(payment["amount"]))
+        except (InvalidOperation, ValueError):
+            continue
+        credit_collected += amount
+        try:
+            mode = str(payment["mode"] or "").strip().lower()
+        except (KeyError, IndexError, TypeError):
+            mode = ""
+        if mode == "cash":
+            cash += amount
+        elif mode == "upi":
+            upi += amount
     def _q(value: Decimal) -> Decimal:
         if value == 0:
             return Decimal("0.00")
@@ -232,24 +259,29 @@ def bills_tiles(conn, shop_id: int, *, now: datetime | None = None) -> dict:
     cash = _q(cash)
     upi = _q(upi)
     card = _q(card)
+    credit_given = _q(credit_given)
+    credit_collected = _q(credit_collected)
     average = (sales / bills_today).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP) if bills_today else Decimal(
             "0.00")
     return {"bills_today": bills_today, "sales_today": sales,
             "quotes_waiting": waiting, "average_bill": average,
-            "sales_cash": cash, "sales_upi": upi, "sales_card": card}
+            "sales_cash": cash, "sales_upi": upi, "sales_card": card,
+            "credit_given": credit_given,
+            "credit_collected": credit_collected}
 
 
 def top_items(conn, shop_id: int, *, now: datetime | None = None,
               limit: int = 5) -> list[dict]:
-    """Top items today from billed + paid bills: name, qty, amount."""
+    """Top items today from billed + paid + credit bills: name, qty, amount."""
     moment = now if now is not None else datetime.now(UTC)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     today = moment.astimezone(IST).date()
     totals: dict[str, dict] = {}
     for row in db.list_quotes(conn, shop_id):
-        if row["kind"] != "bill" or row["status"] not in ("billed", "paid"):
+        if row["kind"] != "bill" or row["status"] not in (
+                "billed", "paid", "credit"):
             continue
         if _ist_date(row["created_at"]) != today:
             continue
@@ -368,7 +400,13 @@ def _customer_label(row, lang: str = "en") -> str:
             return f"{label} · {name}"
         phone = _row_phone(row)
         return f"{label} · {phone}" if phone else label
-    return _row_phone(row) or t_for(lang)("bills.walk_in")
+    name = _row_customer_name(row)
+    phone = _row_phone(row)
+    if name and phone:
+        return f"{name} · {phone}"
+    if name:
+        return name
+    return phone or t_for(lang)("bills.walk_in")
 
 
 def _row_time(row, *, now: datetime | None = None, lang: str = "en") -> str:
@@ -404,6 +442,8 @@ def _status_pill(row, lang: str = "en") -> tuple[str, str]:
         return (t("bills.pill_billed"), "billed")
     if row["status"] == "paid":
         return (t("bills.pill_paid"), "paid")
+    if row["status"] == "credit":
+        return (t("bills.pill_credit"), "credit")
     if row["status"] == "cancelled":
         return (t("bills.pill_cancelled"), "info")
     return (str(row["status"]).title(), "info")
@@ -846,6 +886,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 line["tell_url"] = _whatsapp_link(
                     phone, sold_out_whatsapp_text(shop, bill["id"],
                                                   line["display"]))
+        from app.web.auth import staff_credit_allowed as _credit_allowed
+
+        _shop, _role, _helper = resolve_or_404(conn, token)
+        can_credit = _credit_allowed(conn, _role, token)
         return templates.TemplateResponse(request, "bill.html", {
             "shop": shop, "token": token, "bill": bill, "lines": lines,
             "total": _fmt_money(rounded),
@@ -854,6 +898,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "show_round": show_round,
             "pill_text": text, "pill_kind": kind,
             "created_label": created_label, "phone": phone or "",
+            "credit_name": _row_customer_name(bill) or "",
             "label": _customer_label(bill, ui_lang), "error": error,
             "price_items": _price_items(conn, shop["id"], ui_lang),
             "whatsapp_url": _whatsapp_link(
@@ -865,6 +910,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     is_customer_bill
                     and bill["status"] in ("packing", "ready")))),
             "is_paid": bill["status"] == "paid",
+            "is_credit": bill["status"] == "credit",
+            "can_credit": can_credit,
             "is_inr": is_inr, "upi_id": upi_id, "upi_url": upi_url,
             "upi_qr": upi_qr, "pay_modes": pay_modes,
             "mode_label": _mode_label(mode, ui_lang),
@@ -1411,7 +1458,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
-            if bill["status"] == "paid":
+            if bill["status"] in ("paid", "credit"):
                 ui_lang = get_ui_lang(request, shop)
                 return _bill_context(
                     request, shop, token, bill, conn,
@@ -1452,7 +1499,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
-            if bill["status"] == "paid":
+            if bill["status"] in ("paid", "credit"):
                 ui_lang = get_ui_lang(request, shop)
                 return _bill_context(
                     request, shop, token, bill, conn,
@@ -1480,7 +1527,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         try:
             shop = _shop_or_404(conn, token)
             bill = _bill_of_shop(conn, shop["id"], bill_id)
-            if bill["status"] == "paid":
+            if bill["status"] in ("paid", "credit"):
                 ui_lang = get_ui_lang(request, shop)
                 return _bill_context(
                     request, shop, token, bill, conn,
@@ -1544,9 +1591,47 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         finally:
             conn.close()
 
+    @app.post("/e/{token}/bills/{bill_id}/credit")
+    async def bill_credit_post(request: Request, token: str, bill_id: int):
+        """Pay later: give the bill on credit to a named customer.
+
+        Needs the customer's name and phone; the bill locks like a paid
+        bill. Staff need the credit permission.
+        """
+        from app.web.auth import credit_or_403
+
+        conn = db.connect(data_dir)
+        try:
+            shop, role, _helper = resolve_or_404(conn, token)
+            bill = _bill_of_shop(conn, shop["id"], bill_id)
+            ui_lang = get_ui_lang(request, shop)
+            denied = credit_or_403(request, templates, role, token, conn,
+                                   ui_lang)
+            if denied is not None:
+                return denied
+            form = await request.form()
+            name = str(form.get("customer_name") or "")
+            phone = str(form.get("customer_phone") or "")
+            if not name.strip() or not phone.strip():
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(
+                    request, shop, token, fresh, conn,
+                    error=t_for(ui_lang)("bill.credit_need_both"),
+                    status_code=400)
+            try:
+                db.mark_bill_credit(conn, bill["id"], name, phone)
+            except ValueError as exc:
+                fresh = _bill_of_shop(conn, shop["id"], bill_id)
+                return _bill_context(request, shop, token, fresh, conn,
+                                     error=str(exc), status_code=400)
+            return RedirectResponse(f"/e/{token}/bills/{bill_id}",
+                                    status_code=303)
+        finally:
+            conn.close()
+
     @app.post("/e/{token}/bills/{bill_id}/reopen")
     async def bill_reopen_post(request: Request, token: str, bill_id: int):
-        """Change a paid bill: back to billed, payment cleared.
+        """Change a paid/credit bill: back to billed, payment cleared.
 
         Billing action, so helpers may use it.
         """

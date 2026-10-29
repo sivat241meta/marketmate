@@ -7,6 +7,8 @@
 <p class="kick">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
 {% if is_paid %}
 <h1 class="big">{% if mode_label %}{{ t('bill.paid_by', mode=mode_label) }}{% else %}{{ t('bill.paid_state') }}{% endif %}</h1>
+{% elif is_credit|default(false) %}
+<h1 class="big">{{ t('bill.credit_state') }} · <em>{{ total | money(shop["currency"]) }}</em></h1>
 {% elif is_quote %}
 <h1 class="big">{{ t('bill.heading', id=bill["id"]) }} · <em>{{ total | money(shop["currency"]) }}</em></h1>
 {% else %}
@@ -54,7 +56,7 @@
             {% if line.status == "priced" and line.note %}<span class="line-note muted">{{ line.note }}</span>{% endif %}
             {% if line.sold_out %}<span class="line-note">{{ ui.pill(t('bill.sold_out'), "danger") }} <a class="pill sm ghost" href="{{ line.tell_url }}">{{ ui.icon("whatsapp") }}{{ t('bill.tell_customer') }}</a></span>{% endif %}
             <span class="line-rate money">{{ line.unit_price | money(shop["currency"]) }}<small class="muted"> / {{ line.per_amount }} {{ line.unit }}</small></span>
-            {% if is_paid %}
+            {% if is_paid or is_credit|default(false) %}
             <span class="muted">{{ line.qty }} {{ line.unit }}</span>
             {% else %}
             <input type="hidden" name="name_en_{{ line.index }}" value="{{ line.name_en }}">
@@ -114,9 +116,9 @@
         <span class="muted">{% if lines | length == 1 %}{{ t('bills.item_one', count=lines | length) }}{% else %}{{ t('bills.item_many', count=lines | length) }}{% endif %}</span>
         <span class="money" data-total>{{ total | money(shop["currency"]) }}</span>
       </div>
-      {% if not is_paid %}<p><button class="btn btn-secondary" type="submit">{{ t('bill.update') }}</button></p>{% endif %}
+      {% if not is_paid and not is_credit|default(false) %}<p><button class="btn btn-secondary" type="submit">{{ t('bill.update') }}</button></p>{% endif %}
     </form>
-    {% if not is_paid %}
+    {% if not is_paid and not is_credit|default(false) %}
     {% for line in lines %}
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/remove" class="inline-form">
       <input type="hidden" name="index" value="{{ line.index }}">
@@ -156,6 +158,21 @@
         </form>
         {% endfor %}
       </div>
+      {% if can_credit|default(true) %}
+      <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/credit" class="rcpt" id="pay-later">
+        <p class="kick">{{ t('bill.pay_later') }}</p>
+        <p class="muted">{{ t('bill.credit_hint') }}</p>
+        <div class="field">
+          <label for="credit-name">{{ t('bill.credit_name') }}</label>
+          <input id="credit-name" type="text" name="customer_name" value="{{ credit_name|default('') }}" maxlength="40" required autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="credit-phone">{{ t('bill.credit_phone') }}</label>
+          <input id="credit-phone" type="tel" name="customer_phone" value="{{ phone }}" placeholder="+91 …" required inputmode="tel">
+        </div>
+        <button class="pill ghost" type="submit">{{ ui.icon("receipt") }}{{ t('bill.pay_later') }}</button>
+      </form>
+      {% endif %}
       <div class="rcpt cash-rcpt">
         <p class="kick">{{ t('bill.cash_title') }}</p>
         <div data-cash data-total="{{ total }}">
@@ -193,6 +210,11 @@
     <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/reopen">
       <button class="btn btn-secondary" type="submit">{{ t('bill.change_bill') }}</button>
     </form>
+    {% elif is_credit|default(false) %}
+    <p class="paid-state">{{ ui.icon("receipt") }}{{ t('bill.credit_state') }}{% if mode_label %} · {{ mode_label }}{% endif %}</p>
+    <form method="post" action="/e/{{ token }}/bills/{{ bill["id"] }}/reopen">
+      <button class="btn btn-secondary" type="submit">{{ t('bill.change_bill') }}</button>
+    </form>
     {% endif %}
     {% if not is_quote %}
     <section class="card" aria-label="Public bill link">
@@ -216,7 +238,7 @@
         <button class="btn btn-secondary" type="submit">{{ t('bill.save_phone') }}</button>
       </form>
     </details>
-    {% if not is_paid %}
+    {% if not is_paid and not is_credit|default(false) %}
     <details class="card">
       <summary>{{ t('bill.add_item') }}</summary>
       {% if price_items %}
@@ -252,6 +274,9 @@
     <button class="pill cta" type="submit">{{ label }}</button>
   </form>
   {% endfor %}
+  {% if can_credit|default(true) %}
+  <a class="pill ghost" href="#pay-later">{{ t('bill.pay_later') }}</a>
+  {% endif %}
 </div>
 {% endif %}
 <div class="keypad-sheet" data-keypad hidden>

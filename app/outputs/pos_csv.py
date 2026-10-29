@@ -84,7 +84,9 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
             mode = str(row["payment_mode"] or "").strip().lower()
         except (KeyError, IndexError, TypeError):
             mode = ""
-        if row["status"] != "paid":
+        if row["status"] == "credit":
+            mode = "credit"
+        elif row["status"] != "paid":
             mode = "unpaid"
         try:
             phone = str(row["customer_phone"] or "").strip()
@@ -121,6 +123,39 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
                 _plain(line.get("line_total")),
                 "0", "0", bill_total, mode, phone,
             ])
+    from app.dayclose import credit_payments_for_range as _payments_for_range
+
+    for payment in _payments_for_range(conn, shop["id"], start, end, tz):
+        when = None
+        try:
+            when = datetime.fromisoformat(payment["at"])
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            when = when.astimezone(tz)
+        except (ValueError, KeyError, TypeError):
+            when = None
+        try:
+            payday = local_day_of(payment["at"], tz) or ""
+        except (KeyError, TypeError):
+            payday = ""
+        pay_clock = when.strftime("%H:%M") if when else ""
+        try:
+            collect_mode = str(payment["mode"] or "").strip().lower()
+        except (KeyError, IndexError, TypeError):
+            collect_mode = ""
+        try:
+            customer = str(payment["customer_key"] or "").strip()
+        except (KeyError, IndexError, TypeError):
+            customer = ""
+        try:
+            collected = _plain(payment["amount"])
+        except (KeyError, IndexError, TypeError):
+            collected = ""
+        writer.writerow([
+            payday, pay_clock, "", "credit_payment", "credit_payment",
+            "", "1", "", collected, collected,
+            "0", "0", collected, collect_mode, customer,
+        ])
     return b"\xef\xbb\xbf" + buf.getvalue().encode("utf-8")
 
 

@@ -893,6 +893,59 @@ _ENGLISH: dict[str, str] = {
     "my.clear": "Clear",
     "my.view": "View",
     "wa.sold_out_tell": "Your order #{id} at {shop}: {item} is sold out today. We will call you or adjust your order.",
+    # --- Task 62: credit (udhaar) ---
+    "bills.pill_credit": "Credit",
+    "bills.credit": "Credit",
+    "bill.pay_later": "Pay later (credit)",
+    "bill.credit_name": "Customer name",
+    "bill.credit_phone": "Customer phone",
+    "bill.credit_hint": "Write it down for a regular. Name and phone are required.",
+    "bill.credit_need_both": "Give the customer's name and phone for a credit bill.",
+    "bill.credit_state": "On credit",
+    "credit.title": "Credit — {shop}",
+    "credit.heading": "Credit",
+    "credit.sub": "{shop} · udhaar to collect",
+    "credit.to_collect": "{total} to collect from {n} customers",
+    "credit.to_collect_one": "{total} to collect from 1 customer",
+    "credit.empty_title": "No credit out",
+    "credit.empty_text": "Bills given on credit will show up here. Tap Pay later on a bill.",
+    "credit.customer": "Customer",
+    "credit.balance": "Balance",
+    "credit.bills_col": "Bills",
+    "credit.last_bill": "Last bill",
+    "credit.oldest": "Oldest unpaid",
+    "credit.view": "View",
+    "credit.back": "← All credit",
+    "credit.bills_title": "Credit bills",
+    "credit.payments_title": "Payments",
+    "credit.bill_col": "Bill",
+    "credit.date_col": "Date",
+    "credit.amount_col": "Amount",
+    "credit.receipt": "Receipt",
+    "credit.running": "Running balance",
+    "credit.total_bills": "Credit bills total",
+    "credit.total_paid": "Paid so far",
+    "credit.balance_label": "Balance to collect",
+    "credit.received": "Received payment",
+    "credit.amount": "Amount",
+    "credit.mode": "Mode",
+    "credit.record": "Record payment",
+    "credit.remind": "Send reminder on WhatsApp",
+    "credit.no_bills": "No credit bills.",
+    "credit.no_payments": "No payments yet.",
+    "close.credit_given": "Given on credit today",
+    "close.credit_collected": "Credit collected today",
+    "t61.credit_to_collect": "Credit to collect {total}",
+    "nav.credit": "Credit",
+    "set.helper_credit": "Allow credit (udhaar)",
+    "set.helper_credit_desc": "Helpers with this can give bills on credit and record payments.",
+    "set.helper_credit_save": "Save",
+    "error.credit_title": "No credit access",
+    "error.credit_message": "This helper cannot give credit or record payments. Ask the shop owner.",
+    "wa.credit_reminder": "{shop}: your balance is {balance} ({count} bills since {date}). Pay by UPI to {upi} or cash at the shop. Thank you! {url}",
+    "wa.credit_reminder_one": "{shop}: your balance is {balance} (1 bill since {date}). Pay by UPI to {upi} or cash at the shop. Thank you! {url}",
+    "wa.credit_reminder_cash": "{shop}: your balance is {balance} ({count} bills since {date}). Pay cash at the shop. Thank you! {url}",
+    "wa.credit_reminder_cash_one": "{shop}: your balance is {balance} (1 bill since {date}). Pay cash at the shop. Thank you! {url}",
 }
 
 
@@ -1769,6 +1822,59 @@ _TAMIL: dict[str, str] = {
     "my.clear": "அழி",
     "my.view": "பார்க்க",
     "wa.sold_out_tell": "உங்கள் ஆர்டர் #{id} ({shop}): {item} இன்று தீர்ந்துவிட்டது. உங்களை அழைக்கிறோம் அல்லது ஆர்டரை மாற்றுகிறோம்.",
+    # --- Task 62: credit (udhaar) ---
+    "bills.pill_credit": "கடன்",
+    "bills.credit": "கடன்",
+    "bill.pay_later": "பின்னர் வாங்கு (கடன்)",
+    "bill.credit_name": "வாடிக்கையாளர் பெயர்",
+    "bill.credit_phone": "வாடிக்கையாளர் போன்",
+    "bill.credit_hint": "வழக்கமான ஆளுக்கு எழுதி வை. பெயரும் போனும் வேண்டும்.",
+    "bill.credit_need_both": "கடன் பில்லுக்கு வாடிக்கையாளர் பெயரும் போனும் கொடுங்கள்.",
+    "bill.credit_state": "கடனில்",
+    "credit.title": "கடன் — {shop}",
+    "credit.heading": "கடன்",
+    "credit.sub": "{shop} · வசூலிக்க வேண்டிய கடன்",
+    "credit.to_collect": "{n} பேரிடம் {total} வசூலிக்க வேண்டும்",
+    "credit.to_collect_one": "1 நபரிடம் {total} வசூலிக்க வேண்டும்",
+    "credit.empty_title": "கடன் எதுவும் இல்லை",
+    "credit.empty_text": "கடனில் கொடுத்த பில்கள் இங்கே வரும். பில்லில் பின்னர் வாங்கு என்பதைத் தட்டுங்கள்.",
+    "credit.customer": "வாடிக்கையாளர்",
+    "credit.balance": "பாக்கி",
+    "credit.bills_col": "பில்கள்",
+    "credit.last_bill": "கடைசி பில்",
+    "credit.oldest": "பழைய பாக்கி",
+    "credit.view": "பார்",
+    "credit.back": "← எல்லா கடனும்",
+    "credit.bills_title": "கடன் பில்கள்",
+    "credit.payments_title": "வந்த பணம்",
+    "credit.bill_col": "பில்",
+    "credit.date_col": "தேதி",
+    "credit.amount_col": "தொகை",
+    "credit.receipt": "ரசீது",
+    "credit.running": "ஓடும் பாக்கி",
+    "credit.total_bills": "கடன் பில் மொத்தம்",
+    "credit.total_paid": "இதுவரை வந்தது",
+    "credit.balance_label": "வசூலிக்க வேண்டிய பாக்கி",
+    "credit.received": "பணம் வந்தது",
+    "credit.amount": "தொகை",
+    "credit.mode": "முறை",
+    "credit.record": "பணத்தை பதி",
+    "credit.remind": "வாட்ஸ்அப்பில் நினைவூட்டு",
+    "credit.no_bills": "கடன் பில்கள் இல்லை.",
+    "credit.no_payments": "இன்னும் பணம் வரலை.",
+    "close.credit_given": "இன்று கடனில் கொடுத்தது",
+    "close.credit_collected": "இன்று கடன் வசூலானது",
+    "t61.credit_to_collect": "வசூலிக்க வேண்டிய கடன் {total}",
+    "nav.credit": "கடன்",
+    "set.helper_credit": "கடன் கொடுக்க அனுமதி (எழுதி வை)",
+    "set.helper_credit_desc": "இது உள்ள உதவியாளர்கள் கடனில் பில் போட்டு வந்த பணத்தை பதியலாம்.",
+    "set.helper_credit_save": "சேமி",
+    "error.credit_title": "கடன் அனுமதி இல்லை",
+    "error.credit_message": "இந்த உதவியாளர் கடன் கொடுக்கவோ பணம் பதியவோ முடியாது. கடை உரிமையாளரைக் கேளுங்கள்.",
+    "wa.credit_reminder": "{shop}: உங்கள் பாக்கி {balance} ({date} முதல் {count} பில்கள்). {upi} என்ற UPIக்கு அல்லது கடையில் பணமாகக் கொடுங்கள். நன்றி! {url}",
+    "wa.credit_reminder_one": "{shop}: உங்கள் பாக்கி {balance} (1 பில், {date} முதல்). {upi} என்ற UPIக்கு அல்லது கடையில் பணமாகக் கொடுங்கள். நன்றி! {url}",
+    "wa.credit_reminder_cash": "{shop}: உங்கள் பாக்கி {balance} ({date} முதல் {count} பில்கள்). கடையில் பணமாகக் கொடுங்கள். நன்றி! {url}",
+    "wa.credit_reminder_cash_one": "{shop}: உங்கள் பாக்கி {balance} (1 பில், {date} முதல்). கடையில் பணமாகக் கொடுங்கள். நன்றி! {url}",
 }
 
 
@@ -2645,6 +2751,59 @@ _HINDI: dict[str, str] = {
     "my.clear": "साफ़ करें",
     "my.view": "देखें",
     "wa.sold_out_tell": "आपका ऑर्डर #{id} ({shop}): {item} आज ख़त्म हो गया। हम आपको कॉल करेंगे या ऑर्डर बदलेंगे।",
+    # --- Task 62: credit (udhaar) ---
+    "bills.pill_credit": "उधार",
+    "bills.credit": "उधार",
+    "bill.pay_later": "बाद में लें (उधार)",
+    "bill.credit_name": "ग्राहक का नाम",
+    "bill.credit_phone": "ग्राहक का फ़ोन",
+    "bill.credit_hint": "पहचान वालों के लिए लिखकर रखें। नाम और फ़ोन ज़रूरी है।",
+    "bill.credit_need_both": "उधार बिल के लिए ग्राहक का नाम और फ़ोन दें।",
+    "bill.credit_state": "उधार पर",
+    "credit.title": "उधार — {shop}",
+    "credit.heading": "उधार",
+    "credit.sub": "{shop} · वसूलना बाकी उधार",
+    "credit.to_collect": "{n} ग्राहकों से {total} वसूलना है",
+    "credit.to_collect_one": "1 ग्राहक से {total} वसूलना है",
+    "credit.empty_title": "कोई उधार नहीं",
+    "credit.empty_text": "उधार पर दिए बिल यहाँ दिखेंगे। बिल पर बाद में लें दबाएँ।",
+    "credit.customer": "ग्राहक",
+    "credit.balance": "बकाया",
+    "credit.bills_col": "बिल",
+    "credit.last_bill": "आखिरी बिल",
+    "credit.oldest": "सबसे पुराना बकाया",
+    "credit.view": "देखें",
+    "credit.back": "← सारा उधार",
+    "credit.bills_title": "उधार बिल",
+    "credit.payments_title": "मिले पैसे",
+    "credit.bill_col": "बिल",
+    "credit.date_col": "तारीख",
+    "credit.amount_col": "रकम",
+    "credit.receipt": "रसीद",
+    "credit.running": "चलता बकाया",
+    "credit.total_bills": "उधार बिल कुल",
+    "credit.total_paid": "अब तक मिला",
+    "credit.balance_label": "वसूलना बाकी",
+    "credit.received": "पैसे मिले",
+    "credit.amount": "रकम",
+    "credit.mode": "तरीका",
+    "credit.record": "पैसे दर्ज करें",
+    "credit.remind": "व्हाट्सऐप पर याद दिलाएँ",
+    "credit.no_bills": "कोई उधार बिल नहीं।",
+    "credit.no_payments": "अभी कोई पैसे नहीं मिले।",
+    "close.credit_given": "आज उधार दिया",
+    "close.credit_collected": "आज उधार वसूला",
+    "t61.credit_to_collect": "वसूलना बाकी उधार {total}",
+    "nav.credit": "उधार",
+    "set.helper_credit": "उधार की अनुमति",
+    "set.helper_credit_desc": "जिन सहायकों को यह है वे उधार बिल दे सकते हैं और मिले पैसे दर्ज कर सकते हैं।",
+    "set.helper_credit_save": "सहेजें",
+    "error.credit_title": "उधार की अनुमति नहीं",
+    "error.credit_message": "यह सहायक उधार नहीं दे सकता और न पैसे दर्ज कर सकता है। दुकान मालिक से पूछें।",
+    "wa.credit_reminder": "{shop}: आपका बकाया {balance} है ({date} से {count} बिल)। {upi} पर UPI से या दुकान पर नकद दें। धन्यवाद! {url}",
+    "wa.credit_reminder_one": "{shop}: आपका बकाया {balance} है ({date} से 1 बिल)। {upi} पर UPI से या दुकान पर नकद दें। धन्यवाद! {url}",
+    "wa.credit_reminder_cash": "{shop}: आपका बकाया {balance} है ({date} से {count} बिल)। दुकान पर नकद दें। धन्यवाद! {url}",
+    "wa.credit_reminder_cash_one": "{shop}: आपका बकाया {balance} है ({date} से 1 बिल)। दुकान पर नकद दें। धन्यवाद! {url}",
 }
 
 
@@ -3272,6 +3431,32 @@ def wa_chat_number(phone: str | None) -> str:
     if re.fullmatch(r"[6-9]\d{9}", digits):
         return "91" + digits
     return digits
+
+
+def credit_reminder_whatsapp_text(shop: Any, balance: str, count: int,
+                                  date_text: str, shop_url: str) -> str:
+    """Credit reminder in the shop's language, with the shop page link.
+
+    Names the balance, bill count and oldest date; the UPI clause appears
+    only when the shop has a UPI ID.
+    """
+    t = t_for(_shop_lang(shop))
+    try:
+        shop_name = shop["name"]
+    except (KeyError, IndexError, TypeError):
+        shop_name = getattr(shop, "name", "shop")
+    try:
+        upi_id = str(shop["upi_id"] or "").strip()
+    except (KeyError, IndexError, TypeError):
+        upi_id = ""
+    one = int(count) == 1
+    if upi_id:
+        key = "wa.credit_reminder_one" if one else "wa.credit_reminder"
+        return t(key, shop=shop_name, balance=balance, count=count,
+                 date=date_text, upi=upi_id, url=shop_url or "")
+    key = "wa.credit_reminder_cash_one" if one else "wa.credit_reminder_cash"
+    return t(key, shop=shop_name, balance=balance, count=count,
+             date=date_text, url=shop_url or "")
 
 
 def link_self_whatsapp_url(shop: Any, seller_url: str) -> str:

@@ -584,6 +584,7 @@ button.chip {
 .pill-quote { background: var(--forest); color: #fff; }
 .pill-billed { background: transparent; color: var(--leaf-ink); border: 2px solid var(--leaf-ink); }
 .pill-paid { background: var(--cta); color: #fff; }
+.pill-credit { background: var(--gold-soft); color: var(--gold-ink); }
 
 /* ---- Task 60: new-order alert badge + banners (gold, on-theme) ---- */
 .nbadge {

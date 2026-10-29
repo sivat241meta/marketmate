@@ -110,7 +110,9 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
             mode_raw = ""
         mode = {"cash": "Cash", "upi": "UPI", "card": "Card"}.get(
             mode_raw, "")
-        if row["status"] != "paid":
+        if row["status"] == "credit":
+            mode = "credit"
+        elif row["status"] != "paid":
             mode = "unpaid"
         bill_row = bills_ws.max_row + 1
         bills_ws.cell(row=bill_row, column=1, value=row["id"])
@@ -160,6 +162,49 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
                    rate if rate is not None else Decimal("0.00"))
             _money(lines_ws.cell(row=line_row, column=8),
                    _decimal(line.get("line_total"), "0"))
+
+    # Credit collections as their own Bills rows (type credit_payment).
+    from app.dayclose import credit_payments_for_range as _payments_for_range
+
+    for payment in _payments_for_range(conn, shop["id"], start, end, tz):
+        when = None
+        try:
+            when = datetime.fromisoformat(payment["at"])
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)
+            when = when.astimezone(tz)
+        except (ValueError, KeyError, TypeError):
+            when = None
+        try:
+            day = local_day_of(payment["at"], tz) or ""
+        except (KeyError, TypeError):
+            day = ""
+        clock = when.strftime("%H:%M") if when else ""
+        try:
+            collect_mode = str(payment["mode"] or "").strip().lower()
+        except (KeyError, IndexError, TypeError):
+            collect_mode = ""
+        mode_label = {"cash": "Cash", "upi": "UPI"}.get(collect_mode,
+                                                        collect_mode)
+        try:
+            customer = str(payment["customer_key"] or "").strip()
+        except (KeyError, IndexError, TypeError):
+            customer = ""
+        bill_row = bills_ws.max_row + 1
+        bills_ws.cell(row=bill_row, column=1, value=None)
+        bills_ws.cell(row=bill_row, column=2, value=day)
+        bills_ws.cell(row=bill_row, column=3, value=clock)
+        bills_ws.cell(row=bill_row, column=4, value=customer)
+        bills_ws.cell(row=bill_row, column=5, value=mode_label)
+        bills_ws.cell(row=bill_row, column=6, value=0)
+        try:
+            collected = Decimal(str(payment["amount"]))
+        except (InvalidOperation, ValueError, KeyError, TypeError,
+                AttributeError):
+            collected = Decimal("0.00")
+        _money(bills_ws.cell(row=bill_row, column=7), collected)
+        _money(bills_ws.cell(row=bill_row, column=8), Decimal("0.00"))
+        bills_ws.cell(row=bill_row, column=9, value="credit_payment")
 
     # Items: aggregate qty + amount across the range.
     agg: dict[str, dict] = {}
