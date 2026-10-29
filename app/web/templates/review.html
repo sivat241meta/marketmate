@@ -55,9 +55,9 @@
     <div class="rename-sheet" data-rename-form data-item="{{ card.index }}" hidden>
       <h3>{{ t('rename.title') }}</h3>
       <p class="muted">{{ t('rename.sub') }}</p>
-      <label class="fld">{{ t('rename.local', lang=shop_native) }}<input name="name_local" lang="{{ shop_lang }}" value="{{ item.name_local }}" maxlength="40" autocomplete="off"></label>
-      <label class="fld">{{ t('rename.en') }}<input name="name_en" lang="en" value="{{ item.name_en }}" maxlength="40" autocomplete="off"></label>
-      <label class="fld">{{ t('rename.variety') }}<input name="variety" value="{{ item.variety or '' }}" maxlength="30" autocomplete="off"></label>
+      {{ ui.field(t('rename.local', lang=shop_native), "name_local", value=item.name_local, lang=shop_lang, autocomplete="off", attrs={"id": "rn-local-" ~ card.index, "maxlength": "40"}) }}
+      {{ ui.field(t('rename.en'), "name_en", value=item.name_en, lang="en", autocomplete="off", attrs={"id": "rn-en-" ~ card.index, "maxlength": "40"}) }}
+      {{ ui.field(t('rename.variety'), "variety", value=item.variety or "", autocomplete="off", attrs={"id": "rn-var-" ~ card.index, "maxlength": "30"}) }}
       <div class="rename-actions">
         <button type="button" class="btn btn-small btn-ghost" data-rename-cancel>{{ t('rename.cancel') }}</button>
         <button type="button" class="btn btn-small btn-primary" data-rename-save>{{ t('rename.save') }}</button>
@@ -165,9 +165,9 @@
     <div class="rename-sheet" data-rename-form data-item="{{ card.index }}" hidden>
       <h3>{{ t('rename.title') }}</h3>
       <p class="muted">{{ t('rename.sub') }}</p>
-      <label class="fld">{{ t('rename.local', lang=shop_native) }}<input name="name_local" lang="{{ shop_lang }}" value="{{ item.name_local }}" maxlength="40" autocomplete="off"></label>
-      <label class="fld">{{ t('rename.en') }}<input name="name_en" lang="en" value="{{ item.name_en }}" maxlength="40" autocomplete="off"></label>
-      <label class="fld">{{ t('rename.variety') }}<input name="variety" value="{{ item.variety or '' }}" maxlength="30" autocomplete="off"></label>
+      {{ ui.field(t('rename.local', lang=shop_native), "name_local", value=item.name_local, lang=shop_lang, autocomplete="off", attrs={"id": "rn-local-" ~ card.index, "maxlength": "40"}) }}
+      {{ ui.field(t('rename.en'), "name_en", value=item.name_en, lang="en", autocomplete="off", attrs={"id": "rn-en-" ~ card.index, "maxlength": "40"}) }}
+      {{ ui.field(t('rename.variety'), "variety", value=item.variety or "", autocomplete="off", attrs={"id": "rn-var-" ~ card.index, "maxlength": "30"}) }}
       <div class="rename-actions">
         <button type="button" class="btn btn-small btn-ghost" data-rename-cancel>{{ t('rename.cancel') }}</button>
         <button type="button" class="btn btn-small btn-primary" data-rename-save>{{ t('rename.save') }}</button>

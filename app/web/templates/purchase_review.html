@@ -4,9 +4,11 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('pr.heading') }}{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t('pr.heading') }}</h1>
-  <p class="muted">{{ t('pr.heard', transcript=transcript) }}</p>
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('pr.heading') }}</h1>
+    <p class="v10-sub">{{ t('pr.heard', transcript=transcript) }}</p>
+  </div>
 </header>
 <form method="post" action="/e/{{ token }}/purchases/{{ session["id"] }}/confirm">
 {% for card in cards %}
@@ -29,9 +31,9 @@
 </section>
 {% endfor %}
 {% if not cards %}
-<p class="muted">{{ t('pr.nothing') }}</p>
+{{ ui.empty_state(t('pr.heading'), t('pr.nothing'), "/e/" ~ token ~ "/purchases", t('pur.heading'), "mic", "cart") }}
 {% endif %}
-  <div class="sticky-bar">
+  <div class="sticky-bar action-bar">
     <button class="btn btn-green btn-big" type="submit">{{ t('pr.confirm_btn') }}</button>
   </div>
 </form>

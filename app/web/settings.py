@@ -91,7 +91,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                    for o, c in slots[:2]]})
         return {"hours_days": days, "has_hours": has_hours(raw)}
 
-    def _context(request, shop, token, error=None, just_created=None):
+    def _context(request, shop, token, error=None, just_created=None,
+                 error_field=None, saved=False):
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         ui_lang = get_ui_lang(request, shop)
         conn = db.connect(data_dir)
@@ -101,6 +102,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
         return templates.TemplateResponse(request, "settings.html", {
             "shop": shop, "token": token, "error": error,
+            "error_field": error_field, "saved": saved,
             "languages": LANGUAGES, "currencies": all_currencies(),
             "seller_url": seller_url,
             "seller_qr": qr_svg(seller_url),
@@ -113,11 +115,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         })
 
     @app.get("/e/{token}/settings")
-    def settings_page(request: Request, token: str, conn: Conn):
+    def settings_page(request: Request, token: str, conn: Conn,
+                      saved: str | None = None):
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
-        return _context(request, shop, token)
+        return _context(request, shop, token, saved=bool(saved))
 
     @app.post("/e/{token}/settings")
     async def settings_post(request: Request, token: str):
@@ -134,29 +137,37 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             currency = str(form.get("currency") or "").strip().upper()
             shop_type = str(form.get("type") or "").strip()
             upi_payee_raw = str(form.get("upi_payee") or "").strip()
-            error = None
+            error = error_field = None
             if not name or not area or not shop_type:
                 error = "name, area and type are required"
+                error_field = ("name" if not name else
+                               "area" if not area else "type")
             elif not _PHONE_RE.match(phone):
                 error = "phone must be 7-15 digits, optional leading +"
+                error_field = "phone"
             elif language not in _LANGUAGES:
                 error = "unknown language"
+                error_field = "language"
             elif currency not in _CURRENCIES:
                 error = "unknown currency"
+                error_field = "currency"
             try:
                 upi_id = validate_upi_id(form.get("upi_id"))
             except ValueError as exc:
-                error = error or str(exc)
+                if error is None:
+                    error, error_field = str(exc), "upi_id"
                 upi_id = None
             try:
                 pincode = validate_pincode(form.get("pincode"))
             except ValueError as exc:
-                error = error or str(exc)
+                if error is None:
+                    error, error_field = str(exc), "pincode"
                 pincode = db._UNCHANGED
             try:
                 parsed_hours = parse_hours_form(form)
             except ValueError as exc:
-                error = error or str(exc)
+                if error is None:
+                    error, error_field = str(exc), "hours"
                 parsed_hours = ""
             lat = lng = db._UNCHANGED
             if "remove_location" in form:
@@ -166,10 +177,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     lat = round_coord(form.get("lat"), kind="lat")
                     lng = round_coord(form.get("lng"), kind="lng")
                 except ValueError as exc:
-                    error = error or str(exc)
+                    if error is None:
+                        error, error_field = str(exc), "location"
                     lat = lng = db._UNCHANGED
             if (lat is None) != (lng is None):
-                error = error or "bad location"
+                if error is None:
+                    error, error_field = "bad location", "location"
                 lat = lng = db._UNCHANGED
             # Market listing: the switch is owner-only (helpers get 403
             # above) and judge/test shops always stay unlisted.
@@ -188,6 +201,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 return templates.TemplateResponse(
                     request, "settings.html", {
                         "shop": fresh, "token": token, "error": error,
+                        "error_field": error_field, "saved": False,
                         "languages": LANGUAGES,
                         "currencies": all_currencies(),
                         "seller_url": seller_url,
@@ -208,7 +222,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 hours_json=(parsed_hours if parsed_hours
                             else db._UNCHANGED),
                 pincode=pincode, lat=lat, lng=lng, listed=listed)
-            return RedirectResponse(f"/e/{token}/settings", status_code=303)
+            return RedirectResponse(f"/e/{token}/settings?saved=1",
+                                    status_code=303)
         finally:
             conn.close()
 

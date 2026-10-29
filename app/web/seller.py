@@ -757,14 +757,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return None, owner_or_403(request, templates, role, ui_lang)
         return shop, None
 
-    @app.get("/new")
-    def new_shop(request: Request):
+    def _new_shop_page(request, *, error=None, error_field=None,
+                       values=None, status_code=200):
         visitor = get_ui_lang(request, None)
         default_lang = visitor if visitor in ("ta", "hi") else "en"
         try:
             default_currency = get_language(default_lang).default_currency
         except KeyError:
             default_currency = "INR"
+        picked = values or {}
         return templates.TemplateResponse(request, "new_shop.html", {
             "languages": shop_form_languages(),
             "currencies": all_currencies(),
@@ -773,49 +774,90 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "default_lang": default_lang,
             "selected_currency": default_currency,
             "ui_lang": visitor if visitor in ("ta", "hi", "en") else "en",
-        })
+            "error": error,
+            "error_field": error_field,
+            "values": picked,
+        }, status_code=status_code)
+
+    @app.get("/new")
+    def new_shop(request: Request):
+        return _new_shop_page(request)
 
     @app.post("/new")
-    async def create_shop_post(
-        request: Request,
-        conn: Conn,
-        name: str = Form(...),
-        phone: str = Form(...),
-        area: str = Form(...),
-        language: str = Form(...),
-        currency: str = Form(""),
-        type: str = Form(...),
-    ):
-        if not name.strip() or not area.strip() or not type.strip():
-            raise HTTPException(422, "name, area and type are required")
-        if not _PHONE_RE.match(_clean_phone(phone)):
-            raise HTTPException(422, "phone must be 7-15 digits, optional leading +")
-        if language not in _LANGUAGES:
-            raise HTTPException(422, "unknown language")
-        if not (currency or "").strip():
-            try:
-                currency = get_language(language).default_currency
-            except KeyError:
-                currency = "INR"
-        if currency not in _CURRENCIES:
-            raise HTTPException(422, "unknown currency")
+    async def create_shop_post(request: Request, conn: Conn):
+        from app.web.settings import validate_upi_id
+
+        form = await request.form()
+        name = str(form.get("name") or "").strip()
+        phone = _clean_phone(str(form.get("phone") or ""))
+        area = str(form.get("area") or "").strip()
+        language = str(form.get("language") or "").strip()
+        currency = str(form.get("currency") or "").strip()
+        shop_type = str(form.get("type") or "").strip()
+        values = {"name": str(form.get("name") or ""),
+                  "phone": str(form.get("phone") or ""),
+                  "area": str(form.get("area") or ""),
+                  "language": language,
+                  "currency": currency,
+                  "type": str(form.get("type") or ""),
+                  "upi_id": str(form.get("upi_id") or ""),
+                  "listed": form.getlist("listed"),
+                  "listed_on": True if not form.getlist("listed") else any(
+                      str(value or "").strip().lower()
+                      in ("1", "on", "true", "yes")
+                      for value in form.getlist("listed"))}
+        error = error_field = None
+        if not name or not area or not shop_type:
+            error = "name, area and type are required"
+            error_field = ("name" if not name else
+                           "area" if not area else "type")
+        elif not _PHONE_RE.match(phone):
+            error = "phone must be 7-15 digits, optional leading +"
+            error_field = "phone"
+        elif language not in _LANGUAGES:
+            error = "unknown language"
+            error_field = "language"
+        if error is None:
+            if not currency:
+                try:
+                    currency = get_language(language).default_currency
+                except KeyError:
+                    currency = "INR"
+            if currency not in _CURRENCIES:
+                error = "unknown currency"
+                error_field = "currency"
+        try:
+            upi_id = validate_upi_id(form.get("upi_id"))
+        except ValueError as exc:
+            if error is None:
+                error = str(exc)
+                error_field = "upi_id"
+            upi_id = None
+        if error is not None:
+            return _new_shop_page(request, error=error,
+                                  error_field=error_field, values=values,
+                                  status_code=422)
         # The "Show my shop" box is on by default; the form always sends
         # listed=0 plus listed=1 when ticked, so read every value. A post
         # without the field (old clients) stays listed by default.
-        picked = (await request.form()).getlist("listed")
+        picked = form.getlist("listed")
         listed = True if not picked else any(
             str(value or "").strip().lower() in ("1", "on", "true", "yes")
             for value in picked)
-        _, _, token = db.create_shop(
+        shop_id, _, token = db.create_shop(
             conn,
-            name=name.strip(),
-            phone=_clean_phone(phone),
+            name=name,
+            phone=phone,
             area=area.strip(),
             language=language,
             currency=currency,
-            shop_type=type.strip(),
+            shop_type=shop_type,
             listed=listed,
         )
+        if upi_id:
+            conn.execute("UPDATE shops SET upi_id = ? WHERE id = ?",
+                         (upi_id, shop_id))
+            conn.commit()
         return RedirectResponse(f"/e/{token}", status_code=303)
 
     @app.get("/e/{token}")

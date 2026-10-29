@@ -1,76 +1,126 @@
 {% extends "base.html" %}
-{% block title %}New shop — MarketMate{% endblock %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ t('newshop.title') }} — MarketMate{% endblock %}
 {% block content %}
-<h1>Open your shop</h1>
-<p class="muted">Two minutes now, then just film and speak every morning.</p>
-<section class="card">
-<form method="post" action="/new">
-  <div class="field">
-    <label for="shop-name">Shop name</label>
-    <input id="shop-name" name="name" required autocomplete="organization">
-    <span class="help">Shown on your price board and shop page.</span>
+<header class="v10-head">
+  <div>
+    <p class="v10-eyebrow">{{ t('top.start_selling') }}</p>
+    <h1 class="v10-title">{{ t('newshop.title') }}</h1>
+    <p class="v10-sub">{{ t('newshop.sub') }}</p>
   </div>
-  <div class="field">
-    <label for="shop-phone">Phone</label>
-    <input id="shop-phone" name="phone" placeholder="+91..." required inputmode="tel">
-    <span class="help">Customers call or WhatsApp this number. 7–15 digits, optional leading +.</span>
-  </div>
-  <div class="field">
-    <label for="shop-area">Area</label>
-    <input id="shop-area" name="area" required autocomplete="address-level2">
-    <span class="help">Your market or neighbourhood, e.g. Koyambedu.</span>
-  </div>
-  <div class="field">
-    <label for="shop-language">Language</label>
-    <select id="shop-language" name="language">
-      {% for lang in languages %}
-      <option value="{{ lang.code }}"{% if lang.code == default_lang %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
-      {% endfor %}
-    </select>
-    <span class="help">The language you speak your prices in.</span>
-  </div>
-  <div class="field">
-    <label for="shop-currency">Currency</label>
-    <select id="shop-currency" name="currency">
-      {% for currency in currencies %}
-      <option value="{{ currency }}"{% if currency == selected_currency %} selected{% endif %}>{{ currency }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="field">
-    <label for="shop-type">Shop type</label>
-    <input id="shop-type" name="type" value="vegetable" required>
-    <span class="help">What you sell, e.g. vegetable.</span>
-  </div>
-  <div class="field">
-    <input type="hidden" name="listed" value="0">
-    <label class="toggle-row" for="shop-listed">
-      <input id="shop-listed" type="checkbox" name="listed" value="1" checked>
-      <span>{{ t('set.listed_label') }}</span>
-    </label>
-    <span class="help">{{ t('set.listed_help') }}</span>
-  </div>
-  <button class="btn btn-primary btn-big" type="submit">Create shop</button>
+</header>
+{% if error %}{{ ui.error_summary(error) }}{% endif %}
+<ol class="stepper" data-steps>
+  <li class="is-now" data-step-dot="0">{{ t('newshop.step1') }}</li>
+  <li data-step-dot="1">{{ t('newshop.step2') }}</li>
+  <li data-step-dot="2">{{ t('newshop.step3') }}</li>
+</ol>
+<p class="muted" data-step-count aria-live="polite">{{ t('form.step_of', n=1, total=3) }}</p>
+<form method="post" action="/new" data-newshop data-step-label="{{ t('form.step_of', n='{n}', total=3) }}">
+  <fieldset class="step-pane is-on" data-pane="0">
+    <legend class="visually-hidden">{{ t('newshop.step1') }}</legend>
+    {% call ui.form_card(t('newshop.step1'), t('newshop.step1_sub')) %}
+      {{ ui.field(t('set.name'), "name", value=values.get('name', ''), hint=t('newshop.name_hint'), required=True, autocomplete="organization", error=error if error_field == "name" else None, attrs={"id": "shop-name", "maxlength": "60"}) }}
+      {{ ui.field(t('set.area'), "area", value=values.get('area', ''), hint=t('newshop.area_hint'), required=True, autocomplete="address-level2", error=error if error_field == "area" else None, attrs={"id": "shop-area", "maxlength": "60", "placeholder": t('newshop.area_ph')}) }}
+      {{ ui.field(t('set.phone'), "phone", type="tel", value=values.get('phone', ''), hint=t('set.phone_help'), required=True, autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "shop-phone", "placeholder": "+91..."}) }}
+      <div class="step-nav">
+        <span></span>
+        <button class="btn btn-primary" type="button" data-next>{{ t('form.next') }}</button>
+      </div>
+    {% endcall %}
+  </fieldset>
+  <fieldset class="step-pane" data-pane="1">
+    <legend class="visually-hidden">{{ t('newshop.step2') }}</legend>
+    {% call ui.form_card(t('newshop.step2'), t('newshop.step2_sub')) %}
+      {% call ui.select_field(t('set.language'), "language", hint=t('set.lang_help'), required=True, error=error if error_field == "language" else None, attrs={"id": "shop-language"}) %}
+        {% for lang in languages %}
+        <option value="{{ lang.code }}"{% if lang.code == (values.get('language') or default_lang) %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
+        {% endfor %}
+      {% endcall %}
+      {% call ui.select_field(t('set.currency'), "currency", required=True, error=error if error_field == "currency" else None, attrs={"id": "shop-currency"}) %}
+        {% for currency in currencies %}
+        <option value="{{ currency }}"{% if currency == (values.get('currency') or selected_currency) %} selected{% endif %}>{{ currency }}</option>
+        {% endfor %}
+      {% endcall %}
+      {{ ui.field(t('set.type'), "type", value=values.get('type', 'vegetable'), hint=t('newshop.type_hint'), required=True, autocomplete="off", error=error if error_field == "type" else None, attrs={"id": "shop-type", "maxlength": "40"}) }}
+      {{ ui.field(t('set.upi'), "upi_id", value=values.get('upi_id', ''), hint=t('set.upi_help'), inputmode="email", autocomplete="off", error=error if error_field == "upi_id" else None, attrs={"id": "shop-upi", "placeholder": "name@bank"}) }}
+      <div class="step-nav">
+        <button class="btn btn-ghost" type="button" data-back>{{ t('form.back') }}</button>
+        <button class="btn btn-primary" type="button" data-next>{{ t('form.next') }}</button>
+      </div>
+    {% endcall %}
+  </fieldset>
+  <fieldset class="step-pane" data-pane="2">
+    <legend class="visually-hidden">{{ t('newshop.step3') }}</legend>
+    {% call ui.form_card(t('newshop.step3'), t('newshop.step3_sub')) %}
+      <div class="field">
+        <input type="hidden" name="listed" value="0">
+        <label class="toggle-row" for="shop-listed">
+          <input id="shop-listed" type="checkbox" name="listed" value="1"{% if values.get('listed_on', true) %} checked{% endif %}>
+          <span>{{ t('set.listed_label') }}</span>
+        </label>
+        <span class="help">{{ t('set.listed_help') }}</span>
+      </div>
+      <p class="muted">{{ t('newshop.hours_later') }}</p>
+      <div class="step-nav">
+        <button class="btn btn-ghost" type="button" data-back>{{ t('form.back') }}</button>
+        <span></span>
+      </div>
+      {% call ui.action_bar() %}
+      <button class="btn btn-primary" type="submit">{{ t('newshop.create') }}</button>
+      {% endcall %}
+    {% endcall %}
+  </fieldset>
 </form>
-</section>
 {% endblock %}
 {% block scripts %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("[data-newshop]");
   const defaults = {{ default_currency | tojson }};
   const lang = document.getElementById("shop-language");
   const currency = document.getElementById("shop-currency");
-  if (!lang || !currency) {
-    return;
-  }
-  function applyDefault() {
-    const want = defaults[lang.value];
-    if (want) {
-      currency.value = want;
+  if (lang && currency) {
+    const applyDefault = () => {
+      const want = defaults[lang.value];
+      if (want) {
+        currency.value = want;
+      }
+    };
+    lang.addEventListener("change", applyDefault);
+    if (!currency.value) {
+      applyDefault();
     }
   }
-  lang.addEventListener("change", applyDefault);
-  applyDefault();
+  if (!form) {
+    return;
+  }
+  const panes = Array.prototype.slice.call(form.querySelectorAll("[data-pane]"));
+  const dots = Array.prototype.slice.call(document.querySelectorAll("[data-step-dot]"));
+  const count = document.querySelector("[data-step-count]");
+  const label = form.getAttribute("data-step-label") || "Step {n} of 3";
+  let at = 0;
+  function show(n) {
+    at = Math.max(0, Math.min(panes.length - 1, n));
+    panes.forEach((pane, i) => pane.classList.toggle("is-on", i === at));
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("is-now", i === at);
+      dot.classList.toggle("is-done", i < at);
+    });
+    if (count) {
+      count.textContent = label.replace("{n}", String(at + 1));
+    }
+  }
+  form.classList.add("js-steps");
+  const failed = form.querySelector(".field-error");
+  const failedPane = failed ? failed.closest("[data-pane]") : null;
+  show(failedPane ? panes.indexOf(failedPane) : 0);
+  form.querySelectorAll("[data-next]").forEach((btn) => {
+    btn.addEventListener("click", () => show(at + 1));
+  });
+  form.querySelectorAll("[data-back]").forEach((btn) => {
+    btn.addEventListener("click", () => show(at - 1));
+  });
 });
 </script>
 {% endblock %}

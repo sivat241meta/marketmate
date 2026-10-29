@@ -5,9 +5,11 @@
 {% block crumb_page %}{% if mode == "confirm" %}{{ t('upd.confirm_title') }}{% else %}{{ t('upd.record_title') }}{% endif %}{% endblock %}
 {% block content %}
 {% if mode == "confirm" %}
-<header class="update-confirm-head">
-  <h1>{{ t('upd.confirm_title') }}</h1>
-  <p class="muted">{{ t('upd.heard', transcript=transcript) }}</p>
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('upd.confirm_title') }}</h1>
+    <p class="v10-sub">{{ t('upd.heard', transcript=transcript) }}</p>
+  </div>
 </header>
 <form id="review-form" method="post" action="/e/{{ token }}/update/{{ session_id }}/confirm" data-approve-url="/e/{{ token }}/update/{{ session_id }}/confirm"
       data-msg-ready="{{ t('review.ready') }}"
@@ -79,28 +81,28 @@
 <p class="muted">{{ t('upd.no_changes') }}</p>
 {% endif %}
   <p class="form-error" id="approve-error" hidden></p>
-  <div class="sticky-bar">
+  <div class="sticky-bar action-bar">
     <p class="muted sticky-count" data-approve-count></p>
     <button class="btn btn-green btn-big" type="submit" id="approve-btn" disabled>{{ t('upd.confirm_publish') }}</button>
   </div>
 </form>
 {% else %}
-<section class="card record-card">
-  {{ ui.obj("mic", 28) }}
-  <h1>{{ t('upd.record_title') }}</h1>
-  <p class="muted">{{ t('upd.say_changes') }}</p>
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('upd.record_title') }}</h1>
+    <p class="v10-sub">{{ t('upd.say_changes') }}</p>
+  </div>
+</header>
+{% if error %}{{ ui.error_summary(error) }}{% endif %}
+{% call ui.form_card() %}
   {% if hint %}<div class="alert alert-info">{{ t('upd.say_price_for', hint=hint) }}</div>{% endif %}
-  {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
   <div class="record-actions">
     <button class="btn btn-primary" type="button" id="rec-start">{{ t('upd.start_rec') }}</button>
     <button class="btn btn-secondary" type="button" id="rec-stop" disabled>{{ t('upd.stop_check') }}</button>
   </div>
   <p class="muted" id="rec-status">{{ t('upd.tap_start') }}</p>
   <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
-    <div class="field">
-      <label for="update-audio">{{ t('upd.upload_rec') }}</label>
-      <input id="update-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-    </div>
+    {{ ui.field(t('upd.upload_rec'), "audio", type="file", required=True, attrs={"id": "update-audio", "accept": "audio/*,video/*,.webm,.mp4,.m4a"}) }}
     <p class="upload-file" data-upload-file hidden></p>
     <p class="form-error" data-upload-error hidden></p>
     <div class="upload-progress" data-upload-progress hidden>
@@ -111,19 +113,14 @@
     <button class="btn btn-secondary" type="submit">{{ t('upd.upload_check') }}</button>
   </form>
   <p class="notice">{{ notice | safe }}</p>
-</section>
-<section class="card" id="board">
-  {{ ui.obj("camera", 28) }}
-  <h2>{{ t('upd.board_title') }}</h2>
-  <p class="muted">{{ t('upd.board_desc') }}</p>
+{% endcall %}
+<div id="board"></div>
+{% call ui.form_card(t('upd.board_title'), t('upd.board_desc')) %}
   <form method="post" action="/e/{{ token }}/board" enctype="multipart/form-data">
-    <div class="field">
-      <label for="board-photo">{{ t('upd.board_choose') }}</label>
-      <input id="board-photo" type="file" name="photo" accept="image/*" capture="environment" required>
-    </div>
+    {{ ui.field(t('upd.board_choose'), "photo", type="file", required=True, attrs={"id": "board-photo", "accept": "image/*", "capture": "environment"}) }}
     <button class="btn btn-secondary" type="submit">{{ t('upd.board_upload') }}</button>
   </form>
-</section>
+{% endcall %}
 {% if items %}
 <h2>{{ t('upd.current_prices') }}</h2>
 {% for item in items %}
@@ -141,7 +138,7 @@
 </div>
 {% endfor %}
 {% else %}
-<p class="muted">{{ t('upd.no_list') }}</p>
+{{ ui.empty_state(t('upd.current_prices'), t('upd.no_list'), "/e/" ~ token, t('nav.today'), "mic", "mic") }}
 {% endif %}
 {% endif %}
 {% endblock %}

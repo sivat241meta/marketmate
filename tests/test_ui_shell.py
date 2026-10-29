@@ -61,7 +61,7 @@ def test_home_has_shell_and_hero(tmp_path):
 def test_new_shop_has_shell_and_form(tmp_path):
     response = make_client(tmp_path).get("/new")
     assert response.status_code == 200
-    assert_shell(response.text, "Create shop")
+    assert_shell(response.text, "Create my shop")
     for field in ("name", "phone", "area", "language", "currency", "type"):
         assert f'name="{field}"' in response.text
     assert 'value="ta"' in response.text and 'value="en"' in response.text
