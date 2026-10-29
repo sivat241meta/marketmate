@@ -76,6 +76,92 @@ CANONICAL_NAMES: dict[str, str] = {name_en: name_ta for name_en, name_ta, _ in _
 
 EN_TO_ROMAN: dict[str, str] = {name_en: roman for name_en, _, roman in _ITEMS}
 
+# Canonical Hindi (Devanagari) produce names (Task 103), keyed by the
+# same English keys as _ITEMS. Only Tamil and Hindi shops have a
+# canonical local name; every other language falls back to English.
+CANONICAL_NAMES_HI: dict[str, str] = {
+    "tomato": "टमाटर",
+    "onion": "प्याज़",
+    "small onion": "छोटी प्याज़",
+    "potato": "आलू",
+    "carrot": "गाजर",
+    "banana": "केला",
+    "coconut": "नारियल",
+    "beans": "बीन्स",
+    "cabbage": "पत्ता गोभी",
+    "cauliflower": "फूल गोभी",
+    "brinjal": "बैंगन",
+    "okra": "भिंडी",
+    "drumstick": "सहजन",
+    "pumpkin": "कद्दू",
+    "bottle gourd": "लौकी",
+    "bitter gourd": "करेला",
+    "snake gourd": "चिचिंडा",
+    "ridge gourd": "तोरई",
+    "ash gourd": "पेठा",
+    "cucumber": "खीरा",
+    "mango": "आम",
+    "papaya": "पपीता",
+    "guava": "अमरूद",
+    "watermelon": "तरबूज",
+    "muskmelon": "खरबूजा",
+    "pomegranate": "अनार",
+    "grapes": "अंगूर",
+    "orange": "संतरा",
+    "apple": "सेब",
+    "pineapple": "अनानास",
+    "lemon": "नींबू",
+    "green chilli": "हरी मिर्च",
+    "red chilli": "लाल मिर्च",
+    "ginger": "अदरक",
+    "garlic": "लहसुन",
+    "coriander": "धनिया",
+    "curry leaves": "करी पत्ता",
+    "mint": "पुदीना",
+    "spinach": "पालक",
+    "amaranth": "चौलाई",
+    "fenugreek leaves": "मेथी",
+    "radish": "मूली",
+    "beetroot": "चुकंदर",
+    "sweet potato": "शकरकंद",
+    "tapioca": "टैपियोका",
+    "yam": "जिमीकंद",
+    "colocasia": "अरबी",
+    "raw banana": "कच्चा केला",
+    "jackfruit": "कटहल",
+    "sapota": "चीकू",
+    "custard apple": "सीताफल",
+    "gooseberry": "आंवला",
+    "cluster beans": "ग्वार फली",
+    "broad beans": "सेम",
+    "capsicum": "शिमला मिर्च",
+    "spring onion": "हरा प्याज़",
+    "ladies finger": "भिंडी",
+    "mushroom": "मशरूम",
+    "corn": "मक्का",
+    "peas": "मटर",
+    "banana stem": "केले का तना",
+    "banana flower": "केले का फूल",
+    "sweet lime": "मौसंबी",
+}
+
+
+def canonical_local_name(name_en: str | None,
+                         language: str = "ta") -> str | None:
+    """Canonical local name of an item for a shop language, or None.
+
+    Tamil and Hindi have canonical names; every other language (and
+    unknown items) returns None so callers fall back to English.
+    """
+    base = (name_en or "").strip().lower()
+    if not base:
+        return None
+    if language == "ta":
+        return CANONICAL_NAMES.get(base)
+    if language == "hi":
+        return CANONICAL_NAMES_HI.get(base)
+    return None
+
 # Real-shop variety nicknames (Task 47): normalized alias -> (name_en, variety).
 # Keys are lower-cased; Tamil script keys stay as-is for exact matching.
 VARIETY_ALIASES: dict[str, tuple[str, str]] = {
@@ -403,6 +489,46 @@ def _mentions_item(text: str, name_en: str | None) -> bool:
     return False
 
 
+# Filler words said around a variety ("வரி krishnagiri வரி"): dropped
+# before checking whether a local name is just a variety alias.
+_VARIETY_LOCAL_FILLERS: frozenset[str] = frozenset({"வரி", "vari", "variety"})
+
+
+def repair_variety_local_name(name_en: str | None, name_local: str | None,
+                              *, language: str = "ta") -> str | None:
+    """Replace a local name that is really the spoken variety (Task 103).
+
+    When name_local is just a known variety alias (any script) of this
+    item, or an alias plus filler words, and the item has a canonical
+    local name for the shop language, the canonical name is returned.
+    Names that already equal the canonical name, the English name, the
+    romanised name or a known synonym of the item pass through, as does
+    an alias for a different item (the Task 97 rename path owns that).
+    """
+    if name_local is None:
+        return None
+    base = (name_en or "").strip().lower()
+    canonical = canonical_local_name(base, language) if base else None
+    if not canonical:
+        return name_local
+    local = str(name_local)
+    normalized = " ".join(local.lower().split())
+    if not normalized:
+        return name_local
+    known = {canonical.lower(), base, EN_TO_ROMAN.get(base, "").lower()}
+    known |= {syn for syn, canon in SYNONYMS.items() if canon == base}
+    if normalized in known:
+        return name_local
+    kept = [tok for tok in normalized.split()
+            if tok not in _VARIETY_LOCAL_FILLERS]
+    remainder = " ".join(kept)
+    if remainder:
+        pair = VARIETY_ALIASES.get(remainder)
+        if pair is not None and pair[0] == base:
+            return canonical
+    return name_local
+
+
 def decide_name_from_variety(name_en: str | None, variety: str | None,
                              spoken: str | None, extra: str | None = None,
                              *, language: str = "ta"
@@ -412,12 +538,12 @@ def decide_name_from_variety(name_en: str | None, variety: str | None,
 
     When the variety or the spoken words match a VARIETY_ALIASES entry
     for a different item, the variety wins: returns that item, its
-    variety, the canonical local name (Tamil shops only; other shops
-    keep the heard local name), and the matched alias word for the
-    check-page note. Otherwise, when no variety was said but the words
-    hold a known variety of the same item, returns the filled variety
-    with no note word. With nothing to do, returns the inputs unchanged
-    (local name and note word None).
+    variety, the canonical local name for the shop language (English
+    name when the language has no canonical name), and the matched
+    alias word for the check-page note. Otherwise, when no variety was
+    said but the words hold a known variety of the same item, returns
+    the filled variety with no note word. With nothing to do, returns
+    the inputs unchanged (local name and note word None).
     """
     base = (name_en or "").strip().lower() or "other"
     said_variety = (variety or "").strip()
@@ -439,9 +565,7 @@ def decide_name_from_variety(name_en: str | None, variety: str | None,
     if trigger is not None:
         word, alias_item, alias_variety = trigger
         if alias_item != base and not _mentions_item(spoken_text, base):
-            local = None
-            if language == "ta":
-                local = CANONICAL_NAMES.get(alias_item)
+            local = canonical_local_name(alias_item, language) or alias_item
             return (alias_item, alias_variety, local, word)
     if not said_variety and spoken_text:
         found = _variety_in_text(base, spoken_text.lower())
@@ -522,9 +646,14 @@ VARIETY_LOCAL: dict[str, str] = {
 }
 
 
-def variety_local_name(variety: str | None) -> str | None:
-    """Tamil display word for an English variety, or None if unknown."""
-    if variety is None:
+def variety_local_name(variety: str | None, *,
+                       language: str = "ta") -> str | None:
+    """Local display word for an English variety, or None if unknown.
+
+    Only Tamil has local variety words; every other shop language keeps
+    the English variety.
+    """
+    if variety is None or language != "ta":
         return None
     key = str(variety).strip().lower()
     if not key:
@@ -552,11 +681,13 @@ def display_name_en(name_en: str | None, variety: str | None = None) -> str:
 
 
 def display_name_local(name_local: str | None,
-                       variety: str | None = None) -> str:
+                       variety: str | None = None, *,
+                       language: str = "ta") -> str:
     """Local display name: "வாழைப்பழம் (பூவன்)", or the plain name.
 
     When the local name already contains the variety's local word
     ("பூவன் பழம்" holds "பூவன்"), it is returned as-is, never doubled.
+    Shop languages without local variety words keep the English variety.
     """
     base = (name_local or "").strip()
     if not base:
@@ -564,7 +695,7 @@ def display_name_local(name_local: str | None,
     text = str(variety or "").strip()
     if not text:
         return base
-    local_word = variety_local_name(text)
+    local_word = variety_local_name(text, language=language)
     if local_word:
         if local_word in base:
             return base
