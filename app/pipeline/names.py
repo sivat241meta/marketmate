@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import unicodedata
 
+from app.models import Flag
+
 _ITEMS: tuple[tuple[str, str, str], ...] = (
     ("tomato", "தக்காளி", "thakkali"),
     ("onion", "பெரிய வெங்காயம்", "vengayam"),
@@ -202,8 +204,8 @@ for _name_en, _name_ta, _roman in _ITEMS:
     _TAMIL_TO_CANON.setdefault(_name_ta, _name_en)
 
 
-def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
-    """Longest alias key found as whole word(s) in text, else None.
+def _alias_hit_with_key(text: str) -> tuple[str, tuple[str, str]] | None:
+    """Longest (alias key, pair) found as whole word(s) in text, else None.
 
     Keys match only with word bounds on both sides, so "krishnagiri"
     is found inside "வரி krishnagiri வரி" but "pachai" never matches
@@ -213,7 +215,7 @@ def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
     lowered = " ".join((text or "").lower().split())
     if not lowered:
         return None
-    best: tuple[str, str] | None = None
+    best: tuple[str, tuple[str, str]] | None = None
     best_len = -1
     for alias, pair in VARIETY_ALIASES.items():
         key = alias.lower()
@@ -234,8 +236,14 @@ def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
                 break
             start = idx + 1
         if found:
-            best, best_len = pair, len(key)
+            best, best_len = (alias, pair), len(key)
     return best
+
+
+def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
+    """Longest alias pair found as whole word(s) in text, else None."""
+    hit = _alias_hit_with_key(text)
+    return hit[1] if hit is not None else None
 
 
 def _normalize_variety(variety: str | None) -> str | None:
@@ -364,6 +372,112 @@ SYNONYMS: dict[str, str] = {
     "red chili": "red chilli",
     "cauli": "cauliflower",
 }
+
+
+def _mentions_item(text: str, name_en: str | None) -> bool:
+    """True when the text names the item itself.
+
+    Matches the English name (plus a plural "s"), its Tamil script and
+    romanised names, and its synonyms, all with word bounds. Guards the
+    variety-wins rule: "pachai milagaai" must not become banana, and
+    "ooty potato" must not become carrot.
+    """
+    lowered = " ".join((text or "").lower().split())
+    if not lowered:
+        return False
+    base = (name_en or "").strip().lower()
+    if not base or base == "other":
+        return False
+    words = {base, CANONICAL_NAMES.get(base, ""), EN_TO_ROMAN.get(base, "")}
+    words |= {syn for syn, canon in SYNONYMS.items() if canon == base}
+    padded = f" {lowered} "
+    for word in words:
+        word = (word or "").strip().lower()
+        if not word:
+            continue
+        if word.isascii():
+            if f" {word} " in padded or f" {word}s " in padded:
+                return True
+        elif word in lowered:
+            return True
+    return False
+
+
+def decide_name_from_variety(name_en: str | None, variety: str | None,
+                             spoken: str | None, extra: str | None = None,
+                             *, language: str = "ta"
+                             ) -> tuple[str, str | None, str | None,
+                                        str | None]:
+    """Apply the variety-decides-the-item rule (Task 97).
+
+    When the variety or the spoken words match a VARIETY_ALIASES entry
+    for a different item, the variety wins: returns that item, its
+    variety, the canonical local name (Tamil shops only; other shops
+    keep the heard local name), and the matched alias word for the
+    check-page note. Otherwise, when no variety was said but the words
+    hold a known variety of the same item, returns the filled variety
+    with no note word. With nothing to do, returns the inputs unchanged
+    (local name and note word None).
+    """
+    base = (name_en or "").strip().lower() or "other"
+    said_variety = (variety or "").strip()
+    spoken_text = f"{spoken or ''} {extra or ''}".strip()
+    trigger: tuple[str, str, str] | None = None
+    if said_variety:
+        key = " ".join(said_variety.lower().split())
+        pair = VARIETY_ALIASES.get(key)
+        if pair is not None:
+            trigger = (key, pair[0], pair[1])
+        else:
+            hit = _alias_hit_with_key(said_variety)
+            if hit is not None:
+                trigger = (hit[0], hit[1][0], hit[1][1])
+    if trigger is None and spoken_text:
+        hit = _alias_hit_with_key(spoken_text)
+        if hit is not None:
+            trigger = (hit[0], hit[1][0], hit[1][1])
+    if trigger is not None:
+        word, alias_item, alias_variety = trigger
+        if alias_item != base and not _mentions_item(spoken_text, base):
+            local = None
+            if language == "ta":
+                local = CANONICAL_NAMES.get(alias_item)
+            return (alias_item, alias_variety, local, word)
+    if not said_variety and spoken_text:
+        found = _variety_in_text(base, spoken_text.lower())
+        if found:
+            return (name_en or base, found, None, None)
+    return (name_en or base, variety, None, None)
+
+
+def correct_draft_from_variety(item, *, language: str = "ta"):
+    """Rename a draft when its variety or spoken words name another item.
+
+    Mutates name_en, variety, name_local and match_key; price lines and
+    proof are untouched. A rename appends a soft VARIETY_NAMED flag
+    ("named from the variety you said (ujala → brinjal)") and returns
+    it; a same-item variety fill or no change returns None. Callers
+    must skip items carrying a seller-chosen name.
+    """
+    spoken = getattr(item, "name_spoken", "") or ""
+    proof = getattr(item, "proof", None)
+    quote = getattr(proof, "quote", "") or ""
+    name_en, variety, local, word = decide_name_from_variety(
+        item.name_en, item.variety, spoken, quote, language=language)
+    if word is None:
+        item.variety = variety
+        return None
+    item.name_en = name_en
+    item.variety = variety
+    if local is not None:
+        item.name_local = local
+    item.match_key = name_en
+    flag = Flag(field="name", code="VARIETY_NAMED",
+                message=(f"named from the variety you said"
+                         f" ({word} → {name_en})"),
+                blocking=False)
+    item.flags.append(flag)
+    return flag
 
 PRODUCE_KEYWORDS: list[str] = sorted(
     {name_en for name_en, _, _ in _ITEMS}

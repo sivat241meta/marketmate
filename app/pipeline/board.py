@@ -13,7 +13,7 @@ from pathlib import Path
 
 from app.meta.spark import chat_json, image_part
 from app.models import DraftItem, Flag, PriceLine, Proof
-from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.names import CANONICAL_NAMES, correct_draft_from_variety
 from app.pipeline.units import normalize_unit
 
 BOARD_CONFIRM_MESSAGE = "read from your board – tap to confirm"
@@ -209,6 +209,12 @@ def process_board_session(conn, session_id: int, image: Path, *,
         language = shop_row["language"] if shop_row else "ta"
         db.set_stage(conn, session_id, "items")
         items = read_board(Path(image), ledger=ledger, settings=settings)
+        for item in items:
+            # A known variety decides the item (Task 97); items
+            # carrying a seller-chosen name are never touched.
+            if db.chosen_name_for(conn, shop_id, db.match_key_of(item),
+                                  item.variety) is None:
+                correct_draft_from_variety(item, language=language)
         db.set_stage(conn, session_id, "checking")
         previous = db.last_prices(conn, shop_id)
         for item in items:

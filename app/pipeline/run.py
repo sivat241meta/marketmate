@@ -22,7 +22,7 @@ from app.pipeline.media import (
     extract_window_frames,
     has_video_stream,
 )
-from app.pipeline.names import keywords_for
+from app.pipeline.names import correct_draft_from_variety, keywords_for
 from app.pipeline.photos import make_candidates, make_photo, window_frames
 from app.pipeline.scripts import script_mismatch
 
@@ -200,6 +200,13 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
         merge_repeated_prices(item)
     shop_id = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                            (session_id,)).fetchone()["shop_id"]
+    for item in items:
+        # A known variety decides the item (Task 97), before photo
+        # selection so the photo search uses the right noun. Items
+        # carrying a seller-chosen name are never touched.
+        if db.chosen_name_for(conn, shop_id, db.match_key_of(item),
+                              item.variety) is None:
+            correct_draft_from_variety(item, language=language)
     previous = db.last_prices(conn, shop_id)
     photo_dir = Path(settings.data_dir) / "photos"
     photo_dir.mkdir(parents=True, exist_ok=True)
