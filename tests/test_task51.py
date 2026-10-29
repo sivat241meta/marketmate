@@ -33,8 +33,9 @@ JAKARTA_URL = ("https://raw.githubusercontent.com/google/fonts/main/ofl/"
 
 REMOVED_FONTS = ("Outfit-Variable.ttf", "BalooThambi2-Variable.ttf")
 
-# Meta Blue leftovers: none may remain in app.css or any template.
-BLUE_HEXES = ("0866ff", "0064e0", "0050c8")
+# Task 105: v11 IS the Meta Blue theme now, so the v9 purple leftovers
+# are the ones that may not remain in app.css or any template.
+PURPLE_HEXES = ("7b68ee", "5f55ee", "f0eefd", "38335a")
 BLUE_WORDS = ("Outfit", "Baloo")
 
 
@@ -166,24 +167,25 @@ def test_meta_blue_fonts_gone_and_unreferenced():
 
 def test_css_fresh_green_tokens():
     # Task 64 re-themed the app to v9 (workspace x fresh grid); the Fresh
-    # Green tokens were replaced. This test now pins the v9 tokens.
+    # Green tokens were replaced. Task 105 re-themed v11 to Meta blue.
+    # This test now pins the v11 tokens.
     css = CSS.read_text()
     for token, value in (
-        ("--ink", "#292D34"), ("--ink2", "#3C4048"),
-        ("--muted", "#656F7D"), ("--line", "#E8EAED"),
-        ("--soft", "#F7F8F9"), ("--bg", "#FAFBFC"),
+        ("--ink", "#1C2B33"), ("--ink2", "#3C4048"),
+        ("--muted", "#65676B"), ("--line", "#E4E6EB"),
+        ("--soft", "#F0F2F5"), ("--bg", "#F7F8FA"),
         ("--surface", "#FFFFFF"),
         ("--chrome", "#1E1F21"), ("--chrome-2", "#2C2D31"),
         ("--chrome-line", "#3A3B40"), ("--chrome-txt", "#C8CCD3"),
-        ("--chrome-on", "#38335A"),
-        ("--purple", "#7B68EE"), ("--purple-ink", "#5F55EE"),
-        ("--purple-soft", "#F0EEFD"),
+        ("--chrome-on", "#1B2B44"), ("--chrome-accent", "#4D9BFF"),
+        ("--accent", "#0866FF"), ("--accent-ink", "#0064E0"),
+        ("--accent-soft", "#E7F0FF"),
         ("--green", "#0F7F3F"), ("--green-soft", "#E8F7EE"),
         ("--amber", "#8A5208"), ("--amber-soft", "#FFF5E3"),
         ("--red", "#C4363B"), ("--red-soft", "#FDECEC"),
         ("--blue", "#1F5FBF"), ("--blue-soft", "#EAF2FF"),
         ("--avatar-0", "#C2337A"), ("--avatar-1", "#1F5FBF"),
-        ("--avatar-2", "#0F7F3F"), ("--avatar-3", "#5F55EE"),
+        ("--avatar-2", "#0F7F3F"), ("--avatar-3", "#0064E0"),
         ("--avatar-4", "#8A5208"),
         ("--r-card", "14px"), ("--r-pill", "999px"),
     ):
@@ -192,19 +194,21 @@ def test_css_fresh_green_tokens():
     assert "41,45,52" in css.replace(" ", ""), "ink-tinted shadow missing"
     for gone in ("--forest", "--leaf", "--cta", "--gold", "--mint",
                  "--gold-soft", "--leaf-ink", "--forest-2", "--danger",
-                 "--violet", "--brand", "--hero"):
+                 "--violet", "--brand", "--hero",
+                 "--purple", "--purple-ink", "--purple-soft"):
         assert gone not in css, f"{gone} still in app.css"
 
 
-def test_css_has_no_meta_blue():
+def test_css_has_no_purple():
     css = CSS.read_text()
     lowered = css.lower()
-    for stop in BLUE_HEXES:
-        assert f"#{stop}" not in lowered, f"Meta Blue #{stop} still in app.css"
+    for stop in PURPLE_HEXES:
+        assert f"#{stop}" not in lowered, f"purple #{stop} still in app.css"
     for word in BLUE_WORDS:
         assert word not in css, f"{word} still in app.css"
     assert "--brand" not in css, "--brand token still in app.css"
     assert "--hero" not in css, "--hero token still in app.css"
+    assert "--purple" not in css, "--purple token still in app.css"
 
 
 def test_css_typography_and_tap_targets():
@@ -244,8 +248,8 @@ def test_css_guide_components():
     assert re.search(r"\.kick::before\s*\{", css), "kicker needs the leading line"
     assert re.search(r"h1\.big\s+em\s*\{", css), "missing h1.big em"
     assert re.search(r"\.trio\s*\{", css), "missing .trio"
-    assert re.search(r"\.notice\s*\{[^}]*var\(--purple-soft\)", css), \
-        ".notice must be purple-soft"
+    assert re.search(r"\.notice\s*\{[^}]*var\(--accent-soft\)", css), \
+        ".notice must be accent-soft"
     assert re.search(r"\.search\s*\{", css), "missing .search"
     assert re.search(r"(?<!tabs )\.chip\.on\s*\{[^}]*var\(--ink\)", css) or \
         re.search(r"\.chip\.is-active\s*\{[^}]*var\(--ink\)", css), \
@@ -265,12 +269,13 @@ def test_css_guide_components():
                      css, re.IGNORECASE), ".heard.need must use amber-soft"
 
 
-def test_templates_have_no_meta_blue():
+def test_templates_have_no_purple():
     for path in sorted(TEMPLATES.glob("*.html")):
         text = path.read_text()
         lowered = text.lower()
-        for stop in BLUE_HEXES:
-            assert f"#{stop}" not in lowered, f"{path.name}: Meta Blue #{stop}"
+        for stop in PURPLE_HEXES:
+            assert f"#{stop}" not in lowered, f"{path.name}: purple #{stop}"
+        assert "--purple" not in lowered, f"{path.name}: --purple leftover"
         for word in BLUE_WORDS:
             assert word not in text, f"{path.name}: {word} leftover"
 

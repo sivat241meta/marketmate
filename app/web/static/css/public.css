@@ -269,8 +269,8 @@ body.pub .search.tools-search {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--purple-soft);
-  color: var(--purple-ink);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 body.pub .chip-row {
   display: flex;
@@ -281,9 +281,9 @@ body.pub .chip-row {
 }
 body.pub .chip-row .chip { flex: none; text-decoration: none; }
 body.pub .chip-row .chip.on {
-  background: var(--purple-soft);
-  border-color: var(--purple-ink);
-  color: var(--purple-ink);
+  background: var(--accent-soft);
+  border-color: var(--accent-ink);
+  color: var(--accent-ink);
 }
 
 /* Task 101: cart bar. Bottom-fixed on phones; on laptop (>=1000px)
@@ -368,13 +368,13 @@ body.pub .rec-row { display: flex; gap: 10px; align-items: center; }
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  background: var(--purple-soft);
-  color: var(--purple-ink);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
   font-size: 13px;
   flex: none;
 }
 .flow-steps li.done { color: var(--ink); }
-.flow-steps li.done .n { background: var(--purple-ink); color: #fff; }
+.flow-steps li.done .n { background: var(--accent-ink); color: #fff; }
 
 /* Timeline: same hooks, roomier nodes. Horizontal on laptop, a clear
    vertical stepper on phones where five labels never fit one row. */
@@ -417,7 +417,7 @@ body.pub .next-step {
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  background: var(--purple-soft);
+  background: var(--accent-soft);
   color: var(--ink);
   border-radius: var(--radius-sm);
   padding: 12px 14px;

@@ -23,14 +23,17 @@ CSS = ROOT / "app" / "web" / "static" / "app.css"
 TEMPLATES = ROOT / "app" / "web" / "templates"
 BASE = TEMPLATES / "base.html"
 
+# Task 105: v11 re-themed the app to the Meta blue accent; the v9 purple
+# tokens were renamed to --accent/* with new values and Meta neutrals.
 V9_TOKENS = {
-    "--ink": "#292D34", "--ink2": "#3C4048", "--muted": "#656F7D",
-    "--line": "#E8EAED", "--soft": "#F7F8F9", "--bg": "#FAFBFC",
+    "--ink": "#1C2B33", "--ink2": "#3C4048", "--muted": "#65676B",
+    "--line": "#E4E6EB", "--soft": "#F0F2F5", "--bg": "#F7F8FA",
     "--surface": "#FFFFFF", "--chrome": "#1E1F21",
     "--chrome-2": "#2C2D31", "--chrome-line": "#3A3B40",
-    "--chrome-txt": "#C8CCD3", "--chrome-on": "#38335A",
-    "--purple": "#7B68EE", "--purple-ink": "#5F55EE",
-    "--purple-soft": "#F0EEFD", "--green": "#0F7F3F",
+    "--chrome-txt": "#C8CCD3", "--chrome-on": "#1B2B44",
+    "--chrome-accent": "#4D9BFF",
+    "--accent": "#0866FF", "--accent-ink": "#0064E0",
+    "--accent-soft": "#E7F0FF", "--green": "#0F7F3F",
     "--green-soft": "#E8F7EE", "--amber": "#8A5208",
     "--amber-soft": "#FFF5E3", "--red": "#C4363B",
     "--red-soft": "#FDECEC", "--blue": "#1F5FBF",
@@ -43,7 +46,10 @@ OLD_HEXES = ("173F2A", "4F9A2E", "3E7D22", "178A4C", "F5C451",
              "17171C", "12924A", "FF4FA0", "3A86FF", "121216",
              "2A2A33")
 OLD_TOKENS = ("--forest", "--leaf", "--gold", "--violet", "--cta",
-              "--mint", "--danger", "--brand", "--hero")
+              "--mint", "--danger", "--brand", "--hero",
+              "--purple", "--purple-ink", "--purple-soft")
+# Task 105: the v9 purple hexes must be gone from CSS/templates/JS.
+PURPLE_HEXES = ("7B68EE", "5F55EE", "F0EEFD", "38335A")
 
 
 def _client(tmp_path) -> TestClient:
@@ -181,7 +187,8 @@ def test_v9_tokens_exist_and_old_colours_gone():
     for token, value in V9_TOKENS.items():
         assert re.search(rf"{re.escape(token)}\s*:\s*{re.escape(value)}",
                          css, re.IGNORECASE), token
-    assert "linear-gradient(90deg" in css.replace(" ", "")
+    squashed = css.replace(" ", "")
+    assert "linear-gradient(135deg,#0064E0,#0081FB55%,#00B2FF)" in squashed
     for gone in OLD_TOKENS:
         assert gone not in css, f"{gone} still in app.css"
     for path in [CSS, *sorted(TEMPLATES.glob("*.html"))]:
@@ -190,8 +197,19 @@ def test_v9_tokens_exist_and_old_colours_gone():
             assert f"#{stop.lower()}" not in lowered, \
                 f"{path.name}: old #{stop}"
         if path.suffix == ".html":
-            for word in ("forest", "leaf", "gold", "violet"):
+            for word in ("forest", "leaf", "gold", "violet", "purple"):
                 assert word not in lowered, f"{path.name}: {word} leftover"
+    # Task 105: no v9 purple hex or token name in any CSS, template or JS.
+    static = ROOT / "app" / "web" / "static"
+    themed = [CSS, *sorted((static / "css").glob("*.css")),
+              *sorted(TEMPLATES.glob("*.html")),
+              *sorted(static.glob("*.js"))]
+    for path in themed:
+        lowered = path.read_text().lower()
+        for stop in PURPLE_HEXES:
+            assert f"#{stop.lower()}" not in lowered, \
+                f"{path.name}: purple #{stop}"
+        assert "--purple" not in lowered, f"{path.name}: --purple leftover"
 
 
 # --- 2. contrast ------------------------------------------------------------
@@ -215,26 +233,31 @@ def _contrast(fore: str, back: str) -> float:
 
 
 def test_text_background_pairs_pass_contrast():
+    # Task 105: Meta blue accent pairs (every text pair >= 4.5:1).
     pairs = [
-        ("white on purple-ink", "#FFFFFF", "#5F55EE"),
-        ("purple-ink on white", "#5F55EE", "#FFFFFF"),
-        ("purple-ink on purple-soft", "#5F55EE", "#F0EEFD"),
-        ("muted on white", "#656F7D", "#FFFFFF"),
-        ("muted on bg", "#656F7D", "#FAFBFC"),
-        ("chip new", "#5F55EE", "#F0EEFD"),
+        ("white on accent-ink", "#FFFFFF", "#0064E0"),
+        ("accent-ink on white", "#0064E0", "#FFFFFF"),
+        ("accent-ink on accent-soft", "#0064E0", "#E7F0FF"),
+        ("white on accent", "#FFFFFF", "#0866FF"),
+        ("muted on white", "#65676B", "#FFFFFF"),
+        ("muted on bg", "#65676B", "#F7F8FA"),
+        ("muted on soft", "#65676B", "#F0F2F5"),
+        ("chip new", "#0064E0", "#E7F0FF"),
         ("chip packing", "#8A5208", "#FFF5E3"),
         ("chip ready", "#0F7F3F", "#E8F7EE"),
-        ("chip collected", "#656F7D", "#F7F8F9"),
+        ("chip collected", "#65676B", "#F0F2F5"),
         ("chip unpaid", "#C4363B", "#FDECEC"),
         ("chip live", "#0F7F3F", "#E8F7EE"),
         ("chip needs-you", "#8A5208", "#FFF5E3"),
         ("chip to-do", "#5F6672", "#F0F1F3"),
         ("chrome text on chrome", "#C8CCD3", "#1E1F21"),
+        ("white on chrome-on", "#FFFFFF", "#1B2B44"),
+        ("chrome accent on chrome", "#4D9BFF", "#1E1F21"),
         ("white on price green", "#FFFFFF", "#0F7F3F"),
         ("white on avatar 0", "#FFFFFF", "#C2337A"),
         ("white on avatar 1", "#FFFFFF", "#1F5FBF"),
         ("white on avatar 2", "#FFFFFF", "#0F7F3F"),
-        ("white on avatar 3", "#FFFFFF", "#5F55EE"),
+        ("white on avatar 3", "#FFFFFF", "#0064E0"),
         ("white on avatar 4", "#FFFFFF", "#8A5208"),
     ]
     for name, fore, back in pairs:

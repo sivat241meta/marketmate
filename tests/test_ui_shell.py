@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 CSS = ROOT / "app" / "web" / "static" / "app.css"
 BASE = ROOT / "app" / "web" / "templates" / "base.html"
 
-# Task 64: v9 tokens (was the Fresh Green set).
-TOKENS = ["--purple", "--purple-ink", "--purple-soft", "--chrome", "--chrome-2",
+# Task 105: v11 Meta blue tokens (was the v9 purple set).
+TOKENS = ["--accent", "--accent-ink", "--accent-soft", "--chrome", "--chrome-2",
           "--chrome-txt", "--green", "--green-soft", "--amber", "--amber-soft",
           "--red", "--red-soft", "--blue", "--blue-soft", "--bg", "--surface",
           "--ink", "--muted", "--line"]

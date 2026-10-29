@@ -15,7 +15,7 @@
     <img class="hp-band-img" src="{{ static_url('landing/hero.jpg') }}" srcset="{{ static_url('landing/hero-800.jpg') }} 800w, {{ static_url('landing/hero.jpg') }} 1600w" sizes="100vw" width="1600" height="1061" alt="{{ t('land.alt_hero') }}" fetchpriority="high">
     <div class="hp-band-shade" aria-hidden="true"></div>
     <div class="hp-hero-in">
-      <h1 class="hp-headline">{{ t('hp.hero_a') }} <span class="hp-place">{{ hp.area or t('hp.hero_default') }}<svg class="icon hp-curve" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10 Q 60 2 110 8 T 196 6" fill="none" stroke="#C4B5FD" stroke-width="5" stroke-linecap="round"/></svg></span> {{ t('hp.hero_b') }}</h1>
+      <h1 class="hp-headline">{{ t('hp.hero_a') }} <span class="hp-place">{{ hp.area or t('hp.hero_default') }}<svg class="icon hp-curve" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10 Q 60 2 110 8 T 196 6" fill="none" stroke="#A9C7FF" stroke-width="5" stroke-linecap="round"/></svg></span> {{ t('hp.hero_b') }}</h1>
       <p class="hp-sub">{{ t('hp.hero_sub') }}</p>
     </div>
     <p class="hp-credit">{{ t('land.photo_by', name='Frédéric Barriol') }}</p>
@@ -67,7 +67,7 @@
 <section id="banner" class="hp-banner" aria-label="{{ t('hp.banner_t1') }} {{ t('hp.banner_t2') }}">
   <span class="hp-banner-ic">{{ ui.obj("chat", 56) }}</span>
   <div class="hp-banner-txt">
-    <h2>{{ t('hp.banner_t1') }} <span class="purple-ink">{{ t('hp.banner_t2') }}</span></h2>
+    <h2>{{ t('hp.banner_t1') }} <span class="accent-ink">{{ t('hp.banner_t2') }}</span></h2>
     <p class="muted">{{ t('hp.banner_d') }}</p>
   </div>
   <a class="pill cta big" href="/new">{{ t('hp.banner_cta') }}</a>

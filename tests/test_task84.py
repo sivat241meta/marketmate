@@ -376,7 +376,7 @@ def test_hero_headline_names_area_or_default(tmp_path):
     hero = _section(html, "hero", "banner")
     assert t("hp.hero_a") in hero
     assert t("hp.hero_default") in hero
-    assert "curve" in hero  # soft purple curve under the place name
+    assert "curve" in hero  # soft blue curve under the place name
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
     assert "Koyambedu" in _section(html, "hero", "banner")
     assert t("hp.hero_sub") in _section(html, "hero", "banner")

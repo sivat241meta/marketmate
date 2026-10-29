@@ -162,7 +162,7 @@ def test_seller_stylesheet_linked_after_app_css():
     lowered = css.lower()
     for stop in OLD_HEXES:
         assert f"#{stop.lower()}" not in lowered, stop
-    assert "var(--purple-ink)" in css
+    assert "var(--accent-ink)" in css
 
 
 def test_shared_macros_exist_with_brief_signatures():
