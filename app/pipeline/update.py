@@ -8,7 +8,7 @@ from app import db
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, Item, PriceLine, Proof, Transcript
 from app.pipeline.checks import check_item
-from app.pipeline.names import CANONICAL_NAMES
+from app.pipeline.names import CANONICAL_NAMES, decide_name_from_variety
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 ACTIONS = ("set_price", "sold_out", "in_stock", "set_qty")
@@ -153,6 +153,27 @@ def flags_for_change(change: Change, current_map: dict[str, Item],
     return flags
 
 
+def _seller_renamed(current_map: dict[str, Item], name_en: str, *,
+                  language: str = "ta") -> bool:
+    """True when the current item's display names are the seller's own.
+
+    A rename never changes the matching key, so any English name that
+    differs from the key — or, for Tamil shops, any local name that
+    differs from the canonical one — is seller-chosen (Task 97 guard).
+    """
+    item = current_map.get((name_en or "").strip().lower())
+    if item is None:
+        return False
+    key = db.match_key_of(item).strip().lower()
+    if (item.name_en or "").strip().lower() != key:
+        return True
+    if language == "ta":
+        canon = CANONICAL_NAMES.get(key)
+        if canon and (item.name_local or "").strip() != canon:
+            return True
+    return False
+
+
 def parse_update_json(data: dict, transcript: Transcript,
                       current: list[Item], *, language: str = "ta",
                       ledger=None, settings=None) -> list[Change]:
@@ -197,9 +218,24 @@ def parse_update_json(data: dict, transcript: Transcript,
             proof=Proof(quote=quote, turn_ids=turn_ids,
                         start_ms=start_ms, end_ms=end_ms),
         )
+        variety_note = None
+        if not _seller_renamed(current_map, name_en, language=language):
+            # A known variety decides the item (Task 97); a change
+            # carries no variety field, so only the rename applies.
+            new_en, _, _, word = decide_name_from_variety(
+                name_en, None, "", quote, language=language)
+            if word is not None:
+                change.name_en = new_en
+                variety_note = Flag(
+                    field="name", code="VARIETY_NAMED",
+                    message=(f"named from the variety you said"
+                             f" ({word} → {new_en})"),
+                    blocking=False)
         change.flags = flags_for_change(change, current_map, previous,
                                             language=language, ledger=ledger,
                                             settings=settings)
+        if variety_note is not None:
+            change.flags.append(variety_note)
         changes.append(change)
     return changes
 
