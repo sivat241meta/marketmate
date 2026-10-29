@@ -13,7 +13,11 @@ from pathlib import Path
 
 from app.meta.spark import chat_json, image_part
 from app.models import DraftItem, Flag, PriceLine, Proof
-from app.pipeline.names import CANONICAL_NAMES, correct_draft_from_variety
+from app.pipeline.names import (
+    CANONICAL_NAMES,
+    correct_draft_from_variety,
+    repair_variety_local_name,
+)
 from app.pipeline.units import normalize_unit
 
 BOARD_CONFIRM_MESSAGE = "read from your board – tap to confirm"
@@ -78,16 +82,20 @@ def _canonical_name(raw: str | None, fallback: str) -> str:
     return key
 
 
-def _local_name(raw: dict, name_en: str, spoken: str) -> str:
+def _local_name(raw: dict, name_en: str, spoken: str, *,
+                language: str = "ta") -> str:
     said = raw.get("name_local")
     if isinstance(said, str) and said.strip():
-        return said.strip()
+        local = said.strip()
+        return (repair_variety_local_name(name_en, local, language=language)
+                or local)
     if name_en in CANONICAL_NAMES:
         return CANONICAL_NAMES[name_en]
     return spoken
 
 
-def parse_board_json(data: dict, image_path: Path | str) -> list[DraftItem]:
+def parse_board_json(data: dict, image_path: Path | str, *,
+                     language: str = "ta") -> list[DraftItem]:
     """Build DraftItems from board vision JSON. Missing prices stay None."""
     image_str = str(image_path)
     raw_lines = data.get("lines") if isinstance(data, dict) else None
@@ -139,7 +147,8 @@ def parse_board_json(data: dict, image_path: Path | str) -> list[DraftItem]:
                          said=read_text)
         items.append(DraftItem(
             name_spoken=spoken or name_en,
-            name_local=_local_name(raw, name_en, spoken or name_en),
+            name_local=_local_name(raw, name_en, spoken or name_en,
+                                   language=language),
             name_en=name_en,
             variety=None,
             match_key=name_en,
@@ -160,14 +169,15 @@ def _board_summary(data: dict) -> str:
     return f"{count} {noun} on board"
 
 
-def read_board(image: Path, *, ledger, settings) -> list[DraftItem]:
+def read_board(image: Path, *, ledger, settings,
+               language: str = "ta") -> list[DraftItem]:
     """One low-reasoning Spark vision call reading the board into drafts."""
     data = chat_json(build_board_messages(Path(image)), ledger=ledger,
                      settings=settings, reasoning_effort="low",
                      step="read board", summary=_board_summary)
     if not isinstance(data, dict):
         return []
-    return parse_board_json(data, Path(image))
+    return parse_board_json(data, Path(image), language=language)
 
 
 def board_meta_path(data_dir: Path, session_id: int) -> Path:
@@ -208,7 +218,8 @@ def process_board_session(conn, session_id: int, image: Path, *,
                                 (shop_id,)).fetchone()
         language = shop_row["language"] if shop_row else "ta"
         db.set_stage(conn, session_id, "items")
-        items = read_board(Path(image), ledger=ledger, settings=settings)
+        items = read_board(Path(image), ledger=ledger, settings=settings,
+                            language=language)
         for item in items:
             # A known variety decides the item (Task 97); items
             # carrying a seller-chosen name are never touched.
