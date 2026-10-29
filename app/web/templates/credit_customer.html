@@ -3,10 +3,15 @@
 {% block title %}{{ name }} · {{ t('credit.heading') }} — {{ shop["name"] }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
+<header class="v10-head">
+  <div>
+    <p class="v10-eyebrow">{{ t('credit.heading') }} · {{ phone }}</p>
+    <h1 class="v10-title">{{ name }}</h1>
+  </div>
+</header>
 <p class="back-link"><a href="/e/{{ token }}/credit">{{ t('credit.back') }}</a></p>
-<p class="kick">{{ t('credit.heading') }} · {{ phone }}</p>
-<h1 class="big">{{ name }}</h1>
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if saved %}{{ ui.toast(t('form.saved')) }}{% endif %}
+{% if error %}{{ ui.error_summary(error) }}{% endif %}
 
 <div class="stat-grid">
   <div class="stat"><span class="stat-num money">{{ bills_total }}</span><span class="stat-label">{{ t('credit.total_bills') }}</span></div>
@@ -69,21 +74,16 @@
 </div>
 {% endif %}
 
-<section class="card" aria-label="{{ t('credit.received') }}">
-  <h2>{{ t('credit.received') }}</h2>
-  <form method="post" action="/e/{{ token }}/credit/{{ key_quoted }}/pay">
-    <div class="field">
-      <label for="credit-amount">{{ t('credit.amount') }}</label>
-      <input id="credit-amount" type="number" min="0.01" step="any" name="amount" value="{{ balance_plain }}" max="{{ balance_plain }}" required inputmode="decimal">
-    </div>
-    <div class="field">
-      <label for="credit-mode">{{ t('credit.mode') }}</label>
-      <select id="credit-mode" name="mode">
-        <option value="cash">{{ t('bills.cash') }}</option>
-        <option value="upi">{{ t('bills.upi') }}</option>
-      </select>
-    </div>
-    <button class="pill dark" type="submit">{{ t('credit.record') }}</button>
-  </form>
-</section>
+{% call ui.form_card(t('credit.received'), t('credit.pay_sub')) %}
+<form method="post" action="/e/{{ token }}/credit/{{ key_quoted }}/pay" aria-label="{{ t('credit.received') }}">
+  {{ ui.field(t('credit.amount'), "amount", type="number", value=balance_plain, hint=t('credit.amount_hint', balance=balance), required=True, inputmode="decimal", autocomplete="off", error=error if error_field == "amount" else None, attrs={"id": "credit-amount", "min": "0.01", "step": "any", "max": balance_plain}) }}
+  {% call ui.select_field(t('credit.mode'), "mode", required=True, error=error if error_field == "mode" else None, attrs={"id": "credit-mode"}) %}
+    <option value="cash">{{ t('bills.cash') }}</option>
+    <option value="upi">{{ t('bills.upi') }}</option>
+  {% endcall %}
+  {% call ui.action_bar() %}
+  <button class="btn btn-primary" type="submit">{{ t('credit.record') }}</button>
+  {% endcall %}
+</form>
+{% endcall %}
 {% endblock %}

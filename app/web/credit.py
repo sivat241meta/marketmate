@@ -126,7 +126,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         })
 
     def _detail_context(request, shop, token, key: str, conn, ui_lang: str,
-                        error=None, status_code=200, is_staff=False):
+                        error=None, status_code=200, is_staff=False,
+                        error_field=None, saved=False):
         currency = shop["currency"] or "INR"
         try:
             norm = db.normalize_credit_phone(key)
@@ -224,18 +225,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "bill_count": entry["bill_count"],
             "oldest": oldest, "reminder_url": reminder_url,
             "reminder_text": text, "error": error,
+            "error_field": error_field, "saved": saved,
         }, status_code=status_code)
 
     @app.get("/e/{token}/credit/{customer_key}")
     def credit_detail(request: Request, token: str, customer_key: str,
-                      conn: Conn):
+                      conn: Conn, saved: str | None = None):
         shop, role, _helper, ui_lang, denied = _actor(
             request, conn, token)
         if denied is not None:
             return denied
         return _detail_context(request, shop, token, customer_key, conn,
                                ui_lang,
-                               is_staff=_is_staff(role))
+                               is_staff=_is_staff(role),
+                               saved=bool(saved))
 
     @app.post("/e/{token}/credit/{customer_key}/pay")
     async def credit_pay_post(request: Request, token: str,
@@ -257,12 +260,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     form.get("mode", ""),
                     created_by_for(role, helper))
             except ValueError as exc:
+                message = str(exc)
+                field = ("mode" if "mode" in message else "amount")
                 return _detail_context(request, shop, token, norm, conn,
-                                       ui_lang, error=str(exc),
+                                       ui_lang, error=message,
                                        status_code=400,
-                                       is_staff=_is_staff(role))
+                                       is_staff=_is_staff(role),
+                                       error_field=field)
             return RedirectResponse(
-                f"/e/{token}/credit/{url_quote(norm, safe='')}",
+                f"/e/{token}/credit/{url_quote(norm, safe='')}?saved=1",
                 status_code=303)
         finally:
             conn.close()

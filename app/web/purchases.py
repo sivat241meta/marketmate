@@ -147,14 +147,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return None, owner_or_403(request, templates, role, ui_lang)
         return shop, None
 
-    @app.get("/e/{token}/purchases")
-    def purchases_page(request: Request, token: str, conn: Conn):
+    def _page_response(request, shop, token, conn, ui_lang, error=None,
+                       error_field=None, saved=False, status_code=200):
         from app import purchases as pur
 
-        shop, denied = _owner_page(request, conn, token)
-        if denied is not None:
-            return denied
-        ui_lang = get_ui_lang(request, shop)
         today = _today_ist()
         currency = shop["currency"] or "INR"
         sessions = conn.execute(
@@ -165,11 +161,22 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "rows": purchase_rows(conn, shop["id"], today, currency,
                                   ui_lang),
             "spent": pur.spent_on(conn, shop["id"], today),
-            "currency": currency, "sessions": sessions, "error": None,
+            "currency": currency, "sessions": sessions, "error": error,
+            "error_field": error_field, "saved": saved,
             "units": list(UNITS),
             "notice": t_for(ui_lang)("notice.voice"),
             "ui_lang": ui_lang,
-        })
+        }, status_code=status_code)
+
+    @app.get("/e/{token}/purchases")
+    def purchases_page(request: Request, token: str, conn: Conn,
+                       saved: str | None = None):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        return _page_response(request, shop, token, conn, ui_lang,
+                              saved=bool(saved))
 
     @app.post("/e/{token}/purchases/voice")
     def purchases_voice(request: Request, token: str, audio: UploadFile,
@@ -309,31 +316,39 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             qty_raw = str(form.get("quantity") or "").strip()
             unit = str(form.get("unit") or "").strip() or None
             total_raw = str(form.get("total_paid") or "").strip()
+            ui_lang = get_ui_lang(request, shop)
+            error = error_field = None
             if not name:
-                raise HTTPException(400, "tell us what you bought")
-            try:
-                qty = Decimal(qty_raw)
-            except (InvalidOperation, ValueError, AttributeError):
-                raise HTTPException(
-                    400, "that quantity does not look right") from None
-            if qty.is_nan() or qty <= 0:
-                raise HTTPException(
-                    400, "that quantity does not look right")
-            if unit is not None and unit not in UNITS:
-                raise HTTPException(400, "that unit does not look right")
-            try:
-                total = Decimal(total_raw)
-            except (InvalidOperation, ValueError, AttributeError):
-                raise HTTPException(
-                    400, "that total does not look right") from None
-            if total.is_nan() or total <= 0:
-                raise HTTPException(
-                    400, "that total does not look right")
+                error, error_field = ("tell us what you bought", "item")
+            else:
+                try:
+                    qty = Decimal(qty_raw)
+                except (InvalidOperation, ValueError, AttributeError):
+                    qty = None
+                if qty is None or qty.is_nan() or qty <= 0:
+                    error = "that quantity does not look right"
+                    error_field = "quantity"
+                elif unit is not None and unit not in UNITS:
+                    error, error_field = ("that unit does not look right",
+                                          "unit")
+                else:
+                    try:
+                        total = Decimal(total_raw)
+                    except (InvalidOperation, ValueError, AttributeError):
+                        total = None
+                    if total is None or total.is_nan() or total <= 0:
+                        error = "that total does not look right"
+                        error_field = "total_paid"
+            if error is not None:
+                return _page_response(
+                    request, shop, token, conn, ui_lang, error=error,
+                    error_field=error_field, status_code=400)
             name_en = name.lower()
             pur.add_purchase(
                 conn, shop["id"], _today_ist(), name_en, qty, unit, total,
                 source="typed",
                 name_local=CANONICAL_NAMES.get(name_en, ""))
-            return RedirectResponse(f"/e/{token}/purchases", status_code=303)
+            return RedirectResponse(f"/e/{token}/purchases?saved=1",
+                                    status_code=303)
         finally:
             conn.close()

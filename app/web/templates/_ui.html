@@ -61,3 +61,65 @@
 <div class="empty-state">{% if obj_name %}{{ obj(obj_name, 56) }}{% else %}{{ icon(icon_name) }}{% endif %}<h2>{{ title }}</h2><p>{{ text }}</p>
 {%- if action_url and action_label %} {{ button(action_label, href=action_url, kind="secondary") }}{% endif %}</div>
 {%- endmacro %}
+
+{# Shared v10 form components (Task 89). Tasks 90/91 use these same names. #}
+{% macro _attrs(attrs) -%}
+{%- for key, val in (attrs or {}).items() %}{% if key != "id" %} {{ key }}="{{ val }}"{% endif %}{% endfor -%}
+{%- endmacro %}
+
+{% macro field(label, name, type="text", value="", hint="", required=False, icon=None, inputmode=None, autocomplete=None, error=None, attrs={}, lang=None) -%}
+{% set _id = attrs.get("id", "field-" ~ name) %}
+<div class="field">
+  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <input class="field-input" type="{{ type }}" id="{{ _id }}" name="{{ name }}"{% if lang %} lang="{{ lang }}"{% endif %} value="{{ value }}"{% if required %} required{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>
+  {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro select_field(label, name, hint="", required=False, icon=None, error=None, attrs={}) -%}
+{% set _id = attrs.get("id", "field-" ~ name) %}
+<div class="field">
+  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <select class="field-input" id="{{ _id }}" name="{{ name }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{{ caller() if caller is defined }}</select>
+  {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro textarea_field(label, name, value="", hint="", required=False, rows=3, error=None, attrs={}) -%}
+{% set _id = attrs.get("id", "field-" ~ name) %}
+<div class="field">
+  <label class="field-label" for="{{ _id }}"><span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <textarea class="field-input" id="{{ _id }}" name="{{ name }}" rows="{{ rows }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{{ value }}</textarea>
+  {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro form_card(title=None, subtitle=None, cls="") -%}
+<section class="form-card{% if cls %} {{ cls }}{% endif %}">
+  {% if title %}<div class="form-card-head"><h2>{{ title }}</h2>{% if subtitle %}<p class="muted">{{ subtitle }}</p>{% endif %}</div>{% endif %}
+  {{ caller() if caller is defined }}
+</section>
+{%- endmacro %}
+
+{% macro action_bar() -%}
+<div class="action-bar">{{ caller() if caller is defined }}</div>
+{%- endmacro %}
+
+{% macro toast(message) -%}
+<div class="toast" role="status">{{ icon("check") }}<span>{{ message }}</span></div>
+{%- endmacro %}
+
+{% macro more(label) -%}
+<details class="more"><summary>{{ label }}</summary><div class="more-body">{{ caller() if caller is defined }}</div></details>
+{%- endmacro %}
+
+{% macro error_summary(errors) -%}
+{% set _list = errors if errors is sequence and errors is not string else [errors] %}
+<div class="error-summary" role="alert" tabindex="-1" aria-label="{{ t('form.error_title') }}">
+  <p class="error-summary-title">{{ t('form.error_title') }}</p>
+  <ul>{% for item in _list %}<li>{{ item }}</li>{% endfor %}</ul>
+</div>
+{%- endmacro %}

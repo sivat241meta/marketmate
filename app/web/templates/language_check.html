@@ -1,32 +1,37 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block title %}{{ t('langcheck.title') }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('langcheck.title') }}{% endblock %}
 {% block content %}
-<p class="kick">{{ t('langcheck.kick') }}</p>
-<h1 class="big">{{ t('langcheck.title') }}</h1>
+<header class="v10-head">
+  <div>
+    <p class="v10-eyebrow">{{ t('langcheck.kick') }}</p>
+    <h1 class="big v10-title">{{ t('langcheck.title') }}</h1>
+  </div>
+</header>
 <p class="notice">{{ heard }}</p>
-<p class="muted">{{ t('langcheck.heard_label') }}:</p>
+{% call ui.form_card(t('langcheck.title'), t('langcheck.heard_label')) %}
 <blockquote class="quote">{{ quote }}</blockquote>
 <form method="post" action="/e/{{ token }}/s/{{ session["id"] }}/language">
-  <div class="chips">
+  <div class="chips chips-row">
     {% for chip in chips %}
     <button class="chip" type="submit" name="speak_lang" value="{{ chip.code }}">{{ chip.native }}</button>
     {% endfor %}
   </div>
 </form>
 <form method="post" action="/e/{{ token }}/s/{{ session["id"] }}/language">
-  <p class="field">
-    <label for="langcheck-more">{{ t('langcheck.more') }}</label>
-    <select id="langcheck-more" name="speak_lang" data-langcheck-more>
-      <option value="">{{ t('langcheck.choose') }}</option>
-      {% for lang in rest %}
-      <option value="{{ lang.code }}">{{ lang.native }}</option>
-      {% endfor %}
-    </select>
-  </p>
-  <button class="btn btn-secondary" type="submit" id="langcheck-go" data-langcheck-go disabled>{{ t('langcheck.go') }}</button>
+  {% call ui.select_field(t('langcheck.more'), "speak_lang", attrs={"id": "langcheck-more", "data-langcheck-more": ""}) %}
+    <option value="">{{ t('langcheck.choose') }}</option>
+    {% for lang in rest %}
+    <option value="{{ lang.code }}">{{ lang.native }}</option>
+    {% endfor %}
+  {% endcall %}
+  {% call ui.action_bar() %}
+  <button class="btn btn-primary" type="submit" id="langcheck-go" data-langcheck-go disabled>{{ t('langcheck.go') }}</button>
+  {% endcall %}
 </form>
+{% endcall %}
 <p><a href="/e/{{ token }}">{{ t('sess.back_dashboard') }}</a></p>
 {% endblock %}
 {% block scripts %}

@@ -4,21 +4,24 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('pho.heading') }}{% endblock %}
 {% block content %}
-<header class="page-head">
-  <h1>{{ t('pho.heading') }}</h1>
-  <p class="muted">{{ t('pho.sub', shop=shop["name"]) }}</p>
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('pho.heading') }}</h1>
+    <p class="v10-sub">{{ t('pho.sub', shop=shop["name"]) }}</p>
+  </div>
 </header>
 
-<section class="card cta-card" id="scan">
-  <h2>{{ t('pho.scan_title') }}</h2>
-  <p class="muted">{{ t('pho.scan_desc') }}</p>
+<div id="scan"></div>
+{% call ui.form_card(t('pho.scan_title'), t('pho.scan_desc')) %}
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
       <label class="drop-zone" for="photo-camera">{{ ui.obj("camera", 28) }}<span>{{ t('pho.drop_camera') }}</span><strong>{{ t('pho.choose') }}</strong>
         <input id="photo-camera" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
       </label>
     </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ ui.obj("camera", 20) }}{{ t('pho.scan_btn') }}</button>
+    {% call ui.action_bar() %}
+    <button class="btn btn-primary" type="submit">{{ ui.obj("camera", 20) }}{{ t('pho.scan_btn') }}</button>
+    {% endcall %}
   </form>
   <form method="post" action="/e/{{ token }}/photos" enctype="multipart/form-data">
     <div class="field">
@@ -28,7 +31,7 @@
     </div>
     <button class="btn btn-secondary" type="submit">{{ t('pho.gallery_btn') }}</button>
   </form>
-</section>
+{% endcall %}
 
 <div class="section-head"><h2>{{ t('pho.past') }}</h2></div>
 {% if checks %}
@@ -46,6 +49,6 @@
   {% endfor %}
 </div>
 {% else %}
-{{ ui.empty_state(t('pho.empty_title'), t('pho.empty_text'), None, None, "photo", "camera") }}
+{{ ui.empty_state(t('pho.empty_title'), t('pho.empty_text'), "#scan", t('pho.scan_btn'), "photo", "camera") }}
 {% endif %}
 {% endblock %}

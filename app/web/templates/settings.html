@@ -4,63 +4,29 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('set.heading') }}{% endblock %}
 {% block content %}
-<p class="kick">{{ t('set.heading') }}</p>
-<h2 class="h2s">{{ t('set.sub', shop=shop["name"]) }}</h2>
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('set.heading') }}</h1>
+    <p class="v10-sub">{{ t('set.sub', shop=shop["name"]) }}</p>
+  </div>
+</header>
+{% if saved %}{{ ui.toast(t('form.saved')) }}{% endif %}
+{% if error %}{{ ui.error_summary(error) }}{% endif %}
 {% if not has_hours %}<div class="alert">{{ t('hours.nudge') }}</div>{% endif %}
 
-<section class="rcpt">
-  <h2>{{ t('set.profile') }}</h2>
-  <form method="post" action="/e/{{ token }}/settings">
-    <div class="field">
-      <label for="set-name">{{ t('set.name') }}</label>
-      <input id="set-name" name="name" value="{{ shop["name"] }}" required autocomplete="organization">
-    </div>
-    <div class="field">
-      <label for="set-area">{{ t('set.area') }}</label>
-      <input id="set-area" name="area" value="{{ shop["area"] }}" required autocomplete="address-level2">
-    </div>
-    <div class="field">
-      <label for="set-pincode">{{ t('set.pincode') }}</label>
-      <input id="set-pincode" name="pincode" value="{{ shop["pincode"] or "" }}" inputmode="numeric" maxlength="6" autocomplete="postal-code">
-      <span class="help">{{ t('set.pincode_help') }}</span>
-    </div>
-    <div class="field">
-      <label for="set-phone">{{ t('set.phone') }}</label>
-      <input id="set-phone" name="phone" value="{{ shop["phone"] }}" required inputmode="tel">
-      <span class="help">{{ t('set.phone_help') }}</span>
-    </div>
-    <div class="field">
-      <label for="set-language">{{ t('set.language') }}</label>
-      <select id="set-language" name="language">
-        {% for lang in languages %}
-        <option value="{{ lang.code }}"{% if lang.code == shop["language"] %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
-        {% endfor %}
-      </select>
-      <span class="help">{{ t('set.lang_help') }}</span>
-    </div>
-    <div class="field">
-      <label for="set-currency">{{ t('set.currency') }}</label>
-      <select id="set-currency" name="currency">
-        {% for currency in currencies %}
-        <option value="{{ currency }}"{% if currency == shop["currency"] %} selected{% endif %}>{{ currency }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field">
-      <label for="set-type">{{ t('set.type') }}</label>
-      <input id="set-type" name="type" value="{{ shop["type"] }}" required>
-    </div>
-    <div class="field">
-      <label for="set-upi">{{ t('set.upi') }}</label>
-      <input id="set-upi" name="upi_id" value="{{ shop["upi_id"] or "" }}" placeholder="name@bank" inputmode="email" autocomplete="off">
-      <span class="help">{{ t('set.upi_help') }}</span>
-    </div>
-    <div class="field">
-      <label for="set-payee">{{ t('set.payee') }}</label>
-      <input id="set-payee" name="upi_payee" value="{{ shop["upi_payee"] or "" }}" placeholder="{{ shop["name"] }}">
-      <span class="help">{{ t('set.payee_help') }}</span>
-    </div>
+<form method="post" action="/e/{{ token }}/settings" data-settings-form>
+  {% call ui.form_card(t('set.profile'), t('set.profile_sub'), cls="rcpt") %}
+    {{ ui.field(t('set.name'), "name", value=shop["name"], required=True, autocomplete="organization", error=error if error_field == "name" else None, attrs={"id": "set-name", "maxlength": "60"}) }}
+    {{ ui.field(t('set.area'), "area", value=shop["area"], required=True, autocomplete="address-level2", error=error if error_field == "area" else None, attrs={"id": "set-area", "maxlength": "60"}) }}
+    {{ ui.field(t('set.pincode'), "pincode", value=shop["pincode"] or "", hint=t('set.pincode_help'), inputmode="numeric", autocomplete="postal-code", error=error if error_field == "pincode" else None, attrs={"id": "set-pincode", "maxlength": "6"}) }}
+    {{ ui.field(t('set.phone'), "phone", type="tel", value=shop["phone"], hint=t('set.phone_help'), required=True, autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "set-phone"}) }}
+    {{ ui.field(t('set.type'), "type", value=shop["type"], required=True, autocomplete="off", error=error if error_field == "type" else None, attrs={"id": "set-type", "maxlength": "40"}) }}
+  {% endcall %}
+
+  {% call ui.form_card(t('set.payments'), t('set.payments_sub'), cls="rcpt") %}
+    {{ ui.field(t('set.upi'), "upi_id", value=shop["upi_id"] or "", hint=t('set.upi_help'), inputmode="email", autocomplete="off", error=error if error_field == "upi_id" else None, attrs={"id": "set-upi", "placeholder": "name@bank"}) }}
+    {{ ui.field(t('set.payee'), "upi_payee", value=shop["upi_payee"] or "", hint=t('set.payee_help'), autocomplete="off", attrs={"id": "set-payee", "placeholder": shop["name"]}) }}
+    {% call ui.more(t('form.more_options')) %}
     <div class="field">
       <label class="toggle-row" for="set-round">
         <input id="set-round" type="checkbox" name="round_bills"{% if rounding_on %} checked{% endif %}>
@@ -68,7 +34,55 @@
       </label>
       <span class="help">{{ t('set.round_help') }}</span>
     </div>
-    {% if not shop["is_judge"] %}
+    {% endcall %}
+  {% endcall %}
+
+  {% call ui.form_card(t('set.hours'), t('set.hours_help'), cls="rcpt") %}
+    {% if error_field == "hours" %}<p class="field-error" role="alert">{{ error }}</p>{% endif %}
+    <p><button class="btn btn-secondary" type="button" data-same-everyday>{{ t('set.same_everyday') }}</button></p>
+    <p class="field-hint">{{ t('set.same_hint') }}</p>
+    {% for day in hours_days %}
+    <div class="hours-day{% if day.closed %} is-closed{% endif %}" data-day-row="{{ day.index }}">
+      <div class="hours-top">
+        <strong>{{ t('date.day_' ~ (day.index + 1)) }}</strong>
+        <label class="day-toggle" for="closed-{{ day.index }}">
+          <input id="closed-{{ day.index }}" type="checkbox" name="closed_{{ day.index }}" value="1"{% if day.closed %} checked{% endif %}>
+          <span class="when-open">{{ t('set.open') }}</span>
+          <span class="when-closed">{{ t('set.closed') }}</span>
+        </label>
+      </div>
+      <div class="slot-grid">
+        {% for slot in day.slots %}
+        <div class="field">
+          <label class="field-label" for="open-{{ day.index }}-{{ loop.index }}">{{ t('set.opens') }} {{ loop.index }}</label>
+          <input class="field-input" id="open-{{ day.index }}-{{ loop.index }}" type="time" name="open_{{ day.index }}_{{ loop.index }}" value="{{ slot.open }}">
+        </div>
+        <div class="field">
+          <label class="field-label" for="close-{{ day.index }}-{{ loop.index }}">{{ t('set.closes') }} {{ loop.index }}</label>
+          <input class="field-input" id="close-{{ day.index }}-{{ loop.index }}" type="time" name="close_{{ day.index }}_{{ loop.index }}" value="{{ slot.close }}">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    <p class="field-hint">{{ t('set.day_help') }}</p>
+  {% endcall %}
+
+  {% call ui.form_card(t('set.location'), t('set.location_sub'), cls="rcpt") %}
+    {% if error_field == "location" %}<p class="field-error" role="alert">{{ error }}</p>{% endif %}
+    <p class="muted">{{ t('set.location_consent') }}</p>
+    {% if shop["lat"] is not none and shop["lng"] is not none %}<p class="muted">{{ t('set.location_saved') }}</p>{% endif %}
+    <input type="hidden" id="shop-lat" name="lat" value="{{ shop["lat"] if shop["lat"] is not none else "" }}">
+    <input type="hidden" id="shop-lng" name="lng" value="{{ shop["lng"] if shop["lng"] is not none else "" }}">
+    <p>
+      <button class="btn btn-secondary" type="button" id="use-location">{{ t('set.use_location') }}</button>
+      <button class="btn btn-ghost" type="submit" name="remove_location" value="1">{{ t('set.remove_location') }}</button>
+    </p>
+    <p class="muted" id="location-status" aria-live="polite"></p>
+  {% endcall %}
+
+  {% if not shop["is_judge"] %}
+  {% call ui.form_card(t('set.find_shop'), cls="rcpt") %}
     <div class="field">
       <label class="toggle-row" for="set-listed">
         <input id="set-listed" type="checkbox" name="listed"{% if shop["listed"] %} checked{% endif %}>
@@ -76,94 +90,43 @@
       </label>
       <span class="help">{{ t('set.listed_help') }}</span>
     </div>
-    {% endif %}
-    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
-  </form>
-</section>
+  {% endcall %}
+  {% endif %}
 
-<section class="rcpt">
-  <h2>{{ t('set.hours') }}</h2>
-  <p class="muted">{{ t('set.hours_help') }}</p>
-  <form method="post" action="/e/{{ token }}/settings" data-hours-form>
-    <input type="hidden" name="name" value="{{ shop["name"] }}">
-    <input type="hidden" name="area" value="{{ shop["area"] }}">
-    <input type="hidden" name="phone" value="{{ shop["phone"] }}">
-    <input type="hidden" name="language" value="{{ shop["language"] }}">
-    <input type="hidden" name="currency" value="{{ shop["currency"] }}">
-    <input type="hidden" name="type" value="{{ shop["type"] }}">
-    <input type="hidden" name="upi_id" value="{{ shop["upi_id"] or "" }}">
-    <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
-    {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
-    <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
-    {% if not shop["is_judge"] and shop["listed"] %}<input type="hidden" name="listed" value="on">{% endif %}
-    {% for day in hours_days %}
-    <div class="version-row" data-day-row="{{ day.index }}">
-      <div class="row-main"><strong>{{ t('date.day_' ~ (day.index + 1)) }}</strong></div>
-      <label class="chip" for="closed-{{ day.index }}">
-        <input id="closed-{{ day.index }}" type="checkbox" name="closed_{{ day.index }}" value="1"{% if day.closed %} checked{% endif %}>
-        <span>{{ t('set.closed') }}</span>
-      </label>
-      {% for slot in day.slots %}
-      <span class="slot-pair">
-        <label class="visually-hidden" for="open-{{ day.index }}-{{ loop.index }}">open</label>
-        <input id="open-{{ day.index }}-{{ loop.index }}" type="time" name="open_{{ day.index }}_{{ loop.index }}" value="{{ slot.open }}">
-        <label class="visually-hidden" for="close-{{ day.index }}-{{ loop.index }}">close</label>
-        <input id="close-{{ day.index }}-{{ loop.index }}" type="time" name="close_{{ day.index }}_{{ loop.index }}" value="{{ slot.close }}">
-      </span>
+  {% call ui.form_card(t('set.language_sec'), cls="rcpt") %}
+    {% call ui.select_field(t('set.language'), "language", hint=t('set.lang_help'), required=True, error=error if error_field == "language" else None, attrs={"id": "set-language"}) %}
+      {% for lang in languages %}
+      <option value="{{ lang.code }}"{% if lang.code == shop["language"] %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
       {% endfor %}
-    </div>
-    {% endfor %}
-    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
-  </form>
-</section>
+    {% endcall %}
+    {% call ui.select_field(t('set.currency'), "currency", required=True, error=error if error_field == "currency" else None, attrs={"id": "set-currency"}) %}
+      {% for currency in currencies %}
+      <option value="{{ currency }}"{% if currency == shop["currency"] %} selected{% endif %}>{{ currency }}</option>
+      {% endfor %}
+    {% endcall %}
+  {% endcall %}
 
-<section class="rcpt">
-  <h2>{{ t('set.location') }}</h2>
-  <p class="muted">{{ t('set.location_consent') }}</p>
-  {% if shop["lat"] is not none and shop["lng"] is not none %}<p class="muted">{{ t('set.location_saved') }}</p>{% endif %}
-  <form method="post" action="/e/{{ token }}/settings" data-location-form>
-    <input type="hidden" name="name" value="{{ shop["name"] }}">
-    <input type="hidden" name="area" value="{{ shop["area"] }}">
-    <input type="hidden" name="phone" value="{{ shop["phone"] }}">
-    <input type="hidden" name="language" value="{{ shop["language"] }}">
-    <input type="hidden" name="currency" value="{{ shop["currency"] }}">
-    <input type="hidden" name="type" value="{{ shop["type"] }}">
-    <input type="hidden" name="upi_id" value="{{ shop["upi_id"] or "" }}">
-    <input type="hidden" name="upi_payee" value="{{ shop["upi_payee"] or "" }}">
-    {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
-    <input type="hidden" name="pincode" value="{{ shop["pincode"] or "" }}">
-    {% if not shop["is_judge"] and shop["listed"] %}<input type="hidden" name="listed" value="on">{% endif %}
-    <input type="hidden" id="shop-lat" name="lat" value="{{ shop["lat"] if shop["lat"] is not none else "" }}">
-    <input type="hidden" id="shop-lng" name="lng" value="{{ shop["lng"] if shop["lng"] is not none else "" }}">
-    <p>
-      <button class="pill ghost" type="button" id="use-location">{{ t('set.use_location') }}</button>
-      <button class="pill ghost" type="submit" name="remove_location" value="1">{{ t('set.remove_location') }}</button>
-    </p>
-    <p class="muted" id="location-status" aria-live="polite"></p>
-    <button class="pill dark big" type="submit">{{ t('set.save') }}</button>
-  </form>
-</section>
+  {% call ui.action_bar() %}
+  <button class="btn btn-primary" type="submit">{{ t('set.save') }}</button>
+  {% endcall %}
+</form>
 
-<section class="rcpt">
-  <h2>{{ t('set.seller_link') }}</h2>
-  <p class="muted">{{ t('set.seller_desc') }}</p>
+{% call ui.form_card(t('set.seller_link'), t('set.seller_desc'), cls="rcpt") %}
   <div class="qr-wrap">{{ seller_qr | safe }}</div>
   <p><span class="shop-link">{{ seller_url }}</span></p>
-  <p><button class="pill ghost" type="button" id="copy-seller" data-link="{{ seller_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('set.copy_prompt') }}">{{ t('dash.copy') }}</button></p>
+  <p><button class="btn btn-secondary" type="button" id="copy-seller" data-link="{{ seller_url }}" data-copied="{{ t('dash.copied') }}" data-prompt="{{ t('set.copy_prompt') }}">{{ t('dash.copy') }}</button></p>
   <div class="alert alert-warn">{{ t('set.keep_private') }}</div>
-</section>
+{% endcall %}
 
-<section class="rcpt">
-  <h2>{{ t('set.keep_safe') }}</h2>
-  <p class="muted">{{ t('set.keep_safe_desc') }}</p>
+{% call ui.form_card(t('set.keep_safe'), t('set.keep_safe_desc'), cls="rcpt") %}
   <p>
     <a class="pill cta" href="{{ self_wa_url }}">{{ ui.obj("chat", 20) }}{{ t('set.send_link_wa') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
   </p>
-</section>
+{% endcall %}
 
-<section class="rcpt" id="helpers">
-  <h2>{{ t('set.add_helper') }}</h2>
+{% call ui.form_card(t('set.add_helper'), t('set.helpers_sub'), cls="rcpt") %}
+<div id="helpers"></div>
   <p class="muted">{{ t('set.helper_desc') }}</p>
   <p class="muted">{{ t('set.helper_credit_desc') }}</p>
   {% if just_created %}
@@ -191,13 +154,10 @@
   <p class="muted">{{ t('set.no_helpers') }}</p>
   {% endif %}
   <form method="post" action="/e/{{ token }}/settings/helpers">
-    <div class="field">
-      <label for="helper-name">{{ t('set.helper_name') }}</label>
-      <input id="helper-name" name="name" required autocomplete="off">
-    </div>
-    <button class="pill ghost" type="submit">{{ t('set.add_helper') }}</button>
+    {{ ui.field(t('set.helper_name'), "name", required=True, autocomplete="off", attrs={"id": "helper-name", "maxlength": "40"}) }}
+    <button class="btn btn-secondary" type="submit">{{ t('set.add_helper') }}</button>
   </form>
-</section>
+{% endcall %}
 {% endblock %}
 {% block scripts %}
 <script>
@@ -226,16 +186,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   const btn = document.getElementById("copy-seller");
-  if (!btn) { return; }
-  btn.addEventListener("click", async () => {
-    const url = btn.dataset.link;
-    try {
-      await navigator.clipboard.writeText(url);
-      btn.textContent = btn.dataset.copied || "Copied";
-    } catch (err) {
-      window.prompt(btn.dataset.prompt || "Copy:", url);
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      const url = btn.dataset.link;
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = btn.dataset.copied || "Copied";
+      } catch (err) {
+        window.prompt(btn.dataset.prompt || "Copy:", url);
+      }
+    });
+  }
+  document.querySelectorAll("[data-day-row]").forEach((row) => {
+    const box = row.querySelector('input[type="checkbox"]');
+    if (!box) {
+      return;
     }
+    box.addEventListener("change", () => {
+      row.classList.toggle("is-closed", box.checked);
+    });
   });
+  const sameBtn = document.querySelector("[data-same-everyday]");
+  if (sameBtn) {
+    sameBtn.addEventListener("click", () => {
+      const rows = Array.prototype.slice.call(
+        document.querySelectorAll("[data-day-row]"));
+      const first = rows[0];
+      if (!first) {
+        return;
+      }
+      const firstBox = first.querySelector('input[type="checkbox"]');
+      const firstTimes = Array.prototype.slice.call(
+        first.querySelectorAll('input[type="time"]')).map((el) => el.value);
+      rows.slice(1).forEach((row) => {
+        const box = row.querySelector('input[type="checkbox"]');
+        if (box && firstBox) {
+          box.checked = firstBox.checked;
+          row.classList.toggle("is-closed", box.checked);
+        }
+        const times = row.querySelectorAll('input[type="time"]');
+        Array.prototype.forEach.call(times, (el, i) => {
+          el.value = firstTimes[i] || "";
+        });
+      });
+    });
+  }
 });
 </script>
 {% endblock %}

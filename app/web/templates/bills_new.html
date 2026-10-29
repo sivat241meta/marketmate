@@ -4,10 +4,14 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('bn.heading') }}{% endblock %}
 {% block content %}
-<p class="kick">{{ t('bn.heading') }}</p>
-<h2 class="h2s">{{ t('bn.hero') }}</h2>
+<header class="v10-head">
+  <div>
+    <h1 class="v10-title">{{ t('bn.heading') }}</h1>
+    <p class="v10-sub">{{ t('bn.hero') }}</p>
+  </div>
+</header>
 <p class="back-link"><a href="/e/{{ token }}/bills">{{ t('bn.back') }}</a></p>
-{% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if error %}{{ ui.error_summary(error) }}{% endif %}
 
 <div class="alert" data-offline-banner hidden><span data-offline-text>{{ t('notice.offline_bills') }}</span></div>
 
@@ -73,8 +77,8 @@
         <p><button class="pill dark big" type="submit">{{ t('bn.make_bill') }}</button></p>
       </div>
     </div>
-    <div class="float tap-bar mob-only">
-      <div class="t"><b data-tap-summary>{{ t('bn.pick_items') }}</b><small>{{ t('bn.tap') }}</small></div>
+    <div class="float tap-bar mob-only action-bar">
+      <div class="t bar-total"><b data-tap-summary>{{ t('bn.pick_items') }}</b><small>{{ t('bn.tap') }}</small></div>
       <button class="pill cta" type="submit">{{ t('bn.make_bill') }}</button>
     </div>
   </form>
@@ -102,7 +106,7 @@
     </div>
   </div>
   {% else %}
-  <p class="muted">{{ t('bn.no_list') }}</p>
+  {{ ui.empty_state(t('bn.tap'), t('bn.no_list'), "/e/" ~ token ~ "/live", t('shell.say_prices'), "mic", "mic") }}
   {% endif %}
 </section>
 
@@ -149,15 +153,15 @@
   <p class="notice">{{ t('notice.voice') }}</p>
 </section>
 
-<section class="card method-panel" data-panel="type">
-  <h2>{{ ui.icon("receipt") }} {{ t('bn.type_title') }}</h2>
+<section class="method-panel" data-panel="type">
+  {% call ui.form_card(t('bn.type_title')) %}
   <form method="post" action="/e/{{ token }}/bills/new">
-    <div class="field">
-      <label for="bill-items">{{ t('bn.what_took') }}</label>
-      <input id="bill-items" type="text" name="items" placeholder="{{ t('bn.type_placeholder') }}" required>
-    </div>
-    <button class="btn btn-primary btn-big" type="submit">{{ t('bn.make_bill') }}</button>
+    {{ ui.field(t('bn.what_took'), "items", value="", required=True, autocomplete="off", attrs={"id": "bill-items", "placeholder": t('bn.type_placeholder'), "maxlength": "300"}) }}
+    {% call ui.action_bar() %}
+    <button class="btn btn-primary" type="submit">{{ t('bn.make_bill') }}</button>
+    {% endcall %}
   </form>
+  {% endcall %}
 </section>
 
 <section class="card method-panel" data-panel="photo" data-needs-internet>
