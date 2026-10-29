@@ -3,7 +3,7 @@
 {% block title %}{{ title | safe }} — MarketMate{% endblock %}
 {% block content %}
 <div class="empty-state">
-  {{ ui.icon("tag") }}
+  {{ ui.obj("search", 56) }}
   <h1>{{ title | safe }}</h1>
   <p>{{ message | safe }}</p>
   <p><a class="btn btn-secondary" href="/market">{{ t('error.try_samples') }}</a></p>

@@ -1506,6 +1506,35 @@ span.stepper { align-items: center; margin: 0; }
   flex: none;
   vertical-align: -0.2em;
 }
+/* Real-world object icons (Task 79): Fluent Emoji Flat <img>s. Sizes are
+   fixed per role: 20px inline in buttons, 24px nav, 28px soft squares,
+   56px empty states. Width/height attributes match to avoid layout shift. */
+.obj { flex: none; vertical-align: -0.25em; }
+.rail .ic .obj { width: 24px; height: 24px; }
+.bnav .obj { width: 24px; height: 24px; }
+.bnav .mic .obj { width: 26px; height: 26px; }
+.bnav .mic i.mic-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+.pill.dark .obj, .pill.cta .obj, .pill.ghost .obj, .pill.bar .obj,
+.btn .obj { width: 20px; height: 20px; }
+.stat-icon .obj, .gc .gi .obj, .tri .tile .obj,
+.record-card > .obj, .drop-zone .obj, .entry-card .obj {
+  width: 28px;
+  height: 28px;
+}
+.empty-state .obj, .empty-shop .obj { width: 56px; height: 56px; }
+.notice .obj, .paid-state .obj, .chip .obj, .mini-links .obj,
+.field label .obj { width: 20px; height: 20px; }
+.notice .obj { margin-top: 1px; }
+.gh .obj, .kick .obj, .h2s .obj, .circ .obj { width: 24px; height: 24px; }
+.pill-live .obj, .pill-check .obj { width: 20px; height: 20px; }
 .mic-btn .icon { width: 28px; height: 28px; }
 .empty-state .icon { width: 40px; height: 40px; }
 
@@ -2444,7 +2473,8 @@ svg.boxes text.box-badge {
 .top-row .top-bar { flex: 2 1 120px; }
 .top-row .list-price { flex: none; }
 
-.empty-shop { text-align: center; }
+.empty-shop, .empty-market { text-align: center; }
+.empty-market .obj { width: 56px; height: 56px; }
 .empty-shop > .icon { width: 44px; height: 44px; color: var(--purple); }
 .empty-shop h2 { margin-top: var(--space-2); }
 

@@ -104,6 +104,8 @@ Every commit in this repository was made by Muse Code, Meta's coding agent. 92 o
 
 Logo: the MarketMate basket-M mark and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
 
+Icons: Fluent Emoji (Flat) by Microsoft, MIT licence.
+
 ## Limits and next steps
 
 - Spark results vary between runs, so the check page exists and every price needs proof.

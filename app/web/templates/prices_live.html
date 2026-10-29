@@ -9,7 +9,7 @@
 <p class="lead">{{ t('prices_live.subtitle') }}</p>
 {% if wa_url %}
 <div class="hero-cta">
-  <a class="pill dark big" href="{{ wa_url }}">{{ ui.icon("whatsapp") }}{{ t('wa.send_prices') }}</a>
+  <a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>
 </div>
 {% endif %}
 <section class="card">
@@ -19,8 +19,8 @@
   <p><a class="pill ghost" href="{{ shop_path }}">{{ t('wa.share_list') }}</a></p>
 </section>
 <div class="hero-cta">
-  <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.icon("printer") }}{{ t('dash.tile_print_board') }}</a>
-  <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('dash.tile_print_tags') }}</a>
+  <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>
+  <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>
 </div>
 <p class="back-link"><a href="/e/{{ token }}">{{ t('error.back_home') }}</a></p>
 {% endblock %}

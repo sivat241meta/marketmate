@@ -7,9 +7,9 @@
 <p class="lead">{{ t('home.hero_sub') }}</p>
 
 <div class="trio">
-  <div class="tri"><span class="tile m">{{ ui.icon("mic") }}</span><b>{{ t('home.trio_lang') }}</b><small>{{ t('home.trio_lang_sub') }}</small></div>
-  <div class="tri"><span class="tile y">{{ ui.icon("check") }}</span><b>{{ t('home.trio_honest') }}</b><small>{{ t('home.trio_honest_sub') }}</small></div>
-  <div class="tri"><span class="tile s">{{ ui.icon("receipt") }}</span><b>{{ t('home.trio_bills') }}</b><small>{{ t('home.trio_bills_sub') }}</small></div>
+  <div class="tri"><span class="tile m">{{ ui.obj("mic", 28) }}</span><b>{{ t('home.trio_lang') }}</b><small>{{ t('home.trio_lang_sub') }}</small></div>
+  <div class="tri"><span class="tile y">{{ ui.obj("check", 28) }}</span><b>{{ t('home.trio_honest') }}</b><small>{{ t('home.trio_honest_sub') }}</small></div>
+  <div class="tri"><span class="tile s">{{ ui.obj("receipt", 28) }}</span><b>{{ t('home.trio_bills') }}</b><small>{{ t('home.trio_bills_sub') }}</small></div>
 </div>
 
 <div class="hero-cta">
@@ -19,17 +19,17 @@
 
 <div class="entry-grid">
   <section class="card entry-card">
-    {{ ui.icon("camera") }}
+    {{ ui.obj("video", 28) }}
     <h2>{{ t('home.f1_t') }}</h2>
     <p class="muted">{{ t('home.f1_d') }}</p>
   </section>
   <section class="card entry-card">
-    {{ ui.icon("check") }}
+    {{ ui.obj("check", 28) }}
     <h2>{{ t('home.f2_t') }}</h2>
     <p class="muted">{{ t('home.f2_d') }}</p>
   </section>
   <section class="card entry-card">
-    {{ ui.icon("share") }}
+    {{ ui.obj("link", 28) }}
     <h2>{{ t('home.f3_t') }}</h2>
     <p class="muted">{{ t('home.f3_d') }}</p>
   </section>
@@ -37,13 +37,13 @@
 
 <div class="entry-grid">
   <section class="card entry-card">
-    {{ ui.icon("home") }}
+    {{ ui.obj("store", 28) }}
     <h2>Seller: start your shop</h2>
     <p class="muted">Film your stall, check prices, print your board.</p>
     <p><a class="pill dark" href="/new">Start as seller</a></p>
   </section>
   <section class="card entry-card">
-    {{ ui.icon("tag") }}
+    {{ ui.obj("search", 28) }}
     <h2>Customer: find prices</h2>
     <p class="muted">Enter a shop name to see today's prices, or search the market.</p>
     <form method="post" action="/find">
@@ -56,14 +56,14 @@
     <p><a href="/market">Search the market</a></p>
   </section>
   <section class="card entry-card">
-    {{ ui.icon("check") }}
+    {{ ui.obj("check", 28) }}
     <h2>Judges: try the demo</h2>
     <p class="muted">Create a demo shop and run a clip end to end.</p>
     <p><a class="pill ghost" href="/try">Try the demo</a></p>
   </section>
 </div>
 
-<p class="notice">{{ ui.icon("check") }}<span>Every price comes from the seller's own voice. Nothing is guessed.</span></p>
+<p class="notice">{{ ui.obj("check", 20) }}<span>Every price comes from the seller's own voice. Nothing is guessed.</span></p>
 
 <section class="card entry-card" id="lost-link">
   <h2 class="h2s">{{ t('home.lost_title') }}</h2>

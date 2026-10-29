@@ -14,8 +14,8 @@
 <div class="ws-main">
 {% if not is_staff %}
 <section class="step-card grp" id="step-morning" data-grp="morning" aria-label="{{ t('t61.step1_kick') }}">
-  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></button>
-  {% if show_hours_nudge|default(false) %}<p class="notice">{{ ui.icon("check") }}<span><a href="/e/{{ token }}/settings">{{ t('hours.nudge') }}</a></span></p>{% endif %}
+  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("mic") }}{% if taps_total %}<span class="chip c-need">{{ t('review.needs_you') }}</span>{% elif live %}<span class="chip c-live">{{ t('live.live') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_morning') }} <span class="n">{% if taps_total %}{{ taps_total }}{% elif live %}{{ live_count }}{% endif %}</span></button>
+  {% if show_hours_nudge|default(false) %}<p class="notice">{{ ui.obj("clock", 20) }}<span><a href="/e/{{ token }}/settings">{{ t('hours.nudge') }}</a></span></p>{% endif %}
   {% if first_run|default(false) %}
   <div class="card start-card" id="say-prices" aria-label="{{ t('gs.kick') }}">
     <p class="kick">{{ t('gs.kick') }}</p>
@@ -27,8 +27,8 @@
           <h3>{{ t('gs.step1_t') }}</h3>
           <p>{{ t('gs.step1_d') }}</p>
           <div class="hero-cta">
-            <a class="pill cta sm" href="{{ self_wa_url }}" data-gs-done="link">{{ ui.icon("whatsapp") }}{{ t('dash.send_link_wa') }}</a>
-            <a class="pill ghost sm" href="/e/{{ token }}/link-card.pdf" data-gs-done="link">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+            <a class="pill cta sm" href="{{ self_wa_url }}" data-gs-done="link">{{ ui.obj("chat", 20) }}{{ t('dash.send_link_wa') }}</a>
+            <a class="pill ghost sm" href="/e/{{ token }}/link-card.pdf" data-gs-done="link">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
           </div>
         </div>
       </li>
@@ -38,7 +38,7 @@
           <h3>{{ t('gs.step2_t') }}</h3>
           <p>{{ t('gs.step2_d') }}</p>
           <div class="hero-cta">
-            <a class="pill dark sm" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('sh.say_prices') }}</a>
+            <a class="pill dark sm" href="/e/{{ token }}/live">{{ ui.obj("mic", 20) }}{{ t('sh.say_prices') }}</a>
             <a class="pill ghost sm" href="#say-prices">{{ t('gs.step2_upload') }}</a>
           </div>
         </div>
@@ -57,14 +57,14 @@
     </ol>
   </div>
   {% elif taps_total %}
-  <p class="notice need">{{ ui.icon("check") }}<span><strong>{% if taps_total == 1 %}{{ t('sh.need_tap_one') }}{% else %}{{ t('sh.need_tap', n=taps_total) }}{% endif %}</strong></span></p>
+  <p class="notice need">{{ ui.obj("warning", 20) }}<span><strong>{% if taps_total == 1 %}{{ t('sh.need_tap_one') }}{% else %}{{ t('sh.need_tap', n=taps_total) }}{% endif %}</strong></span></p>
   <p><a class="pill dark big" href="/e/{{ token }}/s/{{ taps_first }}">{{ t('sh.check_now') }}</a></p>
   {% elif not published_today %}
   <div class="card cta-card" id="say-prices">
-    <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.icon("mic") }}{{ t('sh.say_prices') }}</a></p>
+    <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.obj("mic", 20) }}{{ t('sh.say_prices') }}</a></p>
     <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
       <p>
-        <label class="pill ghost" for="clip">{{ ui.icon("camera") }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+        <label class="pill ghost" for="clip">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
           <input id="clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" capture="environment" required>
         </label>
       </p>
@@ -86,19 +86,19 @@
         <p class="upload-meta" data-upload-meta></p>
         <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
       </div>
-      <button class="btn btn-secondary btn-big" type="submit">{{ ui.icon("camera") }}{{ t('t61.upload_note') }}</button>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button>
     </form>
     <p class="notice">{{ notice | safe }}</p>
   </div>
   {% else %}
   <p class="live-line"><span aria-hidden="true">✓</span> {{ t('t61.live_status', n=live_count, time=live_since) }}</p>
   <div class="hero-cta">
-    {% if wa_url %}<a class="pill dark big" href="{{ wa_url }}">{{ ui.icon("whatsapp") }}{{ t('wa.send_prices') }}</a>{% endif %}
-    <a class="pill ghost big" href="/e/{{ token }}/update">{{ ui.icon("mic") }}{{ t('t61.update_prices') }}</a>
+    {% if wa_url %}<a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>{% endif %}
+    <a class="pill ghost big" href="/e/{{ token }}/update">{{ ui.obj("mic", 20) }}{{ t('t61.update_prices') }}</a>
   </div>
   <p class="mini-links">
-    {% if versions %}<a href="/e/{{ token }}/v/{{ versions[0]["id"] }}/board.pdf">{{ ui.icon("printer") }}{{ t('dash.tile_print_board') }}</a>{% endif %}
-    {% if versions %}<a href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('dash.tile_print_tags') }}</a>{% endif %}
+    {% if versions %}<a href="/e/{{ token }}/v/{{ versions[0]["id"] }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>{% endif %}
+    {% if versions %}<a href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>{% endif %}
     <a href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
     {% if wa_url %}<button class="linklike" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>{% endif %}
   </p>
@@ -109,7 +109,7 @@
 <section class="step-card" id="step-day" aria-label="{{ t('t61.step2_kick') }}">
   <p class="kick"><span class="step-num" aria-hidden="true">2</span> {{ t('t61.step2_kick') }}</p>
   <div class="grp" data-grp="orders">
-    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}<span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></button>
+    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("bags") }}<span class="chip c-new">{{ t('t64.chip_open') }}</span> {{ t('t64.g_orders') }} <span class="n">{{ count_new + count_packing + count_ready }}</span></button>
     {% if open_orders %}
     {% for order in open_orders %}
     <div class="order-mini" data-search-row="{{ order.label }} {{ order.names | join(' ') }}">
@@ -133,20 +133,20 @@
     {% endif %}
   </div>
   <div class="grp" data-grp="bills">
-    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}<span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></button>
+    <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("receipt") }}<span class="chip c-done">{{ t('t64.chip_today') }}</span> {{ t('t64.g_bills') }} <span class="n">{{ close_preview.bills }} · {{ close_preview.sales }}</span></button>
     <div class="stat-grid step-stats">
-      <a class="stat{% if count_new %} is-new{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting"><b class="stat-num" data-orders-badge data-orders-keep-zero>{{ count_new }}</b><span class="stat-label">{{ t('sh.new_orders') }}</span></a>
-      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=packing"><b class="stat-num">{{ count_packing }}</b><span class="stat-label">{{ t('bills.pill_packing') }}</span></a>
-      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=ready"><b class="stat-num">{{ count_ready }}</b><span class="stat-label">{{ t('bills.pill_ready') }}</span></a>
-      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=billed"><b class="stat-num">{{ unpaid_count }}</b><span class="stat-label">{{ t('t61.unpaid_bills') }}</span></a>
-      <a class="stat" href="/e/{{ token }}/bills"><b class="stat-num money">{{ bills.sales_today | money(shop["currency"]) }}</b><span class="stat-label">{{ t('bills.sales_today') }}</span></a>
+      <a class="stat{% if count_new %} is-new{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting"><span class="stat-icon">{{ ui.obj("bell", 28) }}</span><b class="stat-num" data-orders-badge data-orders-keep-zero>{{ count_new }}</b><span class="stat-label">{{ t('sh.new_orders') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=packing"><span class="stat-icon">{{ ui.obj("package", 28) }}</span><b class="stat-num">{{ count_packing }}</b><span class="stat-label">{{ t('bills.pill_packing') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=ready"><span class="stat-icon">{{ ui.obj("check", 28) }}</span><b class="stat-num">{{ count_ready }}</b><span class="stat-label">{{ t('bills.pill_ready') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills?range=today&amp;status=billed"><span class="stat-icon">{{ ui.obj("receipt", 28) }}</span><b class="stat-num">{{ unpaid_count }}</b><span class="stat-label">{{ t('t61.unpaid_bills') }}</span></a>
+      <a class="stat" href="/e/{{ token }}/bills"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ bills.sales_today | money(shop["currency"]) }}</b><span class="stat-label">{{ t('bills.sales_today') }}</span></a>
     </div>
     {% if can_credit|default(true) and credit_count|default(0) > 0 %}
-    <p><a class="pill cta big" href="/e/{{ token }}/credit">{{ ui.icon("receipt") }}{{ t('t61.credit_to_collect', total=credit_total) }}</a></p>
+    <p><a class="pill cta big" href="/e/{{ token }}/credit">{{ ui.obj("ledger", 20) }}{{ t('t61.credit_to_collect', total=credit_total) }}</a></p>
     {% endif %}
     <div class="hero-cta">
-      <a class="pill dark big" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('sh.new_bill') }}</a>
-      <a class="pill ghost big" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.icon("box") }}{{ t('nav.orders') }}<span class="nbadge" data-orders-badge hidden></span></a>
+      <a class="pill dark big" href="/e/{{ token }}/bills/new">{{ ui.obj("receipt", 20) }}{{ t('sh.new_bill') }}</a>
+      <a class="pill ghost big" href="/e/{{ token }}/bills?range=today&amp;status=waiting">{{ ui.obj("bags", 20) }}{{ t('nav.orders') }}<span class="nbadge" data-orders-badge hidden></span></a>
       <a class="pill ghost big" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
     </div>
     <a class="addrow" href="/e/{{ token }}/bills/new">+ {{ t('bills.new_bill') }}</a>
@@ -155,16 +155,16 @@
 
 {% if not is_staff %}
 <section class="step-card grp" id="step-evening" data-grp="evening" aria-label="{{ t('t61.step3_kick') }}">
-  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></button>
+  <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("moon") }}{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></button>
   {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
   <div class="stat-grid step-stats">
-    <div class="stat"><b class="stat-num money">{{ close_preview.sales }}</b><span class="stat-label">{{ close_preview.bills }} {{ t('close.bills') }}</span></div>
-    <div class="stat"><b class="stat-num money">{{ close_preview.cash }}</b><span class="stat-label">{{ t('close.cash') }}</span></div>
-    <div class="stat"><b class="stat-num money">{{ close_preview.upi }}</b><span class="stat-label">{{ t('close.upi') }}</span></div>
+    <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><b class="stat-num money">{{ close_preview.sales }}</b><span class="stat-label">{{ close_preview.bills }} {{ t('close.bills') }}</span></div>
+    <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><b class="stat-num money">{{ close_preview.cash }}</b><span class="stat-label">{{ t('close.cash') }}</span></div>
+    <div class="stat"><span class="stat-icon">{{ ui.obj("phone", 28) }}</span><b class="stat-num money">{{ close_preview.upi }}</b><span class="stat-label">{{ t('close.upi') }}</span></div>
   </div>
   {% if not closed_at %}
   <form method="post" action="/e/{{ token }}/close">
-    <p><button class="pill {% if close_is_dark %}dark{% else %}ghost{% endif %} big" type="submit">{{ t('nav.close') }}</button></p>
+    <p><button class="pill {% if close_is_dark %}dark{% else %}ghost{% endif %} big" type="submit">{{ ui.obj("moon", 20) }}{{ t('nav.close') }}</button></p>
   </form>
   {% endif %}
 </section>
@@ -221,7 +221,7 @@
   </div>
   {% endfor %}
   {% else %}
-  {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), None, None) }}
+  {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), None, None, "photo", "mic") }}
   {% endif %}
 </details>
 
@@ -229,19 +229,19 @@
   <summary class="section-head"><span>{{ t('nav.more') }}</span></summary>
   <div class="more-list">
     {% if not is_staff %}
-    <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.icon("settings") }}{{ t('sh.quick_settings') }}</a>
-    <a class="pill ghost" href="/e/{{ token }}/settings#helpers">{{ ui.icon("user") }}{{ t('t61.helpers') }}</a>
-    <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.icon("tag") }}{{ t('sh.quick_purchases') }}</a>
-    <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.icon("receipt") }}{{ t('nav.credit') }}</a>
-    <a class="pill ghost" href="/e/{{ token }}/update#board">{{ ui.icon("photo") }}{{ t('sh.quick_board') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.obj("settings", 20) }}{{ t('sh.quick_settings') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/settings#helpers">{{ ui.obj("customer", 20) }}{{ t('t61.helpers') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.obj("cart", 20) }}{{ t('sh.quick_purchases') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.obj("ledger", 20) }}{{ t('nav.credit') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/update#board">{{ ui.obj("camera", 20) }}{{ t('sh.quick_board') }}</a>
     {% if versions %}
-    <a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.icon("tag") }}{{ t('sh.quick_tags') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('sh.quick_tags') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/v/{{ versions[0]["id"] }}/export.csv">{{ ui.icon("download") }}{{ t('dash.tile_export_csv') }}</a>
     {% endif %}
     <a class="pill ghost" href="/e/{{ token }}/exports/sales.xlsx?range=today">{{ ui.icon("download") }}{{ t('bills.excel') }}</a>
     {% endif %}
     {% if is_staff and can_credit|default(false) %}
-    <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.icon("receipt") }}{{ t('nav.credit') }}</a>
+    <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.obj("ledger", 20) }}{{ t('nav.credit') }}</a>
     {% endif %}
     <a class="pill ghost" href="/#lost-link">{{ t('home.lost_title') }}</a>
   </div>
@@ -250,8 +250,8 @@
     <h2>{{ t('dash.keep_safe') }}</h2>
     <p class="muted">{{ t('set.keep_safe_desc') }}</p>
     <p>
-      <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.icon("whatsapp") }}{{ t('dash.send_link_wa') }}</a>
-      <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.icon("printer") }}{{ t('set.print_card') }}</a>
+      <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.obj("chat", 20) }}{{ t('dash.send_link_wa') }}</a>
+      <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
     </p>
   </section>
   {% endif %}
@@ -265,10 +265,10 @@
   <div class="band">
     <p class="kick">{{ t('sh.week') }}</p>
     <div class="gcards">
-      <div class="gc"><span class="gi">{{ ui.icon("chart") }}</span><b class="money">{{ week.sales }}</b><small>{{ t('sh.week_sales') }}</small></div>
-      <div class="gc"><span class="gi g">{{ ui.icon("receipt") }}</span><b>{{ week.bills }}</b><small>{{ t('sh.week_bills') }}</small></div>
-      <div class="gc"><span class="gi g">{{ ui.icon("user") }}</span><b>{{ week.orders }}</b><small>{{ t('sh.week_orders') }}</small></div>
-      {% if week.margin_known %}<div class="gc"><span class="gi">{{ ui.icon("check") }}</span><b class="money">{{ week.margin }}</b><small>{{ t('sh.week_margin') }}</small></div>{% endif %}
+      <div class="gc"><span class="gi">{{ ui.obj("chart", 28) }}</span><b class="money">{{ week.sales }}</b><small>{{ t('sh.week_sales') }}</small></div>
+      <div class="gc"><span class="gi g">{{ ui.obj("receipt", 28) }}</span><b>{{ week.bills }}</b><small>{{ t('sh.week_bills') }}</small></div>
+      <div class="gc"><span class="gi g">{{ ui.obj("bags", 28) }}</span><b>{{ week.orders }}</b><small>{{ t('sh.week_orders') }}</small></div>
+      {% if week.margin_known %}<div class="gc"><span class="gi">{{ ui.obj("cash", 28) }}</span><b class="money">{{ week.margin }}</b><small>{{ t('sh.week_margin') }}</small></div>{% endif %}
     </div>
   </div>
   {% endif %}

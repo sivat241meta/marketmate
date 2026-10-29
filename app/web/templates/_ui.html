@@ -25,6 +25,10 @@
 {%- endif %}
 {%- endmacro %}
 
+{% macro obj(name, size=24, label=None) -%}
+<img class="obj" src="{{ static_url('icons/fluent/' ~ name ~ '.svg') if static_url is defined else '/static/icons/fluent/' ~ name ~ '.svg' }}" width="{{ size }}" height="{{ size }}" alt="{{ label if label else '' }}" loading="lazy">
+{%- endmacro %}
+
 {% macro button(label, href=None, kind="primary", type="submit", name=None, value=None, icon_name=None) -%}
 {% if href %}<a class="btn btn-{{ kind }}" href="{{ href }}">{{ icon(icon_name) if icon_name }}{{ label }}</a>
 {%- else %}<button class="btn btn-{{ kind }}" type="{{ type }}"{% if name %} name="{{ name }}" value="{{ value }}"{% endif %}>{{ icon(icon_name) if icon_name }}{{ label }}</button>
@@ -53,7 +57,7 @@
 <div class="alert alert-{{ kind }}">{% if title %}<strong>{{ title }}</strong> {% endif %}{{ text }}</div>
 {%- endmacro %}
 
-{% macro empty_state(title, text, action_url=None, action_label=None, icon_name="photo") -%}
-<div class="empty-state">{{ icon(icon_name) }}<h2>{{ title }}</h2><p>{{ text }}</p>
+{% macro empty_state(title, text, action_url=None, action_label=None, icon_name="photo", obj_name=None) -%}
+<div class="empty-state">{% if obj_name %}{{ obj(obj_name, 56) }}{% else %}{{ icon(icon_name) }}{% endif %}<h2>{{ title }}</h2><p>{{ text }}</p>
 {%- if action_url and action_label %} {{ button(action_label, href=action_url, kind="secondary") }}{% endif %}</div>
 {%- endmacro %}

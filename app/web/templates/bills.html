@@ -12,20 +12,20 @@
 </nav>
 
 <div class="stat-grid">
-  <div class="stat"><span class="stat-icon">{{ ui.icon("receipt") }}</span><span class="stat-num">{{ bills_today }}</span><span class="stat-label">{{ t('bills.bills_today') }}</span><span class="stat-caption">{{ t('bills.billed_paid') }}</span></div>
-  <div class="stat"><span class="stat-icon">{{ ui.icon("tag") }}</span><span class="stat-num money">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.sales_today') }}</span><span class="stat-caption">{{ t('bills.total_billed') }}</span></div>
-  <div class="stat"><span class="stat-icon">{{ ui.icon("share") }}</span><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">{{ t('bills.quotes_waiting') }}</span><span class="stat-caption">{{ t('bills.from_customers') }}</span></div>
-  <div class="stat"><span class="stat-icon">{{ ui.icon("check") }}</span><span class="stat-num money">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.avg_bill') }}</span><span class="stat-caption">{{ t('bills.per_bill') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("receipt", 28) }}</span><span class="stat-num">{{ bills_today }}</span><span class="stat-label">{{ t('bills.bills_today') }}</span><span class="stat-caption">{{ t('bills.billed_paid') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("chart", 28) }}</span><span class="stat-num money">{{ sales_today | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.sales_today') }}</span><span class="stat-caption">{{ t('bills.total_billed') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("bell", 28) }}</span><span class="stat-num">{{ quotes_waiting }}</span><span class="stat-label">{{ t('bills.quotes_waiting') }}</span><span class="stat-caption">{{ t('bills.from_customers') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><span class="stat-num money">{{ average_bill | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.avg_bill') }}</span><span class="stat-caption">{{ t('bills.per_bill') }}</span></div>
 </div>
 
 <div class="stat-grid">
-  <div class="stat"><span class="stat-num money">{{ sales_cash | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.cash') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
-  <div class="stat"><span class="stat-num money">{{ sales_upi | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.upi') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><span class="stat-num money">{{ sales_cash | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.cash') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("phone", 28) }}</span><span class="stat-num money">{{ sales_upi | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.upi') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
   <div class="stat"><span class="stat-num money">{{ sales_card | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.card') }}</span><span class="stat-caption">{{ t('bills.paid_today') }}</span></div>
-  <div class="stat"><span class="stat-num money">{{ unpaid_total | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.unpaid_stat') }}</span><span class="stat-caption">{{ unpaid_count }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("warning", 28) }}</span><span class="stat-num money">{{ unpaid_total | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.unpaid_stat') }}</span><span class="stat-caption">{{ unpaid_count }}</span></div>
 </div>
 
-<p><a class="pill dark" href="/e/{{ token }}/bills/new">{{ ui.icon("receipt") }}{{ t('bills.new_bill') }}</a></p>
+<p><a class="pill dark" href="/e/{{ token }}/bills/new">{{ ui.obj("receipt", 20) }}{{ t('bills.new_bill') }}</a></p>
 
 <nav class="chips" aria-label="{{ t('bills.filter_aria') }}">
   <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">{{ t('bills.filter_all') }}<small>{{ counts.all }}</small></a>
@@ -43,7 +43,7 @@
 </div>
 <div data-view-list>
 <div class="grp">
-  <div class="gh">{{ ui.icon("chev") }}{% if status == "waiting" %}<span class="chip c-new">{{ t('bills.filter_waiting') }}</span>{% elif status == "packing" %}<span class="chip c-pack">{{ t('bills.filter_packing') }}</span>{% elif status == "ready" %}<span class="chip c-ready">{{ t('bills.filter_ready') }}</span>{% elif status == "collected" %}<span class="chip c-done">{{ t('bills.filter_collected') }}</span>{% elif status == "billed" %}<span class="chip c-unpaid">{{ t('bills.filter_billed') }}</span>{% elif status == "paid" %}<span class="chip c-ready">{{ t('bills.filter_paid') }}</span>{% else %}<span class="chip c-done">{{ t('bills.filter_all') }}</span>{% endif %} {{ t('t64.g_bills') }} <span class="n">{{ rows | length }}</span></div>
+  <div class="gh">{{ ui.icon("chev") }}{{ ui.obj("receipt") }}{% if status == "waiting" %}<span class="chip c-new">{{ t('bills.filter_waiting') }}</span>{% elif status == "packing" %}<span class="chip c-pack">{{ t('bills.filter_packing') }}</span>{% elif status == "ready" %}<span class="chip c-ready">{{ t('bills.filter_ready') }}</span>{% elif status == "collected" %}<span class="chip c-done">{{ t('bills.filter_collected') }}</span>{% elif status == "billed" %}<span class="chip c-unpaid">{{ t('bills.filter_billed') }}</span>{% elif status == "paid" %}<span class="chip c-ready">{{ t('bills.filter_paid') }}</span>{% else %}<span class="chip c-done">{{ t('bills.filter_all') }}</span>{% endif %} {{ t('t64.g_bills') }} <span class="n">{{ rows | length }}</span></div>
   {% if rows %}
   <div class="cols" aria-hidden="true"><span>{{ t('t64.col_customer') }}</span><span>{{ t('t64.col_items') }}</span><span>{{ t('t64.col_status') }}</span><span>{{ t('t64.col_time') }}</span><span>{{ t('t64.col_total') }}</span></div>
   {% for row in rows %}
@@ -57,7 +57,7 @@
   {% endfor %}
   <a class="addrow" href="/e/{{ token }}/bills/new">+ {{ t('bills.new_bill') }}</a>
   {% else %}
-  {{ ui.empty_state(t('bills.empty_title'), t('bills.empty_text'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "receipt") }}
+  {{ ui.empty_state(t('bills.empty_title'), t('bills.empty_text'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "receipt", "receipt") }}
   {% endif %}
 </div>
 </div>
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('bills.nothing_title'), t('bills.nothing_text'), None, None, "tag") }}
+{{ ui.empty_state(t('bills.nothing_title'), t('bills.nothing_text'), None, None, "tag", "chart") }}
 {% endif %}
 
 <div class="section-head"><h2>{{ t('bills.exports') }}</h2></div>

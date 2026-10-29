@@ -8,7 +8,7 @@
 
 <form class="inline-form" method="get" action="/e/{{ token }}/close">
   <div class="field">
-    <label for="close-date">{{ t('close.day') }}</label>
+    <label for="close-date">{{ ui.obj("calendar", 20) }}{{ t('close.day') }}</label>
     <input id="close-date" type="date" name="date" value="{{ day }}" max="{{ today }}">
   </div>
   <button class="btn btn-small btn-secondary" type="submit">{{ t('close.show') }}</button>
@@ -17,10 +17,10 @@
 <div class="band">
   <p class="kick">{{ t('close.today_numbers') }}</p>
   <div class="gcards">
-    <div class="gc"><span class="gi">{{ ui.icon("chart") }}</span><b class="money">{{ sales }}</b><small>{{ bills_count }} {{ t('close.bills') }}</small></div>
-    <div class="gc"><span class="gi g">{{ ui.icon("tag") }}</span><b class="money">{{ cash }}</b><small>{{ t('close.cash') }}</small></div>
-    <div class="gc"><span class="gi g">{{ ui.icon("qr") }}</span><b class="money">{{ upi }}</b><small>{{ t('close.upi') }}</small></div>
-    <div class="gc"><span class="gi">{{ ui.icon("check") }}</span><b class="money">{% if margin_known %}{{ margin }}{% else %}—{% endif %}</b><small>{{ t('close.margin') }}</small></div>
+    <div class="gc"><span class="gi">{{ ui.obj("chart", 28) }}</span><b class="money">{{ sales }}</b><small>{{ bills_count }} {{ t('close.bills') }}</small></div>
+    <div class="gc"><span class="gi g">{{ ui.obj("cash", 28) }}</span><b class="money">{{ cash }}</b><small>{{ t('close.cash') }}</small></div>
+    <div class="gc"><span class="gi g">{{ ui.obj("phone", 28) }}</span><b class="money">{{ upi }}</b><small>{{ t('close.upi') }}</small></div>
+    <div class="gc"><span class="gi">{{ ui.obj("check", 28) }}</span><b class="money">{% if margin_known %}{{ margin }}{% else %}—{% endif %}</b><small>{{ t('close.margin') }}</small></div>
   </div>
 </div>
 <p class="muted close-extra">{{ t('close.spent') }} {{ spent }} · {{ t('close.card') }} {{ card }} · {{ t('close.unpaid') }} {{ unpaid }}</p>
@@ -52,7 +52,7 @@
   <p><button class="pill dark" type="submit">{{ t('close.save_wastage') }}</button></p>
 </form>
 {% else %}
-{{ ui.empty_state(t('close.nothing_title'), t('close.nothing_text'), None, None, "receipt") }}
+{{ ui.empty_state(t('close.nothing_title'), t('close.nothing_text'), None, None, "receipt", "moon") }}
 {% endif %}
 
 <p class="muted">{{ t('close.carry') }}</p>
@@ -60,8 +60,8 @@
 <div class="hero-cta close-cta">
   <a class="pill dark" href="/e/{{ token }}/exports/sales.xlsx?range=custom&amp;from={{ day }}&amp;to={{ day }}">{{ ui.icon("download") }}{{ t('bills.excel') }}</a>
   <a class="pill ghost" href="/e/{{ token }}/exports/pos.csv?range=custom&amp;from={{ day }}&amp;to={{ day }}">{{ t('bills.pos_csv') }}</a>
-  <a class="pill ghost" href="/e/{{ token }}/close.pdf?date={{ day }}">{{ ui.icon("printer") }}{{ t('close.print_pdf') }}</a>
-  <a class="pill ghost" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}{{ t('close.wa_send') }}</a>
+  <a class="pill ghost" href="/e/{{ token }}/close.pdf?date={{ day }}">{{ ui.obj("printer", 20) }}{{ t('close.print_pdf') }}</a>
+  <a class="pill ghost" href="{{ whatsapp_url }}">{{ ui.obj("chat", 20) }}{{ t('close.wa_send') }}</a>
 </div>
 
 <div class="section-head"><h2>{{ t('bills.exports') }}</h2></div>

@@ -86,10 +86,10 @@
 <p class="muted">{{ t.no_items }}</p>
 {% endif %}
 
-<p class="notice">{{ ui.icon("check") }}<span>{{ t('order.notice', time=prices_time or rel) }}</span></p>
+<p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('order.notice', time=prices_time or rel) }}</span></p>
 <div class="hero-cta">
-  <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.icon("phone") }}{{ t('order.call_shop') }}</a>
-  <a class="pill cta big" href="{{ whatsapp_url }}">{{ ui.icon("whatsapp") }}{{ t.send_whatsapp }}</a>
+  <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t('order.call_shop') }}</a>
+  <a class="pill cta big" href="{{ whatsapp_url }}">{{ ui.obj("chat", 20) }}{{ t.send_whatsapp }}</a>
 </div>
 <p><a class="pill ghost sm" href="/q/{{ token }}/pdf">{{ ui.icon("download") }}{{ t.pdf }}</a></p>
 <p><a href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.back_to }} {{ shop["name"] }}</a></p>

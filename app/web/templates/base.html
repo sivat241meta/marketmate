@@ -68,17 +68,17 @@
 </div>
 <nav class="rail" aria-label="{{ t('nav.seller_label') }}">
   {{ _brand_mark(30) }}
-  <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('rail.today') }}</span></a>
+  <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.obj("house") }}<span>{{ t('rail.today') }}</span></a>
   {% if not _staff %}
-  <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('rail.prices') }}</span></a>
+  <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.obj("mic") }}<span>{{ t('rail.prices') }}</span></a>
   {% endif %}
-  <a class="ic{% if _on_orders %} on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('rail.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
-  <a class="ic{% if _on_bills %} on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('rail.bills') }}</span></a>
+  <a class="ic{% if _on_orders %} on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.obj("bags") }}<span>{{ t('rail.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
+  <a class="ic{% if _on_bills %} on{% endif %}" href="/e/{{ token }}/bills">{{ ui.obj("receipt") }}<span>{{ t('rail.bills') }}</span></a>
   {% if not _staff or can_credit|default(false) %}
-  <a class="ic{% if _on_credit %} on{% endif %}" href="/e/{{ token }}/credit">{{ ui.icon("tag") }}<span>{{ t('rail.credit') }}</span></a>
+  <a class="ic{% if _on_credit %} on{% endif %}" href="/e/{{ token }}/credit">{{ ui.obj("ledger") }}<span>{{ t('rail.credit') }}</span></a>
   {% endif %}
   {% if not _staff %}
-  <a class="ic{% if _on_close %} on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('rail.close') }}</span></a>
+  <a class="ic{% if _on_close %} on{% endif %}" href="/e/{{ token }}/close">{{ ui.obj("moon") }}<span>{{ t('rail.close') }}</span></a>
   {% endif %}
   <a class="ic more" href="/e/{{ token }}#more">{{ ui.icon("settings") }}<span>{{ t('rail.more') }}</span></a>
 </nav>
@@ -123,10 +123,10 @@
   <a class="circ" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
   {% elif _shop_known %}
   <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>
-  <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.icon("bag") }}</a>
+  <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket") }}</a>
   {% else %}
   <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>
-  <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.icon("bag") }}</a>
+  <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket") }}</a>
   {% endif %}
 </header>
 <div class="shell">
@@ -137,14 +137,14 @@
 </div>
 {% if _is_seller %}
 <nav class="bnav" aria-label="{{ t('nav.seller_label') }}">
-  <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('nav.today') }}</span></a>
-  <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ ui.icon("receipt") }}<span>{{ t('nav.bills') }}</span></a>
+  <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ ui.obj("house") }}<span>{{ t('nav.today') }}</span></a>
+  <a class="{% if _on_bills %}on{% endif %}" href="/e/{{ token }}/bills">{{ ui.obj("receipt") }}<span>{{ t('nav.bills') }}</span></a>
   {% if not _staff %}
-  <a class="mic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live"><span>{{ ui.icon("mic") }}</span>{{ t('nav.live') }}</a>
+  <a class="mic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live"><span><i class="mic-dot">{{ ui.obj("mic", 26) }}</i></span>{{ t('nav.live') }}</a>
   {% endif %}
-  <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.icon("box") }}<span>{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
+  <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.obj("bags") }}<span>{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
   {% if not _staff %}
-  <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.icon("chart") }}<span>{{ t('nav.close') }}</span></a>
+  <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.obj("moon") }}<span>{{ t('nav.close') }}</span></a>
   {% endif %}
 </nav>
 {% endif %}
