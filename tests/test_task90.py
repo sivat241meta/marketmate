@@ -8,6 +8,7 @@ Task 64 customer JS hooks after the redesign.
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -148,15 +149,26 @@ def test_header_anchors_stay_on_home_but_point_home_elsewhere(tmp_path):
         assert f'href="/{anchor}"' in shop, anchor
 
 
-def test_shop_strip_only_on_shop_pages(tmp_path):
+def test_no_shop_strip_bag_lives_in_header(tmp_path):
+    # Task 93 removed the separate shop strip: the shop name shows once
+    # (in the page, not the header) and Bag sits in the shared header.
     client, _token, slug, qtoken, _public = _seed(tmp_path)
     for url in (f"/s/{slug}", f"/s/{slug}/quote", f"/q/{qtoken}"):
         html = client.get(url).text
-        assert "data-shop-strip" in html, f"{url}: no shop strip"
-        assert "T90 Store" in html, f"{url}: no shop name in strip"
+        assert "data-shop-strip" not in html, f"{url}: stray shop strip"
+        assert "ph-shop-strip" not in html, f"{url}: stray shop strip"
+        assert "T90 Store" in html, f"{url}: no shop name on page"
+        head = re.search(r'<header id="site-header".*?</header>', html,
+                         re.DOTALL).group(0)
+        assert "hp-bag" in head, f"{url}: no Bag in header"
+        assert 'href="/my"' in head, f"{url}: Bag link missing"
+        assert "T90 Store" not in head, f"{url}: shop name in header"
     for url in ("/", "/market", "/my", "/share"):
         html = client.get(url).text
         assert "data-shop-strip" not in html, f"{url}: stray shop strip"
+        head = re.search(r'<header id="site-header".*?</header>', html,
+                         re.DOTALL).group(0)
+        assert "hp-bag" not in head, f"{url}: stray Bag in header"
 
 
 def test_no_seller_navigation_on_public_pages(tmp_path):
@@ -460,10 +472,11 @@ def test_public_css_linked_and_scoped():
     assert "css/public.css" in base
     assert CSS.exists()
     css = CSS.read_text()
-    for selector in ("body.pub > .hdr", ".ph-shop-strip", ".ph-head",
+    for selector in ("body.pub > .hdr", ".hp-bag", ".ph-head",
                      ".form-card", ".field-input", ".field-error",
                      ".action-bar", "details.more", ".next-step",
-                     ".my-card", ".chip-row"):
+                     ".my-card", ".chip-row", ".shop-compact-line",
+                     ".obj-tint"):
         assert selector in css, selector
     assert "position: sticky" in css
     assert "safe-area-inset-bottom" in css

@@ -25,8 +25,10 @@
 {%- endif %}
 {%- endmacro %}
 
-{% macro obj(name, size=24, label=None) -%}
-<img class="obj" src="{{ static_url('icons/fluent/' ~ name ~ '.svg') if static_url is defined else '/static/icons/fluent/' ~ name ~ '.svg' }}" width="{{ size }}" height="{{ size }}" alt="{{ label if label else '' }}" loading="lazy">
+{% macro obj(name, size=24, label=None, tint=None) -%}
+{% if tint %}<span class="obj-tint tint-{{ tint }}"><img class="obj" src="{{ static_url('icons/fluent/' ~ name ~ '.svg') if static_url is defined else '/static/icons/fluent/' ~ name ~ '.svg' }}" width="{{ size }}" height="{{ size }}" alt="{{ label if label else '' }}" loading="lazy"></span>
+{%- else %}<img class="obj" src="{{ static_url('icons/fluent/' ~ name ~ '.svg') if static_url is defined else '/static/icons/fluent/' ~ name ~ '.svg' }}" width="{{ size }}" height="{{ size }}" alt="{{ label if label else '' }}" loading="lazy">
+{%- endif %}
 {%- endmacro %}
 
 {% macro button(label, href=None, kind="primary", type="submit", name=None, value=None, icon_name=None) -%}

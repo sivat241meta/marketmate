@@ -7,20 +7,21 @@
 <div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
 <section class="hero2" aria-label="{{ shop["name"] }}">
   <div class="shop-band-copy">
-    <p class="kick">{{ t('shell.todays_prices') }}</p>
+    <p class="kick band-full">{{ t('shell.todays_prices') }}</p>
     <h1>{{ shop["name"] }}</h1>
-    <p class="area-line">{{ ui.obj("pin", 20) }}<span>{{ shop["area"] }}</span></p>
-    {% if open_state == "open" %}<p class="open-line"><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
-    {% elif open_state == "closed" %}<p class="open-line"><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
-    {% if rows %}<p class="said-line muted">{{ t('ann.said_today', time=prices_time, area=shop["area"]) }}</p>
-    {% else %}<p class="said-line muted">{{ t('ann.said_notime', area=shop["area"]) }}</p>{% endif %}
+    <p class="shop-compact-line muted"><span>{{ shop["area"] }}</span>{% if open_state == "open" %}<span aria-hidden="true"> · </span><span>{{ t('hours.open_plain') }}</span>{% elif open_state == "closed" %}<span aria-hidden="true"> · </span><span>{{ t('hours.closed_plain') }}</span>{% endif %}{% if rows %}<span aria-hidden="true"> · </span><span>{{ t('shop.said_short', time=prices_time) }}</span>{% endif %}</p>
+    <p class="area-line band-full">{{ ui.obj("pin", 20) }}<span>{{ shop["area"] }}</span></p>
+    {% if open_state == "open" %}<p class="open-line band-full"><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
+    {% elif open_state == "closed" %}<p class="open-line band-full"><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
+    {% if rows %}<p class="said-line muted band-full">{{ t('ann.said_today', time=prices_time, area=shop["area"]) }}</p>
+    {% else %}<p class="said-line muted band-full">{{ t('ann.said_notime', area=shop["area"]) }}</p>{% endif %}
     {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
   </div>
   <div class="shop-band-actions">
-    <a class="pill cta big btn-primary" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.get_quote }} {{ ui.obj("mic", 20) }}</a>
-    <a class="pill ghost sm" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>
-    <a class="pill ghost sm" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
-    <a class="pill ghost sm" href="{{ share_url }}">{{ ui.obj("link", 20) }}{{ t('wa.share_list') }}</a>
+    <a class="pill cta big btn-primary shop-action" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}"><span class="act-ic">{{ ui.obj("mic", 20) }}</span><span class="act-full">{{ t.get_quote }}</span><span class="act-short">{{ t.get_quote_short }}</span></a>
+    <a class="pill ghost sm shop-action" href="https://wa.me/{{ digits }}"><span class="act-ic">{{ ui.obj("chat", 20, tint="green") }}</span><span class="act-full">{{ t.whatsapp }}</span><span class="act-short">{{ t.whatsapp }}</span></a>
+    <a class="pill ghost sm shop-action" href="tel:{{ shop["phone"] }}"><span class="act-ic">{{ ui.obj("call", 20) }}</span><span class="act-full">{{ t.call }}</span><span class="act-short">{{ t.call }}</span></a>
+    <a class="pill ghost sm shop-action" href="{{ share_url }}"><span class="act-ic">{{ ui.obj("link", 20) }}</span><span class="act-full">{{ t('wa.share_list') }}</span><span class="act-short">{{ t('dash.share') }}</span></a>
   </div>
 </section>
 

@@ -3751,7 +3751,7 @@ body.home-mkt > .hdr { display: none; }
   letter-spacing: 0.04em;
 }
 .hp-orders { display: none; }
-.hp-lang { display: none; }
+.hp-header > .lang { display: none; }
 .hp-menu-btn { display: inline-grid; }
 .hp-sheet {
   background: #fff;
@@ -4198,7 +4198,7 @@ body.home-mkt > .hdr { display: none; }
 @media (min-width: 900px) {
   .hp-nav { display: flex; }
   .hp-orders { display: inline-flex; }
-  .hp-lang { display: inline-flex; }
+  .hp-header > .lang { display: inline-flex; }
   .hp-menu-btn { display: none; }
   .hp-sheet { display: none; }
 }
