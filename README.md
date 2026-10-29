@@ -27,7 +27,7 @@ Customer:
 
 - Shop page with product tiles and today's prices.
 - Order by voice, text or photo. "My orders" shows status.
-- Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in Find a shop", on for new shops, switch in Settings). The market page has an honest empty state.
+- Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in MarketMate's Find a shop", on for new shops, switch in Settings). The market page has an honest empty state.
 
 Example of the printed board (demo data): [docs/img/board.png](docs/img/board.png).
 
@@ -88,7 +88,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1349 tests pass. `.venv/bin/ruff check .` is clean.
+1384 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Deploy
 
@@ -100,7 +100,7 @@ Stored on disk: the SQLite database, item photos, voice clips and the cost ledge
 
 ## How it was built
 
-Every commit in this repository was made by Muse Code, Meta's coding agent. 81 of 82 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
+Every commit in this repository was made by Muse Code, Meta's coding agent. 87 of 88 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
 
 ## Limits and next steps
 
