@@ -42,6 +42,14 @@
     <input id="shop-type" name="type" value="vegetable" required>
     <span class="help">What you sell, e.g. vegetable.</span>
   </div>
+  <div class="field">
+    <input type="hidden" name="listed" value="0">
+    <label class="toggle-row" for="shop-listed">
+      <input id="shop-listed" type="checkbox" name="listed" value="1" checked>
+      <span>{{ t('set.listed_label') }}</span>
+    </label>
+    <span class="help">{{ t('set.listed_help') }}</span>
+  </div>
   <button class="btn btn-primary btn-big" type="submit">Create shop</button>
 </form>
 </section>

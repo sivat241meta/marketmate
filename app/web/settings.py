@@ -171,6 +171,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if (lat is None) != (lng is None):
                 error = error or "bad location"
                 lat = lng = db._UNCHANGED
+            # Market listing: the switch is owner-only (helpers get 403
+            # above) and judge/test shops always stay unlisted.
+            listed = any(
+                str(value or "").strip().lower()
+                in ("1", "on", "true", "yes")
+                for value in form.getlist("listed"))
+            if shop["is_judge"]:
+                listed = False
             if error is not None:
                 fresh = _shop_or_404(conn, token)
                 ui_lang = get_ui_lang(request, fresh)
@@ -199,7 +207,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 round_bills=("round_bills" in form),
                 hours_json=(parsed_hours if parsed_hours
                             else db._UNCHANGED),
-                pincode=pincode, lat=lat, lng=lng)
+                pincode=pincode, lat=lat, lng=lng, listed=listed)
             return RedirectResponse(f"/e/{token}/settings", status_code=303)
         finally:
             conn.close()
