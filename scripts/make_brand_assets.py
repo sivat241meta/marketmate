@@ -2,7 +2,14 @@
 
 The logo is an original basket-"M" mark plus a "MarketMate" wordmark, drawn
 entirely from code (no image input). The mark geometry is defined once below
-in a 512x512 design space and shared by the SVG and PNG emitters.
+in a 512x512 design space, as cubic-Bezier outline paths shared by the SVG
+and PNG emitters, so the SVG and PNG versions match.
+
+The mark: a tapered basket-"M" (wider at the top, soft rim band, diagonal
+lime->green->blue gradient, subtle inner highlight), a thick semicircular
+handle tucked behind the legs, and a produce cluster sitting in the basket
+mouth (tomato, carrot, leafy greens). Favicons use a simplified small-size
+variant (produce merged into two plain discs, thicker handle).
 
 Outputs (all under app/web/static/brand/):
   logo.svg, mark.svg,
@@ -16,7 +23,6 @@ Usage: .venv/bin/python scripts/make_brand_assets.py
 
 from __future__ import annotations
 
-import itertools
 import math
 import tempfile
 from pathlib import Path
@@ -25,7 +31,7 @@ from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 BRAND_DIR = ROOT / "app" / "web" / "static" / "brand"
@@ -37,129 +43,20 @@ DESIGN = 512  # design space is 512 x 512
 LIME = (140, 208, 58)  # #8CD03A gradient start (top-left)
 MID_GREEN = (34, 169, 85)  # #22A955 gradient middle
 BLUE = (31, 111, 214)  # #1F6FD6 gradient end (bottom-right)
-HANDLE_GREEN = (45, 179, 74)  # #2DB34A basket handle
+HANDLE_GREEN = (30, 158, 71)  # #1E9E47 basket handle (deep green)
+RIM = (192, 229, 147)  # #C0E593 soft rim band (light lime tint)
 NAVY = (27, 42, 92)  # #1B2A5C "Market"
 WORD_GREEN = (45, 169, 79)  # #2DA94F "Mate"
-TOMATO = (232, 68, 46)  # #E8442E
-ORANGE = (245, 158, 11)  # #F59E0B
-LEAF_DARK = (31, 157, 68)  # #1F9D44
+TOMATO = (232, 65, 44)  # #E8412C
+TOMATO_SHADOW = (192, 50, 32)  # #C03220 shadow crescent
+CALYX = (46, 158, 62)  # #2E9E3E calyx + dark leaves
+CARROT = (245, 154, 35)  # #F59A23
+LEAF_LIGHT = (59, 181, 74)  # #3BB54A light leaves
+MIDRIB_DARK = (30, 122, 50)  # #1E7A32 midrib on light leaves
 
 
 def _css(rgb: tuple[int, int, int]) -> str:
     return f"#{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"
-
-
-# --- mark geometry (design space) --------------------------------------------
-# Bold rounded M: two thick outer legs, middle dipping into a V.
-M_POINTS = [(112, 428), (112, 272), (256, 386), (400, 272), (400, 428)]
-M_WIDTH = 92
-# Diagonal gradient anchors: lime top-left -> green -> blue bottom-right.
-GRAD_START = (66, 226)
-GRAD_END = (446, 474)
-# Semicircular basket handle arcing above the M.
-HANDLE_C = (256, 265)
-HANDLE_R = 135
-HANDLE_W = 30
-# Produce peeking out between the legs (drawn before the M body).
-ORANGE_VEG = (180, 252, 44)  # cx, cy, r
-TOMATO_VEG = (272, 268, 54)
-CALYX_C = (272, 218)  # star centre; outer r 22, inner r 9
-STEM = ((272, 200), (272, 188), 9)  # x1, y1, x2, y2 packed below
-LEAVES = [
-    # cx, cy, length, width, angle_deg, colour
-    (168, 198, 112, 48, -38, HANDLE_GREEN),
-    (334, 194, 122, 52, 30, LEAF_DARK),
-    (256, 180, 92, 42, -6, LIME),
-]
-
-# Wordmark: Plus Jakarta Sans ExtraBold, cap height in design units.
-WORD_CAP = 160
-WORD_GAP = 128  # 0.25 x mark height
-WORD_X0 = DESIGN + WORD_GAP
-WORD_A = ("Market", NAVY)
-WORD_B = ("Mate", WORD_GREEN)
-
-
-def _star_points(cx: float, cy: float, r_out: float, r_in: float,
-                 n: int = 5, rot_deg: float = -90.0) -> list[tuple[float, float]]:
-    pts = []
-    for i in range(2 * n):
-        r = r_out if i % 2 == 0 else r_in
-        a = math.radians(rot_deg + i * 180.0 / n)
-        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
-    return pts
-
-
-def _leaf_points(cx: float, cy: float, length: float, width: float,
-                 angle_deg: float, steps: int = 5) -> list[tuple[float, float]]:
-    a = math.radians(angle_deg)
-    dx, dy = math.cos(a), math.sin(a)
-    nx, ny = -dy, dx
-    pts: list[tuple[float, float]] = []
-    for side in (1.0, -1.0):
-        order = range(steps + 1) if side > 0 else range(steps, -1, -1)
-        for i in order:
-            t = i / steps
-            px = cx + (t - 0.5) * length * dx
-            py = cy + (t - 0.5) * length * dy
-            w = (width / 2) * math.sin(math.pi * t) ** 0.8
-            pts.append((px + side * nx * w, py + side * ny * w))
-    return pts
-
-
-def _body_shapes() -> list[str]:
-    """The M body as filled shapes sharing one gradient.
-
-    A round-cap/round-join stroke equals the union of its segment
-    rectangles plus a disc at every vertex. Emitting that union (all
-    filled with the same userSpaceOnUse gradient, so it stays seamless)
-    keeps the exact stroke shape while using only gradient fills, which
-    every SVG renderer (including WeasyPrint) supports.
-    """
-    r = M_WIDTH / 2
-    shapes = []
-    for (x0, y0), (x1, y1) in itertools.pairwise(M_POINTS):
-        ln = math.hypot(x1 - x0, y1 - y0)
-        nx, ny = -(y1 - y0) / ln * r, (x1 - x0) / ln * r
-        quad = [(x0 + nx, y0 + ny), (x1 + nx, y1 + ny),
-                (x1 - nx, y1 - ny), (x0 - nx, y0 - ny)]
-        shapes.append(
-            f'<polygon points="{_pts_attr(quad)}" fill="url(#mmg)"/>')
-    for x, y in M_POINTS:
-        shapes.append(
-            f'<circle cx="{x}" cy="{y}" r="{_num(r)}" fill="url(#mmg)"/>')
-    return shapes
-
-
-def _content_bbox() -> tuple[int, int, int, int]:
-    """Union of every mark primitive, plus a small margin (design units)."""
-    xs: list[float] = []
-    ys: list[float] = []
-
-    def box(x0: float, y0: float, x1: float, y1: float) -> None:
-        xs.extend((x0, x1))
-        ys.extend((y0, y1))
-
-    hw = M_WIDTH / 2
-    mxs = [p[0] for p in M_POINTS]
-    mys = [p[1] for p in M_POINTS]
-    box(min(mxs) - hw, min(mys) - hw, max(mxs) + hw, max(mys) + hw)
-    hcx, hcy = HANDLE_C
-    box(hcx - HANDLE_R - HANDLE_W / 2, hcy - HANDLE_R - HANDLE_W / 2,
-        hcx + HANDLE_R + HANDLE_W / 2, hcy + HANDLE_W / 2)
-    for cx, cy, r in (ORANGE_VEG, TOMATO_VEG):
-        box(cx - r, cy - r, cx + r, cy + r)
-    for x, y in _star_points(*CALYX_C, 22, 9):
-        box(x, y, x, y)
-    (sx1, sy1), (sx2, sy2), sw = STEM
-    box(min(sx1, sx2) - sw / 2, min(sy1, sy2) - sw / 2,
-        max(sx1, sx2) + sw / 2, max(sy1, sy2) + sw / 2)
-    for cx, cy, ln, wd, ang, _ in LEAVES:
-        for x, y in _leaf_points(cx, cy, ln, wd, ang):
-            box(x, y, x, y)
-    m = 6
-    return (math.floor(min(xs) - m), math.floor(min(ys) - m),
-            math.ceil(max(xs) + m), math.ceil(max(ys) + m))
 
 
 def _num(v: float) -> str:
@@ -169,11 +66,320 @@ def _num(v: float) -> str:
     return s if s != "-0" else "0"
 
 
-def _pts_attr(pts: list[tuple[float, float]]) -> str:
-    return " ".join(f"{_num(x)},{_num(y)}" for x, y in pts)
+# --- cubic-Bezier path helpers ------------------------------------------------
+# A path is a list of ops; every curve is a cubic Bezier, fills only.
+Op = tuple  # ("M",x,y) | ("L",x,y) | ("C",x1,y1,x2,y2,x,y) | ("Z",)
 
 
-# --- wordmark from the variable font ------------------------------------------
+def _norm_angle(a: float) -> float:
+    return (a + math.pi) % (2 * math.pi) - math.pi
+
+
+def _arc_cubics(cx: float, cy: float, r: float, a0: float,
+                sweep: float) -> list[tuple[float, ...]]:
+    """Cubic segments for the arc from angle a0 sweeping `sweep` radians."""
+    n = max(1, math.ceil(abs(sweep) / (math.pi / 2)))
+    out = []
+    for i in range(n):
+        b0 = a0 + sweep * i / n
+        b1 = a0 + sweep * (i + 1) / n
+        k = 4.0 / 3.0 * math.tan((b1 - b0) / 4.0)
+        x0, y0 = cx + r * math.cos(b0), cy + r * math.sin(b0)
+        x3, y3 = cx + r * math.cos(b1), cy + r * math.sin(b1)
+        out.append((x0 - k * r * math.sin(b0), y0 + k * r * math.cos(b0),
+                    x3 + k * r * math.sin(b1), y3 - k * r * math.cos(b1),
+                    x3, y3))
+    return out
+
+
+def _arc_ops(cx: float, cy: float, r: float, a0: float,
+             sweep: float) -> list[Op]:
+    ops: list[Op] = [("L", cx + r * math.cos(a0), cy + r * math.sin(a0))]
+    ops.extend(("C", *seg) for seg in _arc_cubics(cx, cy, r, a0, sweep))
+    return ops
+
+
+def _circle_ops(cx: float, cy: float, r: float) -> list[Op]:
+    ops: list[Op] = [("M", cx + r, cy)]
+    for k in range(4):
+        ops.extend(("C", *seg)
+                   for seg in _arc_cubics(cx, cy, r, k * math.pi / 2, math.pi / 2))
+    ops.append(("Z",))
+    return ops
+
+
+def _rrect_ops(x0: float, y0: float, x1: float, y1: float, r: float) -> list[Op]:
+    ops: list[Op] = [("M", x0 + r, y0), ("L", x1 - r, y0)]
+    ops.extend(("C", *seg) for seg in _arc_cubics(x1 - r, y0 + r, r, -math.pi / 2, math.pi / 2))
+    ops.append(("L", x1, y1 - r))
+    ops.extend(("C", *seg) for seg in _arc_cubics(x1 - r, y1 - r, r, 0.0, math.pi / 2))
+    ops.append(("L", x0 + r, y1))
+    ops.extend(("C", *seg) for seg in _arc_cubics(x0 + r, y1 - r, r, math.pi / 2, math.pi / 2))
+    ops.append(("L", x0, y0 + r))
+    ops.extend(("C", *seg) for seg in _arc_cubics(x0 + r, y0 + r, r, math.pi, math.pi / 2))
+    ops.append(("Z",))
+    return ops
+
+
+def _star_ops(cx: float, cy: float, r_out: float, r_in: float,
+              n: int = 5, rot_deg: float = -90.0) -> list[Op]:
+    ops: list[Op] = []
+    for i in range(2 * n):
+        r = r_out if i % 2 == 0 else r_in
+        a = math.radians(rot_deg + i * 180.0 / n)
+        ops.append(("M" if i == 0 else "L", cx + r * math.cos(a), cy + r * math.sin(a)))
+    ops.append(("Z",))
+    return ops
+
+
+def _stroke_outline(pts: list[tuple[float, float]],
+                    halfs: list[float]) -> list[Op]:
+    """Centreline + per-point half widths -> closed outline (round joins/caps)."""
+    segs = len(pts) - 1
+    norms = []
+    for i in range(segs):
+        dx, dy = pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]
+        ln = math.hypot(dx, dy)
+        norms.append((-dy / ln, dx / ln))
+    la = [math.atan2(ny, nx) for nx, ny in norms]
+    ops: list[Op] = [("M", pts[0][0] + norms[0][0] * halfs[0],
+                      pts[0][1] + norms[0][1] * halfs[0])]
+    for j in range(1, segs):  # left-side round joins
+        ops.extend(_arc_ops(pts[j][0], pts[j][1], halfs[j],
+                             la[j - 1], _norm_angle(la[j] - la[j - 1])))
+    ops.append(("L", pts[-1][0] + norms[-1][0] * halfs[-1],
+                pts[-1][1] + norms[-1][1] * halfs[-1]))
+    fwd = math.atan2(pts[-1][1] - pts[-2][1], pts[-1][0] - pts[-2][0])
+    cap = math.pi if _norm_angle(fwd - la[-1]) > 0 else -math.pi
+    ops.extend(_arc_ops(pts[-1][0], pts[-1][1], halfs[-1], la[-1], cap))
+    for j in range(segs - 1, 0, -1):  # right side, reversed
+        ops.extend(_arc_ops(pts[j][0], pts[j][1], halfs[j], la[j] + math.pi,
+                             _norm_angle(la[j - 1] - la[j])))
+    ops.append(("L", pts[0][0] - norms[0][0] * halfs[0],
+                pts[0][1] - norms[0][1] * halfs[0]))
+    back = math.atan2(pts[0][1] - pts[1][1], pts[0][0] - pts[1][0])
+    cap = math.pi if _norm_angle(back - la[0] - math.pi) > 0 else -math.pi
+    ops.extend(_arc_ops(pts[0][0], pts[0][1], halfs[0], la[0] + math.pi, cap))
+    ops.append(("Z",))
+    return ops
+
+
+def _leaf_ops(bx: float, by: float, tx: float, ty: float, w: float) -> list[Op]:
+    """Pointed-oval leaf from base (bx,by) to tip (tx,ty), width w."""
+    dx, dy = tx - bx, ty - by
+    ln = math.hypot(dx, dy)
+    ux, uy, nx, ny = dx / ln, dy / ln, -dy / ln, dx / ln
+    h = w / 2
+    return [
+        ("M", bx, by),
+        ("C", bx + ux * 0.25 * ln + nx * h, by + uy * 0.25 * ln + ny * h,
+         bx + ux * 0.70 * ln + nx * h * 0.9, by + uy * 0.70 * ln + ny * h * 0.9,
+         tx, ty),
+        ("C", bx + ux * 0.70 * ln - nx * h * 0.9, by + uy * 0.70 * ln - ny * h * 0.9,
+         bx + ux * 0.25 * ln - nx * h, by + uy * 0.25 * ln - ny * h, bx, by),
+        ("Z",),
+    ]
+
+
+def _midrib_ops(bx: float, by: float, tx: float, ty: float) -> list[Op]:
+    dx, dy = tx - bx, ty - by
+    ln = math.hypot(dx, dy)
+    ux, uy, nx, ny = dx / ln, dy / ln, -dy / ln, dx / ln
+    sx, sy = bx + ux * 0.10 * ln, by + uy * 0.10 * ln
+    ex, ey = bx + ux * 0.94 * ln, by + uy * 0.94 * ln
+    hw = 2.4
+    return [
+        ("M", sx, sy),
+        ("C", sx + ux * 0.3 * ln + nx * hw, sy + uy * 0.3 * ln + ny * hw,
+         sx + ux * 0.6 * ln + nx * hw, sy + uy * 0.6 * ln + ny * hw, ex, ey),
+        ("C", sx + ux * 0.6 * ln - nx * hw, sy + uy * 0.6 * ln - ny * hw,
+         sx + ux * 0.3 * ln - nx * hw, sy + uy * 0.3 * ln - ny * hw, sx, sy),
+        ("Z",),
+    ]
+
+
+def _path_d(ops: list[Op]) -> str:
+    parts = []
+    for op in ops:
+        if op[0] == "Z":
+            parts.append("Z")
+        else:
+            parts.append(op[0] + " ".join(_num(v) for v in op[1:]))
+    return " ".join(parts)
+
+
+def _flatten(ops: list[Op], subdiv: int = 32) -> list[list[tuple[float, float]]]:
+    """Sample every cubic; returns one point list per subpath."""
+    subs: list[list[tuple[float, float]]] = []
+    cur: list[tuple[float, float]] = []
+    x0 = y0 = 0.0
+    for op in ops:
+        if op[0] == "M":
+            if cur:
+                subs.append(cur)
+            cur = [(op[1], op[2])]
+        elif op[0] == "L":
+            cur.append((op[1], op[2]))
+        elif op[0] == "C":
+            _, x1, y1, x2, y2, x3, y3 = op
+            for k in range(1, subdiv + 1):
+                t = k / subdiv
+                mt = 1 - t
+                cur.append((
+                    mt**3 * x0 + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t**3 * x3,
+                    mt**3 * y0 + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t**3 * y3,
+                ))
+        elif op[0] == "Z":
+            if cur:
+                subs.append(cur)
+                cur = []
+            continue
+        x0, y0 = cur[-1]
+    if cur:
+        subs.append(cur)
+    return subs
+
+
+# --- mark geometry (design space) ----------------------------------------------
+# Basket-M centreline: two thick rounded legs, middle dipping into a V.
+# Half widths taper 46 (top) -> 40 (bottom) so the basket is wider at the top.
+M_LINE = [(122, 424), (112, 266), (256, 382), (400, 266), (390, 424)]
+M_HALF = [40, 46, 44, 46, 40]
+BODY_OPS = _stroke_outline(M_LINE, M_HALF)
+BODY_POLY = _flatten(BODY_OPS)[0]
+BODY_BBOX = (min(p[0] for p in BODY_POLY), min(p[1] for p in BODY_POLY),
+             max(p[0] for p in BODY_POLY), max(p[1] for p in BODY_POLY))
+# Diagonal gradient anchors: lime top-left -> green -> blue bottom-right.
+GRAD_START = (66, 210)
+GRAD_END = (446, 478)
+# Semicircular handle tucked behind the legs; ~9% of the 380-unit mark width.
+HANDLE_C = (256, 268)
+HANDLE_R = 160
+HANDLE_W = 34
+SMALL_HANDLE_W = 40
+# Soft rim band across the basket mouth; ends tuck behind the legs.
+RIM_OPS = _rrect_ops(150, 272, 362, 300, 14)
+# Subtle inner highlight stripe on the left leg (flat white, low opacity).
+HIGHLIGHT_OPS = _rrect_ops(92, 300, 106, 392, 7)
+HIGHLIGHT_ALPHA = 0.22
+
+# Produce: (leaf base, tip, width, fill, rib fill).
+LEAVES = [
+    ((230, 252), (148, 206), 56, CALYX, LEAF_LIGHT),
+    ((226, 254), (150, 232), 48, LEAF_LIGHT, MIDRIB_DARK),
+    ((234, 250), (186, 158), 50, LEAF_LIGHT, MIDRIB_DARK),
+]
+# Carrot leaning out to the right: top centre, top half-width, tip, tip radius.
+CARROT_TOP = (318, 200)
+CARROT_HT = 23
+CARROT_TIP = (268, 298)
+CARROT_TR = 4
+# Three fronds on the carrot top: (base, tip, width, fill).
+FRONDS = [
+    ((310, 195), (304, 156), 10, CALYX),
+    ((320, 193), (320, 150), 12, LEAF_LIGHT),
+    ((330, 196), (336, 158), 11, CALYX),
+]
+TOMATO_C = (243, 230)
+TOMATO_R = 50
+CALYX_C = (243, 184)
+STEM_RECT = (239.5, 150, 246.5, 170, 3.5)
+# Small-size produce: two plain discs (tomato + carrot merged).
+SMALL_RED = (238, 236, 56)
+SMALL_ORANGE = (318, 246, 44)
+
+
+def _handle_ops(width: float) -> list[Op]:
+    cx, cy = HANDLE_C
+    r_out, r_in = HANDLE_R + width / 2, HANDLE_R - width / 2
+    ops: list[Op] = [("M", cx - r_out, cy)]
+    ops.extend(_arc_ops(cx, cy, r_out, math.pi, math.pi))  # outer, over the top
+    ops.extend(_arc_ops(cx + HANDLE_R, cy, width / 2, 0.0, math.pi))  # right cap
+    ops.extend(_arc_ops(cx, cy, r_in, 0.0, -math.pi))  # inner, back left
+    ops.extend(_arc_ops(cx - HANDLE_R, cy, width / 2, 0.0, math.pi))  # left cap
+    ops.append(("Z",))
+    return ops
+
+
+def _carrot_ops() -> list[Op]:
+    (tcx, tcy), tip = CARROT_TOP, CARROT_TIP
+    dx, dy = tip[0] - tcx, tip[1] - tcy
+    ln = math.hypot(dx, dy)
+    ux, uy, nx, ny = dx / ln, dy / ln, -dy / ln, dx / ln
+    lx, ly = tcx + nx * CARROT_HT, tcy + ny * CARROT_HT
+    rx, ry = tcx - nx * CARROT_HT, tcy - ny * CARROT_HT
+    ops: list[Op] = [("M", lx, ly),
+                     ("L", tip[0] + nx * CARROT_TR, tip[1] + ny * CARROT_TR)]
+    a_from = math.atan2(ny, nx)
+    fwd = math.atan2(uy, ux)
+    delta = math.pi if _norm_angle(fwd - a_from) > 0 else -math.pi
+    ops.extend(_arc_ops(tip[0], tip[1], CARROT_TR, a_from, delta))
+    ops.append(("L", rx, ry))
+    ops.append(("C", rx - 7, ry - 10, lx + 7, ly - 10, lx, ly))  # domed top
+    ops.append(("Z",))
+    return ops
+
+
+def _crescent_ops() -> list[Op]:
+    """Darker shadow crescent hugging the tomato's lower-right inside edge."""
+    cx, cy = TOMATO_C
+    a0, a1 = math.radians(-35), math.radians(55)
+    ops: list[Op] = [("M", cx + 49 * math.cos(a0), cy + 49 * math.sin(a0))]
+    ops.extend(("C", *seg) for seg in _arc_cubics(cx, cy, 49, a0, a1 - a0))
+    ops.append(("C", 272, 255, 270, 217, cx + 49 * math.cos(a0), cy + 49 * math.sin(a0)))
+    ops.append(("Z",))
+    return ops
+
+
+def _produce_shapes(variant: str) -> list[tuple[list[Op], tuple[int, int, int]]]:
+    """Produce cluster in draw order: (path ops, fill)."""
+    if variant == "small":
+        return [(_circle_ops(*SMALL_ORANGE), CARROT),
+                (_circle_ops(*SMALL_RED), TOMATO)]
+    shapes: list[tuple[list[Op], tuple[int, int, int]]] = []
+    for (bx, by), (tx, ty), w, fill, rib in LEAVES:
+        shapes.append((_leaf_ops(bx, by, tx, ty, w), fill))
+        shapes.append((_midrib_ops(bx, by, tx, ty), rib))
+    shapes.append((_carrot_ops(), CARROT))
+    for (bx, by), (tx, ty), w, fill in FRONDS:
+        shapes.append((_leaf_ops(bx, by, tx, ty, w), fill))
+    shapes.append((_circle_ops(*TOMATO_C, TOMATO_R), TOMATO))
+    shapes.append((_crescent_ops(), TOMATO_SHADOW))
+    shapes.append((_star_ops(*CALYX_C, 25, 10.5), CALYX))
+    shapes.append((_rrect_ops(*STEM_RECT), CALYX))
+    return shapes
+
+
+def _content_bbox(variant: str = "full") -> tuple[int, int, int, int]:
+    """Union of every mark path, plus a small margin (design units)."""
+    xs: list[float] = []
+    ys: list[float] = []
+    paths = [_handle_ops(HANDLE_W if variant == "full" else SMALL_HANDLE_W),
+             RIM_OPS, BODY_OPS]
+    paths.extend(ops for ops, _ in _produce_shapes(variant))
+    for ops in paths:
+        for poly in _flatten(ops):
+            xs.extend(p[0] for p in poly)
+            ys.extend(p[1] for p in poly)
+    m = 6
+    return (math.floor(min(xs) - m), math.floor(min(ys) - m),
+            math.ceil(max(xs) + m), math.ceil(max(ys) + m))
+
+
+# --- wordmark ------------------------------------------------------------------
+# Plus Jakarta Sans ExtraBold as paths. Lockup: gap 0.18 x mark height,
+# cap height 0.42 x mark height, optically centred on the basket body,
+# slight negative tracking.
+TRACKING = 0.99
+_MARK_CX0, _MARK_CY0, _MARK_CX1, _MARK_CY1 = _content_bbox("full")
+_MARK_H = _MARK_CY1 - _MARK_CY0
+WORD_CAP = round(0.42 * _MARK_H)
+WORD_GAP = round(0.18 * _MARK_H)
+WORD_X0 = _MARK_CX1 - 6 + WORD_GAP  # visual gap from the mark's right edge
+WORD_A = ("Market", NAVY)
+WORD_B = ("Mate", WORD_GREEN)
+_BODY_CY = (BODY_BBOX[1] + BODY_BBOX[3]) / 2
+
 
 def _extrabold_font() -> TTFont:
     font = TTFont(str(FONT_PATH))
@@ -195,7 +401,7 @@ def _word_svg(font: TTFont, word: str, scale: float, x0: float,
         tp = TransformPen(pen, (scale, 0, 0, -scale, x0 + pen_x, baseline))
         glyph_set[name].draw(tp)
         parts.append(pen.getCommands())
-        pen_x += hmtx[name][0] * scale
+        pen_x += hmtx[name][0] * scale * TRACKING
     return " ".join(p for p in parts if p), pen_x
 
 
@@ -204,8 +410,7 @@ def _wordmark() -> tuple[str, float, float]:
     font = _extrabold_font()
     cap_units = font["OS/2"].sCapHeight
     scale = WORD_CAP / cap_units
-    _, cy0, _, cy1 = _content_bbox()
-    baseline = (cy0 + cy1) / 2 + WORD_CAP / 2
+    baseline = _BODY_CY + WORD_CAP / 2
     out = []
     x = WORD_X0
     for word, colour in (WORD_A, WORD_B):
@@ -217,8 +422,9 @@ def _wordmark() -> tuple[str, float, float]:
 
 # --- SVG ----------------------------------------------------------------------
 
-def _mark_inner() -> str:
-    hcx, hcy = HANDLE_C
+
+def _mark_inner(variant: str = "full") -> str:
+    width = HANDLE_W if variant == "full" else SMALL_HANDLE_W
     lines = [
         "<defs>",
         (f'<linearGradient id="mmg" gradientUnits="userSpaceOnUse" '
@@ -230,28 +436,14 @@ def _mark_inner() -> str:
         f'<stop offset="1" stop-color="{_css(BLUE)}"/>',
         "</linearGradient>",
         "</defs>",
-        (f'<path d="M{_num(hcx - HANDLE_R)} {_num(hcy)}A{HANDLE_R} '
-         f'{HANDLE_R} 0 0 1 {_num(hcx + HANDLE_R)} {_num(hcy)}" fill="none" '
-         f'stroke="{_css(HANDLE_GREEN)}" stroke-width="{HANDLE_W}" '
-         'stroke-linecap="round"/>'),
+        f'<path d="{_path_d(_handle_ops(width))}" fill="{_css(HANDLE_GREEN)}"/>',
     ]
-    for cx, cy, ln, wd, ang, colour in LEAVES:
-        pts = _leaf_points(cx, cy, ln, wd, ang)
-        lines.append(
-            f'<polygon points="{_pts_attr(pts)}" fill="{_css(colour)}"/>')
-    for cx, cy, r in (ORANGE_VEG, TOMATO_VEG):
-        colour = ORANGE if r == ORANGE_VEG[2] else TOMATO
-        lines.append(
-            f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{_css(colour)}"/>')
-    star = _star_points(*CALYX_C, 22, 9)
-    lines.append(
-        f'<polygon points="{_pts_attr(star)}" fill="{_css(HANDLE_GREEN)}"/>')
-    (sx1, sy1), (sx2, sy2), sw = STEM
-    lines.append(
-        f'<line x1="{sx1}" y1="{sy1}" x2="{sx2}" y2="{sy2}" '
-        f'stroke="{_css(HANDLE_GREEN)}" stroke-width="{sw}" '
-        'stroke-linecap="round"/>')
-    lines.extend(_body_shapes())
+    for ops, colour in _produce_shapes(variant):
+        lines.append(f'<path d="{_path_d(ops)}" fill="{_css(colour)}"/>')
+    lines.append(f'<path d="{_path_d(RIM_OPS)}" fill="{_css(RIM)}"/>')
+    lines.append(f'<path d="{_path_d(BODY_OPS)}" fill="url(#mmg)"/>')
+    lines.append(f'<path d="{_path_d(HIGHLIGHT_OPS)}" fill="#FFFFFF" '
+                 f'fill-opacity="{HIGHLIGHT_ALPHA}"/>')
     return "\n".join(lines)
 
 
@@ -267,21 +459,24 @@ def _svg_doc(width: float, height: float, vb: str, body: str) -> str:
 def _lockup_box() -> tuple[int, int, int, int]:
     """viewBox (x, y, w, h) cropping the full lockup to its content."""
     _, word_adv, _ = _wordmark()
-    right = WORD_X0 + word_adv + 8
-    return (56, 100, math.ceil(right - 56), 392)
+    cx0, cy0, _, cy1 = _content_bbox("full")
+    x0, y0 = cx0 - 4, cy0 - 2
+    x1, y1 = WORD_X0 + word_adv + 8, cy1 + 2
+    return (x0, y0, math.ceil(x1 - x0), math.ceil(y1 - y0))
 
 
 def write_svgs() -> None:
     BRAND_DIR.mkdir(parents=True, exist_ok=True)
     (BRAND_DIR / "mark.svg").write_text(
-        _svg_doc(DESIGN, DESIGN, f"0 0 {DESIGN} {DESIGN}", _mark_inner()))
+        _svg_doc(DESIGN, DESIGN, f"0 0 {DESIGN} {DESIGN}", _mark_inner("full")))
     words, _, _ = _wordmark()
     x, y, w, h = _lockup_box()
     (BRAND_DIR / "logo.svg").write_text(
-        _svg_doc(w, h, f"{x} {y} {w} {h}", _mark_inner() + "\n" + words))
+        _svg_doc(w, h, f"{x} {y} {w} {h}", _mark_inner("full") + "\n" + words))
 
 
 # --- PNG ----------------------------------------------------------------------
+
 
 def _lerp3(t: float) -> tuple[int, int, int]:
     """Three-stop diagonal gradient: lime -> green -> blue."""
@@ -293,48 +488,30 @@ def _lerp3(t: float) -> tuple[int, int, int]:
     return tuple(round(x + (y - x) * u) for x, y in zip(a, b))
 
 
-def _paint_mark(img: Image.Image, s: float, dx: float, dy: float) -> None:
+def _paint_mark(img: Image.Image, s: float, dx: float, dy: float,
+                variant: str = "full") -> None:
     """Paint the mark on `img`; design (x, y) maps to (x*s+dx, y*s+dy)."""
     draw = ImageDraw.Draw(img)
 
-    def disc(cx: float, cy: float, r: float, fill: tuple[int, ...]) -> None:
-        draw.ellipse([cx * s + dx - r * s, cy * s + dy - r * s,
-                      cx * s + dx + r * s, cy * s + dy + r * s], fill=fill)
+    def polys(ops: list[Op]) -> list[list[tuple[float, float]]]:
+        return [[(x * s + dx, y * s + dy) for x, y in poly]
+                for poly in _flatten(ops)]
 
-    # Handle (behind everything).
-    hcx, hcy = HANDLE_C
-    draw.arc([hcx * s + dx - HANDLE_R * s, hcy * s + dy - HANDLE_R * s,
-              hcx * s + dx + HANDLE_R * s, hcy * s + dy + HANDLE_R * s],
-             start=180, end=360, width=max(1, round(HANDLE_W * s)),
-             fill=HANDLE_GREEN + (255,))
-    disc(hcx - HANDLE_R, hcy, HANDLE_W / 2, HANDLE_GREEN + (255,))
-    disc(hcx + HANDLE_R, hcy, HANDLE_W / 2, HANDLE_GREEN + (255,))
-    # Produce.
-    for cx, cy, ln, wd, ang, colour in LEAVES:
-        pts = [(x * s + dx, y * s + dy)
-               for x, y in _leaf_points(cx, cy, ln, wd, ang)]
-        draw.polygon(pts, fill=colour + (255,))
-    for cx, cy, r in (ORANGE_VEG, TOMATO_VEG):
-        colour = ORANGE if r == ORANGE_VEG[2] else TOMATO
-        draw.ellipse([cx * s + dx - r * s, cy * s + dy - r * s,
-                      cx * s + dx + r * s, cy * s + dy + r * s],
-                     fill=colour + (255,))
-    star = [(x * s + dx, y * s + dy)
-            for x, y in _star_points(*CALYX_C, 22, 9)]
-    draw.polygon(star, fill=HANDLE_GREEN + (255,))
-    (sx1, sy1), (sx2, sy2), sw = STEM
-    draw.line([sx1 * s + dx, sy1 * s + dy, sx2 * s + dx, sy2 * s + dy],
-              width=max(1, round(sw * s)), fill=HANDLE_GREEN + (255,))
-    disc(sx1, sy1, sw / 2, HANDLE_GREEN + (255,))
-    disc(sx2, sy2, sw / 2, HANDLE_GREEN + (255,))
+    width = HANDLE_W if variant == "full" else SMALL_HANDLE_W
+    for poly in polys(_handle_ops(width)):
+        draw.polygon(poly, fill=HANDLE_GREEN + (255,))
+    for ops, colour in _produce_shapes(variant):
+        for poly in polys(ops):
+            draw.polygon(poly, fill=colour + (255,))
+    for poly in polys(RIM_OPS):
+        draw.polygon(poly, fill=RIM + (255,))
     # M body with the diagonal gradient, painted through a mask.
-    pad = M_WIDTH / 2 + 2
-    mxs = [p[0] for p in M_POINTS]
-    mys = [p[1] for p in M_POINTS]
-    rx0 = math.floor((min(mxs) - pad) * s + dx)
-    ry0 = math.floor((min(mys) - pad) * s + dy)
-    rx1 = math.ceil((max(mxs) + pad) * s + dx)
-    ry1 = math.ceil((max(mys) + pad) * s + dy)
+    pad = 2
+    bx0, by0, bx1, by1 = BODY_BBOX
+    rx0 = math.floor((bx0 - pad) * s + dx)
+    ry0 = math.floor((by0 - pad) * s + dy)
+    rx1 = math.ceil((bx1 + pad) * s + dx)
+    ry1 = math.ceil((by1 + pad) * s + dy)
     rw, rh = rx1 - rx0, ry1 - ry0
     gx, gy = GRAD_END[0] - GRAD_START[0], GRAD_END[1] - GRAD_START[1]
     norm2 = gx * gx + gy * gy
@@ -344,20 +521,16 @@ def _paint_mark(img: Image.Image, s: float, dx: float, dy: float) -> None:
 
     grad = Image.new("RGBA", (rw, rh), (0, 0, 0, 0))
     gd = ImageDraw.Draw(grad)
-    corners = [(min(mxs) - pad, min(mys) - pad),
-               (max(mxs) + pad, min(mys) - pad),
-               (min(mxs) - pad, max(mys) + pad),
-               (max(mxs) + pad, max(mys) + pad)]
-    ts = [proj(x, y) for x, y in corners]
+    ts = [proj(x, y) for x, y in
+          ((bx0 - pad, by0 - pad), (bx1 + pad, by0 - pad),
+           (bx0 - pad, by1 + pad), (bx1 + pad, by1 + pad))]
     t0, t1 = min(ts), max(ts)
     # Constant-colour bands ~0.75 raw px apart (overlapped for coverage).
     span = (t1 - t0) * math.sqrt(norm2) * s
     nbands = max(2, math.ceil(span / 0.75))
-    llen = math.hypot(max(mxs) - min(mxs) + 2 * pad,
-                      max(mys) - min(mys) + 2 * pad) / 2 + pad
+    llen = math.hypot(bx1 - bx0 + 2 * pad, by1 - by0 + 2 * pad) / 2 + pad
     dlx, dly = -gy / math.sqrt(norm2), gx / math.sqrt(norm2)
-    mx = (min(mxs) + max(mxs)) / 2
-    my = (min(mys) + max(mys)) / 2
+    mx, my = (bx0 + bx1) / 2, (by0 + by1) / 2
     cm = ((mx - GRAD_START[0]) * gx + (my - GRAD_START[1]) * gy) / norm2
     lw = max(2, round(s * 1.5))
     for k in range(nbands):
@@ -372,13 +545,18 @@ def _paint_mark(img: Image.Image, s: float, dx: float, dy: float) -> None:
                 width=lw, fill=_lerp3(t) + (255,))
     mask = Image.new("L", (rw, rh), 0)
     md = ImageDraw.Draw(mask)
-    md.line([(x * s + dx - rx0, y * s + dy - ry0) for x, y in M_POINTS],
-            width=round(M_WIDTH * s), fill=255, joint="curve")
-    for x, y in (M_POINTS[0], M_POINTS[-1]):
-        md.ellipse([x * s + dx - rx0 - M_WIDTH * s / 2,
-                    y * s + dy - ry0 - M_WIDTH * s / 2,
-                    x * s + dx - rx0 + M_WIDTH * s / 2,
-                    y * s + dy - ry0 + M_WIDTH * s / 2], fill=255)
+    for poly in polys(BODY_OPS):
+        md.polygon([(x - rx0, y - ry0) for x, y in poly], fill=255)
+    # Subtle inner highlight blended onto the body.
+    hl_mask = Image.new("L", (rw, rh), 0)
+    hd = ImageDraw.Draw(hl_mask)
+    for poly in polys(HIGHLIGHT_OPS):
+        hd.polygon([(x - rx0, y - ry0) for x, y in poly], fill=255)
+    hl_mask = ImageChops.multiply(mask, hl_mask)
+    hl_mask = hl_mask.point(lambda a: round(a * HIGHLIGHT_ALPHA))
+    white = Image.new("RGBA", (rw, rh), (255, 255, 255, 0))
+    white.putalpha(hl_mask)
+    grad = Image.alpha_composite(grad, white)
     grad.putalpha(mask)
     img.paste(grad, (rx0, ry0), grad)
 
@@ -392,23 +570,24 @@ def _downscale(img: Image.Image, size: tuple[int, int]) -> Image.Image:
     return out
 
 
-def _render_mark_square(size: int, ss: int = 4) -> Image.Image:
+def _render_mark_square(size: int, variant: str = "full",
+                        ss: int = 4) -> Image.Image:
     raw = size * ss
     img = Image.new("RGBA", (raw, raw), (0, 0, 0, 0))
-    _paint_mark(img, raw / DESIGN, 0, 0)
+    _paint_mark(img, raw / DESIGN, 0, 0, variant)
     return _downscale(img, (size, size))
 
 
 def _render_mark_fitted(size: int, box: int, ss: int = 4) -> Image.Image:
     """Mark on white: content fitted into a centred `box` px square."""
-    cx0, cy0, cx1, cy1 = _content_bbox()
+    cx0, cy0, cx1, cy1 = _content_bbox("full")
     cw, ch = cx1 - cx0, cy1 - cy0
     raw = size * ss
     img = Image.new("RGB", (raw, raw), (255, 255, 255))
     s = (box / max(cw, ch)) * ss
     dx = (raw - cw * s) / 2 - cx0 * s
     dy = (raw - ch * s) / 2 - cy0 * s
-    _paint_mark(img, s, dx, dy)
+    _paint_mark(img, s, dx, dy, "full")
     return _downscale(img, (size, size))
 
 
@@ -430,7 +609,7 @@ def _render_lockup(height: int, tmp: Path, ss: int = 4) -> Image.Image:
     raw_w, raw_h = width * ss, height * ss
     img = Image.new("RGBA", (raw_w, raw_h), (0, 0, 0, 0))
     s = raw_h / lh
-    _paint_mark(img, s, -lx * s, -ly * s)
+    _paint_mark(img, s, -lx * s, -ly * s, "full")
     em_px = round(WORD_CAP * s / (cap_units / upm))
     pil_font = ImageFont.truetype(str(_static_800_path(tmp)), em_px)
     hmtx = font["hmtx"]
@@ -439,10 +618,12 @@ def _render_lockup(height: int, tmp: Path, ss: int = 4) -> Image.Image:
     x = WORD_X0 * s - lx * s
     y = baseline * s - ly * s
     for word, colour in (WORD_A, WORD_B):
-        # anchor="ls" puts the advance origin at x, matching the SVG layout.
-        draw.text((x, y), word, font=pil_font,
-                  anchor="ls", fill=colour + (255,))
-        x += sum(hmtx[cmap[ord(c)]][0] for c in word) / upm * em_px
+        # Glyph by glyph so the -1% tracking matches the SVG layout.
+        for ch in word:
+            # anchor="ls" puts the advance origin at x, matching SVG.
+            draw.text((x, y), ch, font=pil_font,
+                      anchor="ls", fill=colour + (255,))
+            x += hmtx[cmap[ord(ch)]][0] / upm * em_px * TRACKING
     return _downscale(img, (width, height))
 
 
@@ -451,10 +632,10 @@ def write_pngs() -> None:
     jobs = []
     with tempfile.TemporaryDirectory(prefix="mm_brand_") as tmpdir:
         tmp = Path(tmpdir)
-        jobs.append(("mark-64.png", _render_mark_square(64)))
-        jobs.append(("mark-256.png", _render_mark_square(256)))
-        jobs.append(("favicon-16.png", _render_mark_square(16)))
-        jobs.append(("favicon-32.png", _render_mark_square(32)))
+        jobs.append(("mark-64.png", _render_mark_square(64, "full")))
+        jobs.append(("mark-256.png", _render_mark_square(256, "full")))
+        jobs.append(("favicon-16.png", _render_mark_square(16, "small")))
+        jobs.append(("favicon-32.png", _render_mark_square(32, "small")))
         jobs.append(("apple-touch-icon.png",
                      _render_mark_fitted(180, round(180 * 0.76))))
         jobs.append(("icon-192.png", _render_mark_fitted(192, round(192 * 0.8))))
@@ -464,9 +645,11 @@ def write_pngs() -> None:
         jobs.append(("logo-full@2x.png", _render_lockup(320, tmp)))
         for name, img in jobs:
             img.save(BRAND_DIR / name)
-    ico_src = Image.open(BRAND_DIR / "mark-256.png")
-    ico_src.save(BRAND_DIR / "favicon.ico", format="ICO",
-                 sizes=[(16, 16), (32, 32), (48, 48)])
+    ico_sizes = [(16, 16), (32, 32), (48, 48)]
+    ico_imgs = [_render_mark_square(n, "small") for n, _ in ico_sizes]
+    # Largest first: the ICO writer skips sizes bigger than the first image.
+    ico_imgs[-1].save(BRAND_DIR / "favicon.ico", format="ICO",
+                      sizes=ico_sizes, append_images=ico_imgs[:-1])
 
 
 def main() -> None:

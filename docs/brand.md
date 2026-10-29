@@ -8,15 +8,24 @@ PNG/ICO from that same geometry, so the SVG and PNG versions match.
 ## The logo
 
 - **The mark**: a bold, rounded letter "M" that is also a shopping basket —
-  two thick rounded legs with the middle dipping into a V (the basket front),
-  a semicircular handle arcing above, and fresh produce peeking out between
-  the legs (red tomato with a green star calyx, a round orange vegetable,
-  three green leaves). Flat style, no outlines.
+  two thick rounded legs with the middle dipping into a V (the basket
+  front). The basket tapers gently (wider at the top), carries a soft
+  light-lime rim band across the mouth and a subtle inner highlight on the
+  left leg. A thick semicircular handle arcs above, its feet tucked behind
+  the legs. The produce is one overlapping cluster sitting in the basket
+  mouth behind the rim: a round red tomato (shadow crescent, 5-point green
+  calyx), an orange carrot leaning out with three leaf fronds, and leafy
+  greens with midribs. Flat style, cubic-Bezier paths, no outlines.
+- **Small-size variant**: favicons (16/32px and the ICO) render a
+  simplified mark — same basket and thicker handle, but the produce is
+  merged into two plain discs and midribs/calyx detail are dropped — so
+  small sizes stay crisp.
 - **The wordmark**: "Market" in navy + "Mate" in green, set in Plus Jakarta
   Sans ExtraBold. The glyphs are converted to SVG paths at build time, so
   `logo.svg` needs no font.
-- **The lockup**: mark on the left, wordmark to the right, vertically
-  centred, with a gap of 0.25× the mark height.
+- **The lockup**: mark on the left, wordmark to the right, optically
+  centred on the basket body (not the handle), with a gap of 0.18× the mark
+  height, a cap height of 0.42× the mark height, and −1% tracking.
 
 ## Colours
 
@@ -25,10 +34,13 @@ PNG/ICO from that same geometry, so the SVG and PNG versions match.
 | Mark gradient, top-left | Lime `#8CD03A` |
 | Mark gradient, middle | Green `#22A955` |
 | Mark gradient, bottom-right | Blue `#1F6FD6` |
-| Basket handle | Green `#2DB34A` |
+| Basket handle | Deep green `#1E9E47` |
+| Rim band | Light lime `#C0E593` |
 | Wordmark "Market" | Navy `#1B2A5C` |
 | Wordmark "Mate" | Green `#2DA94F` |
-| Tomato / orange / dark leaf | `#E8442E` / `#F59E0B` / `#1F9D44` |
+| Tomato / shadow crescent | `#E8412C` / `#C03220` |
+| Carrot | Orange `#F59A23` |
+| Leaves light / dark, midrib | `#3BB54A` / `#2E9E3E`, `#1E7A32` |
 
 The v9 UI tokens (purple etc.) are unchanged — the brand colours above are
 only used for the logo itself.
