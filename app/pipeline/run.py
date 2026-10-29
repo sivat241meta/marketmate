@@ -236,8 +236,12 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 pool = pool + dense
             video_prep[pos] = (picked, matches, pool)
     # Task 67: the session's visual-noun cache survives reprocessing.
+    # Task 72: the kitchen-category cache ("fruit"/"vegetable"/"produce")
+    # from the same Spark call rides along for the generic fallback.
     noun_cache: dict[str, str] = {}
+    category_cache: dict[str, str] = {}
     nouns_path = session_dir / "visual_nouns.json"
+    categories_path = session_dir / "visual_categories.json"
     if not use_live_frames and not audio_only and nouns_path.is_file():
         try:
             loaded = json.loads(nouns_path.read_text())
@@ -247,6 +251,15 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
         if isinstance(loaded, dict):
             noun_cache = {str(k): str(v) for k, v in loaded.items()
                           if isinstance(v, str)}
+    if not use_live_frames and not audio_only and categories_path.is_file():
+        try:
+            loaded_categories = json.loads(categories_path.read_text())
+        except (OSError, ValueError):
+            loaded_categories = {}
+        if isinstance(loaded_categories, dict):
+            category_cache = {str(k): str(v)
+                              for k, v in loaded_categories.items()
+                              if isinstance(v, str)}
     for index, item in enumerate(items):
         if not is_live and not audio_only:
             db.set_stage(conn, session_id, "photos",
@@ -279,7 +292,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 session_items=[entry.name_en for entry in items],
                 picked_frames=[(entry.name_en, video_prep[pos][0])
                                for pos, entry in enumerate(items)],
-                noun_cache=noun_cache)
+                noun_cache=noun_cache, category_cache=category_cache)
             if saved:
                 item.photo = saved[0]
                 item.photo_candidates = list(saved)
@@ -305,6 +318,12 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     if not use_live_frames and not audio_only and noun_cache:
         try:
             nouns_path.write_text(json.dumps(noun_cache, sort_keys=True))
+        except OSError:
+            pass  # The cache is a nice-to-have.
+    if not use_live_frames and not audio_only and category_cache:
+        try:
+            categories_path.write_text(json.dumps(category_cache,
+                                                 sort_keys=True))
         except OSError:
             pass  # The cache is a nice-to-have.
     db.set_stage(conn, session_id, "checking")

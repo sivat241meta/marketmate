@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import io
+import os
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageFilter, ImageOps, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps, ImageStat
 
 from app.costs import CostCapExceeded
 from app.meta.sam import SamError, SamInstance, find_boxes, find_instances
@@ -44,11 +45,25 @@ ORIGINAL_SUFFIX = "_orig"
 #: edge is cut off; mask components under this fraction of the main
 #: instance's area are slivers; neighbours must touch the main one, be
 #: whole, and pass these confidence and area gates (at most two).
+#: Task 72: neighbours also pass the whole-object shape test (solidity
+#: and box aspect close to the main instance) and the area gate is 60%.
 EDGE_MARGIN = 0.02
 SLIVER_FRACTION = 0.04
 NEIGHBOUR_CONFIDENCE = 0.45
-NEIGHBOUR_AREA_FRACTION = 0.45
+NEIGHBOUR_AREA_FRACTION = 0.60
 MAX_NEIGHBOURS = 2
+#: Task 72: mask area / convex-hull area floor for a whole object, and
+#: the box aspect-ratio tolerance against the main instance (a tall thin
+#: half slice next to round fruit is ~2x off and fails).
+SOLIDITY_FLOOR = 0.88
+ASPECT_TOLERANCE = 1.5
+#: Task 72: generic fallback. Items whose nouns found nothing are
+#: re-queried once with their category noun ("fruit"/"vegetable", or
+#: "produce" when unknown); up to this many instances at or above this
+#: confidence go to the single Spark verification.
+FALLBACK_CONFIDENCE = 0.4
+MAX_FALLBACK_CANDIDATES = 4
+PRODUCE_NOUN = "produce"
 #: Task 67: a target instance whose mask overlaps another item's instance
 #: by this IoU or more, with the other noun more confident, is dropped.
 CROSS_IOU = 0.5
@@ -331,6 +346,99 @@ def instance_area(inst: SamInstance) -> int:
     return mask_ones(inst) or _box_area(inst.box)
 
 
+def _boundary_points(raster: bytes, width: int, height: int,
+                     ) -> list[tuple[int, int]]:
+    """Foreground pixels with a background (or out-of-frame) 4-neighbour."""
+    points = []
+    for y in range(height):
+        row = y * width
+        for x in range(width):
+            if not raster[row + x]:
+                continue
+            if (x == 0 or y == 0 or x == width - 1 or y == height - 1
+                    or not raster[row + x - 1] or not raster[row + x + 1]
+                    or not raster[row - width + x]
+                    or not raster[row + width + x]):
+                points.append((x, y))
+    return points
+
+
+def _convex_hull(points: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Monotone-chain convex hull of lattice points, CCW, no duplicate end."""
+    corners = sorted(set(points))
+    if len(corners) <= 1:
+        return corners
+
+    def cross(origin, first, second):
+        return ((first[0] - origin[0]) * (second[1] - origin[1])
+                - (first[1] - origin[1]) * (second[0] - origin[0]))
+
+    lower: list[tuple[int, int]] = []
+    for point in corners:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], point) <= 0:
+            lower.pop()
+        lower.append(point)
+    upper: list[tuple[int, int]] = []
+    for point in reversed(corners):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], point) <= 0:
+            upper.pop()
+        upper.append(point)
+    return lower[:-1] + upper[:-1]
+
+
+def _hull_pixel_area(hull: list[tuple[int, int]]) -> float:
+    """Lattice-polygon pixel count via Pick's theorem (area + b/2 + 1)."""
+    area = 0
+    girth = 0.0
+    for pos, (x, y) in enumerate(hull):
+        nx, ny = hull[(pos + 1) % len(hull)]
+        area += x * ny - nx * y
+        girth += ((nx - x) ** 2 + (ny - y) ** 2) ** 0.5
+    return abs(area) / 2 + girth / 2 + 1
+
+
+def mask_solidity(inst: SamInstance) -> float | None:
+    """Mask area / convex-hull area, None when the mask is missing.
+
+    A whole round fruit fills its hull (~1.0); a half slice cut by a
+    container wall leaves a concave bite well under the floor.
+    """
+    decoded = _mask_raster_at(inst)
+    if decoded is None:
+        return None
+    raster, width, height = decoded
+    area = sum(raster)
+    if not area:
+        return None
+    hull = _convex_hull(_boundary_points(raster, width, height))
+    if len(hull) < 3:
+        return 1.0
+    whole = _hull_pixel_area(hull)
+    if whole <= 0:
+        return 1.0
+    return min(area / whole, 1.0)
+
+
+def _solidity_ok(inst: SamInstance) -> bool:
+    """True when the mask looks whole; a missing mask never filters."""
+    solidity = mask_solidity(inst)
+    return solidity is None or solidity >= SOLIDITY_FLOOR
+
+
+def _box_aspect(box: Box) -> float:
+    """Box width / height, at least 1px each side."""
+    return (max(box.x2 - box.x1 + 1, 1)
+            / max(box.y2 - box.y1 + 1, 1))
+
+
+def _aspect_close(main_aspect: float, other_aspect: float) -> bool:
+    """True when the two aspects agree within ``ASPECT_TOLERANCE``."""
+    if main_aspect <= 0 or other_aspect <= 0:
+        return False
+    return max(main_aspect, other_aspect) / min(main_aspect, other_aspect) \
+        <= ASPECT_TOLERANCE
+
+
 def _neighbours_8(x: int, y: int, width: int, height: int):
     for dy in (-1, 0, 1):
         for dx in (-1, 0, 1):
@@ -448,21 +556,29 @@ def select_whole(instances: list[SamInstance],
     a cut-off object is never the main one: with no whole instance there
     is no cluster. The main instance maximises confidence × sqrt(area);
     up to two neighbours join it when they touch or overlap it, are
-    whole, and pass the 0.45 confidence and 45%-of-main-area gates.
+    whole, and pass the 0.45 confidence and 60%-of-main-area gates.
+
+    Task 72: every neighbour also passes the whole-object shape test
+    (solidity ≥ 0.88 and box aspect within ×1.5 of the main instance),
+    and the main one defers to the best solid candidate when one exists.
     """
     width, height = frame_size
     whole = [inst for inst in instances
              if not touches_edge(inst.box, width, height)]
     if not whole:
         return []
-    main = max(whole, key=_score)
+    solid = [inst for inst in whole if _solidity_ok(inst)]
+    main = max(solid or whole, key=_score)
     floor = NEIGHBOUR_AREA_FRACTION * instance_area(main)
+    main_aspect = _box_aspect(main.box)
     neighbours = [
         inst for inst in sorted(whole, key=_score, reverse=True)
         if inst is not main
         and _passes(inst.box.confidence, NEIGHBOUR_CONFIDENCE)
         and instance_area(inst) >= floor
-        and _touches(main.box, inst.box)]
+        and _touches(main.box, inst.box)
+        and _solidity_ok(inst)
+        and _aspect_close(main_aspect, _box_aspect(inst.box))]
     return [main, *neighbours[:MAX_NEIGHBOURS]]
 
 
@@ -732,8 +848,11 @@ def _sam_call(used: list[int], func, *args, **kwargs):
 _VISUAL_NOUN_PROMPT = (
     "You sell fresh produce at an Indian market stall. For each item below, "
     "give a short visual noun: 2-3 plain English words a vision model would "
-    "use for this item in a market stall photo.\nItems: {items}\n\n"
-    'Return only JSON shaped like: {{"{first}": "red tomato"}}'
+    "use for this item in a market stall photo. Also say whether it is a "
+    "fruit or a vegetable in the kitchen (tomato counts as vegetable).\n"
+    "Items: {items}\n\n"
+    'Return only JSON shaped like: {{"{first}": '
+    '{{"noun": "red tomato", "category": "vegetable"}}}}'
 )
 
 
@@ -746,15 +865,39 @@ def _clean_noun(value, fallback: str) -> str:
     return " ".join(words[:4])
 
 
+def _split_noun_category(value, fallback: str) -> tuple[str, str]:
+    """(visual noun, category) from one Spark answer, old or new format.
+
+    New answers are {"noun": ..., "category": "fruit"|"vegetable"};
+    old plain-string answers (and anything unrecognised) keep the noun
+    and mean the category is unknown ("produce").
+    """
+    if isinstance(value, dict):
+        noun = _clean_noun(value.get("noun"), fallback)
+        category = str(value.get("category") or "").strip().lower()
+        if category == "fruit" or category.startswith("veg"):
+            return noun, ("fruit" if category == "fruit" else "vegetable")
+        return noun, PRODUCE_NOUN
+    return _clean_noun(value, fallback), PRODUCE_NOUN
+
+
 def ensure_visual_nouns(names: list[str], cache: dict, *,
-                        ledger, settings) -> dict[str, str]:
+                        ledger, settings,
+                        category_cache: dict | None = None
+                        ) -> dict[str, str]:
     """Short visual noun per item, asked once per session and cached.
 
     One Spark text call covers every name missing from ``cache`` (the
     session's cache); cached names never re-ask. Returns
     {name: visual noun}, falling back to the name itself per item.
+    Task 72: the same call also returns each item's kitchen category
+    ("fruit" or "vegetable", "produce" when unknown) into
+    ``category_cache`` for the generic fallback.
     """
-    missing = [name for name in dict.fromkeys(names) if name not in cache]
+    missing = [name for name in dict.fromkeys(names)
+               if name not in cache
+               or (category_cache is not None
+                   and name not in category_cache)]
     if missing:
         prompt = _VISUAL_NOUN_PROMPT.format(
             items=", ".join(missing), first=missing[0])
@@ -765,8 +908,21 @@ def ensure_visual_nouns(names: list[str], cache: dict, *,
         lowered = {str(key).strip().lower(): value
                    for key, value in answers.items()}
         for name in missing:
-            cache[name] = _clean_noun(lowered.get(name.strip().lower()), name)
+            noun, category = _split_noun_category(
+                lowered.get(name.strip().lower()), name)
+            cache[name] = noun
+            if category_cache is not None:
+                category_cache[name] = category
     return {name: cache.get(name, name) for name in names}
+
+
+def generic_noun_for(name: str, category_cache: dict | None) -> str:
+    """Generic SAM noun for the fallback: the cached category, else produce."""
+    if category_cache is not None:
+        category = str(category_cache.get(name) or "").strip().lower()
+        if category in ("fruit", "vegetable"):
+            return category
+    return PRODUCE_NOUN
 
 
 def _other_nouns(noun: str, picked: Frame,
@@ -817,6 +973,73 @@ def verify_cutout(cutout: Path, target: str, candidates: list[str], *,
     if isinstance(answer, str) and answer.strip():
         return answer.strip().lower()
     return "none"
+
+
+def candidate_montage(frame: Path, candidates: list[SamInstance],
+                      out: Path, cell: int = 320) -> Path:
+    """Numbered grid of the candidates' crops (1-based, left to right)."""
+    with Image.open(frame) as img:
+        rgb = img.convert("RGB")
+    tiles = []
+    for pos, inst in enumerate(candidates):
+        left = min(max(inst.box.x1, 0), rgb.width - 1)
+        top = min(max(inst.box.y1, 0), rgb.height - 1)
+        right = min(max(inst.box.x2 + 1, left + 1), rgb.width)
+        bottom = min(max(inst.box.y2 + 1, top + 1), rgb.height)
+        crop = rgb.crop((left, top, right, bottom))
+        crop.thumbnail((cell, cell), Image.LANCZOS)
+        tile = Image.new("RGB", (cell, cell), (255, 255, 255))
+        tile.paste(crop, ((cell - crop.width) // 2,
+                          (cell - crop.height) // 2))
+        draw = ImageDraw.Draw(tile)
+        draw.text((12, 8), str(pos + 1), fill=(255, 255, 255),
+                  stroke_width=2, stroke_fill=(0, 0, 0))
+        tiles.append(tile)
+    cols = 2 if len(tiles) > 1 else 1
+    rows = (len(tiles) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * cell, rows * cell), (255, 255, 255))
+    for pos, tile in enumerate(tiles):
+        sheet.paste(tile, ((pos % cols) * cell, (pos // cols) * cell))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(out, "JPEG", quality=PHOTO_QUALITY)
+    return out
+
+
+def verify_candidates(frame: Path, target: str,
+                      candidates: list[SamInstance], *,
+                      ledger, settings) -> list[SamInstance]:
+    """One Spark vision call: which candidates clearly show the target?
+
+    The candidates' crops go out as one numbered image; the reply lists
+    the 1-based numbers to keep ({"keep": [1, 3]}). Anything unparseable
+    keeps nothing.
+    """
+    handle, tmp = tempfile.mkstemp(suffix=".jpg")
+    try:
+        os.close(handle)
+        montage = candidate_montage(Path(frame), candidates, Path(tmp))
+        instruction = (
+            "These numbered crops come from one market-stall photo. "
+            f"Which of them clearly show {target}? Reply with only JSON "
+            'shaped like: {"keep": [1]}. Use an empty list when none '
+            f"shows {target}.")
+        data = chat_json([{"role": "user", "content": [
+            {"type": "text", "text": instruction},
+            image_part(montage)]}],
+            ledger=ledger, settings=settings, reasoning_effort="low")
+    finally:
+        Path(tmp).unlink(missing_ok=True)
+    keep = data.get("keep") if isinstance(data, dict) else None
+    wanted: set[int] = set()
+    if isinstance(keep, list):
+        for entry in keep:
+            try:
+                number = int(str(entry).strip())
+            except (TypeError, ValueError):
+                continue
+            if 1 <= number <= len(candidates):
+                wanted.add(number - 1)
+    return [inst for pos, inst in enumerate(candidates) if pos in wanted]
 
 
 def _choose_frame(frames: list[Frame], noun: str, *,
@@ -880,8 +1103,8 @@ def _clean_frame_paths(out_stem: Path) -> tuple[Path, Path]:
 
 def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
                      names: list[str], out_stem: Path, used: list[int], *,
-                     ledger, settings) -> list[str] | None:
-    """One frame's clean candidates, or None when the frame fails a gate.
+                     ledger, settings) -> tuple[list[str] | None, bool]:
+    """One frame's clean candidates, plus whether the nouns found anything.
 
     Gates in order: target instances exist, a whole cluster selects, no
     face blocks, cross-check survivors remain, the cut-out verifies as
@@ -900,18 +1123,18 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
             instances = passing
             break
     if not instances:
-        return None
+        return None, False
     size = _frame_size(frame.path)
     cluster = select_whole(instances, size)
     if not cluster:
-        return None
+        return None, True
     faces = _sam_call(used, find_boxes, frame.path, FACE_NOUN,
                       ledger=ledger, settings=settings, detail="face")
     boxes = [inst.box for inst in cluster]
     if face_blocks_frame(faces, frame_size=size,
                          crop_area=crop_box(boxes, *size),
                          cluster=cluster_box(cluster)):
-        return None
+        return None, True
     if others:
         rival: list[SamInstance] = []
         for other in others:
@@ -922,15 +1145,15 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
                          if _passes(inst.box.confidence, PRODUCT_CONFIDENCE))
         cluster = select_whole(drop_confused(instances, rival), size)
         if not cluster:
-            return None
+            return None, True
         boxes = [inst.box for inst in cluster]
     cut_path, orig_path = _clean_frame_paths(out_stem)
     try:
         cutout_from_instances(frame.path, cluster, cut_path, clean=True)
     except NoCutout:
         if _intersects(cluster[0].box, crop_box(boxes, *size)):
-            return [str(crop_to_boxes(frame.path, boxes, orig_path))]
-        return None
+            return [str(crop_to_boxes(frame.path, boxes, orig_path))], True
+        return None, True
     try:
         answer = verify_cutout(cut_path, noun, names, ledger=ledger,
                                settings=settings)
@@ -940,6 +1163,57 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
         answer = None
     if answer != noun.strip().lower():
         cut_path.unlink(missing_ok=True)
+        return None, True
+    saved = [str(cut_path)]
+    if _intersects(cluster[0].box, crop_box(boxes, *size)):
+        saved.append(str(crop_to_boxes(frame.path, boxes, orig_path)))
+    return saved, True
+
+
+def _try_generic_fallback(frame: Frame, target: str, generic_noun: str,
+                          out_stem: Path, used: list[int], *,
+                          ledger, settings) -> list[str] | None:
+    """One generic query on the best frame when the nouns found nothing.
+
+    Up to four instances at c ≥ 0.4 go to the single Spark verification;
+    the survivors go through the same whole-object, sliver, face and
+    canvas rules as the normal path. None when nothing verifies.
+    """
+    found = _sam_call(used, find_instances, frame.path, generic_noun,
+                      ledger=ledger, settings=settings,
+                      detail=f"generic:{generic_noun}")
+    candidates = [
+        inst for inst in sorted(found, key=_score, reverse=True)
+        if _passes(inst.box.confidence, FALLBACK_CONFIDENCE)
+    ][:MAX_FALLBACK_CANDIDATES]
+    if not candidates:
+        return None
+    try:
+        kept = verify_candidates(frame.path, target, candidates,
+                                 ledger=ledger, settings=settings)
+    except CostCapExceeded:
+        raise
+    except Exception:  # noqa: BLE001 - a failed check fails the fallback
+        return None
+    if not kept:
+        return None
+    size = _frame_size(frame.path)
+    cluster = select_whole(kept, size)
+    if not cluster:
+        return None
+    faces = _sam_call(used, find_boxes, frame.path, FACE_NOUN,
+                      ledger=ledger, settings=settings, detail="face")
+    boxes = [inst.box for inst in cluster]
+    if face_blocks_frame(faces, frame_size=size,
+                         crop_area=crop_box(boxes, *size),
+                         cluster=cluster_box(cluster)):
+        return None
+    cut_path, orig_path = _clean_frame_paths(out_stem)
+    try:
+        cutout_from_instances(frame.path, cluster, cut_path, clean=True)
+    except NoCutout:
+        if _intersects(cluster[0].box, crop_box(boxes, *size)):
+            return [str(crop_to_boxes(frame.path, boxes, orig_path))]
         return None
     saved = [str(cut_path)]
     if _intersects(cluster[0].box, crop_box(boxes, *size)):
@@ -949,19 +1223,23 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
 
 def _make_candidates_clean(frames: list[Frame], picked: Frame, noun: str,
                            out_stem: Path, names: list[str],
-                           picked_frames, noun_cache: dict | None, *,
+                           picked_frames, noun_cache: dict | None,
+                           category_cache: dict | None, *,
                            ledger, settings, count: int) -> list[str]:
     """Task 67 candidates: whole objects, cross-checked, Spark-verified.
 
     Tries the English name first, then the session's visual noun; tries
     frames sharpest-first and stops at the first cut-out that verifies
     as the target. At most ``MAX_SAM_PER_ITEM`` SAM calls; [] (letter
-    tile) when no frame passes every gate.
+    tile) when no frame passes every gate. Task 72: when the nouns find
+    nothing on the best frame, one generic query on that frame plus the
+    single Spark verification gets a second chance.
     """
     try:
         visual = ensure_visual_nouns(
             names, noun_cache if noun_cache is not None else {},
-            ledger=ledger, settings=settings).get(noun, noun)
+            ledger=ledger, settings=settings,
+            category_cache=category_cache).get(noun, noun)
     except CostCapExceeded:
         raise
     except Exception:  # noqa: BLE001 - nouns fall back to English
@@ -978,22 +1256,36 @@ def _make_candidates_clean(frames: list[Frame], picked: Frame, noun: str,
             seen.add(key)
             distinct.append(frame)
     others = _other_nouns(noun, picked, picked_frames)
+    generic = generic_noun_for(noun, category_cache)
     used = [0]
+    first = True
     for frame in distinct[:max(count, 1)]:
         try:
-            saved = _try_clean_frame(frame, nouns, others, names, out_stem,
-                                     used, ledger=ledger, settings=settings)
+            saved, found = _try_clean_frame(
+                frame, nouns, others, names, out_stem,
+                used, ledger=ledger, settings=settings)
         except _BudgetOut:
             return []
         if saved is not None:
             return saved
+        if first and not found:
+            try:
+                fallback = _try_generic_fallback(
+                    frame, noun, generic, out_stem, used,
+                    ledger=ledger, settings=settings)
+            except _BudgetOut:
+                return []
+            if fallback is not None:
+                return fallback
+        first = False
     return []
 
 
 def make_candidates(frames: list[Frame], picked: Frame, noun: str,
                     out_stem: Path, *, ledger, settings,
                     count: int = 3, session_items=None,
-                    picked_frames=None, noun_cache=None) -> list[str]:
+                    picked_frames=None, noun_cache=None,
+                    category_cache=None) -> list[str]:
     """Cut-out (default) plus the Task 59 4:3 crop ("Original").
 
     Probes the sharpest ``count`` frames for the noun; the first frame
@@ -1001,12 +1293,13 @@ def make_candidates(frames: list[Frame], picked: Frame, noun: str,
     photo) when no frame qualifies: never a centre crop for automatic
     photos. With ``session_items`` (Task 67), whole objects only,
     cross-checked against the session's other items and Spark-verified.
+    ``category_cache`` (Task 72) feeds the generic fallback.
     """
     if session_items is not None:
         return _make_candidates_clean(
             frames, picked, noun, out_stem, list(session_items),
-            picked_frames, noun_cache, ledger=ledger, settings=settings,
-            count=count)
+            picked_frames, noun_cache, category_cache,
+            ledger=ledger, settings=settings, count=count)
     ranked = window_frames(frames, picked)
     seen: set[str] = set()
     distinct = []
