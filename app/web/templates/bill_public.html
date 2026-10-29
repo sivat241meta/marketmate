@@ -1,11 +1,21 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<p class="kick">{{ shop["name"] }}</p>
-<h2 class="h2s">{{ t('bill.heading', id=bill["id"]) }}</h2>
-<p class="lead">{{ shop["area"] }} · {{ created_label }}</p>
-<section class="rcpt" aria-label="{{ t('bill.receipt_aria') }}">
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ shop["name"] }}</p>
+    <h1>{{ t('bill.heading', id=bill["id"]) }}</h1>
+    <p class="lead">{{ shop["area"] }} · {{ created_label }}</p>
+  </div>
+  <div class="ph-head-actions">
+    <a class="pill cta" href="/s/{{ shop["slug"] }}">{{ t('market.open_shop') }}</a>
+  </div>
+</div>
+
+<section class="rcpt pub-sec" aria-label="{{ t('bill.receipt_aria') }}">
   <p class="kick">{{ shop["name"] }}</p>
   <p class="muted">{{ t('bill.heading', id=bill["id"]) }} · {{ created_label }}</p>
   <p>{% if mode_label %}{{ ui.pill(pill_text ~ " · " ~ mode_label, pill_kind) }}{% else %}{{ ui.pill(pill_text, pill_kind) }}{% endif %}</p>
@@ -39,8 +49,11 @@
   {% endif %}
   <p class="thanks">{{ t('bpdf.thanks') }}</p>
 </section>
-<div class="card bill-qr">
+<section class="card bill-qr pub-sec">
   <img src="/s/{{ shop["slug"] }}/qr.png" alt="{{ t('bill.scan_shop') }}" width="120" height="120">
-  <small class="muted">{{ t('bill.scan_shop') }}</small>
-</div>
+  <div><small class="muted">{{ t('bill.scan_shop') }}</small></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

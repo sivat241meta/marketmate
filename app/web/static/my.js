@@ -88,6 +88,19 @@
     var emptyShops = page.getAttribute("data-empty-shops") || "";
     var orderPattern = page.getAttribute("data-order-pattern")
       || "Order #{n}";
+    var findShop = page.getAttribute("data-find-shop") || "Find a shop";
+    var openLabel = page.getAttribute("data-open-label") || "Open";
+
+    function emptyCard(box, text) {
+      var card = el("div", "card hp-empty");
+      card.appendChild(el("p", "muted", text));
+      var actions = el("p", "card-actions");
+      var cta = el("a", "pill cta", findShop);
+      cta.setAttribute("href", "/market");
+      actions.appendChild(cta);
+      card.appendChild(actions);
+      box.appendChild(card);
+    }
 
     function render() {
       var orders = load(ORDERS_KEY);
@@ -95,31 +108,33 @@
       if (ordersBox) {
         ordersBox.innerHTML = "";
         if (!orders.length) {
-          ordersBox.appendChild(el("p", "muted", emptyOrders));
+          emptyCard(ordersBox, emptyOrders);
         }
         orders.forEach(function (entry) {
-          var row = el("a", "bill-row rcpt");
-          row.setAttribute("href", "/q/" + entry.token);
-          var main = el("span", "row-main");
+          var card = el("article", "my-card");
+          var top = el("div", "my-card-top");
           var title = orderPattern.split("{n}").join(
             String(entry.number));
           if (entry.shop) {
             title += " · " + entry.shop;
           }
-          main.appendChild(el("span", "list-name", title));
+          top.appendChild(el("p", "my-card-title", title));
+          var pill = el("span", "pill pill-info", "");
+          top.appendChild(pill);
+          card.appendChild(top);
           var sub = entry.total || "";
           if (entry.date) {
             sub += (sub ? " · " : "") + entry.date;
           }
           if (sub) {
-            main.appendChild(el("span", "list-sub", sub));
+            card.appendChild(el("p", "my-card-sub", sub));
           }
-          row.appendChild(main);
-          var right = el("span", "bill-right");
-          var pill = el("span", "pill pill-info", "");
-          right.appendChild(pill);
-          row.appendChild(right);
-          ordersBox.appendChild(row);
+          var actions = el("div", "my-card-actions");
+          var open = el("a", "pill cta sm", openLabel);
+          open.setAttribute("href", "/q/" + entry.token);
+          actions.appendChild(open);
+          card.appendChild(actions);
+          ordersBox.appendChild(card);
           fetch("/q/" + entry.token + "/status.json?lang=" + uiLang(),
             { headers: { Accept: "application/json" } }).then(
             function (resp) {
@@ -128,8 +143,8 @@
             if (data && data.steps) {
               pill.textContent = currentLabel(data.steps, data.status);
               if (data.total_fmt) {
-                var total = el("span", "list-sub money", data.total_fmt);
-                main.appendChild(total);
+                card.insertBefore(
+                  el("p", "my-card-sub money", data.total_fmt), actions);
               }
             } else {
               pill.remove();
@@ -142,18 +157,21 @@
       if (shopsBox) {
         shopsBox.innerHTML = "";
         if (!shops.length) {
-          shopsBox.appendChild(el("p", "muted", emptyShops));
+          emptyCard(shopsBox, emptyShops);
         }
         shops.forEach(function (entry) {
-          var row = el("a", "bill-row rcpt");
-          row.setAttribute("href", "/s/" + entry.slug);
-          var main = el("span", "row-main");
-          main.appendChild(el("span", "list-name", entry.name || entry.slug));
+          var card = el("article", "my-card");
+          card.appendChild(
+            el("p", "my-card-title", entry.name || entry.slug));
           if (entry.area) {
-            main.appendChild(el("span", "list-sub", entry.area));
+            card.appendChild(el("p", "my-card-sub", entry.area));
           }
-          row.appendChild(main);
-          shopsBox.appendChild(row);
+          var actions = el("div", "my-card-actions");
+          var open = el("a", "pill cta sm", openLabel);
+          open.setAttribute("href", "/s/" + entry.slug);
+          actions.appendChild(open);
+          card.appendChild(actions);
+          shopsBox.appendChild(card);
         });
       }
     }

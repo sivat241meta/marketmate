@@ -1,122 +1,155 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ shop["name"] }}{% endblock %}
-{% block body_class %}is-shop{% endblock %}
+{% block body_class %}pub is-shop{% endblock %}
 {% block content %}
+{% include "_public_header.html" %}
 <div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
-<div class="hero2">
-  <div class="hero-copy">
-    <p class="kick">{{ ui.obj("store") }}{{ shop["name"] }}</p>
-    {% if open_state == "open" %}<p><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
-    {% elif open_state == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
-    <h1 class="big">{{ t('shop.headline_a') }}<br><em>{{ t('shop.headline_b') }}</em></h1>
+<section class="hero2" aria-label="{{ shop["name"] }}">
+  <div class="shop-band-copy">
+    <p class="kick">{{ t('shell.todays_prices') }}</p>
+    <h1>{{ shop["name"] }}</h1>
+    <p class="area-line">{{ ui.obj("pin", 20) }}<span>{{ shop["area"] }}</span></p>
+    {% if open_state == "open" %}<p class="open-line"><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
+    {% elif open_state == "closed" %}<p class="open-line"><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
+    {% if rows %}<p class="said-line muted">{{ t('ann.said_today', time=prices_time, area=shop["area"]) }}</p>
+    {% else %}<p class="said-line muted">{{ t('ann.said_notime', area=shop["area"]) }}</p>{% endif %}
     {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
-    <div class="trio">
-      <div class="tri"><span class="tile m">{{ ui.obj("mic", 28) }}</span><b>{{ t('shop.trio_prices', n=rows | length) }}</b><small>{{ t('shop.trio_prices_sub') }}</small></div>
-      <div class="tri"><span class="tile y">{{ ui.obj("basket", 28) }}</span><b>{{ t('shop.trio_pay') }}</b><small>{{ t('shop.trio_pay_sub') }}</small></div>
-      <div class="tri"><span class="tile s">{% if has_upi %}{{ ui.obj("phone", 28) }}{% else %}{{ ui.obj("cash", 28) }}{% endif %}</span><b>{% if has_upi %}{{ t('shop.trio_upi') }}{% else %}{{ t('shop.trio_cash') }}{% endif %}</b><small>{{ t('shop.trio_upi_sub') }}</small></div>
-    </div>
-    <div class="hero-cta">
-      <a class="pill dark big btn-primary" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.get_quote }} {{ ui.obj("mic", 20) }}</a>
-      <a class="pill ghost big" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>
-      <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
-      <a class="pill ghost big" href="{{ share_url }}">{{ ui.obj("link", 20) }}{{ t('wa.share_list') }}</a>
-    </div>
   </div>
-  {% if hero_photo %}
-  <div class="desk-only hero-photo"><img src="{{ hero_photo }}" alt=""></div>
-  {% endif %}
-</div>
+  <div class="shop-band-actions">
+    <a class="pill cta big btn-primary" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.get_quote }} {{ ui.obj("mic", 20) }}</a>
+    <a class="pill ghost sm" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>
+    <a class="pill ghost sm" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
+    <a class="pill ghost sm" href="{{ share_url }}">{{ ui.obj("link", 20) }}{{ t('wa.share_list') }}</a>
+  </div>
+</section>
 
 {% if rows %}
-<p class="kick">{{ t('shell.todays_prices') }}</p>
-<h2 class="h2s">{{ t('shop.summary', n=rows | length, min=summary_min, max=summary_max) }}</h2>
-<div class="search">
-  {{ ui.icon("tag") }}
-  <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length) }}</label>
-  <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
-  <a class="mic" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t('shell.order_voice') }}">{{ ui.icon("mic") }}</a>
-</div>
-<div class="chips tabs"><span class="chip on">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
-<p class="notice">{{ ui.obj("check", 20) }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
+<section class="pub-sec" aria-label="{{ t('shell.todays_prices') }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('shop.summary', n=rows | length, min=summary_min, max=summary_max) }}</h2>
+    </div>
+  </div>
+  <div class="shop-tools">
+    <div class="search tools-search" role="search">
+      {{ ui.icon("tag") }}
+      <label class="visually-hidden" for="shop-q">{{ t('shop.search_ph', n=rows | length) }}</label>
+      <input type="search" id="shop-q" data-shop-search placeholder="{{ t('shop.search_ph', n=rows | length) }}" autocomplete="off">
+      <a class="mic" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" aria-label="{{ t('shell.order_voice') }}">{{ ui.icon("mic") }}</a>
+    </div>
+    <div class="chip-row"><span class="chip on" aria-current="true">{{ t('shop.all') }}<small>{{ rows | length }}</small></span></div>
+  </div>
+  <p class="notice">{{ ui.obj("check", 20) }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
 
-<div class="grid-products" data-shop-grid>
+  <div class="grid-products" data-shop-grid>
 {% for row in rows %}
-  <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
-    <div class="pw">
-      <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
+    <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
+      <div class="pw">
+        <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
+        {% if not row.sold_out %}
+        <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
+        <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
+        {% endif %}
+      </div>
+      <div class="price"><span class="pp">{{ row.price | money(shop["currency"]) }}</span><span class="per">/{{ row.lines[0].per if row.lines else row.unit }}</span></div>
+      <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</div>
+      {% if row.variety %}<span class="var">{{ row.variety }}</span>{% endif %}
       {% if not row.sold_out %}
-      <button type="button" class="add" data-add>{{ t('shop.add') }}</button>
-      <span class="step" data-step hidden><button type="button" data-dec aria-label="−">−</button><span data-step-qty></span><button type="button" data-inc aria-label="+">+</button></span>
-      {% endif %}
-    </div>
-    <div class="price"><span class="pp">{{ row.price | money(shop["currency"]) }}</span><span class="per">/{{ row.lines[0].per if row.lines else row.unit }}</span></div>
-    <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</div>
-    {% if row.variety %}<span class="var">{{ row.variety }}</span>{% endif %}
-    {% if not row.sold_out %}
-    <div class="sizes" data-sizes>
-      {% if row.unit == "kg" %}
-      <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+      <div class="sizes" data-sizes>
+        {% if row.unit == "kg" %}
+        <button type="button" class="sz" data-qty="0.5">½ kg</button><button type="button" class="sz on" data-qty="1">1 kg</button><button type="button" class="sz" data-qty="2">2 kg</button>
+        {% else %}
+        <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+        {% endif %}
+      </div>
       {% else %}
-      <button type="button" class="sz on" data-qty="1">1</button><button type="button" class="sz" data-qty="2">2</button><button type="button" class="sz" data-qty="5">5</button>
+      <div><span class="pill sm ghost">{{ t.sold_out }}</span></div>
       {% endif %}
-    </div>
-    {% else %}
-    <div><span class="pill sm ghost">{{ t.sold_out }}</span></div>
-    {% endif %}
-  </article>
+    </article>
 {% endfor %}
-</div>
+  </div>
 
-<div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
-  <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
-  <button type="button" class="pill bar" data-cart-submit data-cart-view>{{ ui.obj("basket", 20) }}{{ t('shop.view_order') }}</button>
-</div>
-<div class="alert alert-warn" data-cart-error hidden></div>
-<div class="rcpt desk-only" data-cart-summary hidden>
-  <p class="kick">{{ t('shop.cart_title') }}</p>
-  <div data-cart-lines></div>
-  <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
-  <div class="field">
-    <label for="cart-name-desk">{{ t('order.name_label') }}</label>
-    <input id="cart-name-desk" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name">
+  <div class="float shop-float" data-cart-bar hidden data-one="{{ t('shop.cart_one', total='{total}') }}" data-many="{{ t('shop.cart_summary', n='{n}', total='{total}') }}">
+    <div class="t"><b data-cart-label></b><small>{{ t('shop.cart_title') }}</small></div>
+    <button type="button" class="pill bar" data-cart-submit data-cart-view>{{ ui.obj("basket", 20) }}{{ t('shop.view_order') }}</button>
   </div>
-  <div class="field">
-    <label for="cart-phone-desk">{{ t('order.phone_label') }}</label>
-    <input id="cart-phone-desk" type="tel" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-    <span class="help">{{ t('order.phone_note') }}</span>
-  </div>
-  <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
-</div>
-<div class="sheet-wrap" data-cart-sheet hidden>
-  <div class="sheet-backdrop" data-cart-sheet-close></div>
-  <div class="sheet" role="dialog" aria-label="{{ t('shop.cart_title') }}">
-    <div class="grab" aria-hidden="true"></div>
+  <div class="alert alert-warn" data-cart-error hidden></div>
+  <div class="rcpt desk-only" data-cart-summary hidden>
     <p class="kick">{{ t('shop.cart_title') }}</p>
-    <div data-cart-sheet-lines></div>
-    <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-sheet-total></b></div>
+    <div data-cart-lines></div>
+    <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-total></b></div>
     <div class="field">
-      <label for="cart-name-sheet">{{ t('order.name_label') }}</label>
-      <input id="cart-name-sheet" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name">
+      <label class="field-label" for="cart-name-desk">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+      <input class="field-input" id="cart-name-desk" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name" required>
     </div>
     <div class="field">
-      <label for="cart-phone-sheet">{{ t('order.phone_label') }}</label>
-      <input id="cart-phone-sheet" type="tel" data-customer-phone autocomplete="tel" placeholder="98765 43210">
-      <span class="help">{{ t('order.phone_note') }}</span>
+      <label class="field-label" for="cart-phone-desk">{{ t('order.phone_label') }}</label>
+      <input class="field-input" id="cart-phone-desk" type="tel" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="cart-phone-desk-hint">
+      <p class="field-hint" id="cart-phone-desk-hint">{{ t('order.phone_note') }}</p>
     </div>
-    <div class="alert alert-warn" data-cart-sheet-error hidden></div>
-    <p><button type="button" class="pill dark big" data-cart-submit>{{ t('shop.send_order') }}</button></p>
-    <p><button type="button" class="pill ghost" data-cart-sheet-close aria-label="×">×</button></p>
+    <div class="action-bar"><button type="button" class="pill cta big" data-cart-submit>{{ t('shop.send_order') }}</button></div>
   </div>
-</div>
+  <div class="sheet-wrap" data-cart-sheet hidden>
+    <div class="sheet-backdrop" data-cart-sheet-close></div>
+    <div class="sheet" role="dialog" aria-label="{{ t('shop.cart_title') }}">
+      <div class="grab" aria-hidden="true"></div>
+      <p class="kick">{{ t('shop.cart_title') }}</p>
+      <div data-cart-sheet-lines></div>
+      <div class="rt"><span>{{ t('shop.cart_title') }}</span><b data-cart-sheet-total></b></div>
+      <div class="field">
+        <label class="field-label" for="cart-name-sheet">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <input class="field-input" id="cart-name-sheet" type="text" data-customer-name data-need-name="{{ t('order.name_required') }}" maxlength="40" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label class="field-label" for="cart-phone-sheet">{{ t('order.phone_label') }}</label>
+        <input class="field-input" id="cart-phone-sheet" type="tel" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="cart-phone-sheet-hint">
+        <p class="field-hint" id="cart-phone-sheet-hint">{{ t('order.phone_note') }}</p>
+      </div>
+      <div class="alert alert-warn" data-cart-sheet-error hidden></div>
+      <div class="action-bar">
+        <button type="button" class="pill cta big" data-cart-submit>{{ t('shop.send_order') }}</button>
+        <button type="button" class="pill ghost" data-cart-sheet-close aria-label="{{ t('hp.close') }}">×</button>
+      </div>
+    </div>
+  </div>
+</section>
 {% else %}
-<section class="card empty-shop">
+<section class="card hp-empty empty-shop">
   {{ ui.obj("store", 56) }}
   <h2>{{ t.no_prices_title }}</h2>
   <p class="muted">{{ t.no_prices }} {{ t.call }} or {{ t.whatsapp }} the seller for today's prices.</p>
-  <div class="contact-grid">
+  <div class="card-actions">
     <a class="pill ghost" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
     <a class="pill cta" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>
+  </div>
+</section>
+{% endif %}
+
+{% if nearby %}
+<section class="pub-sec" aria-label="{{ t('pub.more_shops') }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('pub.more_shops') }}</h2>
+      <p class="muted">{{ t('pub.more_shops_sub', area=shop["area"]) }}</p>
+    </div>
+    <a class="hp-more" href="/market?area={{ shop["area"] | urlencode }}">{{ t('hp.compare') }}</a>
+  </div>
+  <div class="hp-shop-grid">
+    {% for nb in nearby %}
+    <article class="shop-card">
+      <div class="shop-photo letter">
+        <span class="nophoto" aria-hidden="true"><span class="til-g">{{ nb.tile }}</span></span>
+        {% if nb.open_state == "open" %}<span class="pill pill-live shop-open">{{ t('hp.open') }}</span>{% elif nb.open_state == "closed" %}<span class="pill sm ghost shop-open">{{ t('hp.closed') }}</span>{% endif %}
+      </div>
+      <div class="shop-body">
+        <h3>{{ nb.name }}</h3>
+        <p class="muted">{{ nb.area }}</p>
+        <p class="prices-line">{{ t('hp.prices_today', n=nb.n_prices) }}</p>
+        <p class="card-actions"><a class="pill ghost sm" href="/s/{{ nb.slug }}">{{ t('hp.view') }}</a><a class="pill cta sm" href="/s/{{ nb.slug }}/quote">{{ t('hp.order') }}</a></p>
+      </div>
+    </article>
+    {% endfor %}
   </div>
 </section>
 {% endif %}
@@ -304,4 +337,5 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>
 <script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

@@ -1,37 +1,48 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('share.title') }}{% endblock %}
+{% block body_class %}pub{% endblock %}
 {% block content %}
-<p class="kick">{{ t('share.heading') }}</p>
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ t('share.heading') }}</p>
+    <h1>{{ t('share.title') }}</h1>
+  </div>
+</div>
 <p class="muted" data-share-loading>{{ t('share.loading') }}</p>
 
-<section class="card cta-card" data-share-ready hidden>
-  <h2 data-share-question data-msg-use="{{ t('share.use_note', shop='{shop}') }}"></h2>
+<section class="form-card pub-sec" data-share-ready hidden>
+  <h2 class="h2s" data-share-question data-msg-use="{{ t('share.use_note', shop='{shop}') }}"></h2>
   <p class="muted" data-share-file></p>
-  <p class="field">
-    <label for="share-speak">{{ t('speak.label') }}</label>
-    <select id="share-speak" name="speak_lang" data-share-speak>
+  <div class="field">
+    <label class="field-label" for="share-speak">{{ t('speak.label') }}</label>
+    <select class="field-select" id="share-speak" name="speak_lang" data-share-speak>
       {% for lang in languages %}
       <option value="{{ lang.code }}">{{ lang.native_name }}</option>
       {% endfor %}
     </select>
-  </p>
-  <p class="help">{{ t('speak.help') }}</p>
-  <p><button class="pill dark big" type="button" data-share-upload data-msg-uploading="{{ t('share.uploading') }}">{{ ui.icon("mic") }}{{ t('share.upload') }}</button></p>
+  </div>
+  <p class="field-hint">{{ t('speak.help') }}</p>
+  <div class="action-bar"><button class="pill cta big" type="button" data-share-upload data-msg-uploading="{{ t('share.uploading') }}">{{ ui.icon("mic") }}{{ t('share.upload') }}</button></div>
   <p class="form-error" data-share-error hidden data-msg-failed="{{ t('share.failed') }}"></p>
   <p class="notice">{{ t('notice.voice') }}</p>
 </section>
 
-<section class="card" data-share-no-token hidden>
+<section class="card hp-empty pub-sec" data-share-no-token hidden>
   <p>{{ t('share.no_token') }}</p>
+  <p><a class="pill cta" href="/new">{{ t('hp.start_selling') }}</a></p>
 </section>
 
-<section class="card" data-share-no-file hidden>
-  <h2>{{ t('share.no_file_title') }}</h2>
+<section class="card hp-empty pub-sec" data-share-no-file hidden>
+  {{ ui.obj("mic", 56) }}
+  <h2 class="h2s">{{ t('share.no_file_title') }}</h2>
   <p class="muted">{{ t('share.no_file') }}</p>
+  <p><a class="pill cta" href="/">{{ t('error.back_home') }}</a></p>
 </section>
 {% endblock %}
 {% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   const loading = document.querySelector("[data-share-loading]");
