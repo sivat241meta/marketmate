@@ -79,21 +79,24 @@ body.is-seller .chip.on small { color: #fff; }
   }
 }
 
-/* ---- Sticky primary-action bar (phones; lifted above the bottom nav) ---- */
-.action-bar {
+/* ---- Sticky primary-action bar (phones; lifted above the bottom nav) ----
+   Seller scope only (:where keeps zero specificity, so the cascade on
+   seller pages is unchanged): forms.css owns the shared component, and
+   these rules must not restyle customer pages or setup forms. */
+:where(body.is-seller) .action-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin: 20px 0 0;
 }
-.action-bar .pill,
-.action-bar .btn { min-height: var(--tap); }
-.action-bar form { display: flex; }
-.action-bar form .pill,
-.action-bar form .btn { flex: 1 1 auto; justify-content: center; }
+:where(body.is-seller) .action-bar .pill,
+:where(body.is-seller) .action-bar .btn { min-height: var(--tap); }
+:where(body.is-seller) .action-bar form { display: flex; }
+:where(body.is-seller) .action-bar form .pill,
+:where(body.is-seller) .action-bar form .btn { flex: 1 1 auto; justify-content: center; }
 @media (max-width: 999.98px) {
-  .action-bar {
+  :where(body.is-seller) .action-bar {
     position: sticky;
     bottom: 0;
     padding: 12px 16px 16px;
@@ -102,19 +105,21 @@ body.is-seller .chip.on small { color: #fff; }
     box-shadow: 0 -8px 24px rgba(41, 45, 52, 0.12);
     margin: 20px -16px -16px;
   }
-  .action-bar .pill,
-  .action-bar .btn { flex: 1 1 auto; justify-content: center; }
-  .action-bar form { flex: 1 1 auto; }
+  :where(body.is-seller) .action-bar .pill,
+  :where(body.is-seller) .action-bar .btn { flex: 1 1 auto; justify-content: center; }
+  :where(body.is-seller) .action-bar form { flex: 1 1 auto; }
   body:has(.bnav) .action-bar {
     bottom: calc(var(--bnav-h) + 8px);
     z-index: 8;
   }
-  body:has(.bnav) .content:has(.action-bar) { padding-bottom: 230px; }
-  .content:has(.action-bar) { padding-bottom: 140px; }
+  :where(body.is-seller):has(.bnav) .content:has(.action-bar) { padding-bottom: 230px; }
+  :where(body.is-seller) .content:has(.action-bar) { padding-bottom: 140px; }
 }
 
-/* ---- v10 form pieces used on seller pages (see forms.css after merge) ---- */
-.form-card {
+/* ---- v10 form pieces used on seller pages (see forms.css after merge) ----
+   Seller scope only (:where keeps zero specificity): customer pages use
+   public.css, setup forms use the shared forms.css rules directly. */
+:where(body.is-seller) .form-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -122,14 +127,14 @@ body.is-seller .chip.on small { color: #fff; }
   box-shadow: var(--shadow-card);
   margin: 16px 0;
 }
-.form-card-title {
+:where(body.is-seller) .form-card-title {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0 0 4px;
 }
-.form-card-sub { margin: 0 0 12px; }
-.field-label {
+:where(body.is-seller) .form-card-sub { margin: 0 0 12px; }
+:where(body.is-seller) .field-label {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -140,8 +145,8 @@ body.is-seller .chip.on small { color: #fff; }
   color: var(--ink2);
   margin-bottom: 6px;
 }
-.field-label .req { color: var(--red); }
-.field-input {
+:where(body.is-seller) .field-label .req { color: var(--red); }
+:where(body.is-seller) .field-input {
   width: 100%;
   min-height: var(--tap);
   font: inherit;
@@ -151,10 +156,10 @@ body.is-seller .chip.on small { color: #fff; }
   border-radius: 10px;
   padding: 10px 12px;
 }
-.field-input[aria-invalid="true"] { border-color: var(--red); }
-.field-hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
-.field-error { color: var(--red); font-size: 13.5px; font-weight: 600; margin: 6px 0 0; }
-.toast {
+:where(body.is-seller) .field-input[aria-invalid="true"] { border-color: var(--red); }
+:where(body.is-seller) .field-hint { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+:where(body.is-seller) .field-error { color: var(--red); font-size: 13.5px; font-weight: 600; margin: 6px 0 0; }
+:where(body.is-seller) .toast {
   background: var(--chrome);
   color: #fff;
   border-radius: 12px;
@@ -162,15 +167,14 @@ body.is-seller .chip.on small { color: #fff; }
   margin: 12px 0;
   box-shadow: var(--shadow-card);
 }
-.more {
+:where(body.is-seller) .more {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 12px 16px;
   margin: 16px 0;
 }
-.more-label { font-weight: 700; cursor: pointer; min-height: var(--tap); display: flex; align-items: center; }
-.more-body { padding-top: 8px; }
+:where(body.is-seller) .more-body { padding-top: 8px; }
 
 /* ---- Today page: homepage rhythm around the kept Task 61 states ---- */
 .today-wrap .step-card { margin: 56px 0; }
