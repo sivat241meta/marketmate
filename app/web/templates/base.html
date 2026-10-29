@@ -87,7 +87,7 @@
     <span class="wordmark">MarketMate</span>
   </a>
   {% if _is_seller %}
-  {% if _ann and _ann.need %}<span class="chip c-need seller-status" title="{{ t('shell.needs_you', n=_ann.need, count=_ann.need) }}"><span class="ss-t">{{ t('shell.needs_you', n=_ann.need, count=_ann.need) }}</span></span>{% elif _ann %}<span class="chip c-live seller-status">{{ t('shell.shop_open') }}</span>{% endif %}
+  {% if _ann and _ann.need %}<span class="chip c-need seller-status" title="{{ t('shell.needs_you', n=_ann.need, count=_ann.need) }}" aria-label="{{ t('shell.needs_you', n=_ann.need, count=_ann.need) }}"><span class="ss-n" aria-hidden="true">{{ _ann.need }}</span><span class="ss-t">{{ t('shell.needs_you', n=_ann.need, count=_ann.need) }}</span></span>{% elif _ann %}<span class="chip c-live seller-status">{{ t('shell.shop_open') }}</span>{% endif %}
   <nav class="nav" aria-label="{{ t('nav.seller_label') }}">
     <a class="{% if _here %}on{% endif %}" href="/e/{{ token }}">{{ t('nav.today') }}</a>
     <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link><span class="nbadge" data-orders-badge hidden></span>{{ t('nav.orders') }}</a>
@@ -140,7 +140,7 @@
   {% if not _staff %}
   <a class="mic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live"><span><i class="mic-dot">{{ ui.obj("mic", 26) }}</i></span><span class="bl">{{ t('nav.live') }}</span></a>
   {% endif %}
-  <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.obj("bags") }}<span class="bl">{{ t('nav.orders') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
+  <a class="{% if _on_orders %}on{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status=waiting" data-orders-link>{{ ui.obj("bags") }}<span class="bl">{{ t('nav.orders_short') }}</span><span class="nbadge" data-orders-badge hidden></span></a>
   {% if not _staff %}
   <a class="{% if _on_close %}on{% endif %}" href="/e/{{ token }}/close">{{ ui.obj("moon") }}<span class="bl">{{ t('nav.close') }}</span></a>
   {% endif %}
