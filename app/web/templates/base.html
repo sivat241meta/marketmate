@@ -7,7 +7,10 @@
 <title>{% block title %}MarketMate{% endblock %}</title>
 <link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
 <meta name="theme-color" content="#1E1F21">
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -34,7 +37,8 @@
     <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
   </span>
 {% endmacro %}
-{% macro _mark() %}<span class="mk" aria-hidden="true"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>{% endmacro %}
+{% macro _brand_mark(size) %}<img class="brand-mark" src="/static/brand/mark.svg" width="{{ size }}" height="{{ size }}" alt="MarketMate">{% endmacro %}
+{% macro _brand_logo(height) %}<img class="brand-logo" src="/static/brand/logo.svg" height="{{ height }}" alt="MarketMate">{% endmacro %}
 <div class="ann">
   <span><span class="dot" aria-hidden="true"></span>{% if _is_seller %}{% if _ann %}{{ t('ann.shop_open') }} · {% if _ann.prices_time %}{{ t('ann.last_prices', time=_ann.prices_time) }}{% else %}{{ t('ann.no_prices') }}{% endif %} · {{ t('ann.need_tap', n=_ann.need) }}{% else %}{{ shop["name"] }} · {{ shop["area"] }}{% endif %}{% elif _shop_known %}{% if _ann and _ann.prices_time %}{{ t('ann.said_today', time=_ann.prices_time, area=shop["area"]) }}{% else %}{{ t('ann.said_notime', area=shop["area"]) }}{% endif %}{% else %}{{ t('ann.public') }}{% endif %}</span>
   {% if _shop_links %}
@@ -48,7 +52,7 @@
 </div>
 {% if _is_seller %}
 <div class="topbar">
-  <a class="ws" href="/e/{{ token }}"><i aria-hidden="true"></i><span>{{ shop["name"] }}</span></a>
+  <a class="ws" href="/e/{{ token }}">{{ _brand_mark(26) }}<span>{{ shop["name"] }}</span></a>
   <label class="visually-hidden" for="shell-q">{{ t('shell.search_ph') }}</label>
   <input class="kbd" type="search" id="shell-q" data-shell-search placeholder="🔍 {{ t('shell.search_ph') }}" autocomplete="off">
   <span class="seg" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
@@ -63,7 +67,7 @@
   <a class="iconbtn" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
 </div>
 <nav class="rail" aria-label="{{ t('nav.seller_label') }}">
-  <span class="logo-sq" aria-hidden="true">{{ ui.icon("check") }}</span>
+  {{ _brand_mark(30) }}
   <a class="ic{% if _here %} on{% endif %}" href="/e/{{ token }}">{{ ui.icon("home") }}<span>{{ t('rail.today') }}</span></a>
   {% if not _staff %}
   <a class="ic{% if _on_live %} on{% endif %}" href="/e/{{ token }}/live">{{ ui.icon("mic") }}<span>{{ t('rail.prices') }}</span></a>
@@ -81,7 +85,7 @@
 {% endif %}
 <header class="hdr">
   <a class="logo" href="{% if _is_seller %}/e/{{ token }}{% elif _shop_known %}/s/{{ shop["slug"] }}{% else %}/{% endif %}" aria-label="MarketMate home">
-    {{ _mark() }}
+    {{ _brand_logo(28) }}
     <span class="wordmark">MarketMate</span>
   </a>
   {% if _is_seller %}

@@ -61,6 +61,7 @@
 @page { size: 80mm auto; margin: 5mm 4mm; }
 body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; margin: 0; font-size: 10pt; }
 .shop { text-align: center; border-bottom: 0.5pt dashed #292D34; padding-bottom: 3mm; margin-bottom: 3mm; }
+.shop img.brand { width: 38mm; height: auto; }
 .shop h1 { font-size: 15pt; margin: 0; }
 .shop p { margin: 1mm 0 0; font-size: 9pt; }
 .meta { font-size: 9pt; margin-bottom: 2mm; }
@@ -80,6 +81,7 @@ td { padding: 1.2mm 0; vertical-align: top; border-bottom: 0.4pt dotted #E8EAED;
 </head>
 <body>
 <div class="shop">
+  <img class="brand" src="{{ brand_uri }}/logo.svg" alt="MarketMate">
   <h1>{{ shop["name"] }}</h1>
   <p>{{ shop["area"] }} · {{ shop["phone"] }}</p>
 </div>

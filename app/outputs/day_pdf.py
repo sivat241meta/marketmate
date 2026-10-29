@@ -13,6 +13,8 @@ from app.outputs.money import format_money
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
+_BRAND_URI = (Path(__file__).resolve().parent.parent
+              / "web" / "static" / "brand").as_uri()
 
 __all__ = ["day_summary_pdf"]
 
@@ -57,5 +59,5 @@ def day_summary_pdf(shop: sqlite3.Row | dict, day: str, tiles: dict,
         })
     html = template.render(
         shop=shop, day=day, tiles=tiles, rows=rows,
-        fonts_uri=_FONTS_URI)
+        fonts_uri=_FONTS_URI, brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()

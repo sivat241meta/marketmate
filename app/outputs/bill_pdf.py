@@ -12,6 +12,8 @@ from app.pipeline.names import display_name_en, display_name_local
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
+_BRAND_URI = (Path(__file__).resolve().parent.parent
+              / "web" / "static" / "brand").as_uri()
 
 
 def _plain(value) -> str:
@@ -56,5 +58,5 @@ def bill_pdf(shop: sqlite3.Row | dict, bill_id: int, lines: list[dict],
         shop=shop, bill_id=bill_id, rows=rows, total=_plain(total),
         created_label=created_label, customer_phone=customer_phone or "",
         round_off=round_off or "", paid_mode=paid_mode or "",
-        fonts_uri=_FONTS_URI)
+        fonts_uri=_FONTS_URI, brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()

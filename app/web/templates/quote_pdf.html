@@ -60,7 +60,8 @@
 }
 @page { size: A4; margin: 15mm 12mm; }
 body { font-family: "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif; color: #292D34; background: #FFFFFF; margin: 0; }
-.header { background: #1E1F21; color: #FFFFFF; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; }
+.header { background: #1E1F21; color: #FFFFFF; border-radius: 6mm; padding: 6mm 7mm; margin-bottom: 6mm; display: flex; align-items: center; gap: 5mm; }
+.header img.brand { height: 14mm; width: 14mm; flex: none; }
 .header h1 { font-size: 26pt; margin: 0; }
 .header .shop-meta { font-size: 11pt; margin: 2mm 0 0; }
 table { width: 100%; border-collapse: collapse; background: #ffffff; }
@@ -77,9 +78,12 @@ td { border-bottom: 0.5pt solid #E8EAED; padding: 3mm; vertical-align: top; }
 </head>
 <body>
 <div class="header">
+  <img class="brand" src="{{ brand_uri }}/mark.svg" alt="MarketMate">
+  <div>
   <h1>{{ shop["name"] }}</h1>
   <p class="shop-meta">{{ shop["area"] }} · {{ shop["phone"] }}</p>
   <p class="shop-meta">Price quote · {{ prices_note }}</p>
+  </div>
 </div>
 <table>
 <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
