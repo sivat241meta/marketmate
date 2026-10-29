@@ -262,7 +262,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                        status_code=400,
                                        is_staff=_is_staff(role))
             return RedirectResponse(
-                f"/e/{token}/credit/{url_quote(norm, safe='')}",
+                f"/e/{token}/credit/{url_quote(norm, safe='')}?saved=1",
                 status_code=303)
         finally:
             conn.close()

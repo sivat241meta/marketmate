@@ -3,8 +3,13 @@
 {% block title %}{{ t('bills.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<p class="kick">{{ t('bills.heading') }}</p>
-<h2 class="h2s">{{ t('bills.sub', shop=shop["name"]) }}</h2>
+<div class="page-head">
+  <div>
+    <p class="kick">{{ t('bills.heading') }}</p>
+    <h1 class="page-title">{% if range == "yesterday" %}{{ t('bills.yesterday') }}{% elif range == "week" %}{{ t('bills.week') }}{% else %}{{ t('bills.today') }}{% endif %}</h1>
+    <p class="page-sub muted">{{ t('bills.sub', shop=shop["name"]) }}</p>
+  </div>
+</div>
 <nav class="chips" aria-label="{{ t('bills.date_aria') }}">
   <a class="chip{% if range == "today" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status={{ status }}">{{ t('bills.today') }}</a>
   <a class="chip{% if range == "yesterday" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=yesterday&amp;status={{ status }}">{{ t('bills.yesterday') }}</a>
@@ -25,7 +30,9 @@
   <div class="stat"><span class="stat-icon">{{ ui.obj("warning", 28) }}</span><span class="stat-num money">{{ unpaid_total | money(shop["currency"]) }}</span><span class="stat-label">{{ t('bills.unpaid_stat') }}</span><span class="stat-caption">{{ unpaid_count }}</span></div>
 </div>
 
-<p><a class="pill dark" href="/e/{{ token }}/bills/new">{{ ui.obj("receipt", 20) }}{{ t('bills.new_bill') }}</a></p>
+{% call ui.action_bar() %}
+<a class="pill dark big" href="/e/{{ token }}/bills/new">{{ ui.obj("receipt", 20) }}{{ t('bills.new_bill') }}</a>
+{% endcall %}
 
 <nav class="chips" aria-label="{{ t('bills.filter_aria') }}">
   <a class="chip{% if status == "all" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=all">{{ t('bills.filter_all') }}<small>{{ counts.all }}</small></a>
@@ -37,6 +44,7 @@
   <a class="chip{% if status == "paid" %} is-active{% endif %}" href="/e/{{ token }}/bills?range={{ range }}&amp;status=paid">{{ t('bills.filter_paid') }}<small>{{ counts.paid }}</small></a>
 </nav>
 
+<section class="ssec" aria-label="{{ t('bills.title', shop=shop['name']) }}">
 <div class="vtabs" role="tablist" aria-label="{{ t('bills.title', shop=shop['name']) }}">
   <button type="button" role="tab" data-view-btn="list" class="on">{{ t('bills.view_list') }}</button>
   <button type="button" role="tab" data-view-btn="board">{{ t('bills.view_board') }}</button>
@@ -105,8 +113,14 @@ document.addEventListener("DOMContentLoaded", () => {
   show(saved === "board" ? "board" : "list");
 });
 </script>
+</section>
 
-<div class="section-head"><h2>{{ t('bills.top_today') }}</h2></div>
+<section class="ssec" aria-label="{{ t('bills.top_today') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('bills.top_today') }}</h2>
+  </div>
+</div>
 {% if top %}
 {% for entry in top %}
 <div class="top-row">
@@ -116,11 +130,12 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('bills.nothing_title'), t('bills.nothing_text'), None, None, "tag", "chart") }}
+{{ ui.empty_state(t('bills.nothing_title'), t('bills.nothing_text'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "tag", "chart") }}
 {% endif %}
+</section>
 
-<div class="section-head"><h2>{{ t('bills.exports') }}</h2></div>
-<section class="card">
+<section class="ssec" aria-label="{{ t('bills.exports') }}">
+{% call ui.more(t('bills.exports')) %}
   <form method="get" action="/e/{{ token }}/exports/sales.xlsx">
     <div class="field">
       <label for="bills-range">{{ t('bills.date_range') }}</label>
@@ -146,5 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <a class="pill ghost" href="/e/{{ token }}/exports/pricelist.csv">{{ t('bills.pricelist_csv') }}</a>
     </p>
   </form>
+{% endcall %}
 </section>
 {% endblock %}

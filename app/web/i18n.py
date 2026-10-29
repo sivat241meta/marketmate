@@ -1217,6 +1217,10 @@ _ENGLISH: dict[str, str] = {
     "hp.no_match": "No areas match that search.",
     "hp.meta_calls": "Sellers can review every AI call on their Meta AI calls page (/e/<token>/ai).",
     "hp.close": "Close",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "All orders →",
+    "v10.all_bills": "All bills →",
+    "v10.saved": "Saved",
 }
 
 
@@ -2415,6 +2419,10 @@ _TAMIL: dict[str, str] = {
     "hp.no_match": "தேடலுக்கு எந்தப் பகுதியும் பொருந்தவில்லை.",
     "hp.meta_calls": "ஒவ்வொரு AI அழைப்பையும் விற்பனையாளர்கள் தங்கள் Meta AI அழைப்புப் பக்கத்தில் (/e/<token>/ai) பார்க்கலாம்.",
     "hp.close": "மூடுக",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "எல்லா ஆர்டர்களும் →",
+    "v10.all_bills": "எல்லா பில்களும் →",
+    "v10.saved": "சேமிக்கப்பட்டது",
 }
 
 
@@ -3613,6 +3621,10 @@ _HINDI: dict[str, str] = {
     "hp.no_match": "खोज से कोई क्षेत्र नहीं मिला।",
     "hp.meta_calls": "विक्रेता हर AI कॉल अपने Meta AI कॉल पेज (/e/<token>/ai) पर देख सकते हैं।",
     "hp.close": "बंद करें",
+    # --- v10 seller pages (Task 91) ---
+    "v10.all_orders": "सभी ऑर्डर →",
+    "v10.all_bills": "सभी बिल →",
+    "v10.saved": "सहेज लिया",
 }
 
 

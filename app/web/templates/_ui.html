@@ -61,3 +61,53 @@
 <div class="empty-state">{% if obj_name %}{{ obj(obj_name, 56) }}{% else %}{{ icon(icon_name) }}{% endif %}<h2>{{ title }}</h2><p>{{ text }}</p>
 {%- if action_url and action_label %} {{ button(action_label, href=action_url, kind="secondary") }}{% endif %}</div>
 {%- endmacro %}
+
+{# v10 shared form components (Tasks 89/90/91 share these names). #}
+{% macro field(label, name, type="text", value="", hint="", required=False, icon=None, inputmode=None, autocomplete=None, error=None, attrs={}) -%}
+<div class="field">
+  <label class="field-label" for="{{ attrs.id if attrs.id is defined else name }}">{% if icon %}{{ obj(icon, 20) }}{% endif %}<span>{{ label }}</span>{% if required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <input class="field-input" type="{{ type }}" name="{{ name }}" id="{{ attrs.id if attrs.id is defined else name }}" value="{{ value }}"{% if required %} required{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ name }}-error"{% elif hint %} aria-describedby="{{ name }}-hint"{% endif %}{% for k, v in attrs.items() if k != "id" %} {{ k }}="{{ v }}"{% endfor %}>
+  {% if hint %}<p class="field-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro select_field(label, name, options, value="", hint="", required=False, icon=None, error=None, attrs={}) -%}
+<div class="field">
+  <label class="field-label" for="{{ attrs.id if attrs.id is defined else name }}">{% if icon %}{{ obj(icon, 20) }}{% endif %}<span>{{ label }}</span>{% if required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <select class="field-input" name="{{ name }}" id="{{ attrs.id if attrs.id is defined else name }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ name }}-error"{% elif hint %} aria-describedby="{{ name }}-hint"{% endif %}{% for k, v in attrs.items() if k != "id" %} {{ k }}="{{ v }}"{% endfor %}>
+    {% for opt in options %}{% if opt is string %}<option value="{{ opt }}"{% if opt == value %} selected{% endif %}>{{ opt }}</option>{% else %}<option value="{{ opt[0] }}"{% if opt[0] == value %} selected{% endif %}>{{ opt[1] }}</option>{% endif %}{% endfor %}
+  </select>
+  {% if hint %}<p class="field-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro textarea_field(label, name, value="", hint="", required=False, rows=3, error=None, attrs={}) -%}
+<div class="field">
+  <label class="field-label" for="{{ attrs.id if attrs.id is defined else name }}"><span>{{ label }}</span>{% if required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+  <textarea class="field-input" name="{{ name }}" id="{{ attrs.id if attrs.id is defined else name }}" rows="{{ rows }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ name }}-error"{% elif hint %} aria-describedby="{{ name }}-hint"{% endif %}{% for k, v in attrs.items() if k != "id" %} {{ k }}="{{ v }}"{% endfor %}>{{ value }}</textarea>
+  {% if hint %}<p class="field-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro form_card(title=None, subtitle=None) -%}
+<section class="form-card">
+  {% if title %}<h2 class="form-card-title">{{ title }}</h2>{% endif %}
+  {% if subtitle %}<p class="form-card-sub muted">{{ subtitle }}</p>{% endif %}
+  {{ caller() }}
+</section>
+{%- endmacro %}
+
+{% macro action_bar() -%}
+<div class="action-bar">{{ caller() }}</div>
+{%- endmacro %}
+
+{% macro toast(message) -%}
+<div class="toast" role="status">{{ message }}</div>
+{%- endmacro %}
+
+{% macro more(label) -%}
+<details class="more"><summary class="more-label">{{ label }}</summary><div class="more-body">{{ caller() }}</div></details>
+{%- endmacro %}

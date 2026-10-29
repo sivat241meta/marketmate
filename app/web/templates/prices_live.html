@@ -4,23 +4,40 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('prices_live.title') }}{% endblock %}
 {% block content %}
-<p class="kick">{{ t('prices_live.title') }}</p>
-<h1 class="big">{{ t('prices_live.title') }}</h1>
-<p class="lead">{{ t('prices_live.subtitle') }}</p>
-{% if wa_url %}
-<div class="hero-cta">
-  <a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ shop["name"] }}</p>
+    <h1 class="page-title">{{ t('prices_live.title') }}</h1>
+    <p class="page-sub muted">{{ t('prices_live.subtitle') }}</p>
+  </div>
 </div>
+{% if wa_url %}
+{% call ui.action_bar() %}
+<a class="pill dark big" href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>
+{% endcall %}
 {% endif %}
-<section class="card">
-  <h2>{{ shop["name"] }}</h2>
+<section class="ssec" aria-label="{{ t('wa.share_list') }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('wa.share_list') }}</h2>
+    </div>
+  </div>
+  {% call ui.form_card() %}
   <p><span class="shop-link">{{ shop_url }}</span></p>
   <p><img src="{{ qr_url }}" alt="QR" width="160" height="160"></p>
   <p><a class="pill ghost" href="{{ shop_path }}">{{ t('wa.share_list') }}</a></p>
+  {% endcall %}
 </section>
-<div class="hero-cta">
-  <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>
-  <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>
-</div>
+<section class="ssec" aria-label="{{ t('dash.tile_print_board') }}">
+  <div class="hp-sec-head">
+    <div>
+      <h2 class="h2s">{{ t('dash.tile_print_board') }}</h2>
+    </div>
+  </div>
+  <div class="hero-cta">
+    <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>
+    <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>
+  </div>
+</section>
 <p class="back-link"><a href="/e/{{ token }}">{{ t('error.back_home') }}</a></p>
 {% endblock %}

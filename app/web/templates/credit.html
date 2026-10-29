@@ -3,10 +3,15 @@
 {% block title %}{{ t('credit.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
-<p class="kick">{{ t('credit.heading') }}</p>
-<h2 class="h2s">{{ t('credit.sub', shop=shop["name"]) }}</h2>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('credit.heading') }}</p>
+    {% if entries %}<h1 class="page-title">{{ headline }}</h1>
+    {% else %}<h1 class="page-title">{{ t('credit.sub', shop=shop["name"]) }}</h1>{% endif %}
+  </div>
+</div>
 {% if entries %}
-<h1 class="big">{{ headline }}</h1>
+<section class="ssec" aria-label="{{ t('credit.heading') }}">
 <div class="grp">
   <div class="gh"><span aria-hidden="true">▾</span>{{ ui.obj("ledger") }}<span class="chip c-need">{{ t('bills.pill_credit') }}</span> {{ t('credit.heading') }} <span class="n">{{ entries | length }}</span></div>
   <div class="cols" aria-hidden="true"><span>{{ t('t64.col_customer') }}</span><span>{{ t('t64.col_items') }}</span><span>{{ t('t64.col_status') }}</span><span>{{ t('t64.col_time') }}</span><span>{{ t('t64.col_total') }}</span></div>
@@ -20,7 +25,8 @@
 </a>
 {% endfor %}
 </div>
+</section>
 {% else %}
-{{ ui.empty_state(t('credit.empty_title'), t('credit.empty_text'), None, None, "receipt", "ledger") }}
+{{ ui.empty_state(t('credit.empty_title'), t('credit.empty_text'), "/e/" ~ token ~ "/bills", t('v10.all_bills'), "receipt", "ledger") }}
 {% endif %}
 {% endblock %}

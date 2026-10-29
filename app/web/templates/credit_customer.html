@@ -4,19 +4,31 @@
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
 <p class="back-link"><a href="/e/{{ token }}/credit">{{ t('credit.back') }}</a></p>
-<p class="kick">{{ t('credit.heading') }} · {{ phone }}</p>
-<h1 class="big">{{ name }}</h1>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('credit.heading') }} · {{ phone }}</p>
+    <h1 class="page-title">{{ name }}</h1>
+  </div>
+</div>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
+{% if request.query_params.get("saved") == "1" %}{{ ui.toast(t('v10.saved')) }}{% endif %}
 
 <div class="stat-grid">
-  <div class="stat"><span class="stat-num money">{{ bills_total }}</span><span class="stat-label">{{ t('credit.total_bills') }}</span></div>
-  <div class="stat"><span class="stat-num money">{{ paid_total }}</span><span class="stat-label">{{ t('credit.total_paid') }}</span></div>
-  <div class="stat"><span class="stat-num money">{{ balance }}</span><span class="stat-label">{{ t('credit.balance_label') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("receipt", 28) }}</span><span class="stat-num money">{{ bills_total }}</span><span class="stat-label">{{ t('credit.total_bills') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><span class="stat-num money">{{ paid_total }}</span><span class="stat-label">{{ t('credit.total_paid') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("ledger", 28) }}</span><span class="stat-num money">{{ balance }}</span><span class="stat-label">{{ t('credit.balance_label') }}</span></div>
 </div>
 
-<p><a class="pill cta big" href="{{ reminder_url }}">{{ ui.obj("chat", 20) }}{{ t('credit.remind') }}</a></p>
+{% call ui.action_bar() %}
+<a class="pill cta big" href="{{ reminder_url }}">{{ ui.obj("chat", 20) }}{{ t('credit.remind') }}</a>
+{% endcall %}
 
-<div class="section-head"><h2>{{ t('credit.bills_title') }}</h2></div>
+<section class="ssec" aria-label="{{ t('credit.bills_title') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('credit.bills_title') }}</h2>
+  </div>
+</div>
 {% if bills %}
 <div class="table-scroll">
 <table class="close-table">
@@ -32,10 +44,16 @@
 </table>
 </div>
 {% else %}
-<p class="muted">{{ t('credit.no_bills') }}</p>
+{{ ui.empty_state(t('credit.bills_title'), t('credit.no_bills'), "/e/" ~ token ~ "/bills/new", t('bills.new_bill'), "receipt", "ledger") }}
 {% endif %}
+</section>
 
-<div class="section-head"><h2>{{ t('credit.payments_title') }}</h2></div>
+<section class="ssec" aria-label="{{ t('credit.payments_title') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('credit.payments_title') }}</h2>
+  </div>
+</div>
 {% if payments %}
 <div class="table-scroll">
 <table class="close-table">
@@ -50,11 +68,17 @@
 </table>
 </div>
 {% else %}
-<p class="muted">{{ t('credit.no_payments') }}</p>
+<p class="muted">{{ t('credit.no_payments') }} <a href="#record-payment">{{ t('credit.record') }} →</a></p>
 {% endif %}
+</section>
 
-<div class="section-head"><h2>{{ t('credit.running') }}</h2></div>
 {% if ledger %}
+<section class="ssec" aria-label="{{ t('credit.running') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('credit.running') }}</h2>
+  </div>
+</div>
 <div class="table-scroll">
 <table class="close-table">
   <tr><th>{{ t('credit.date_col') }}</th><th>{{ t('credit.amount_col') }}</th><th>{{ t('credit.balance') }}</th></tr>
@@ -67,9 +91,10 @@
   {% endfor %}
 </table>
 </div>
+</section>
 {% endif %}
 
-<section class="card" aria-label="{{ t('credit.received') }}">
+<section class="card" id="record-payment" aria-label="{{ t('credit.received') }}">
   <h2>{{ t('credit.received') }}</h2>
   <form method="post" action="/e/{{ token }}/credit/{{ key_quoted }}/pay">
     <div class="field">

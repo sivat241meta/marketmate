@@ -4,17 +4,21 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('review.title') }}{% endblock %}
 {% block content %}
-<header class="review-head">
-  <p class="kick">{{ t('review.title') }}</p>
-  {% if need_count %}<h1 class="h2s">{{ t('review.head_need', n=need_count) }}</h1>{% else %}<h1 class="h2s">{{ t('review.head_all') }}</h1>{% endif %}
-  {% if stopped_note %}<div class="alert alert-warn">{{ stopped_note }}</div>{% endif %}
-  <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
-  <progress class="progress" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>
-  <form class="inline-form" method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
-    <button class="btn btn-small btn-ghost" type="submit" title="{{ t('review.check_again_title') }}">{{ t('review.check_again') }}</button>
-  </form>
-  <p class="muted"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
-</header>
+<div class="page-head review-progress">
+  <div>
+    <p class="eyebrow">{{ t('review.title') }}</p>
+    {% if need_count %}<h1 class="page-title">{{ t('review.head_need', n=need_count) }}</h1>{% else %}<h1 class="page-title">{{ t('review.head_all') }}</h1>{% endif %}
+    <p class="muted" data-review-counts data-total="{{ total }}">{{ t('review.counts', ok=ok_count, total=total, need=need_count) }}</p>
+  </div>
+  <div class="page-actions">
+    <form class="inline-form" method="post" action="/e/{{ token }}/s/{{ session["id"] }}/retry">
+      <button class="pill ghost" type="submit" title="{{ t('review.check_again_title') }}">{{ t('review.check_again') }}</button>
+    </form>
+  </div>
+</div>
+{% if stopped_note %}<div class="alert alert-warn">{{ stopped_note }}</div>{% endif %}
+<progress class="progress review-bar" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>
+<p class="muted"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
 <form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve"
       data-msg-ready="{{ t('review.ready') }}"
       data-msg-need-one="{{ t('review.need_one') }}"
@@ -25,7 +29,7 @@
       data-msg-approve-failed="{{ t('review.approve_failed') }}">
 {% for card in cards if card.needs_decision %}
 {% set item = card.item %}
-<section class="card review-card needs" data-card="{{ card.index }}" data-needs="1" data-variety="{{ item.variety or '' }}">
+<section class="card review-card needs form-card" data-card="{{ card.index }}" data-needs="1" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="true" aria-controls="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
@@ -135,7 +139,7 @@
 {% endif %}
 {% for card in cards if not card.needs_decision %}
 {% set item = card.item %}
-<section class="card review-card is-collapsed" data-card="{{ card.index }}" data-needs="0" data-variety="{{ item.variety or '' }}">
+<section class="card review-card is-collapsed form-card" data-card="{{ card.index }}" data-needs="0" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="false" aria-controls="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
@@ -239,9 +243,9 @@
 </section>
 {% endif %}
   <p class="form-error" id="approve-error" hidden></p>
-  <div class="sticky-bar">
-    <p class="muted sticky-count" data-approve-count></p>
-    <button class="pill dark big" type="submit" id="approve-btn" disabled>{{ t('review.approve') }}</button>
+  <div class="sticky-bar action-bar">
+    <p class="muted sticky-count" id="approve-count" data-approve-count></p>
+    <button class="pill dark big" type="submit" id="approve-btn" aria-describedby="approve-count" disabled>{{ t('review.approve') }}</button>
   </div>
 </form>
 {% endblock %}

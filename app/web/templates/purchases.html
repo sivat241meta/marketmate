@@ -4,8 +4,12 @@
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('pur.heading') }}{% endblock %}
 {% block content %}
-<p class="kick">{{ t('pur.heading') }}</p>
-<h2 class="h2s">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</h2>
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ t('pur.heading') }}</p>
+    <h1 class="page-title">{{ t('pur.sub', shop=shop["name"], today=today, spent=spent | money(currency)) }}</h1>
+  </div>
+</div>
 {% if error %}<div class="alert alert-warn">{{ error }}</div>{% endif %}
 
 <section class="rcpt record-card">
@@ -22,7 +26,7 @@
   <p class="notice">{{ notice | safe }}</p>
 </section>
 
-<section class="rcpt">
+<section class="rcpt" id="add-purchase">
   <h2>{{ t('pur.type_title') }}</h2>
   <form method="post" action="/e/{{ token }}/purchases/add">
     <div class="field">
@@ -47,7 +51,12 @@
   </form>
 </section>
 
-<div class="section-head"><h2>{{ t('pur.bought_today') }}</h2></div>
+<section class="ssec" aria-label="{{ t('pur.bought_today') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('pur.bought_today') }}</h2>
+  </div>
+</div>
 {% if rows %}
 {% for row in rows %}
 <div class="rcpt pur-row">
@@ -60,16 +69,23 @@
 </div>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), None, None, "photo", "cart") }}
+{{ ui.empty_state(t('pur.empty_title'), t('pur.empty_text'), "#add-purchase", t('pur.add'), "photo", "cart") }}
 {% endif %}
+</section>
 
 {% if sessions %}
-<div class="section-head"><h2>{{ t('pur.recent') }}</h2></div>
+<section class="ssec" aria-label="{{ t('pur.recent') }}">
+<div class="hp-sec-head">
+  <div>
+    <h2 class="h2s">{{ t('pur.recent') }}</h2>
+  </div>
+</div>
 {% for s in sessions %}
 <div class="session-row">
   <div class="row-main"><a href="/e/{{ token }}/purchases/{{ s["id"] }}">{{ t('pur.purchase_n', id=s["id"]) }}</a>{% if s["message"] %} <span class="muted">— {{ s["message"] }}</span>{% endif %}</div>
   {{ ui.pill(s["status"], "live" if s["status"] == "approved" else "check") }}
 </div>
 {% endfor %}
+</section>
 {% endif %}
 {% endblock %}
