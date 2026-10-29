@@ -40,17 +40,21 @@ def test_crop_no_boxes_centre(tmp_path):
     assert Image.open(out).size == (480, 360)
 
 
-def test_make_photo_wires_find_boxes(monkeypatch, tmp_path):
+def test_make_photo_wires_find_instances(monkeypatch, tmp_path):
     from app.config import load_settings
     from app.costs import CostLedger
+    from app.meta.sam import SamInstance
 
     seen = {}
 
-    def fake_find_boxes(image, noun, **kwargs):
+    def fake_find_instances(image, noun, **kwargs):
         seen["noun"] = noun
-        return [Box(100, 100, 200, 200, 640, 480, None)]
+        return [SamInstance(Box(100, 100, 200, 200, 640, 480, None), None)]
 
-    monkeypatch.setattr("app.pipeline.photos.find_boxes", fake_find_boxes)
+    monkeypatch.setattr("app.pipeline.photos.find_instances",
+                        fake_find_instances)
+    monkeypatch.setattr("app.pipeline.photos.find_boxes",
+                        lambda image, noun, **kwargs: [])
     frame = Frame(make_image(tmp_path / "frame.jpg"), 5000)
     out = tmp_path / "photo.jpg"
     ledger = CostLedger(tmp_path / "c.db", 100.0)

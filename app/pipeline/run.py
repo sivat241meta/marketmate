@@ -260,20 +260,21 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             if saved:
                 item.photo = saved[0]
                 item.photo_candidates = list(saved)
-            else:  # pragma: no cover - window_frames always keeps picked
-                item.photo = str(make_photo(
-                    frame, item.name_en,
-                    photo_dir / f"s{session_id}_{index}.jpg",
-                    ledger=ledger, settings=settings))
+            else:
+                # No product in any tried frame, or every frame
+                # face-blocked: the item gets no photo (letter tile).
+                item.photo = None
+                item.photo_candidates = []
             item.proof.frame = str(ranked[0].path) if ranked else str(frame.path)
             clip = cut_audio_clip(wav_path, item.proof.start_ms,
                                   item.proof.end_ms,
                                   clip_dir / f"item_{index}.m4a")
             item.proof.audio_clip = str(clip)
             continue
-        item.photo = str(make_photo(
+        photo = make_photo(
             frame, item.name_en, photo_dir / f"s{session_id}_{index}.jpg",
-            ledger=ledger, settings=settings))
+            ledger=ledger, settings=settings)
+        item.photo = str(photo) if photo is not None else None
         item.proof.frame = str(frame.path)
         clip = cut_audio_clip(wav_path, item.proof.start_ms, item.proof.end_ms,
                               clip_dir / f"item_{index}.m4a")

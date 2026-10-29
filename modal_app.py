@@ -17,6 +17,8 @@ image = (
         "fonts-noto-cjk",
     )
     .pip_install_from_pyproject("pyproject.toml")
+    # SAM 3.1 wire-format decoder (also pinned in pyproject.toml).
+    .pip_install("meta-sam-parser==0.1.0")
     .env({"DATA_DIR": "/data", "MARKETMATE_ON_MODAL": "1"})
     .add_local_dir("app", remote_path="/root/app")
 )

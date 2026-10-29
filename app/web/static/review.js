@@ -526,6 +526,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const main = card ? card.querySelector("[data-photo-main]") : null;
       if (main && data.photo_url) {
         main.src = data.photo_url;
+        if (data.cutout) {
+          main.setAttribute("data-cutout", "");
+        } else {
+          main.removeAttribute("data-cutout");
+        }
       }
       row.querySelectorAll("[data-photo-index]").forEach((other) => {
         other.classList.toggle("is-on", other === picked);
@@ -551,6 +556,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const main = card ? card.querySelector("[data-photo-main]") : null;
       if (main && data.photo_url) {
         main.src = data.photo_url;
+        // Retakes are always 4:3 crops, never cut-outs.
+        main.removeAttribute("data-cutout");
       }
       input.value = "";
     });

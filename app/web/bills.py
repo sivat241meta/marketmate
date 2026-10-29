@@ -49,6 +49,7 @@ from app.pipeline.names import (
     keywords_for,
     qualified_name,
 )
+from app.pipeline.photos import is_cutout_photo
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 from app.web.auth import created_by_for, resolve_or_404
@@ -592,6 +593,7 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
             if first is not None else "",
             "photo_url": ("/m/" + Path(item.photo).name
                           if item.photo else None),
+            "photo_cutout": is_cutout_photo(item.photo),
         })
     return items
 

@@ -161,10 +161,12 @@ def test_crop_no_boxes_centre_4_3(tmp_path):
     assert (width, height) == (560, 420)
 
 
-def test_three_candidates_stored(tmp_path, monkeypatch):
+def test_cutout_and_original_candidates_stored(tmp_path, monkeypatch):
+    # Task 65 replaces the 3 centre-crop candidates with Cut-out + Original.
     import app.pipeline.photos as photos_mod
     from app.config import load_settings as _load
     from app.costs import CostLedger
+    from app.meta.sam import parse_sam_response
 
     frames_dir = tmp_path / "frames"
     frames_dir.mkdir()
@@ -172,22 +174,29 @@ def test_three_candidates_stored(tmp_path, monkeypatch):
     for pos, t_ms in enumerate((4000, 4500, 5000, 5500, 6000)):
         path = frames_dir / f"f_{t_ms}.jpg"
         if pos == 2:
-            sharp_image((640, 480)).save(path, "JPEG")
+            sharp_image((576, 585)).save(path, "JPEG")
         else:
-            sharp_image((640, 480)).filter(
+            sharp_image((576, 585)).filter(
                 ImageFilter.GaussianBlur(2 + pos)).save(path, "JPEG")
         frames.append(Frame(path=path, t_ms=t_ms))
+    instances = parse_sam_response(
+        Path("tests/fixtures/sam/sam_pomegranate.txt").read_text())
     monkeypatch.setattr(
-        photos_mod, "find_boxes",
-        lambda image, noun, **kwargs: [Box(100, 100, 500, 400, 640, 480, None)])
+        photos_mod, "find_instances",
+        lambda image, noun, **kwargs: list(instances))
+    monkeypatch.setattr(
+        photos_mod, "find_boxes", lambda image, noun, **kwargs: [])
     ledger = CostLedger(tmp_path / "c.db", 100.0)
     settings = _load({"MODEL_API_KEY": "k"})
     picked = frames[2]
     saved = photos_mod.make_candidates(
         frames, picked, "tomato", tmp_path / "photos" / "s1_0",
         ledger=ledger, settings=settings)
-    assert len(saved) == 3
+    assert len(saved) == 2
+    assert saved[0].endswith("_cut.jpg")
+    assert saved[1].endswith("_orig.jpg")
     assert all(Path(p).is_file() for p in saved)
+    assert Image.open(saved[0]).size == (900, 900)
 
 
 # --- Part B: seller pick / retake ---------------------------------------------
@@ -244,7 +253,11 @@ def test_photo_upload_rejects_big_file(tmp_path):
     assert resp.status_code == 400
 
 
-def test_photo_upload_strips_exif(tmp_path):
+def test_photo_upload_strips_exif(tmp_path, monkeypatch):
+    import app.pipeline.photos as photos_mod
+
+    monkeypatch.setattr(
+        photos_mod, "find_boxes", lambda image, noun, **kwargs: [])
     client = make_client(tmp_path)
     token = create_shop(client)
     session_id = seed_session(tmp_path, token, [draft()])
@@ -270,7 +283,11 @@ def test_photo_upload_strips_exif(tmp_path):
     assert "exif" not in Image.open(saved).info
 
 
-def test_change_photo_keeps_price_and_version(tmp_path):
+def test_change_photo_keeps_price_and_version(tmp_path, monkeypatch):
+    import app.pipeline.photos as photos_mod
+
+    monkeypatch.setattr(
+        photos_mod, "find_boxes", lambda image, noun, **kwargs: [])
     client = make_client(tmp_path)
     token = create_shop(client)
     _session_id, version_id = seed_published(tmp_path, token, [draft()])

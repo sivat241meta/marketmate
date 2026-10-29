@@ -1465,6 +1465,11 @@ div.desk-only[hidden] { display: none !important; }
   place-items: center;
   color: var(--muted);
 }
+img.list-thumb[data-cutout],
+.mini img[data-cutout] {
+  object-fit: contain;
+  background: #fff;
+}
 .list-thumb svg { width: 24px; height: 24px; }
 .list-main { flex: 1; min-width: 0; }
 .list-name { display: block; font-weight: 700; }
@@ -1765,6 +1770,11 @@ progress.progress::-moz-progress-bar { background: var(--purple-ink); border-rad
   margin-bottom: var(--space-3);
   background: var(--line-2);
 }
+.review-photo[data-cutout] {
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+}
 .photo-pick { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
 .photo-thumb {
   border: 2px solid transparent;
@@ -1778,7 +1788,21 @@ progress.progress::-moz-progress-bar { background: var(--purple-ink); border-rad
   flex: none;
 }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb img[data-cutout] { object-fit: contain; background: #fff; }
 .photo-thumb.is-on { border-color: var(--purple); }
+.photo-thumb { position: relative; }
+.photo-kind {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  padding: 1px 2px;
+}
 .choice { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-2); }
 .choice .opt-btn { margin: 0; min-height: 60px; font-size: 1.3rem; background: #fff; border-color: var(--line-2); }
 .choice .opt-btn.chosen { border-color: var(--purple); background: var(--purple-soft); color: var(--purple-ink); }

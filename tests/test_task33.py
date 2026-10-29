@@ -95,10 +95,16 @@ def _canned_extract(monkeypatch):
             "range_said": False, "qty_said": None, "qty": None,
             "qty_unit": None, "turn_ids": [1], "quote": "tomato kilo 18"}]}
 
+    from app.meta.sam import SamInstance
+
     monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
     monkeypatch.setattr("app.pipeline.frames.chat_json", fake_chat_json)
+    monkeypatch.setattr(
+        "app.pipeline.photos.find_instances",
+        lambda image, noun, **kw: [
+            SamInstance(Box(10, 10, 50, 50, 320, 240, None), None)])
     monkeypatch.setattr("app.pipeline.photos.find_boxes",
-                        lambda image, noun, **kw: [Box(10, 10, 50, 50, 320, 240, None)])
+                        lambda image, noun, **kw: [])
 
 
 def test_run_passes_shop_language_keywords(tmp_path, clip_mp4, monkeypatch):

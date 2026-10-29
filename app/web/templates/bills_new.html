@@ -27,7 +27,7 @@
         {% for item in price_items %}
         <article class="card{% if item.sold_out %} out{% endif %}" data-line data-rate="{{ item.unit_price }}" data-per="{{ item.per_amount }}" data-search-row="{{ item.name_local or item.display }} {{ item.display }} {{ item.variety }}">
           <div class="pw">
-            <div class="ph{% if not item.photo_url %} letter{% endif %}">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy" width="400" height="300">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
+            <div class="ph{% if not item.photo_url %} letter{% endif %}">{% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}{% if item.sold_out %}<span class="tag">{{ t('dash.sold_out') }}</span>{% endif %}</div>
           </div>
           <div class="price"><span class="pp">{{ item.unit_price | money(shop["currency"]) }}</span><span class="per">/{{ item.unit }}</span></div>
           <div class="nm" lang="{{ shop_lang }}"><span class="tname">{{ item.name_local or item.display }}</span>{% if item.name_local and item.display %}<small>{{ item.display }}</small>{% endif %}</div>

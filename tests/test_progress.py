@@ -199,6 +199,8 @@ def _item_json(name, price):
 
 
 def _install_fakes(monkeypatch, transcript, extract_payloads):
+    from app.meta.sam import SamInstance
+
     state = {"extract_calls": 0}
 
     def fake_transcribe(wav, **kwargs):
@@ -219,8 +221,12 @@ def _install_fakes(monkeypatch, transcript, extract_payloads):
     monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
     monkeypatch.setattr("app.pipeline.frames.chat_json", fake_chat_json)
     monkeypatch.setattr(
+        "app.pipeline.photos.find_instances",
+        lambda image, noun, **kwargs: [
+            SamInstance(Box(10, 10, 50, 50, 320, 240, None), None)])
+    monkeypatch.setattr(
         "app.pipeline.photos.find_boxes",
-        lambda image, noun, **kwargs: [Box(10, 10, 50, 50, 320, 240, None)])
+        lambda image, noun, **kwargs: [])
 
 
 def _one_turn():
@@ -346,6 +352,8 @@ def _seed_cache(data_dir, session_id):
 
 
 def _retry_client(tmp_path, monkeypatch):
+    from app.meta.sam import SamInstance
+
     settings = _settings(tmp_path)
     app = create_app(settings)
     monkeypatch.setattr(
@@ -355,8 +363,12 @@ def _retry_client(tmp_path, monkeypatch):
         "app.pipeline.frames.chat_json",
         lambda messages, **kwargs: {"best_index": 0, "matches": True})
     monkeypatch.setattr(
+        "app.pipeline.photos.find_instances",
+        lambda image, noun, **kwargs: [
+            SamInstance(Box(5, 5, 40, 40, 64, 48, None), None)])
+    monkeypatch.setattr(
         "app.pipeline.photos.find_boxes",
-        lambda image, noun, **kwargs: [Box(5, 5, 40, 40, 64, 48, None)])
+        lambda image, noun, **kwargs: [])
 
     def fake_clip(wav, start_ms, end_ms, out, pad_ms=300):
         out.parent.mkdir(parents=True, exist_ok=True)

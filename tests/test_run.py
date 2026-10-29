@@ -52,6 +52,7 @@ def video(tmp_path):
 
 @pytest.fixture
 def fakes(monkeypatch):
+    from app.meta.sam import SamInstance
     from app.models import Box
 
     calls = {"transcribe": 0, "extract": 0, "pick": 0}
@@ -72,13 +73,18 @@ def fakes(monkeypatch):
         calls["extract"] += 1
         return CANNED_EXTRACT
 
-    def fake_find_boxes(image, noun, **kwargs):
-        return [Box(10, 10, 50, 50, 320, 240, None)]
+    def fake_find_instances(image, noun, **kwargs):
+        return [SamInstance(Box(10, 10, 50, 50, 320, 240, None), None)]
+
+    def fake_find_faces(image, noun, **kwargs):
+        return []
 
     monkeypatch.setattr("app.pipeline.run.transcribe_wav", fake_transcribe)
     monkeypatch.setattr("app.pipeline.extract.chat_json", fake_chat_json)
     monkeypatch.setattr("app.pipeline.frames.chat_json", fake_chat_json)
-    monkeypatch.setattr("app.pipeline.photos.find_boxes", fake_find_boxes)
+    monkeypatch.setattr("app.pipeline.photos.find_instances",
+                        fake_find_instances)
+    monkeypatch.setattr("app.pipeline.photos.find_boxes", fake_find_faces)
     return calls
 
 
@@ -119,10 +125,11 @@ def test_raw_video_deleted(conn, settings, fakes, video, tmp_path):
 
 def test_cap_mid_session_fails_cleanly(conn, settings, fakes, video, tmp_path,
                                        monkeypatch):
-    def raising_find_boxes(image, noun, **kwargs):
+    def raising_find_instances(image, noun, **kwargs):
         raise CostCapExceeded("daily Meta budget reached")
 
-    monkeypatch.setattr("app.pipeline.photos.find_boxes", raising_find_boxes)
+    monkeypatch.setattr("app.pipeline.photos.find_instances",
+                        raising_find_instances)
     ledger = CostLedger(tmp_path / "costs.db", 100.0)
     session_id = make_session(conn)
     process_video_session(conn, session_id, video, settings=settings, ledger=ledger)
@@ -134,21 +141,24 @@ def test_cap_mid_session_fails_cleanly(conn, settings, fakes, video, tmp_path,
 
 def test_reprocess_uses_cached_transcript(conn, settings, fakes, video, tmp_path,
                                           monkeypatch):
+    from app.meta.sam import SamInstance
     from app.models import Box
 
-    def raising_find_boxes(image, noun, **kwargs):
+    def raising_find_instances(image, noun, **kwargs):
         raise CostCapExceeded("daily Meta budget reached")
 
-    monkeypatch.setattr("app.pipeline.photos.find_boxes", raising_find_boxes)
+    monkeypatch.setattr("app.pipeline.photos.find_instances",
+                        raising_find_instances)
     ledger = CostLedger(tmp_path / "costs.db", 100.0)
     session_id = make_session(conn)
     process_video_session(conn, session_id, video, settings=settings, ledger=ledger)
     assert status_of(conn, session_id)[0] == "failed"
 
-    def working_find_boxes(image, noun, **kwargs):
-        return [Box(10, 10, 50, 50, 320, 240, None)]
+    def working_find_instances(image, noun, **kwargs):
+        return [SamInstance(Box(10, 10, 50, 50, 320, 240, None), None)]
 
-    monkeypatch.setattr("app.pipeline.photos.find_boxes", working_find_boxes)
+    monkeypatch.setattr("app.pipeline.photos.find_instances",
+                        working_find_instances)
     reprocess(conn, session_id, settings=settings, ledger=ledger)
     assert status_of(conn, session_id)[0] == "review"
     assert fakes["transcribe"] == 1

@@ -180,7 +180,7 @@
   {% if items %}
   {% for item in items %}
   <div class="list-row" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <div class="list-main">
       <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
       <span class="list-sub">{{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %}</span>
@@ -276,7 +276,7 @@
   <h4>{{ t('t64.live_side', n=items | length) }}</h4>
   {% for item in items %}
   <div class="mini" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy">{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}
+    {% if item.photo_url %}<img src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ item.tile }}</span>{% endif %}
     <div><span lang="{{ shop_lang }}">{{ item.name_local }}</span><br><span class="per">{% if item.variety %}{{ item.variety }} · {% endif %}{% if item.lines %}{{ item.lines[0].per }}{% endif %}</span></div>
     <span class="p">{% if item.lines %}{{ item.lines[0].price | money(shop["currency"]) }}{% endif %}</span>
     {% if not is_staff %}
@@ -405,6 +405,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const thumb = row ? row.querySelector(".list-thumb") : null;
       if (thumb && data.photo_url && thumb.tagName === "IMG") {
         thumb.src = data.photo_url;
+        // Change-photo uploads are always 4:3 crops, never cut-outs.
+        thumb.removeAttribute("data-cutout");
       } else {
         window.location.reload();
       }

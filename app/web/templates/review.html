@@ -25,7 +25,7 @@
 {% set item = card.item %}
 <section class="card review-card needs" data-card="{{ card.index }}" data-needs="1" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="true" aria-controls="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
       <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
@@ -33,12 +33,12 @@
     {{ ui.pill(t('review.needs_you'), "check") }}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main></div>{% endif %}
-    {% if card.candidate_urls %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
+    {% if card.candidates %}
     <p class="muted">{{ t('review.pick_photo') }}</p>
     <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
-      {% for url in card.candidate_urls %}
-      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
+      {% for cand in card.candidates %}
+      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ cand.label or t('review.pick_photo') }} {{ loop.index }}"><img src="{{ cand.url }}" alt="" loading="lazy"{% if cand.cutout %} data-cutout{% endif %}>{% if cand.label %}<span class="photo-kind">{{ cand.label }}</span>{% endif %}</button>
       {% endfor %}
     </div>
     {% endif %}
@@ -135,7 +135,7 @@
 {% set item = card.item %}
 <section class="card review-card is-collapsed" data-card="{{ card.index }}" data-needs="0" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="false" aria-controls="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt="">{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
       <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
@@ -143,12 +143,12 @@
     <span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main></div>{% endif %}
-    {% if card.candidate_urls %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
+    {% if card.candidates %}
     <p class="muted">{{ t('review.pick_photo') }}</p>
     <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
-      {% for url in card.candidate_urls %}
-      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ t('review.pick_photo') }} {{ loop.index }}"><img src="{{ url }}" alt="" loading="lazy"></button>
+      {% for cand in card.candidates %}
+      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ cand.label or t('review.pick_photo') }} {{ loop.index }}"><img src="{{ cand.url }}" alt="" loading="lazy"{% if cand.cutout %} data-cutout{% endif %}>{% if cand.label %}<span class="photo-kind">{{ cand.label }}</span>{% endif %}</button>
       {% endfor %}
     </div>
     {% endif %}
@@ -230,7 +230,7 @@
   {% for item in carried %}
   <label class="card-confirm">
     <input type="checkbox" data-carried data-id="{{ item.id }}" checked>
-    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="">{% endif %}
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% endif %}
     <span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %} — {{ item.price_summary }}{% if item.sold_out %} ({{ t('review.sold_out') }}){% endif %}
   </label>
   {% endfor %}

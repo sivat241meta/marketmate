@@ -34,6 +34,7 @@ from app.languages import (
     shop_form_languages,
 )
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
+from app.meta.sam import SamError
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.csv_export import generic_csv
@@ -50,7 +51,12 @@ from app.pipeline.names import (
     keywords_for,
 )
 from app.pipeline.numbers import parse_number
-from app.pipeline.photos import BadPhotoUpload, save_retake
+from app.pipeline.photos import (
+    BadPhotoUpload,
+    is_cutout_photo,
+    photo_kind,
+    save_retake,
+)
 from app.pipeline.run import (
     apply_spoken_language,
     friendly_error_message,
@@ -726,6 +732,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                            item.name_en),
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
+                    "photo_cutout": is_cutout_photo(item.photo),
                     "sold_out": item.sold_out,
                     "stock_line": stock_line,
                     "lines": [{"price": str(line.price),
@@ -1138,12 +1145,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "name_en": base.name_en,
                         "variety": base.variety,
                         "photo_url": _photo_url(base.photo),
+                        "photo_cutout": is_cutout_photo(base.photo),
                         "sold_out": base.sold_out,
                         "price_summary": _price_summary(
                             base, shop["currency"] or "INR", ui_lang),
                     })
             context["carried"] = carried
             context["base_version_id"] = base_id
+            page_t = t_for(ui_lang)
+            kind_labels = {"cutout": page_t("review.cutout"),
+                           "original": page_t("review.original")}
             cards = []
             for index, item in enumerate(items):
                 proof = {
@@ -1156,16 +1167,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "source": item.proof.source,
                 }
                 is_board = item.proof.source == "board_photo"
+                candidates = []
+                for path in item.photo_candidates or []:
+                    url = _photo_url(path)
+                    if not url:
+                        continue
+                    kind = photo_kind(path)
+                    candidates.append({
+                        "url": url,
+                        "label": kind_labels.get(kind),
+                        "cutout": kind == "cutout",
+                    })
                 cards.append(
                     {
                         "index": index,
                         "item": item,
                         "photo_url": _photo_url(item.photo),
-                        "candidate_urls": [
-                            url for url in
-                            (_photo_url(c)
-                             for c in item.photo_candidates or [])
-                            if url],
+                        "photo_cutout": is_cutout_photo(item.photo),
+                        "candidates": candidates,
                         "board_thumb_url": (
                             _photo_url(item.proof.frame) if is_board else None
                         ),
@@ -1234,26 +1253,35 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             raise HTTPException(400, "unknown photo choice")
         items[index].photo = candidates[want]
         db.save_drafts(conn, session_id, items)
-        return JSONResponse({"photo_url": _photo_url(items[index].photo)})
+        return JSONResponse({"photo_url": _photo_url(items[index].photo),
+                             "cutout": is_cutout_photo(items[index].photo)})
 
     @app.post("/e/{token}/s/{session_id}/photo/{index}/upload")
     async def upload_draft_photo(request: Request, token: str, session_id: int,
                                  index: int, photo: UploadFile, conn: Conn):
-        """Seller retake for a draft: verified, EXIF-free, cleaned 4:3."""
+        """Seller retake for a draft: verified, face-blurred, EXIF-free 4:3."""
         shop = _owner_or_403_exc(conn, token)
         _session_of_shop(conn, shop["id"], session_id)
         items = db.load_drafts(conn, session_id)
         if not 0 <= index < len(items):
             raise HTTPException(404, "no such item")
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
         try:
             out = save_retake(
                 await photo.read(),
-                data_dir / "photos" / f"s{session_id}_{index}_retake.jpg")
+                data_dir / "photos" / f"s{session_id}_{index}_retake.jpg",
+                ledger=ledger, settings=app.state.settings)
         except BadPhotoUpload as exc:
             raise HTTPException(400, str(exc))
+        except CostCapExceeded:
+            raise HTTPException(503, BUDGET_EXHAUSTED_MESSAGE)
+        except SamError:
+            raise HTTPException(502, "The photo check failed. Please try again.")
         items[index].photo = str(out)
         db.save_drafts(conn, session_id, items)
-        return JSONResponse({"photo_url": _photo_url(items[index].photo)})
+        return JSONResponse({"photo_url": _photo_url(items[index].photo),
+                             "cutout": False})
 
     @app.post("/e/{token}/item/{item_id}/photo")
     async def upload_item_photo(request: Request, token: str, item_id: int,
@@ -1267,16 +1295,24 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             (item_id, shop["id"])).fetchone()
         if row is None:
             raise HTTPException(404, "no such item")
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
         try:
             out = save_retake(
                 await photo.read(),
-                data_dir / "photos" / f"item_{item_id}.jpg")
+                data_dir / "photos" / f"item_{item_id}.jpg",
+                ledger=ledger, settings=app.state.settings)
         except BadPhotoUpload as exc:
             raise HTTPException(400, str(exc))
+        except CostCapExceeded:
+            raise HTTPException(503, BUDGET_EXHAUSTED_MESSAGE)
+        except SamError:
+            raise HTTPException(502, "The photo check failed. Please try again.")
         db.set_item_photo(conn, item_id, str(out))
         if "text/html" in request.headers.get("accept", ""):
             return RedirectResponse(f"/e/{token}", status_code=303)
-        return JSONResponse({"photo_url": _photo_url(str(out))})
+        return JSONResponse({"photo_url": _photo_url(str(out)),
+                             "cutout": False})
 
     @app.post("/e/{token}/s/{session_id}/approve")
     def approve(request: Request, token: str, session_id: int, body: dict,
@@ -1836,6 +1872,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "tile": first_grapheme(item.name_local or name),
                     "variety": item.variety,
                     "photo_url": photo_url,
+                    "photo_cutout": is_cutout_photo(item.photo),
                     "sold_out": item.sold_out,
                     "unit": unit,
                     "price": str(price) if price is not None else "",
