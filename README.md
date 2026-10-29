@@ -48,6 +48,10 @@ Prices only come from the seller's speech. Every price keeps its voice clip. The
 
 One Spark id (`muse-spark-1.3`) serves every text and vision step. Image steps always use Meta. The number cross-check uses Baseten whenever a key is set, else Meta. No runtime model from any other company is used.
 
+## Meta AI calls
+
+Every Meta model call is logged with its model, step, latency and cost, per shop. The owner-only "Meta AI calls" page — linked from the More menu on the seller home and from each session page — lists every call with today's totals: the proof behind the demo.
+
 ## How it works
 
 ```mermaid
@@ -88,7 +92,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1404 tests pass. `.venv/bin/ruff check .` is clean.
+1456 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Deploy
 
@@ -105,6 +109,10 @@ Every commit in this repository was made by Muse Code, Meta's coding agent. 92 o
 Logo: the MarketMate basket-M mark and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
 
 Icons: Fluent Emoji (Flat) by Microsoft, MIT licence.
+
+Photos: the five landing-page photos are by Frédéric Barriol, Ashwini Chaudhary (Monty), Aditya Sethia, Abdullah Azeez and Emil Widlund, via Unsplash — see [docs/photo-credits.md](docs/photo-credits.md).
+
+Font: Inter (SIL Open Font License 1.1, OFL) for English text; Noto keeps Tamil and Hindi — see [docs/fonts.md](docs/fonts.md).
 
 ## Limits and next steps
 

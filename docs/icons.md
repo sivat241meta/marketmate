@@ -46,7 +46,7 @@ WhatsApp buttons use the speech balloon (`chat.svg`).
 | calendar.svg | https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Spiral%20calendar/Flat/spiral_calendar_flat.svg | `27c46cba2ff535fc6bcc281467e6c828cf57cc02591dcea6465c6922610c4220` | Close-day date picker label |
 | search.svg | https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Magnifying%20glass%20tilted%20left/Flat/magnifying_glass_tilted_left_flat.svg | `cf4a65dfcb94629dba30c3df32077fe35c500b2d5609b08d9fc1532e016952bb` | Market + error empty states |
 | settings.svg | https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Gear/Flat/gear_flat.svg | `373aa26b6d217bd2db4418e2b883ebf15640ebaa3f942a47723a37ab0f774495` | Settings link |
-| robot.svg | https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Robot/Flat/robot_flat.svg | `5bf295c5a8c7c4197c8deb639c13b93359ad009585c1ff6b3fd0fbdcf6f8da20` | Reserved for the Meta AI calls page (not referenced yet) |
+| robot.svg | https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Robot/Flat/robot_flat.svg | `5bf295c5a8c7c4197c8deb639c13b93359ad009585c1ff6b3fd0fbdcf6f8da20` | Meta AI calls page stats, empty state, and the More-menu link (`ai.html`, `seller.html`) |
 
 ## Licence
 

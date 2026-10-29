@@ -8,10 +8,11 @@
 <p class="muted">{{ t('ai.tagline') }} <a href="{{ honesty_url }}" target="_blank" rel="noopener">{{ t('ai.honesty_link') }}</a></p>
 
 <div class="stat-grid ai-stats">
-  <div class="stat"><b class="stat-num" data-ai-calls>{{ stats.calls }}</b><span class="stat-label">{{ t('ai.calls_today') }}</span></div>
-  <div class="stat"><b class="stat-num money" data-ai-cost>{{ cost_text }}</b><span class="stat-label">{{ t('ai.cost_today') }}</span></div>
-  <div class="stat"><b class="stat-num" data-ai-avg>{{ avg_text }}</b><span class="stat-label">{{ t('ai.avg_latency') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("call", 28) }}</span><b class="stat-num" data-ai-calls>{{ stats.calls }}</b><span class="stat-label">{{ t('ai.calls_today') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><b class="stat-num money" data-ai-cost>{{ cost_text }}</b><span class="stat-label">{{ t('ai.cost_today') }}</span></div>
+  <div class="stat"><span class="stat-icon">{{ ui.obj("clock", 28) }}</span><b class="stat-num" data-ai-avg>{{ avg_text }}</b><span class="stat-label">{{ t('ai.avg_latency') }}</span></div>
   <div class="stat ai-bymodel">
+    <span class="stat-icon">{{ ui.obj("robot", 28) }}</span>
     <span class="stat-label">{{ t('ai.voice') }} · <b>{{ stats.by_model.voice }}</b></span>
     <span class="stat-label">{{ t('ai.spark_text') }} · <b>{{ stats.by_model.spark_text }}</b></span>
     <span class="stat-label">{{ t('ai.spark_vision') }} · <b>{{ stats.by_model.spark_vision }}</b></span>
@@ -56,7 +57,7 @@
 </section>
 {% endfor %}
 {% else %}
-{{ ui.empty_state(t('ai.title'), t('ai.empty')) }}
+{{ ui.empty_state(t('ai.title'), t('ai.empty'), None, None, "photo", "robot") }}
 {% endif %}
 </div>
 {% endblock %}
