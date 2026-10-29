@@ -209,10 +209,14 @@ def test_css_has_no_meta_blue():
 
 def test_css_typography_and_tap_targets():
     css = CSS.read_text()
-    assert "Plus Jakarta Sans" in css
+    # Task 76: Inter replaced Plus Jakarta Sans as the Latin UI font
+    # (the Jakarta file stays for the logo generator, but CSS no longer
+    # references it).
+    assert "Plus Jakarta Sans" not in css
+    assert "PlusJakartaSans" not in css
     blocks = [b for b in re.findall(r"@font-face\s*\{[^}]+\}", css, re.DOTALL)
-              if "Plus Jakarta Sans" in b]
-    assert blocks, "no @font-face for Plus Jakarta Sans"
+              if '"Inter"' in b]
+    assert blocks, "no @font-face for Inter"
     assert any("unicode-range" in b for b in blocks)
     assert any("font-display" in b and "swap" in b for b in blocks)
     assert "Noto Sans Tamil" in css, "Tamil must keep Noto Sans Tamil"

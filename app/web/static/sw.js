@@ -6,7 +6,7 @@
  * marked "needs internet" by offline-bills.js when offline.
  */
 
-const CACHE = "mm-shell-v1";
+const CACHE = "mm-shell-v2";
 
 const SHELL = [
   "/static/app.css",
@@ -20,6 +20,8 @@ const SHELL = [
   "/static/pcm-worklet.js",
   "/static/live.js",
   "/static/offline-bills.js",
+  "/static/fonts/InterVariable.woff2",
+  "/static/fonts/InterVariable.ttf",
   "/static/fonts/NotoSansTamil-Regular.ttf",
   "/static/fonts/NotoSansTamil-Bold.ttf",
   "/static/brand/icon-192.png",
