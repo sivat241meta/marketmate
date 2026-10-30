@@ -12,6 +12,8 @@
   </div>
 </div>
 
+{% if shop["is_demo"] %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
+
 <section class="pub-sec" aria-label="{{ t('order.none_title') }}" data-quote-empty>
   {% if lines %}
   <div class="rcpt" aria-label="Quote lines">

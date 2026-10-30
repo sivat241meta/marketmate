@@ -1,0 +1,531 @@
+{
+  "slug": "pandian-fruit-centre",
+  "name": "Pandian Fruit Centre",
+  "area": "Mattuthavani, Madurai",
+  "language": "ta",
+  "currency": "INR",
+  "lat": 9.9497,
+  "lng": 78.1684,
+  "hours": {
+    "closed": [],
+    "slots": {
+      "0": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "1": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "2": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "3": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "4": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "5": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ],
+      "6": [
+        [
+          "07:00",
+          "21:30"
+        ]
+      ]
+    }
+  },
+  "cover": {
+    "file": "pandian-fruit-centre.jpg",
+    "file_800": "pandian-fruit-centre-800.jpg",
+    "photographer": "Jacopo Maiarelli",
+    "page_url": "https://unsplash.com/photos/assorted-fruits-at-the-market--gOUx23DNks",
+    "img_id": "photo-1488459716781-31db52582fe9",
+    "licence": "Unsplash License"
+  },
+  "transcript": "பூவன் பழம் தஜன் அறுபது ரூபாய் நேந்திரன் பழம் தஜன் எழுபது ரூபாய் ரஸதளி பழம் தஜன் தொண்ணூறு ரூபாய் பப்பாளி கிலோ நாற்பது ரூபாய். கொய்யா கிலோ அறுபது ரூபாய். மாதுளை அரை கிலோ எழுபது ரூபாய். திராட்சை கிலோ தொண்ணூறு ரூபாய். ஆரஞ்சு கிலோ நூற்று இருபது ரூபாய். ஆப்பிள் பழம் கிலோ நூற்று நாற்பது ரூபாய். அன்னாசி ஒன்று அறுபது ரூபாய்.",
+  "meta_usd": {
+    "voice": 0.0259,
+    "photos": 0.0778
+  },
+  "items": [
+    {
+      "name_spoken": "poovan pazham",
+      "name_local": "பழம்",
+      "name_en": "banana",
+      "variety": "poovan",
+      "match_key": "banana",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__banana--poovan.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Giorgio Trovato",
+        "page_url": "https://unsplash.com/photos/yellow-bananas-fczCr7MdE7U",
+        "img_id": "photo-1571771894821-ce9b6c11b08e",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "பூவன் பழம் தஜன் அறுபது ரூபாய்",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 2700,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "60",
+          "per_amount": "1",
+          "unit": "dozen",
+          "said": "தஜன் அறுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "nendran pazham",
+      "name_local": "பழம்",
+      "name_en": "banana",
+      "variety": "nendran",
+      "match_key": "banana",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__banana--nendran.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Rodrigo dos Reis",
+        "page_url": "https://unsplash.com/photos/ripe-yellow-bananas-in-clusters-DkTuGvgPotA",
+        "img_id": "photo-1603833665858-e61d17a86224",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "நேந்திரன் பழம் தஜன் எழுபது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 3260,
+        "end_ms": 6540,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "70",
+          "per_amount": "1",
+          "unit": "dozen",
+          "said": "தஜன் எழுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "rasthali pazham",
+      "name_local": "பழம்",
+      "name_en": "banana",
+      "variety": "rasthali",
+      "match_key": "banana",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__banana--rasthali.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Gabriel Mihalcea",
+        "page_url": "https://unsplash.com/photos/a-bunch-of-bananas-sitting-on-top-of-a-white-table-1jyRHJPkpz8",
+        "img_id": "photo-1640958900081-7b069dd23e9c",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "ரஸதளி பழம் தஜன் தொண்ணூறு ரூபாய்",
+        "turn_ids": [
+          3
+        ],
+        "start_ms": 7100,
+        "end_ms": 10220,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "90",
+          "per_amount": "1",
+          "unit": "dozen",
+          "said": "தஜன் தொண்ணூறு ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "pappali",
+      "name_local": "பப்பாளி",
+      "name_en": "papaya",
+      "variety": null,
+      "match_key": "papaya",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__papaya.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "laura acevedo",
+        "page_url": "https://unsplash.com/photos/pile-of-ripe-papayas-at-a-market-eOSPFa_1toU",
+        "img_id": "photo-1763502872003-f340e2474e88",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "பப்பாளி கிலோ நாற்பது ரூபாய்.",
+        "turn_ids": [
+          4
+        ],
+        "start_ms": 10860,
+        "end_ms": 13420,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "koyya",
+      "name_local": "கொய்யா",
+      "name_en": "guava",
+      "variety": null,
+      "match_key": "guava",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__guava.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "SAMIUL ITM",
+        "page_url": "https://unsplash.com/photos/a-pile-of-green-fruit-sitting-on-top-of-a-wooden-table-c-RJoTVGlc4",
+        "img_id": "photo-1689996647099-a7a0b67fd2f6",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கொய்யா கிலோ அறுபது ரூபாய்.",
+        "turn_ids": [
+          5
+        ],
+        "start_ms": 13980,
+        "end_ms": 16460,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "60",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ அறுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "mathulai",
+      "name_local": "மாதுளை",
+      "name_en": "pomegranate",
+      "variety": null,
+      "match_key": "pomegranate",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__pomegranate.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Margarita Zueva",
+        "page_url": "https://unsplash.com/photos/red-pomegranate-Ws4axEMbsvY",
+        "img_id": "photo-1574709755254-fcd942d09d5a",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "மாதுளை அரை கிலோ எழுபது ரூபாய்.",
+        "turn_ids": [
+          6
+        ],
+        "start_ms": 16940,
+        "end_ms": 19820,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "70",
+          "per_amount": "0.5",
+          "unit": "kg",
+          "said": "அரை கிலோ எழுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "thiratchai",
+      "name_local": "திராட்சை",
+      "name_en": "grapes",
+      "variety": null,
+      "match_key": "grapes",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__grapes.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Kiran CK",
+        "page_url": "https://unsplash.com/photos/a-bunch-of-grapes-sitting-on-top-of-a-table-RdI-YMBLhNY",
+        "img_id": "photo-1698305819486-ecca56daaba3",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "திராட்சை கிலோ தொண்ணூறு ரூபாய்.",
+        "turn_ids": [
+          7
+        ],
+        "start_ms": 20700,
+        "end_ms": 23020,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "90",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ தொண்ணூறு ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "aaranju",
+      "name_local": "ஆரஞ்சு",
+      "name_en": "orange",
+      "variety": null,
+      "match_key": "orange",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__orange.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Jen Gunter",
+        "page_url": "https://unsplash.com/photos/oranges-in-a-large-pile-A4BBdJQu2co",
+        "img_id": "photo-1611080626919-7cf5a9dbab5b",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "ஆரஞ்சு கிலோ நூற்று இருபது ரூபாய்.",
+        "turn_ids": [
+          8
+        ],
+        "start_ms": 23740,
+        "end_ms": 26540,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "120",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நூற்று இருபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "aappil pazham",
+      "name_local": "ஆப்பிள் பழம்",
+      "name_en": "apple",
+      "variety": null,
+      "match_key": "apple",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__apple.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Matheus Cenali",
+        "page_url": "https://unsplash.com/photos/bunch-of-red-apples-wXuzS9xR49M",
+        "img_id": "photo-1560806887-1e4cd0b6cbd6",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "ஆப்பிள் பழம் கிலோ நூற்று நாற்பது ரூபாய்.",
+        "turn_ids": [
+          9
+        ],
+        "start_ms": 27500,
+        "end_ms": 30380,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "140",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நூற்று நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "annaasi",
+      "name_local": "அன்னாசி",
+      "name_en": "pineapple",
+      "variety": null,
+      "match_key": "pineapple",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "pandian-fruit-centre__pineapple.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Fernando Andrade",
+        "page_url": "https://unsplash.com/photos/ripe-pineapple-fruit-nAOZCYcLND8",
+        "img_id": "photo-1550258987-190a2d41a8ba",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "அன்னாசி ஒன்று அறுபது ரூபாய்.",
+        "turn_ids": [
+          10
+        ],
+        "start_ms": 31180,
+        "end_ms": 33820,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "60",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "ஒன்று அறுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}

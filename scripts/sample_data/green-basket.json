@@ -1,0 +1,532 @@
+{
+  "slug": "green-basket",
+  "name": "Green Basket",
+  "area": "Russell Market, Bengaluru",
+  "language": "en",
+  "currency": "INR",
+  "lat": 12.9819,
+  "lng": 77.6076,
+  "hours": {
+    "closed": [],
+    "slots": {
+      "0": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "1": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "2": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "3": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "4": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "5": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ],
+      "6": [
+        [
+          "07:00",
+          "21:00"
+        ]
+      ]
+    }
+  },
+  "cover": {
+    "file": "green-basket.jpg",
+    "file_800": "green-basket-800.jpg",
+    "photographer": "Alexander Schimmeck",
+    "page_url": "https://unsplash.com/photos/market-stall-with-fresh-tropical-fruit-2zJhA9RSkys",
+    "img_id": "photo-1609780447631-05b93e5a88ea",
+    "licence": "Unsplash License"
+  },
+  "transcript": "tomato twenty eight rupees a kilo, onion thirty three rupees a kilo, potato thirty six rupees a kilo, carrot sixty five rupees a kilo, beans ninety five rupees a kilo, capsicum ninety five rupees a kilo, yelaki banana seventy five rupees a dozen, papaya fifty five rupees a kilo, coconut twenty five rupees a piece, coriander twelve rupees a bunch bunch.",
+  "meta_usd": {
+    "voice": 0.0171,
+    "photos": 0.0751
+  },
+  "items": [
+    {
+      "name_spoken": "tomato",
+      "name_local": "tomato",
+      "name_en": "tomato",
+      "variety": null,
+      "match_key": "tomato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__tomato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Lars Blankers",
+        "page_url": "https://unsplash.com/photos/top-view-of-tomatoes-6Z7Ss9jlEL0",
+        "img_id": "photo-1518977822534-7049a61ee0c2",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "tomato twenty eight rupees a kilo",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 14620,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "28",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "twenty eight rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "onion",
+      "name_local": "onion",
+      "name_en": "onion",
+      "variety": null,
+      "match_key": "onion",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__onion.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Paul Magdas",
+        "page_url": "https://unsplash.com/photos/red-onion-on-brown-wooden-crate-SSIwIRCu7bM",
+        "img_id": "photo-1605197378298-02bf0af1c896",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "onion thirty three rupees a kilo",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 14620,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "33",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "thirty three rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "potato",
+      "name_local": "potato",
+      "name_en": "potato",
+      "variety": null,
+      "match_key": "potato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__potato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "engin akyurt",
+        "page_url": "https://unsplash.com/photos/freshly-harvested-potatoes-at-market-RlxdYtbF8kc",
+        "img_id": "photo-1784043436697-4458ec4097b7",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "potato thirty six rupees a kilo",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 14620,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "36",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "thirty six rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "carrot",
+      "name_local": "carrot",
+      "name_en": "carrot",
+      "variety": null,
+      "match_key": "carrot",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__carrot.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Amar Preet Singh",
+        "page_url": "https://unsplash.com/photos/a-large-pile-of-fresh-orange-carrots-btTM1GUDUnY",
+        "img_id": "photo-1781863006581-8e3eeacba61d",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "carrot sixty five rupees a kilo",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 14620,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "65",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "sixty five rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "beans",
+      "name_local": "beans",
+      "name_en": "beans",
+      "variety": null,
+      "match_key": "beans",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__beans.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Mike Kenneally",
+        "page_url": "https://unsplash.com/photos/bunch-of-green-beans-8eJPcAuqIhY",
+        "img_id": "photo-1448293065296-c7e2e5b76ae9",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "beans ninety five rupees a kilo",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 14620,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "95",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "ninety five rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "capsicum",
+      "name_local": "capsicum",
+      "name_en": "capsicum",
+      "variety": null,
+      "match_key": "capsicum",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__capsicum.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Alli Stefanova",
+        "page_url": "https://unsplash.com/photos/green-bell-pepper-on-brown-wooden-table-Er8w2PcHEXM",
+        "img_id": "photo-1585159079680-8dec029b76ed",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "capsicum ninety five rupees a kilo",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 15100,
+        "end_ms": 21660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "95",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "ninety five rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "yelaki banana",
+      "name_local": "banana",
+      "name_en": "banana",
+      "variety": "yelakki",
+      "match_key": "banana",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__banana--yelakki.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Mockup Graphics",
+        "page_url": "https://unsplash.com/photos/yellow-banana-on-white-background-Kl3467edwsE",
+        "img_id": "photo-1587132137056-bfbf0166836e",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "yelaki banana seventy five rupees a dozen",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 15100,
+        "end_ms": 21660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "75",
+          "per_amount": "1",
+          "unit": "dozen",
+          "said": "seventy five rupees a dozen"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "papaya",
+      "name_local": "papaya",
+      "name_en": "papaya",
+      "variety": null,
+      "match_key": "papaya",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__papaya.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Bon Vivant",
+        "page_url": "https://unsplash.com/photos/sliced-papaya-on-green-banana-leaf-Ooj1c6fhdFM",
+        "img_id": "photo-1526318472351-c75fcf070305",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "papaya fifty five rupees a kilo",
+        "turn_ids": [
+          3
+        ],
+        "start_ms": 21900,
+        "end_ms": 30380,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "55",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "fifty five rupees a kilo"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "coconut",
+      "name_local": "coconut",
+      "name_en": "coconut",
+      "variety": null,
+      "match_key": "coconut",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__coconut.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Irene Kredenets",
+        "page_url": "https://unsplash.com/photos/coconuts-on-white-surface-E95Lpkg-bgc",
+        "img_id": "photo-1560769680-ba2f3767c785",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "coconut twenty five rupees a piece",
+        "turn_ids": [
+          3
+        ],
+        "start_ms": 21900,
+        "end_ms": 30380,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "25",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "twenty five rupees a piece"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "coriander",
+      "name_local": "coriander",
+      "name_en": "coriander",
+      "variety": null,
+      "match_key": "coriander",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "green-basket__coriander.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Rishabh Raj",
+        "page_url": "https://unsplash.com/photos/fresh-green-cilantro-leaves-in-sunlight-Gx8WLeRRUEM",
+        "img_id": "photo-1767156969831-0beee76fa958",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "coriander twelve rupees a bunch bunch.",
+        "turn_ids": [
+          3,
+          4
+        ],
+        "start_ms": 21900,
+        "end_ms": 30460,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "12",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "twelve rupees a bunch"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}

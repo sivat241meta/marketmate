@@ -25,6 +25,14 @@ class Settings:
     uploads_per_ip_hour: int
     uploads_per_hour: int
     max_upload_bytes: int = 512 * 1024 * 1024
+    sample_shops: bool = True
+
+
+def sample_shops_enabled(settings=None) -> bool:
+    """True unless sample shops are hidden by settings or SAMPLE_SHOPS=0."""
+    if settings is not None and not getattr(settings, "sample_shops", True):
+        return False
+    return os.environ.get("SAMPLE_SHOPS", "").strip() != "0"
 
 
 def _get(env: Mapping[str, str], key: str, default: str) -> str:
@@ -86,6 +94,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     except ValueError as exc:
         raise ValueError("MAX_UPLOAD_BYTES must be an integer") from exc
 
+    sample_shops = _get(env, "SAMPLE_SHOPS", "1").strip().lower() not in (
+        "0", "false", "no", "off")
+
     return Settings(
         model_api_key=model_api_key,
         baseten_api_key=baseten_api_key,
@@ -97,4 +108,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         uploads_per_ip_hour=uploads_per_ip_hour,
         uploads_per_hour=uploads_per_hour,
         max_upload_bytes=max_upload_bytes,
+        sample_shops=sample_shops,
     )

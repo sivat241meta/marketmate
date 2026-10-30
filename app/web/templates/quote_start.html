@@ -18,6 +18,7 @@
 </div>
 
 {% if open_state == "closed" and open_time %}<div class="alert alert-warn" data-closed-note>{{ t('hours.order_closed', time=open_time) }}</div>{% endif %}
+{% if shop["is_demo"] %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
 {% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
 
 <div class="pub-sec">

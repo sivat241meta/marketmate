@@ -16,6 +16,7 @@
 
 <div data-order-record data-token="{{ token }}" data-shop="{{ shop["name"] }}" data-number="{{ order_id }}" data-total="{{ total_fmt }}" data-date="{{ order_date }}" hidden></div>
 <div data-order-poll data-status-url="{{ status_url }}" hidden></div>
+{% if shop["is_demo"] %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
 <div class="ready-banner" data-ready-banner{% if order_status != "ready" %} hidden{% endif %}>{{ t('order.ready_banner') }}</div>
 <div class="alert alert-warn" data-soldout-note{% if not sold_out_any %} hidden{% endif %}>{{ t('order.sold_out_note') }}</div>
 {% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
@@ -104,11 +105,13 @@
 <p class="muted">{{ t.no_items }}</p>
 {% endif %}
 
-<p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('order.notice', time=prices_time or rel) }}</span></p>
+<p class="notice">{{ ui.obj("check", 20) }}<span>{% if shop["is_demo"] %}{{ t('order.notice_sample') }}{% else %}{{ t('order.notice', time=prices_time or rel) }}{% endif %}</span></p>
+{% if not shop["is_demo"] %}
 <div class="action-bar">
   <a class="pill ghost big" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t('order.call_shop') }}</a>
   <a class="pill cta big" href="{{ whatsapp_url }}">{{ ui.obj("chat", 20) }}{{ t.send_whatsapp }}</a>
 </div>
+{% endif %}
 <p><a class="pill ghost sm" href="/q/{{ token }}/pdf">{{ ui.icon("download") }}{{ t.pdf }}</a></p>
 <p><a href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.back_to }} {{ shop["name"] }}</a></p>
 {% endblock %}

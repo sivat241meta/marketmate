@@ -1,0 +1,630 @@
+{
+  "slug": "selvi-vegetable-stall",
+  "name": "Selvi Vegetable Stall",
+  "area": "Koyambedu Market, Chennai",
+  "language": "ta",
+  "currency": "INR",
+  "lat": 13.0697,
+  "lng": 80.1956,
+  "hours": {
+    "closed": [],
+    "slots": {
+      "0": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "1": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "2": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "3": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "4": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "5": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ],
+      "6": [
+        [
+          "06:00",
+          "21:00"
+        ]
+      ]
+    }
+  },
+  "cover": {
+    "file": "selvi-vegetable-stall.jpg",
+    "file_800": "selvi-vegetable-stall-800.jpg",
+    "photographer": "Urja Bhatt 🕊️",
+    "page_url": "https://unsplash.com/photos/assortment-of-fresh-vegetables-and-fruits-at-a-market-i8WCZpehUIs",
+    "img_id": "photo-1761567523932-6c461c249729",
+    "licence": "Unsplash License"
+  },
+  "transcript": "தக்காளி கிலோ முப்பது ரூபாய், பெரிய வெங்காயம் கிலோ நாற்பது ரூபாய், சின்ன வெங்காயம் கிலோ தொண்ணூறு ரூபாய், உருளைக்கிழங்கு கிலோ நாற்பது றுபாய், கேரட் கிலோ எழுபது ரூபாய், beans கிலோ எழுபது ரூபாய், கத்திரிக்காய் கிலோ நாற்பது ரூபாய், வெண்டைக்காய் கிலோ நாற்பது ரூபாய், முருங்கைக்காய் அரை கிலோ எழுபது ரூபாய், முட்டைகோஸ் கிலோ முப்பது ரூபாய். கலஃபளவர ஒன்று நாற்பது ரூபாய். பச்சை மிளகாய் கிலோ நூறு ரூபாய்.",
+  "meta_usd": {
+    "voice": 0.0209,
+    "photos": 0.0868
+  },
+  "items": [
+    {
+      "name_spoken": "தக்காளி",
+      "name_local": "தக்காளி",
+      "name_en": "tomato",
+      "variety": null,
+      "match_key": "tomato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__tomato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "engin akyurt",
+        "page_url": "https://unsplash.com/photos/red-tomatoes-on-brown-wooden-table-eb26eV-ys_k",
+        "img_id": "photo-1582284540020-8acbe03f4924",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "தக்காளி கிலோ முப்பது ரூபாய்",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 13180,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "பெரிய வெங்காயம்",
+      "name_local": "பெரிய வெங்காயம்",
+      "name_en": "onion",
+      "variety": null,
+      "match_key": "onion",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__onion.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Ignat Kushnarev",
+        "page_url": "https://unsplash.com/photos/a-pile-of-fresh-red-onions-with-roots-GHOrJvaTicI",
+        "img_id": "photo-1760368104753-fe0994f94ff3",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "பெரிய வெங்காயம் கிலோ நாற்பது ரூபாய்",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 13180,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "சின்ன வெங்காயம்",
+      "name_local": "சின்ன வெங்காயம்",
+      "name_en": "small onion",
+      "variety": null,
+      "match_key": "small onion",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__small-onion.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "feey",
+        "page_url": "https://unsplash.com/photos/a-pile-of-shallots-on-a-textured-surface-EiThi2XdgsA",
+        "img_id": "photo-1759421278110-ab77256dc555",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "சின்ன வெங்காயம் கிலோ தொண்ணூறு ரூபாய்",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 13180,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "90",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ தொண்ணூறு ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "உருளைக்கிழங்கு",
+      "name_local": "உருளைக்கிழங்கு",
+      "name_en": "potato",
+      "variety": null,
+      "match_key": "potato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__potato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Lars Blankers",
+        "page_url": "https://unsplash.com/photos/brown-potato-lot-B0s3Xndk6tw",
+        "img_id": "photo-1518977676601-b53f82aba655",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "உருளைக்கிழங்கு கிலோ நாற்பது றுபாய்",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 13180,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நாற்பது றுபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "கேரட்",
+      "name_local": "கேரட்",
+      "name_en": "carrot",
+      "variety": null,
+      "match_key": "carrot",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__carrot.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "K8",
+        "page_url": "https://unsplash.com/photos/carrots-with-green-leafy-tops-GHRT9j21m2M",
+        "img_id": "photo-1598170845058-32b9d6a5da37",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கேரட் கிலோ எழுபது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 13980,
+        "end_ms": 29260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "70",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ எழுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "beans",
+      "name_local": "பீன்ஸ்",
+      "name_en": "beans",
+      "variety": null,
+      "match_key": "beans",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__beans.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Bob Bowie",
+        "page_url": "https://unsplash.com/photos/green-kentucky-beans-2JDWDtCGREA",
+        "img_id": "photo-1574963835594-61eede2070dc",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "beans கிலோ எழுபது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 13980,
+        "end_ms": 29260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "70",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ எழுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "கத்திரிக்காய்",
+      "name_local": "கத்திரிக்காய்",
+      "name_en": "brinjal",
+      "variety": null,
+      "match_key": "brinjal",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__brinjal.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "engin akyurt",
+        "page_url": "https://unsplash.com/photos/a-pile-of-purple-eggplant-with-green-stems-d6I1ZNZJcNo",
+        "img_id": "photo-1683543122945-513029986574",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கத்திரிக்காய் கிலோ நாற்பது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 13980,
+        "end_ms": 29260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "வெண்டைக்காய்",
+      "name_local": "வெண்டைக்காய்",
+      "name_en": "ladies finger",
+      "variety": null,
+      "match_key": "ladies finger",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__ladies-finger.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Neha Deshmukh",
+        "page_url": "https://unsplash.com/photos/okra-vegetable-in-white-bowl-CoIJlCZEjnw",
+        "img_id": "photo-1425543103986-22abb7d7e8d2",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "வெண்டைக்காய் கிலோ நாற்பது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 13980,
+        "end_ms": 29260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "முருங்கைக்காய்",
+      "name_local": "முருங்கைக்காய்",
+      "name_en": "drumstick",
+      "variety": null,
+      "match_key": "drumstick",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__drumstick.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Nandha Kumar",
+        "page_url": "https://unsplash.com/photos/drumstick-pods-in-white-sack-gV8v9NcxwDY",
+        "img_id": "photo-1789921528172-65452da09883",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "முருங்கைக்காய் அரை கிலோ எழுபது ரூபாய்",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 13980,
+        "end_ms": 29260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "70",
+          "per_amount": "0.5",
+          "unit": "kg",
+          "said": "அரை கிலோ எழுபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "முட்டைகோஸ்",
+      "name_local": "முட்டைகோஸ்",
+      "name_en": "cabbage",
+      "variety": null,
+      "match_key": "cabbage",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__cabbage.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "ibuki Tsubo",
+        "page_url": "https://unsplash.com/photos/green-leaf-vegetable-on-white-surface-7iRMOXXxH7c",
+        "img_id": "photo-1611105637889-3afd7295bdbf",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "முட்டைகோஸ் கிலோ முப்பது ரூபாய்",
+        "turn_ids": [
+          3
+        ],
+        "start_ms": 30060,
+        "end_ms": 32780,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "கலஃபளவர்",
+      "name_local": "கலஃபளவர்",
+      "name_en": "cauliflower",
+      "variety": null,
+      "match_key": "cauliflower",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__cauliflower.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Irene Kredenets",
+        "page_url": "https://unsplash.com/photos/cauliflower-lot-zNsSGYXaeP8",
+        "img_id": "photo-1566842600175-97dca489844f",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கலஃபளவர ஒன்று நாற்பது ரூபாய்",
+        "turn_ids": [
+          4
+        ],
+        "start_ms": 33180,
+        "end_ms": 35980,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "ஒன்று நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "unit",
+          "code": "UNIT_ODD",
+          "message": "usually sold by weight - is per piece right?",
+          "options": [],
+          "blocking": false
+        },
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "பச்சை மிளகாய்",
+      "name_local": "பச்சை மிளகாய்",
+      "name_en": "green chilli",
+      "variety": null,
+      "match_key": "green chilli",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "selvi-vegetable-stall__green-chilli.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Hari Krishnan",
+        "page_url": "https://unsplash.com/photos/green-chili-on-white-surface-f1BMuugVyyM",
+        "img_id": "photo-1599987141071-f5810d32e21a",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "பச்சை மிளகாய் கிலோ நூறு ரூபாய்",
+        "turn_ids": [
+          5
+        ],
+        "start_ms": 36700,
+        "end_ms": 39260,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "100",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "கிலோ நூறு ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}

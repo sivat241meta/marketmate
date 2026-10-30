@@ -7,9 +7,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app import db
+from app.config import sample_shops_enabled
 from app.market.hours import IST, shop_open_status
 from app.pipeline.photos import is_cutout_photo
-from app.web.i18n import first_grapheme, tile_variety
+from app.web.i18n import SAMPLE_TIME, first_grapheme, tile_variety
 
 MAX_PICKS = 8
 MAX_POPULAR = 6
@@ -63,24 +64,31 @@ def _parse_moment(value: str | None) -> datetime | None:
         return None
 
 
-def live_shops(conn: sqlite3.Connection, now: datetime) -> list[dict]:
+def live_shops(conn: sqlite3.Connection, now: datetime,
+               *, settings=None) -> list[dict]:
     """Listed shops whose published list was said today (IST).
 
     Unlisted shops, shops without a published version, and shops whose
-    list is older than today never appear. Each entry carries the shop
-    row, the said-today moment, and its live items (priced, not sold
-    out).
+    list is older than today never appear. Sample shops are the
+    exception: they show whenever enabled (SAMPLE_SHOPS=0 hides them),
+    however old their list is — they never count as "said today".
+    Each entry carries the shop row, the said moment, and its live
+    items (priced, not sold out).
     """
     today = _as_aware(now).astimezone(IST).date()
+    show_samples = sample_shops_enabled(settings)
     rows = conn.execute(
         "SELECT * FROM shops WHERE listed = 1 ORDER BY id").fetchall()
     out = []
     for shop in rows:
+        is_sample = bool(shop["is_demo"])
+        if is_sample and not show_samples:
+            continue
         version_id = db.latest_version(conn, shop["id"], published_only=True)
         if version_id is None:
             continue
         said = _as_aware(db.version_time(conn, version_id))
-        if said.astimezone(IST).date() != today:
+        if not is_sample and said.astimezone(IST).date() != today:
             continue
         items = [item for item in db.version_items(conn, version_id)
                  if not item.sold_out
@@ -101,8 +109,12 @@ def _pick_cards(entries: list[dict]) -> list[dict]:
     cards = []
     for entry in entries:
         shop = entry["shop"]
-        said = entry["said"].astimezone(IST).strftime("%H:%M")
+        is_sample = bool(shop["is_demo"])
+        # Sample shops render "Sample prices", never "said today HH:MM".
+        said = (SAMPLE_TIME if is_sample
+                else entry["said"].astimezone(IST).strftime("%H:%M"))
         status = shop_open_status(shop)
+        cover_url = _photo_url(db.shop_cover(shop))
         for item in entry["items"]:
             line = _first_price(item)
             if line is None:
@@ -128,11 +140,12 @@ def _pick_cards(entries: list[dict]) -> list[dict]:
                 "said": said,
                 "open_state": status["state"],
                 "open_time": status["time"],
-                "is_demo": bool(shop["is_demo"]),
+                "is_demo": is_sample,
+                "cover_url": cover_url,
                 "currency": shop["currency"] or "INR",
                 "shop_lang": shop["language"] or "en",
             })
-    cards.sort(key=lambda card: card["photo_rank"])
+    cards.sort(key=lambda card: (card["is_demo"], card["photo_rank"]))
     return cards[:MAX_PICKS]
 
 
@@ -158,8 +171,12 @@ def _shop_cards(entries: list[dict], now: datetime) -> list[dict]:
     def created(entry):
         return _parse_moment(entry["shop"]["created_at"]) or _as_aware(now)
 
+    # Newest first, but sample shops always after real shops (the
+    # second sort is stable, so each group stays newest-first).
+    ordered = sorted(entries, key=created, reverse=True)
+    ordered.sort(key=lambda entry: bool(entry["shop"]["is_demo"]))
     cards = []
-    for entry in sorted(entries, key=created, reverse=True)[:MAX_SHOPS]:
+    for entry in ordered[:MAX_SHOPS]:
         shop = entry["shop"]
         items = entry["items"]
         priced = [(item, _first_price(item)) for item in items]
@@ -187,6 +204,7 @@ def _shop_cards(entries: list[dict], now: datetime) -> list[dict]:
             "n_prices": sum(len(item.price_lines) for item in items),
             "photo_url": photo,
             "photo_cutout": bool(photo_cutout),
+            "cover_url": _photo_url(db.shop_cover(shop)),
             "tile": first_grapheme(shop["name"]),
             "cheapest": [{"name": item.name_en,
                           "price": str(line.price),
@@ -204,11 +222,22 @@ def _area_tiles(entries: list[dict]) -> list[dict]:
     for name in sorted(by_area):
         group = by_area[name]
         photo = photo_cutout = lat = lng = None
+        from_cover = False
         for entry in group:
             shop = entry["shop"]
             if lat is None and shop["lat"] is not None \
                     and shop["lng"] is not None:
                 lat, lng = shop["lat"], shop["lng"]
+            # The area photo is the first shop cover in the area; item
+            # photos are only the fallback when no shop has a cover.
+            if not from_cover:
+                cover = _photo_url(db.shop_cover(shop))
+                if cover is not None:
+                    photo, photo_cutout = cover, False
+                    from_cover = True
+                    continue
+            if from_cover:
+                continue
             for item in entry["items"]:
                 if not item.photo:
                     continue
@@ -231,10 +260,10 @@ def _area_tiles(entries: list[dict]) -> list[dict]:
 
 
 def home_data(conn: sqlite3.Connection, area: str | None = None,
-              now: datetime | None = None) -> dict:
+              now: datetime | None = None, *, settings=None) -> dict:
     """Everything the marketplace homepage renders, filtered by area name."""
     moment = _as_aware(now) if now is not None else datetime.now(UTC)
-    entries = live_shops(conn, moment)
+    entries = live_shops(conn, moment, settings=settings)
     known = sorted({(entry["shop"]["area"] or "")
                     for entry in entries if entry["shop"]["area"]})
     picked: str | None = None
@@ -256,9 +285,21 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
         if name not in coords and shop["lat"] is not None \
                 and shop["lng"] is not None:
             coords[name] = (shop["lat"], shop["lng"])
+    show_samples = sample_shops_enabled(settings)
+    covers: dict[str, str] = {}
+    cover_rows = conn.execute(
+        "SELECT area, cover_photo FROM shops WHERE listed = 1"
+        + ("" if show_samples else " AND is_demo = 0")
+        + " ORDER BY id").fetchall()
+    for row in cover_rows:
+        name = row["area"] or ""
+        if name and name not in covers and row["cover_photo"]:
+            covers[name] = _photo_url(row["cover_photo"])
     areas = [{"name": name, "lat": coords.get(name, (None, None))[0],
-              "lng": coords.get(name, (None, None))[1]}
-             for name in db.listed_areas(conn)]
+              "lng": coords.get(name, (None, None))[1],
+              "photo_url": covers.get(name)}
+             for name in db.listed_areas(
+                 conn, include_samples=show_samples)]
     return {
         "area": picked,
         "areas": areas,

@@ -197,7 +197,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
             is_demo INTEGER NOT NULL DEFAULT 0, is_judge INTEGER NOT NULL DEFAULT 0,
             listed INTEGER NOT NULL DEFAULT 0, expires_at TEXT, created_at TEXT NOT NULL,
             upi_id TEXT, upi_payee TEXT, round_bills INTEGER,
-            hours_json TEXT, pincode TEXT, lat REAL, lng REAL
+            hours_json TEXT, pincode TEXT, lat REAL, lng REAL,
+            cover_photo TEXT
         );
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -352,7 +353,8 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     for name, column_type in (("upi_id", "TEXT"), ("upi_payee", "TEXT"),
                               ("round_bills", "INTEGER"),
                               ("hours_json", "TEXT"), ("pincode", "TEXT"),
-                              ("lat", "REAL"), ("lng", "REAL")):
+                              ("lat", "REAL"), ("lng", "REAL"),
+                              ("cover_photo", "TEXT")):
         if name not in shop_columns:
             conn.execute(f"ALTER TABLE shops ADD COLUMN {name} {column_type}")
     version_columns = {row[1] for row in conn.execute(
@@ -623,13 +625,32 @@ def update_shop_settings(conn, shop_id: int, *, name: str, area: str,
     conn.commit()
 
 
-def listed_areas(conn) -> list[str]:
+def listed_areas(conn, *, include_samples: bool = True) -> list[str]:
     """Distinct areas of listed shops that have a published price list."""
-    rows = conn.execute(
+    query = (
         "SELECT DISTINCT s.area FROM shops s"
         " JOIN versions v ON v.shop_id = s.id AND v.published = 1"
-        " WHERE s.listed = 1 ORDER BY s.area").fetchall()
+        " WHERE s.listed = 1")
+    if not include_samples:
+        query += " AND s.is_demo = 0"
+    rows = conn.execute(query + " ORDER BY s.area").fetchall()
     return [row[0] for row in rows if (row[0] or "").strip()]
+
+
+def set_shop_cover(conn, shop_id: int, filename: str | None) -> None:
+    """Set (or clear with None) a shop's stall cover photo file name."""
+    conn.execute("UPDATE shops SET cover_photo = ? WHERE id = ?",
+                 (filename, shop_id))
+    conn.commit()
+
+
+def shop_cover(shop) -> str | None:
+    """A shop row's cover file name, None when missing (old rows included)."""
+    try:
+        value = shop["cover_photo"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    return value or None
 
 
 def _now_plus_days(days: int) -> str:

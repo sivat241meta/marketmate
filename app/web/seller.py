@@ -20,7 +20,13 @@ from fastapi.responses import (
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
-from app.config import SAM_MODEL, SPARK_MODEL, SPARK_OPEN_MODEL, VOICE_MODEL
+from app.config import (
+    SAM_MODEL,
+    SPARK_MODEL,
+    SPARK_OPEN_MODEL,
+    VOICE_MODEL,
+    sample_shops_enabled,
+)
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
     IST,
@@ -75,6 +81,7 @@ from app.pipeline.update import (
 )
 from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import (
+    SAMPLE_TIME,
     first_grapheme,
     get_strings,
     get_ui_lang,
@@ -2078,6 +2085,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             (slug,)).fetchone()
         if shop is None:
             raise HTTPException(404, "unknown shop")
+        if shop["is_demo"] and not sample_shops_enabled(
+                app.state.settings):
+            raise HTTPException(404, "unknown shop")
         shop_lang = shop["language"] or "en"
         try:
             shop_native = get_language(shop_lang).native_name
@@ -2145,6 +2155,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         share_text = f"{shop['name']}\n{shop_link}"
         share_url = "https://wa.me/?text=" + url_quote(share_text)
         strings = get_strings(language)
+        # Sample shops never read "said today": the SAMPLE_TIME marker
+        # makes t() render the sample wording in the page language.
+        if shop["is_demo"] and version_id is not None:
+            prices_time = SAMPLE_TIME
+            rel = strings("hp.said_sample")
         price_source = ""
         if version_id is not None:
             raw_source = db.version_source(conn, version_id)
@@ -2160,6 +2175,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "SELECT * FROM shops WHERE listed = 1 AND area = ?"
                 " AND id != ? ORDER BY id LIMIT 12",
                 (shop["area"], shop["id"])).fetchall()
+            if not sample_shops_enabled(app.state.settings):
+                candidates = [row for row in candidates
+                              if not row["is_demo"]]
+            # Sample shops sort after real shops.
+            candidates = sorted(candidates,
+                                key=lambda row: bool(row["is_demo"]))
             for other in candidates:
                 if len(nearby) >= 4:
                     break
@@ -2175,7 +2196,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "n_prices": len(db.version_items(conn, other_version)),
                     "open_state": other_open["state"],
                     "open_time": other_open["time"],
+                    "is_demo": bool(other["is_demo"]),
+                    "cover_url": _photo_url(db.shop_cover(other)),
                 })
+        cover = db.shop_cover(shop)
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "rel": rel, "digits": digits,
             "share_url": share_url,
@@ -2183,6 +2207,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "shop_native": shop_native, "t": strings,
             "prices_time": prices_time, "price_source": price_source,
             "hero_photo": hero_photo,
+            "shop_cover_url": _photo_url(cover),
             "summary_min": summary_min, "summary_max": summary_max,
             "has_upi": bool(db.shop_upi_id(shop)),
             "open_state": open_info["state"],
