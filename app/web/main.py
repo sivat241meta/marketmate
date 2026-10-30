@@ -670,32 +670,54 @@ def create_app(settings: Settings) -> FastAPI:
             conn.close()
 
     async def _market_voice_impl(request: Request, conn):
+        # Task 124: the voice panel and the search pop-up both use the
+        # voice+text composer, so typed text arrives here too (field q).
+        # Audio wins when both are present; empty posts stay a 422.
         form = await request.form()
         upload = form.get("audio")
-        if upload is None or not hasattr(upload, "file"):
-            raise HTTPException(422, "an audio recording is required")
-        voice_dir = data_dir / "voice_search"
-        voice_dir.mkdir(parents=True, exist_ok=True)
-        safe_name = Path(getattr(upload, "filename", "") or "search.webm").name
-        saved = voice_dir / f"{secrets.token_hex(8)}_{safe_name}"
-        saved.write_bytes(await upload.read())
-        wav = saved.with_suffix(".wav")
+        typed = str(form.get("q") or "").strip()
+        blob = b""
+        if upload is not None and hasattr(upload, "file"):
+            blob = await upload.read()
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
-        try:
-            extract_audio(saved, wav)
-            transcript = transcribe_wav(
-                wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
-                settings=app.state.settings)
-            query = parse_query(transcript.text, ledger=ledger,
-                                settings=app.state.settings)
-        except (TranscribeError, SparkError, CostCapExceeded,
-                subprocess.CalledProcessError, OSError) as exc:
-            return _market_context(request, error=str(exc) or "search failed",
-                                   searched=True)
-        finally:
-            saved.unlink(missing_ok=True)
-            wav.unlink(missing_ok=True)
+        heard = None
+        if blob:
+            voice_dir = data_dir / "voice_search"
+            voice_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = Path(
+                getattr(upload, "filename", "") or "search.webm").name
+            saved = voice_dir / f"{secrets.token_hex(8)}_{safe_name}"
+            saved.write_bytes(blob)
+            wav = saved.with_suffix(".wav")
+            try:
+                extract_audio(saved, wav)
+                transcript = transcribe_wav(
+                    wav, keywords=PRODUCE_KEYWORDS, ledger=ledger,
+                    settings=app.state.settings)
+                query = parse_query(transcript.text, ledger=ledger,
+                                    settings=app.state.settings)
+            except (TranscribeError, SparkError, CostCapExceeded,
+                    subprocess.CalledProcessError, OSError) as exc:
+                return _market_context(
+                    request, error=str(exc) or "search failed",
+                    searched=True)
+            finally:
+                saved.unlink(missing_ok=True)
+                wav.unlink(missing_ok=True)
+            q_text = transcript.text
+            heard = transcript.text
+        elif typed:
+            try:
+                query = parse_query(typed, ledger=ledger,
+                                    settings=app.state.settings)
+            except (SparkError, CostCapExceeded) as exc:
+                return _market_context(request, q=typed,
+                                       error=str(exc) or "search failed",
+                                       searched=True)
+            q_text = typed
+        else:
+            raise HTTPException(422, "Say or type what you need first.")
         now = datetime.now(UTC)
         listings = find_listings(conn, query, now,
                                  settings=app.state.settings)
@@ -712,7 +734,7 @@ def create_app(settings: Settings) -> FastAPI:
         voice_lang = get_ui_lang(request)
         voice_empty = get_strings(voice_lang)("market.none_today")
         return _market_context(
-            request, q=transcript.text, heard=transcript.text, query=query,
+            request, q=q_text, heard=heard, query=query,
             rows=_rows_from_listings(listings, now, voice_lang, conn),
             basket=(None if market_empty
                     else _build_basket(conn, query, listings, ledger,

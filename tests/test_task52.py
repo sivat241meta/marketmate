@@ -560,12 +560,15 @@ def test_order_page_has_no_active_nav(tmp_path):
 
 
 def test_market_stop_hidden_until_recording(tmp_path):
+    # Task 124: Stop became the composer's Cancel, still hidden until
+    # a recording is underway.
     client = _client(tmp_path)
     html = client.get("/market").text
-    stop_tag = next(line for line in html.splitlines() if 'id="rec-stop"' in line)
+    stop_tag = next(line for line in html.splitlines()
+                    if "data-composer-cancel" in line)
     assert "hidden" in stop_tag
-    recorder = (ROOT / "app" / "web" / "static" / "recorder.js").read_text()
-    assert "stopBtn.hidden = false" in recorder
+    composer = (ROOT / "app" / "web" / "static" / "composer.js").read_text()
+    assert "cancel.hidden = !recording" in composer
 
 
 # --- 18. cart lines ----------------------------------------------------------

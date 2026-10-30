@@ -179,7 +179,14 @@ def test_search_popup_has_voice_recent_and_popular(tmp_path):
     t = t_for("en")
     assert 'name="q"' in pop
     assert t("v12.search_ph") in pop
-    assert 'href="/market#rec-start"' in pop  # voice button
+    # Task 124: the voice button reveals the voice+text composer posting
+    # to the same /market/voice action as the Find-a-shop voice panel.
+    assert "data-voice-toggle" in pop  # voice button
+    assert 'aria-controls="search-voice"' in pop
+    assert 'id="search-voice"' in pop
+    assert "data-composer" in pop
+    assert 'action="/market/voice"' in pop
+    assert 'data-text-field="q"' in pop
     assert t("v12.recent") in html and "data-recent" in pop
     assert t("v12.popular") in html
     assert "pop-circle" in pop

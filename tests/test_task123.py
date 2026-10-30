@@ -84,12 +84,14 @@ def _render_macro(lang="en", **kwargs):
 
 
 def _composer_form(html, action):
-    match = re.search(
+    # Task 124: public pages carry the search pop-up composer too, so
+    # pick the composer form posting to the page's own action.
+    matches = re.findall(
         r'<form[^>]*data-composer-form[^>]*>.*?</form>', html, re.DOTALL)
-    assert match, "composer form missing"
-    form = match.group(0)
-    assert f'action="{action}"' in form, f"composer posts to {action}"
-    return form
+    assert matches, "composer form missing"
+    forms = [form for form in matches if f'action="{action}"' in form]
+    assert forms, f"composer posts to {action}"
+    return forms[0]
 
 
 # --- 1. macro renders in both modes -------------------------------------------

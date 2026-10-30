@@ -4547,11 +4547,16 @@ body.mm-locked { overflow: hidden; }
   flex: none;
   width: 48px;
   height: 48px;
+  border: 0;
+  cursor: pointer;
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
   color: #fff;
   background: var(--grad);
+}
+.mm-voice {
+  margin-top: 12px;
 }
 .mm-pop-grid {
   display: grid;

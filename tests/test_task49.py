@@ -201,7 +201,9 @@ def test_market_renders(tmp_path):
     html = client.get("/market").text
     assert 'class="kick"' in html
     assert 'id="market-q"' in html
-    assert 'id="rec-start"' in html
+    # Task 124: the voice panel is the voice+text composer.
+    assert 'id="market-voice"' in html
+    assert "data-composer" in html
     assert "Find prices" in html or "find" in html.lower()
 
 

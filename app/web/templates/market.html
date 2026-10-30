@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% import "_v11.html" as v11 %}
+{% from "_composer.html" import composer with context %}
 {% set _L = ui_lang|default('en') %}
 {% set _ph_popups = "loc,search,filter" %}
 {% block title %}Find prices — MarketMate{% endblock %}
@@ -25,13 +26,13 @@
     <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_veg') }}">{{ t('hp.tab_veg') }}</button>
     <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_fruit') }}">{{ t('hp.tab_fruit') }}</button>
     <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_greens') }}">{{ t('hp.tab_greens') }}</button>
-    <a class="hp-tab hp-tab-voice" href="#rec-start">{{ t('hp.tab_voice') }}<span class="new-badge">{{ t('hp.new_badge') }}</span></a>
+    <a class="hp-tab hp-tab-voice" href="#market-voice">{{ t('hp.tab_voice') }}<span class="new-badge">{{ t('hp.new_badge') }}</span></a>
   </div>
   <div class="hp-fields">
     <div class="hp-field hp-what">
       <label for="market-q">{{ t('hp.what') }}</label>
       <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="{{ t('hp.ph_all') }}" autocomplete="off">
-      <a class="hp-mic" href="#rec-start" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
+      <a class="hp-mic" href="#market-voice" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
     </div>
     <div class="hp-field">
       <label for="market-area">{{ t('hp.area') }}</label>
@@ -55,24 +56,10 @@
   </div>
 </form>
 
-<section class="pub-sec voice-panel" data-voice-panel aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
+<section class="pub-sec voice-panel" id="market-voice" data-voice-panel aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
   <div class="form-card">
     <h2 class="h2s">{{ t('hp.tab_voice') }}</h2>
-    <p class="rec-row">
-      <button class="mic-btn" type="button" id="rec-start" data-upload-url="/market/voice" data-rec-prompt="Recording… say what you need, e.g. tomato under 25." aria-label="Speak">{{ ui.icon("mic") }}</button>
-      <button class="pill ghost sm" type="button" id="rec-stop" disabled hidden>Stop</button>
-    </p>
-    <p class="muted" id="rec-status">Tap Speak and say what you need.</p>
-    <details class="more">
-      <summary>Or upload a recording</summary>
-      <form method="post" action="/market/voice" enctype="multipart/form-data">
-        <div class="field">
-          <label class="field-label" for="market-audio">Or upload a recording</label>
-          <input class="field-input" id="market-audio" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-        </div>
-        <div class="action-bar"><button class="pill cta" type="submit">Upload and search</button></div>
-      </form>
-    </details>
+    {{ composer("/market/voice", text_field="q", placeholder=t('hp.ph_all'), mode="voice+text", max_seconds=120) }}
     <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
   </div>
 </section>
@@ -274,7 +261,6 @@
 {% endif %}
 {% endblock %}
 {% block scripts %}
-<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('near-me.js') if static_url is defined else '/static/near-me.js' }}"></script>
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

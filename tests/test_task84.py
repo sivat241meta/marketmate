@@ -153,8 +153,12 @@ def test_search_form_targets_market_with_right_params(tmp_path):
     t = t_for("en")
     assert t("v12.search_ph") in pop
     assert t("v12.recent") in html and t("v12.popular") in html
-    # Voice search still opens the existing voice panel on /market.
-    assert 'href="/market#rec-start"' in pop
+    # Task 124: voice search is the embedded voice+text composer posting
+    # to /market/voice (same action as the voice panel on /market).
+    assert "data-voice-toggle" in pop
+    assert 'id="search-voice"' in pop
+    assert "data-composer" in pop
+    assert 'action="/market/voice"' in pop
     filt = html.split('id="filter-pop"')[1]
     assert 'method="get" action="/market"' in filt
     assert 'name="sort"' in filt and 'name="area"' in filt

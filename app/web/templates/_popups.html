@@ -4,6 +4,7 @@
    Behaviour lives in static/popups.js. Pages opt into the filter
    pop-up with {% set _ph_popups = "loc,search,filter" %}. #}
 {% import "_ui.html" as ui %}
+{% from "_composer.html" import composer with context %}
 {% set _pop = _ph_popups|default("loc,search") %}
 {% set _L = ui_lang|default('en') %}
 {% set _tiles = hp.tiles if hp is defined and hp and hp.tiles is defined else [] %}
@@ -60,9 +61,13 @@
       <div class="mm-search-row">
         <label class="visually-hidden" for="mm-q">{{ t('v12.search_ph') }}</label>
         <input type="search" id="mm-q" name="q" data-search-input data-suggest-url="/market/suggest.json" data-area="{{ _cur_area }}" data-none="{{ t('v12.search_none') }}" data-items="{{ t('v12.items') }}" data-shops="{{ t('v12.shops') }}" placeholder="{{ t('v12.search_ph') }}" autocomplete="off">
-        <a class="mm-mic" href="/market#rec-start" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
+        <button type="button" class="mm-mic" data-voice-toggle aria-expanded="false" aria-controls="search-voice" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</button>
       </div>
     </form>
+    <div class="mm-voice" id="search-voice" hidden>
+      <p class="mm-row-head"><span>{{ t('hp.tab_voice') }}</span></p>
+      {{ composer("/market/voice", text_field="q", placeholder=t('v12.search_ph'), mode="voice+text", max_seconds=120) }}
+    </div>
     <div data-live hidden></div>
     <p class="muted" data-live-none hidden>{{ t('v12.search_none') }}</p>
     <div data-recent-wrap hidden>

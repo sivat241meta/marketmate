@@ -257,8 +257,10 @@ def test_voice_panel_visible_without_query(tmp_path):
     seed_market(tmp_path)
     html = make_client(tmp_path).get("/market").text
     assert "hidden" not in _panel_tag(html)
-    for hook in ("rec-start", "rec-stop", "rec-status", "market-audio",
-                 "data-upload-url"):
+    # Task 124: the panel's recorder became the voice+text composer.
+    for hook in ("market-voice", "data-composer", "data-composer-form",
+                 "data-composer-mic", "data-composer-text",
+                 'action="/market/voice"'):
         assert hook in html, hook
 
 
@@ -278,8 +280,9 @@ def test_voice_panel_hidden_after_typed_search(tmp_path, monkeypatch):
     html = client.get("/market?q=tomato").text
     assert "hidden" in _panel_tag(html)
     # Hooks stay in the DOM; results follow the search card directly.
-    for hook in ("rec-start", "rec-stop", "rec-status", "market-audio",
-                 "data-upload-url"):
+    for hook in ("market-voice", "data-composer", "data-composer-form",
+                 "data-composer-mic", "data-composer-text",
+                 'action="/market/voice"'):
         assert hook in html, hook
     assert html.index('id="search"') < html.index("data-voice-panel")
 

@@ -124,7 +124,8 @@ def test_static_url_for_js(tmp_path, monkeypatch):
     html = _review_html(tmp_path, monkeypatch)
     assert re.search(r"/static/review\.js\?v=[0-9a-f]{10}", html)
     market_html = _client(tmp_path).get("/market").text
-    assert re.search(r"/static/recorder\.js\?v=[0-9a-f]{10}", market_html)
+    # Task 124: the market voice recorder is the composer now.
+    assert re.search(r"/static/composer\.js\?v=[0-9a-f]{10}", market_html)
 
 
 def test_review_orders_needs_before_ok(tmp_path, monkeypatch):

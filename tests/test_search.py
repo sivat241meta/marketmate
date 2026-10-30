@@ -255,7 +255,9 @@ def test_market_page_has_search_and_voice_recorder(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
     html = client.get("/market").text
     assert 'name="q"' in html
-    assert "recorder.js" in html
+    # Task 124: the voice recorder is the voice+text composer.
+    assert "data-composer" in html
+    assert "composer.js" in html
     assert "/market/voice" in html
     assert 'name="audio"' in html
 

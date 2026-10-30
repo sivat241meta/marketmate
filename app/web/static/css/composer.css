@@ -1,5 +1,23 @@
 /* Task 123: ChatGPT-style voice/text composer. Theme-aware via the site's
-   custom properties so a theme change applies automatically. */
+   custom properties so a theme change applies automatically.
+   Task 124: tuned to the v12 teal tokens (card shadow, focus ring). */
+
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
+}
 
 .composer {
   margin: 12px 0;
@@ -220,6 +238,15 @@
   cursor: default;
 }
 
+.composer-plus:focus-visible,
+.composer-mic:focus-visible,
+.composer-send:focus-visible,
+.composer-cancel:focus-visible,
+.composer-retry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Fallback row (no JS): the upload choice stays visible and usable. */
 .composer-menu {
   display: flex;
@@ -237,7 +264,7 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-card);
   z-index: 30;
 }
 

@@ -349,10 +349,11 @@ def test_my_orders_boxes_and_card_js(tmp_path):
 
 # --- 5. find a shop ---------------------------------------------------------------
 
-MARKET_HOOKS = ["data-upload-url", "rec-start", "rec-stop", "rec-status",
-                "data-filters", "sort-value", "market-open", "near-me",
-                "near-me-status", "data-sort", "market-pincode",
-                "recorder.js", "near-me.js"]
+# Task 124: the voice panel's recorder hooks became the composer hooks.
+MARKET_HOOKS = ["data-composer", "data-composer-form", "data-composer-mic",
+                "data-voice-panel", "data-filters", "sort-value",
+                "market-open", "near-me", "near-me-status", "data-sort",
+                "market-pincode", "composer.js", "near-me.js"]
 
 MARKET_RESULT_HOOKS = ["data-shop-list", "data-shop-row", "data-distance",
                        "data-unknown"]

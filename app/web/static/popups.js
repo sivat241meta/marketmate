@@ -605,6 +605,24 @@
     refreshFilterBadges();
   }
 
+  /* Task 124: the search pop-up mic reveals the voice+text composer
+     (same /market/voice action as the Find-a-shop voice panel). */
+  function initVoice() {
+    document.querySelectorAll("[data-voice-toggle]").forEach(
+      function (btn) {
+        var target = btn.getAttribute("aria-controls");
+        var panel = target ? document.getElementById(target) : null;
+        if (!panel) {
+          return;
+        }
+        btn.addEventListener("click", function () {
+          panel.hidden = !panel.hidden;
+          btn.setAttribute("aria-expanded",
+            panel.hidden ? "false" : "true");
+        });
+      });
+  }
+
   function init() {
     initDialogs();
     initMenu();
@@ -615,6 +633,7 @@
     initLocation();
     initSearch();
     initFilter();
+    initVoice();
   }
 
   if (typeof document !== "undefined" && document) {
