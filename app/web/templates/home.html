@@ -208,7 +208,7 @@
     </a>
     {% for tile in hp.tiles %}
     <a class="area-tile{% if hp.area == tile.name %} on{% endif %}" href="/?area={{ tile.name | urlencode }}">
-      {% if tile.photo_url %}<span class="tile-photo"><img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150"{% if tile.photo_cutout %} data-cutout class="cut"{% endif %}></span>{% else %}<span class="tile-ic">{{ ui.obj("store", 28) }}</span>{% endif %}
+      {% if tile.photo_url and not tile.photo_cutout %}<span class="tile-photo"><img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150"></span>{% else %}<span class="tile-ic">{{ ui.obj("pin", 28) }}</span>{% endif %}
       <b>{{ tile.name }}</b>
       <small class="muted">{{ t('hp.area_counts', n=tile.n_shops, m=tile.m_prices) }}</small>
       <span class="tile-chev" aria-hidden="true">›</span>
@@ -237,7 +237,7 @@
     {% for shop in hp.shops %}
     <article class="shop-card" data-reveal>
       <div class="shop-cover">
-        {% if shop.cover_url %}<img src="{{ shop.cover_url }}" alt="" loading="lazy" width="600" height="200">{% elif _coll.by.get(shop.slug) %}{% for ph in _coll.by[shop.slug] %}<img src="{{ ph.u }}" alt="" loading="lazy" width="200" height="150"{% if ph.c %} data-cutout class="cut"{% endif %}>{% endfor %}{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if shop.photo_cutout %} data-cutout class="cut"{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
+        {% if shop.cover_url %}<img class="cov" src="{{ shop.cover_url }}" alt="" loading="lazy" width="600" height="200">{% elif _coll.by.get(shop.slug) %}{% for ph in _coll.by[shop.slug] %}<img src="{{ ph.u }}" alt="" loading="lazy" width="200" height="150"{% if ph.c %} data-cutout class="cut"{% endif %}>{% endfor %}{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if shop.photo_cutout %} data-cutout class="cut"{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
         {% if shop.is_new %}<span class="chip c-new shop-new">{{ t('hp.new_chip') }}</span>{% endif %}
         {% if shop.open_state == "open" %}<span class="pill pill-live shop-open">{{ t('hp.open') }}</span>{% elif shop.open_state == "closed" %}<span class="pill sm ghost shop-open">{{ t('hp.closed') }}</span>{% endif %}
       </div>
@@ -422,7 +422,7 @@
     <div class="meta-dots" aria-hidden="true"><i></i><i></i><i></i></div>
     <article class="meta-card" data-reveal><span class="meta-step">{{ v11.t('s_voice', _L) }}</span><code>muse-voice-transcribe-1.0</code><p class="muted">{{ t('land.meta_voice') }}</p></article>
     <article class="meta-card" data-reveal><span class="meta-step">{{ v11.t('s_items', _L) }}</span><code>muse-spark-1.3</code><p class="muted">{{ t('land.meta_spark') }}</p></article>
-    <article class="meta-card" data-reveal><span class="meta-step">{{ v11.t('s_photos', _L) }}</span><code>sam-3.1</code><p class="muted">{{ t('land.meta_sam') }}</p></article>
+    <article class="meta-card" data-reveal><span class="meta-step">{{ v11.t('s_photos', _L) }}</span><code>sam-3.1 + meta_sam_parser</code><p class="muted">{{ t('land.meta_sam') }}</p></article>
     <article class="meta-card" data-reveal><span class="meta-step">{{ v11.t('s_check', _L) }}</span><code>meta-models/muse-spark-open-1026</code><p class="muted">{{ t('land.meta_open') }}</p></article>
   </div>
   <p class="meta-path"><span>{{ v11.t('f_voice', _L) }}</span><span class="arr" aria-hidden="true">→</span><span>{{ v11.t('f_items', _L) }}</span><span class="arr" aria-hidden="true">→</span><span>{{ v11.t('f_photos', _L) }}</span><span class="arr" aria-hidden="true">→</span><span>{{ v11.t('f_list', _L) }}</span></p>
@@ -500,7 +500,7 @@
     <div class="hp-choose-grid">
       {% for tile in hp.tiles %}
       <button type="button" class="choose-tile" data-pick="{{ tile.name }}" data-area-lat="{{ tile.lat if tile.lat is not none else '' }}" data-area-lng="{{ tile.lng if tile.lng is not none else '' }}" data-name-lower="{{ tile.name | lower }}">
-        {% if tile.photo_url %}<span class="tile-photo"><img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150"{% if tile.photo_cutout %} data-cutout class="cut"{% endif %}></span>{% else %}<span class="tile-ic">{{ ui.obj("pin", 28) }}</span>{% endif %}
+        {% if tile.photo_url and not tile.photo_cutout %}<span class="tile-photo"><img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150"></span>{% else %}<span class="tile-ic">{{ ui.obj("pin", 28) }}</span>{% endif %}
         <b>{{ tile.name }}</b>
         <small class="muted">{{ t('hp.area_counts', n=tile.n_shops, m=tile.m_prices) }}</small>
       </button>
@@ -514,6 +514,9 @@
   </div>
 </div>
 {% endblock %}
+{# Task 118: home renders the rich footer above, so the old base
+   footer (same honesty line lives in the rich footer) is dropped. #}
+{% block footer %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('home.js') if static_url is defined else '/static/home.js' }}"></script>
 {% endblock %}

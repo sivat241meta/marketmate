@@ -9,7 +9,7 @@
 <div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
 <section class="hero2" aria-label="{{ shop["name"] }}">
   <div class="hero-cover">
-    {% if shop_cover_url %}<img src="{{ shop_cover_url }}" alt="" width="600" height="200">{% else %}{% set _hc = namespace(n=0) %}{% for row in rows %}{% if row.photo_url and _hc.n < 3 %}<img src="{{ row.photo_url }}" alt="" width="400" height="300"{% if row.photo_cutout %} data-cutout class="cut"{% endif %}>{% set _hc.n = _hc.n + 1 %}{% endif %}{% endfor %}{% if _hc.n == 0 %}<span class="nophoto" aria-hidden="true">{{ shop["name"][:1] }}</span>{% endif %}{% endif %}
+    {% if shop_cover_url %}<img class="cov" src="{{ shop_cover_url }}" alt="" width="600" height="200">{% else %}{% set _hc = namespace(n=0) %}{% for row in rows %}{% if row.photo_url and _hc.n < 3 %}<img src="{{ row.photo_url }}" alt="" width="400" height="300"{% if row.photo_cutout %} data-cutout class="cut"{% endif %}>{% set _hc.n = _hc.n + 1 %}{% endif %}{% endfor %}{% if _hc.n == 0 %}<span class="nophoto" aria-hidden="true">{{ shop["name"][:1] }}</span>{% endif %}{% endif %}
   </div>
   <span class="hero-ava" aria-hidden="true">{{ shop["name"][:1] }}</span>
   <div class="shop-band-copy">

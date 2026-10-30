@@ -148,9 +148,11 @@
   {% endif %}
 </nav>
 {% endif %}
+{% block footer %}
 <footer class="footer">
   <p>{{ t('top.footer') }}</p>
 </footer>
+{% endblock %}
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-ui-toggle]").forEach((toggle) => {
