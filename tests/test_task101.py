@@ -376,7 +376,10 @@ def test_phone_header_compact_structure(tmp_path):
     assert 'aria-label="Bag"' in head
     assert 'class="bag-label"' in bag.group(1)
     assert "data-bag-count" in bag.group(1)
-    assert 'class="free-badge"' in head  # sold as compact via CSS <=420px
+    # Task 122: the sell pill moved to the phone menu; location +
+    # search buttons join the compact header.
+    assert "data-loc-open" in head
+    assert "data-search-open" in head
     assert "data-menu-open" in head  # menu button kept
 
 

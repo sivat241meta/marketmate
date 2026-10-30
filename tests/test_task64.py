@@ -25,21 +25,28 @@ BASE = TEMPLATES / "base.html"
 
 # Task 105: v11 re-themed the app to the Meta blue accent; the v9 purple
 # tokens were renamed to --accent/* with new values and Meta neutrals.
+# Task 122: v12 re-themed to teal green + soft blue with new values.
 V9_TOKENS = {
-    "--ink": "#1C2B33", "--ink2": "#3C4048", "--muted": "#65676B",
-    "--line": "#E4E6EB", "--soft": "#F0F2F5", "--bg": "#F7F8FA",
-    "--surface": "#FFFFFF", "--chrome": "#1E1F21",
-    "--chrome-2": "#2C2D31", "--chrome-line": "#3A3B40",
-    "--chrome-txt": "#C8CCD3", "--chrome-on": "#1B2B44",
-    "--chrome-accent": "#4D9BFF",
-    "--accent": "#0866FF", "--accent-ink": "#0064E0",
-    "--accent-soft": "#E7F0FF", "--green": "#0F7F3F",
+    "--ink": "#102A33", "--ink2": "#3C4048", "--muted": "#56707A",
+    "--line": "#E2EAEE", "--soft": "#F0F2F5", "--bg": "#F3F8FA",
+    "--surface": "#FFFFFF", "--chrome": "#0B2A33",
+    "--chrome-2": "#123A44", "--chrome-line": "#1E4A55",
+    "--chrome-txt": "#C8CCD3", "--chrome-on": "#134E4A",
+    "--chrome-accent": "#5EEAD4",
+    "--accent": "#0F766E", "--accent-ink": "#115E59",
+    "--accent-soft": "#E6FAF6", "--green": "#0F7F3F",
     "--green-soft": "#E8F7EE", "--amber": "#8A5208",
     "--amber-soft": "#FFF5E3", "--red": "#C4363B",
-    "--red-soft": "#FDECEC", "--blue": "#1F5FBF",
-    "--blue-soft": "#EAF2FF", "--todo": "#5F6672",
+    "--red-soft": "#FDECEC", "--blue": "#0369A1",
+    "--blue-soft": "#E8F4FD", "--todo": "#5F6672",
     "--todo-soft": "#F0F1F3",
 }
+# Task 122: the v11 Meta-blue hexes must be gone from app.css and every
+# template, like the older palettes before them.
+# (--avatar-1 #1F5FBF is the one v11 blue the v12 palette keeps.)
+V11_HEXES = ("0866FF", "0064E0", "0081FB", "00B2FF", "E7F0FF", "1E1F21",
+             "2C2D31", "3A3B40", "1B2B44", "4D9BFF", "F7F8FA", "E4E6EB",
+             "65676B", "1C2B33", "EAF2FF")
 
 OLD_HEXES = ("173F2A", "4F9A2E", "3E7D22", "178A4C", "F5C451",
              "FFF4D6", "EEF6EE", "7B5CFA", "5B3FE0", "F1EEFF",
@@ -188,12 +195,12 @@ def test_v9_tokens_exist_and_old_colours_gone():
         assert re.search(rf"{re.escape(token)}\s*:\s*{re.escape(value)}",
                          css, re.IGNORECASE), token
     squashed = css.replace(" ", "")
-    assert "linear-gradient(135deg,#0064E0,#0081FB55%,#00B2FF)" in squashed
+    assert "linear-gradient(135deg,#0F766E,#0EA5A450%,#38BDF8)" in squashed
     for gone in OLD_TOKENS:
         assert gone not in css, f"{gone} still in app.css"
     for path in [CSS, *sorted(TEMPLATES.glob("*.html"))]:
         lowered = path.read_text().lower()
-        for stop in OLD_HEXES:
+        for stop in OLD_HEXES + V11_HEXES:
             assert f"#{stop.lower()}" not in lowered, \
                 f"{path.name}: old #{stop}"
         if path.suffix == ".html":
@@ -233,31 +240,35 @@ def _contrast(fore: str, back: str) -> float:
 
 
 def test_text_background_pairs_pass_contrast():
-    # Task 105: Meta blue accent pairs (every text pair >= 4.5:1).
+    # Task 122: teal + soft-blue pairs (every text pair >= 4.5:1).
     pairs = [
-        ("white on accent-ink", "#FFFFFF", "#0064E0"),
-        ("accent-ink on white", "#0064E0", "#FFFFFF"),
-        ("accent-ink on accent-soft", "#0064E0", "#E7F0FF"),
-        ("white on accent", "#FFFFFF", "#0866FF"),
-        ("muted on white", "#65676B", "#FFFFFF"),
-        ("muted on bg", "#65676B", "#F7F8FA"),
-        ("muted on soft", "#65676B", "#F0F2F5"),
-        ("chip new", "#0064E0", "#E7F0FF"),
+        ("white on accent", "#FFFFFF", "#0F766E"),
+        ("white on accent-ink", "#FFFFFF", "#115E59"),
+        ("accent-ink on white", "#115E59", "#FFFFFF"),
+        ("accent on accent-soft", "#0F766E", "#E6FAF6"),
+        ("accent-ink on accent-soft", "#115E59", "#E6FAF6"),
+        ("white on blue", "#FFFFFF", "#0369A1"),
+        ("blue on blue-soft", "#0369A1", "#E8F4FD"),
+        ("muted on white", "#56707A", "#FFFFFF"),
+        ("muted on bg", "#56707A", "#F3F8FA"),
+        ("muted on soft", "#56707A", "#F0F2F5"),
+        ("chip new", "#0F766E", "#E6FAF6"),
         ("chip packing", "#8A5208", "#FFF5E3"),
         ("chip ready", "#0F7F3F", "#E8F7EE"),
-        ("chip collected", "#65676B", "#F0F2F5"),
+        ("chip collected", "#56707A", "#F0F2F5"),
         ("chip unpaid", "#C4363B", "#FDECEC"),
         ("chip live", "#0F7F3F", "#E8F7EE"),
         ("chip needs-you", "#8A5208", "#FFF5E3"),
         ("chip to-do", "#5F6672", "#F0F1F3"),
-        ("chrome text on chrome", "#C8CCD3", "#1E1F21"),
-        ("white on chrome-on", "#FFFFFF", "#1B2B44"),
-        ("chrome accent on chrome", "#4D9BFF", "#1E1F21"),
+        ("chrome text on chrome", "#C8CCD3", "#0B2A33"),
+        ("white on chrome-on", "#FFFFFF", "#134E4A"),
+        ("chrome accent on chrome", "#5EEAD4", "#0B2A33"),
+        ("sky on chrome", "#7DD3FC", "#0B2A33"),
         ("white on price green", "#FFFFFF", "#0F7F3F"),
         ("white on avatar 0", "#FFFFFF", "#C2337A"),
         ("white on avatar 1", "#FFFFFF", "#1F5FBF"),
         ("white on avatar 2", "#FFFFFF", "#0F7F3F"),
-        ("white on avatar 3", "#FFFFFF", "#0064E0"),
+        ("white on avatar 3", "#FFFFFF", "#0F766E"),
         ("white on avatar 4", "#FFFFFF", "#8A5208"),
     ]
     for name, fore, back in pairs:

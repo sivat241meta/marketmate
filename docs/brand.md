@@ -8,34 +8,34 @@ PNG/ICO from that same geometry, so the SVG and PNG versions match.
 ## The logo
 
 - **The mark**: "Mm leaves" — a lowercase "m" whose two humps peak in
-  outward leaf tips, in two different colours: LEFT leaf Meta blue
-  `#0866FF` (the app's primary), RIGHT leaf fresh green `#1FA34A`. The
+  outward leaf tips, in two different colours: LEFT leaf teal
+  `#0F766E` (the app's primary), RIGHT leaf soft blue `#38BDF8`. The
   two halves share their middle edge (no thin gap), so small sizes keep
   both colours. Flat style, cubic-Bezier paths, no outlines, no gradients.
-- **The wordmark**: "Market" in deep blue `#0064E0` + "Mate" in green,
+- **The wordmark**: "Market" in teal `#0F766E` + "Mate" in soft blue,
   echoing the mark's left-to-right pairing, set in Inter ExtraBold. The
   glyphs are converted to SVG paths at build time, so `logo.svg` needs
-  no font. (`#0064E0` on white is 5.4:1, so the wordmark passes AA.)
+  no font. (`#0F766E` on white is 5.5:1, so the wordmark passes AA.)
 - **The lockup**: mark on the left, wordmark to the right, cap-centre on
   the mark's visual centre, gap 0.25× the design box, −1.5% tracking.
 - **Dark-background variant**: `mark-dark.svg` lightens the left leaf to
-  `#4D9BFF` (5.9:1 on `#1E1F21`, vs 3.4:1 for `#0866FF`); the right leaf
-  stays green. Used on the dark seller top bar and rail.
+  `#5EEAD4` (10.2:1 on `#0B2A33`); the right leaf stays soft blue. Used
+  on the dark seller top bar and rail.
 
-## Colours (pair E, the default)
+## Colours (pair F, the default)
 
 | Use | Colour |
 | --- | --- |
-| Left leaf | Meta blue `#0866FF` (app primary) |
-| "Market" | Deep blue `#0064E0` (5.4:1 on white) |
-| Right leaf / "Mate" | Fresh green `#1FA34A` |
-| Left leaf on dark chrome | Light blue `#4D9BFF` (`mark-dark.svg` only) |
+| Left leaf | Teal `#0F766E` (app primary) |
+| "Market" | Teal `#0F766E` (5.5:1 on white) |
+| Right leaf / "Mate" | Soft blue `#38BDF8` |
+| Left leaf on dark chrome | Mint `#5EEAD4` (`mark-dark.svg` only) |
 | App-icon tile | White with a 1px `#E2E5EA` border |
-| Dark chrome (top bar, rail) | `#1E1F21` |
+| Dark chrome (top bar, rail) | `#0B2A33` |
 
 ## Colour pairs
 
-The script can emit the logo in five pairings (mark + wordmark follow the
+The script can emit the logo in six pairings (mark + wordmark follow the
 pair; the dark variant lightens the left colour when it is weak on dark):
 
 | Pair | Left | Right | Dark-variant left |
@@ -44,7 +44,8 @@ pair; the dark variant lightens the left colour when it is weak on dark):
 | B | Green `#1FA34A` | Orange `#F28C28` | unchanged (5.1:1) |
 | C | Navy `#1B2A5C` | Green `#1FA34A` | `#6C7FD8` (navy would vanish) |
 | D | Purple `#5F55EE` | Orange `#F28C28` | `#7B68EE` |
-| E (default) | Meta blue `#0866FF` | Green `#1FA34A` | `#4D9BFF` ("Market" `#0064E0`) |
+| E | Meta blue `#0866FF` | Green `#1FA34A` | `#4D9BFF` ("Market" `#0064E0`) |
+| F (default) | Teal `#0F766E` | Soft blue `#38BDF8` | `#5EEAD4` |
 
 To switch pairs (regenerates + overwrites every asset):
 

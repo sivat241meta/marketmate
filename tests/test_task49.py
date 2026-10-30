@@ -206,14 +206,22 @@ def test_market_renders(tmp_path):
 
 
 def test_home_renders_all_langs(tmp_path):
+    # Task 122: the homepage is a clean marketplace; sellers content
+    # lives on /sellers and /how.
+    from app.web.i18n import t_for
+
     client = _client(tmp_path)
+    t = t_for("en")
     en = client.get("/").text
-    assert "Say today&#39;s prices." in en or "Say today's prices." in en
-    assert "Sell more." in en
+    assert t("v12.mind_t") in en
     assert "Start selling" in en
-    assert "Find prices" in en
-    assert "Lost your link?" in en
     assert "Built with Muse Code" in en
+    sellers = client.get("/sellers").text
+    assert "Say today&#39;s prices." in sellers or "Say today's prices." in sellers
+    assert "Sell more." in sellers
+    assert "Lost your link?" in sellers
+    how = client.get("/how").text
+    assert t("v12.how_t") in how
     for lang, needle in (("ta", "விலை"), ("hi", "कीमत")):
         client.cookies.set("ui_lang", lang)
         html = client.get("/").text

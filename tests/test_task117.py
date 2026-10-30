@@ -19,8 +19,9 @@ from scripts import seed_samples
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_DATA = ROOT / "scripts" / "sample_data"
 
-SECTIONS = ("hero", "picks", "categories", "markets", "shops", "basket",
-            "how", "sellers", "meta", "install", "footer")
+# Task 122: v12 marketplace sections.
+SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
+            "sell", "meta", "install", "footer")
 NAMES = ("Selvi Vegetable Stall", "Pandian Fruit Centre",
          "Amma Keerai Kadai", "Gupta Sabzi Wale", "Green Basket")
 

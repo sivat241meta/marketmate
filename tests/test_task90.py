@@ -141,11 +141,13 @@ def test_every_public_page_includes_shared_header(tmp_path):
 def test_header_anchors_stay_on_home_but_point_home_elsewhere(tmp_path):
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     home = client.get("/").text
-    for anchor in ("#picks", "#areas", "#sellers", "#how"):
+    for anchor in ("#best-prices", "#markets"):
         assert f'href="{anchor}"' in home, anchor
+    for href in ("/market", "/sellers", "/how"):
+        assert f'href="{href}"' in home, href
     assert home.count('id="site-header"') == 1
     shop = client.get(f"/s/{slug}").text
-    for anchor in ("#picks", "#areas", "#sellers", "#how"):
+    for anchor in ("#best-prices", "#markets"):
         assert f'href="/{anchor}"' in shop, anchor
 
 
@@ -163,12 +165,15 @@ def test_no_shop_strip_bag_lives_in_header(tmp_path):
         assert "hp-bag" in head, f"{url}: no Bag in header"
         assert 'href="/my"' in head, f"{url}: Bag link missing"
         assert "T90 Store" not in head, f"{url}: shop name in header"
+    # Task 122: Bag (with count badge) sits in the header on every
+    # public page now.
     for url in ("/", "/market", "/my", "/share"):
         html = client.get(url).text
         assert "data-shop-strip" not in html, f"{url}: stray shop strip"
         head = re.search(r'<header id="site-header".*?</header>', html,
                          re.DOTALL).group(0)
-        assert "hp-bag" not in head, f"{url}: stray Bag in header"
+        assert "hp-bag" in head, f"{url}: no Bag in header"
+        assert "data-bag-count" in head, f"{url}: no Bag badge"
 
 
 def test_no_seller_navigation_on_public_pages(tmp_path):
@@ -441,7 +446,7 @@ def test_error_page_renders_with_header(tmp_path):
     body = response.body.decode()
     assert "data-public-header" in body
     assert "empty-state" in body
-    assert "/#picks" in body
+    assert "/#best-prices" in body
 
 
 # --- 7. languages, CSS, JS ------------------------------------------------------------
@@ -510,4 +515,4 @@ def test_homepage_header_unchanged(tmp_path):
     html = client.get("/").text
     assert html.count('id="site-header"') == 1
     assert "data-public-header" in html
-    assert 'href="#picks"' in html
+    assert 'href="#best-prices"' in html

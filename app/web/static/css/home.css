@@ -1,51 +1,27 @@
-/* Task 115: rich public site (v11). Enrichment layer over app.css +
-   public.css, which stay untouched. Scoped to home (.home-mkt) and
-   public pages (.pub) unless noted. Meta blue theme, Inter + Noto. */
+/* Task 122 (v12): Swiggy-style marketplace layer over app.css +
+   public.css, which keep the base components. Scoped to home
+   (.home-mkt) and public pages (.pub) unless noted. Teal green +
+   soft blue theme, Inter + Noto. No nowrap anywhere in this file
+   (Tamil/Hindi must wrap, never cut). */
 
-/* ---- 1a. sticky header: underline draw + sell shine ---- */
-.hp-nav a {
-  position: relative;
-}
-.hp-nav a::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 4px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: var(--accent-ink);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.25s ease-out;
-}
-.hp-nav a:hover::after {
-  transform: scaleX(1);
-}
-.hp-sell {
-  overflow: hidden;
-  isolation: isolate;
-}
-.hp-sell::after {
-  content: "";
-  position: absolute;
-  top: -20%;
-  bottom: -20%;
-  width: 34%;
-  background: linear-gradient(90deg, transparent,
-    rgba(255, 255, 255, 0.5), transparent);
-  animation: panelshine 5.5s ease-out infinite;
-}
-.strip-bell {
-  display: inline-flex;
-  transform-origin: top center;
-}
-.strip-bell .obj {
-  animation: bellping 0.6s ease-out 0.8s;
-  transform-origin: top center;
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
 }
 
-/* ---- 1b. hero: Ken Burns, blue gradient, rotator, counters ---- */
+/* ---- sell-hero band: Ken Burns + teal shade ---- */
 .hp-band-img.kb {
   animation: kenburns 30s ease-in-out infinite alternate;
   transform-origin: center;
@@ -54,47 +30,44 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 62, 163, 0.5),
-    rgba(0, 62, 163, 0.1) 55%, rgba(0, 32, 92, 0.42));
+  background: linear-gradient(180deg, rgba(11, 42, 51, 0.5),
+    rgba(11, 42, 51, 0.12) 55%, rgba(11, 42, 51, 0.45));
   pointer-events: none;
 }
 .hp-hero-in,
 .hp-credit {
   z-index: 1;
 }
-.hp-curve path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: uldraw 0.9s ease-out 0.35s forwards;
-}
-.hp-rot-line {
-  color: #fff;
-  margin: 14px 0 0;
-  font-size: 15px;
-  text-shadow: 0 1px 8px rgba(17, 17, 28, 0.6);
-}
-.hp-rot-word {
-  display: inline-block;
-  background: #fff;
-  color: var(--accent-ink);
-  font-weight: 800;
-  border-radius: 999px;
-  padding: 4px 14px;
-  margin-left: 6px;
-  text-shadow: none;
-  transition: opacity 0.25s ease-out;
-}
-.hp-rot-word.fade {
-  opacity: 0;
-}
-/* Task 118: on phones the search card overlaps the band's bottom
-   edge, so the photo credit moves to bottom-left above the card
-   instead of peeking out at the right edge. */
+/* The photo credit sits bottom-left above any overlapping card. */
 @media (max-width: 600px) {
   .hp-credit {
     left: 12px;
     right: auto;
     bottom: 80px;
+  }
+  .land-day {
+    position: relative;
+    padding-left: 30px;
+    overflow: hidden;
+  }
+  html.js .land-day::before {
+    content: "";
+    position: absolute;
+    left: 41px;
+    top: 26px;
+    bottom: 26px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: top center;
+    transition: transform 0.6s ease-out 0.15s;
+  }
+  html.js .land-day.in::before {
+    transform: scaleY(1);
+  }
+  .land-day li {
+    position: relative;
   }
 }
 .hp-counters {
@@ -152,7 +125,7 @@
   bottom: 0;
   width: 45%;
   background: linear-gradient(90deg, transparent,
-    rgba(0, 100, 224, 0.22), transparent);
+    rgba(15, 118, 110, 0.2), transparent);
   animation: tabshine 0.55s ease-out;
 }
 .new-badge::before {
@@ -174,7 +147,7 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(135deg, #e7f0ff, #fff 70%);
+  background: linear-gradient(135deg, #e6faf6, #fff 70%);
 }
 .hp-banner::after {
   content: "";
@@ -204,7 +177,236 @@
   animation: hlshine 0.5s ease-out 0.5s both;
 }
 
-/* ---- 1d. picks: badges, heart, scroll row on phones ---- */
+/* ---- carousels: head row, arrows, dots, snap track ---- */
+.hp-sec-head.car-head {
+  align-items: center;
+}
+.car-btns {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex: none;
+}
+.car-btns .iconbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.mind-row,
+.top-row,
+.best-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 2px 12px;
+  scrollbar-width: thin;
+}
+.mind-row > *,
+.top-row > *,
+.best-row > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+.cdots {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+}
+.cdots[hidden] {
+  display: none;
+}
+.cdot {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  padding: 18px 11px;
+  cursor: pointer;
+  position: relative;
+}
+.cdot::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+}
+.cdot.on::after {
+  background: var(--accent);
+}
+
+/* ---- mind row: circular produce picks ---- */
+.mind-circle {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  width: 104px;
+  min-height: 44px;
+}
+.mind-circle img,
+.mind-circle .nophoto,
+.mind-circle .mind-ic {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: contain;
+  padding: 8px;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  box-shadow: var(--shadow-card);
+}
+.mind-circle .nophoto,
+.mind-circle .mind-ic {
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.mind-circle .mind-ic .obj {
+  width: 44px;
+  height: 44px;
+}
+.mind-circle > span:last-child {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* ---- shop cards: 16:10 cover, gradient overlay line ---- */
+.top-row .shop-card {
+  width: min(300px, 78vw);
+}
+.shop-cover {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, #0f766e, #38bdf8);
+  display: flex;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-2);
+}
+.shop-cover img {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  display: block;
+  transition: transform 0.25s ease-out;
+}
+/* Task 118: only a real cover photo may use cover; the item
+   collage is always contained, padded and never cropped. */
+.shop-cover img.cov {
+  object-fit: cover;
+  padding: 0;
+  background: none;
+}
+.shop-cover .nophoto {
+  margin: auto;
+  color: #fff;
+  font-size: 40px;
+  font-weight: 800;
+}
+.cover-shade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 56%;
+  background: linear-gradient(180deg, transparent, rgba(11, 42, 51, 0.72));
+  pointer-events: none;
+}
+.cover-line {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  margin: 0;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  text-shadow: 0 1px 6px rgba(11, 42, 51, 0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shop-card {
+  overflow: hidden;
+}
+.shop-card:hover {
+  transform: scale(0.98);
+}
+.shop-card:hover .shop-cover img {
+  transform: scale(1.05);
+}
+.shop-ava {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent-ink);
+  color: #fff;
+  font-weight: 800;
+  font-size: 22px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 3px solid #fff;
+  margin: -26px 0 0 12px;
+  position: relative;
+}
+.shop-card .shop-body {
+  padding-top: 8px;
+}
+.shop-body h3 {
+  overflow-wrap: anywhere;
+}
+.shop-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.voice-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.voice-badge .icon {
+  flex: none;
+}
+/* 4-column grid on laptops, 2 on phones. */
+@media (min-width: 1100px) {
+  .hp-shop-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .hp-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+.shops-chips {
+  margin: 0 0 4px;
+}
+
+/* ---- best prices: item cards in a carousel ---- */
+.best-row .pick-card {
+  width: min(240px, 68vw);
+}
+.pick-card:hover {
+  transform: scale(0.98);
+}
 .pick-best {
   position: absolute;
   left: 8px;
@@ -270,79 +472,13 @@
   flex: none;
   color: var(--accent-ink);
 }
-@media (max-width: 600px) {
-  .hp-pick-grid {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 10px;
-  }
-  .hp-pick-grid > * {
-    flex: 0 0 72%;
-    scroll-snap-align: start;
-  }
-}
-
-/* ---- 1e. shop by category ---- */
-.cat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-.cat-tile {
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 14px;
-  padding: 16px 8px 12px;
-  display: grid;
-  gap: 6px;
-  justify-items: center;
-  text-align: center;
-  text-decoration: none;
-  color: var(--ink);
-  min-width: 0;
+.pick-add {
+  width: 100%;
+  justify-content: center;
   min-height: 44px;
 }
-.cat-tile b {
-  font-size: 14px;
-  overflow-wrap: break-word;
-  min-width: 0;
-}
-.cat-tile small {
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-.cat-ic {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  border-radius: 14px;
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-}
-.cat-ic .obj,
-.cat-ic svg {
-  width: 34px;
-  height: 34px;
-}
-.cat-tile:hover .cat-ic {
-  animation: hw 0.5s ease-out;
-}
-@media (min-width: 700px) {
-  .cat-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-@media (max-width: 380px) {
-  .cat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
-/* ---- 1f/1h. markets + shops: photos, chevron, cover, avatar ---- */
+/* ---- markets: photo tiles + popular chips ---- */
 .area-tile {
   position: relative;
 }
@@ -370,121 +506,8 @@
 .choose-tile:hover .tile-ic {
   animation: hw 0.5s ease-out;
 }
-.shop-cover {
-  position: relative;
-  height: 108px;
-  background: linear-gradient(135deg, #0064e0, #00b2ff);
-  display: flex;
-  overflow: hidden;
-  border-bottom: 1px solid var(--line-2);
-}
-.shop-cover img {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  object-fit: contain;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.14);
-  display: block;
-}
-/* Task 118: only a real cover photo may use cover; the item
-   collage is always contained, padded and never cropped. */
-.shop-cover img.cov {
-  object-fit: cover;
-  padding: 0;
-  background: none;
-}
-.shop-cover .nophoto {
-  margin: auto;
-  color: #fff;
-  font-size: 40px;
-  font-weight: 800;
-}
-.shop-ava {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--accent-ink);
-  color: #fff;
-  font-weight: 800;
-  font-size: 22px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 3px solid #fff;
-  margin: -26px 0 0 12px;
-  position: relative;
-}
-.shop-card .shop-body {
-  padding-top: 8px;
-}
-.shop-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.voice-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--green);
-  font-size: 12.5px;
-  font-weight: 700;
-}
-.voice-badge .icon {
-  flex: none;
-}
 
-/* ---- 1g. matched for your basket ---- */
-.basket-card {
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 16px;
-  box-shadow: var(--shadow-card);
-  padding: 20px;
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-  min-width: 0;
-}
-.basket-line {
-  background: var(--soft);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-weight: 600;
-  margin: 0;
-  overflow-wrap: break-word;
-}
-.basket-line small {
-  display: block;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 12px;
-}
-.basket-shop {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-.basket-shop .shop-ava {
-  margin: 0;
-  border-color: var(--accent-soft);
-}
-.basket-shop-txt {
-  flex: 1;
-  min-width: 0;
-}
-.basket-shop-txt b {
-  display: block;
-  overflow-wrap: break-word;
-}
-.basket-shop-txt span {
-  color: var(--muted);
-  font-size: 13.5px;
-}
+/* ---- coverage badge (market basket plans) ---- */
 .cov-badge {
   background: var(--accent-ink);
   color: #fff;
@@ -494,65 +517,61 @@
   padding: 8px 14px;
   justify-self: start;
 }
-.basket-card .card-actions {
-  margin-top: 0;
-}
-.basket-main {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-}
-@media (min-width: 900px) {
-  .basket-card {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-  }
-  .basket-card .card-actions {
-    justify-content: flex-end;
-  }
-}
 
-/* ---- 1i. how: big light numerals; day: drawing timeline ---- */
+/* ---- how: big light numerals ---- */
 .hp-step .land-num {
   width: auto;
   height: auto;
   border-radius: 0;
   background: none;
-  color: #b9d0f2;
+  color: #9fd8d0;
   font-size: 44px;
   line-height: 1;
   letter-spacing: -0.02em;
 }
-@media (max-width: 600px) {
-  .land-day {
-    position: relative;
-    padding-left: 30px;
-    overflow: hidden;
-  }
-  html.js .land-day::before {
-    content: "";
-    position: absolute;
-    left: 41px;
-    top: 26px;
-    bottom: 26px;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--accent);
-    transform: scaleY(0);
-    transform-origin: top center;
-    transition: transform 0.6s ease-out 0.15s;
-  }
-  html.js .land-day.in::before {
-    transform: scaleY(1);
-  }
-  .land-day li {
-    position: relative;
-  }
+
+/* ---- sell band: slim dark strip (home) ---- */
+.hp-sell-band {
+  margin-top: 8px;
+}
+.sell-band-in {
+  background: #0b2a33;
+  color: #fff;
+  border-radius: 20px;
+  padding: 22px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.sell-band-ic {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.sell-band-txt {
+  flex: 1;
+  min-width: 200px;
+}
+.sell-band-txt h2 {
+  margin: 0;
+  font-size: 20px;
+  overflow-wrap: break-word;
+}
+.sell-band-txt .accent-ink {
+  color: #5eead4;
+}
+.sell-band-in .hp-more {
+  color: #7dd3fc;
 }
 
-/* ---- 1j. sellers band: phone mock-up + floating card + stars ---- */
+/* ---- sellers band: phone mock-up + floating card + stars ---- */
 .hp-sellers-band {
-  background: linear-gradient(135deg, #e7f0ff, #f7f8fa 75%);
+  background: linear-gradient(135deg, #e6faf6, #f3f8fa 75%);
   border-radius: 20px;
   padding: 28px 20px;
   position: relative;
@@ -597,7 +616,7 @@
 .sell-phone {
   width: min(270px, 100%);
   margin: 0 auto 26px;
-  background: #1b2b44;
+  background: #0b2a33;
   border-radius: 36px;
   padding: 12px;
   box-shadow: var(--shadow-lift);
@@ -659,7 +678,7 @@
   animation: bob 3.2s ease-in-out infinite;
 }
 
-/* ---- 1k. meta: model cards + animated flow ---- */
+/* ---- meta: compact model strip ---- */
 .meta-flow {
   display: grid;
   gap: 12px;
@@ -751,9 +770,9 @@
   .in .meta-dots i:nth-child(3) { animation-delay: 0.4s; }
 }
 
-/* ---- 1l. install band (honest, no store badges) ---- */
+/* ---- install band (honest, no store badges) ---- */
 .install-band {
-  background: linear-gradient(135deg, #0b1b3a, #0a2a66 60%, #0064e0);
+  background: linear-gradient(135deg, #0b2a33, #134e4a 60%, #0f766e);
   color: #fff;
   border-radius: 20px;
   padding: 26px 20px;
@@ -786,12 +805,12 @@
   height: 40px;
 }
 
-/* ---- 1m. rich footer ---- */
+/* ---- rich footer: dark teal, mint/sky accents ---- */
 .land-footer.rich {
   text-align: left;
   border-top: 0;
-  background: linear-gradient(135deg, #0b1b3a, #0a2a66);
-  color: #e4e6eb;
+  background: linear-gradient(135deg, #0b2a33, #134e4a);
+  color: #e2eaee;
   margin: 64px calc(50% - 50vw) 0;
   padding: 36px 20px 28px;
 }
@@ -827,7 +846,7 @@
   gap: 20px 16px;
 }
 .rich-col h3 {
-  color: #fff;
+  color: #5eead4;
   font-size: 14px;
   margin: 0 0 10px;
 }
@@ -839,7 +858,7 @@
   gap: 4px;
 }
 .rich-col a {
-  color: #e4e6eb;
+  color: #e2eaee;
   text-decoration: none;
   font-size: 14.5px;
   display: inline-block;
@@ -864,7 +883,7 @@
   overflow-wrap: break-word;
 }
 .rich-credit {
-  color: #a9c7ff;
+  color: #7dd3fc;
 }
 .flang {
   display: inline-flex;
@@ -886,7 +905,7 @@
 }
 .flang .on {
   background: #fff;
-  color: #0b1b3a;
+  color: #0b2a33;
   border-color: #fff;
 }
 @media (min-width: 900px) {
@@ -980,7 +999,7 @@ body.pub .card .ph img {
   height: 120px;
   border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(135deg, #0064e0, #00b2ff);
+  background: linear-gradient(135deg, #0f766e, #38bdf8);
   display: flex;
   grid-column: 1 / -1;
 }
@@ -1035,8 +1054,20 @@ body.pub .card .ph img {
   .hp-counter b {
     font-size: 22px;
   }
-  .shop-cover {
-    height: 92px;
+  .mind-circle {
+    width: 92px;
+  }
+  .mind-circle img,
+  .mind-circle .nophoto,
+  .mind-circle .mind-ic {
+    width: 76px;
+    height: 76px;
+  }
+  .top-row .shop-card {
+    width: 76vw;
+  }
+  .best-row .pick-card {
+    width: 68vw;
   }
   .hero-cover {
     height: 96px;
@@ -1048,8 +1079,6 @@ body.pub .card .ph img {
 }
 .home-mkt section,
 .pub section,
-.home-mkt .basket-card,
-.home-mkt .cat-tile,
 .home-mkt .meta-card,
 .home-mkt .install-band {
   min-width: 0;

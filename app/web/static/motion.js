@@ -87,17 +87,70 @@
       head.classList.toggle("scrolled", window.scrollY > 4);
     });
   }
+  /* Task 122: the public header compacts to 60px while scrolling
+     down and returns on scroll up. */
+  var siteHead = document.querySelector(".hp-header");
+  var lastY = window.scrollY || 0;
+  function compact() {
+    if (!siteHead) {
+      return;
+    }
+    var y = window.scrollY || 0;
+    siteHead.classList.toggle("compact", y > lastY && y > 120);
+    lastY = y;
+  }
   var ticking = false;
   window.addEventListener("scroll", function () {
     if (!ticking) {
       ticking = true;
       window.requestAnimationFrame(function () {
         shadow();
+        compact();
         ticking = false;
       });
     }
   }, { passive: true });
   shadow();
+
+  /* Task 122: one shared pill slides under the active nav link (and
+     follows hover/focus) with transform only. */
+  var nav = document.querySelector(".hp-nav");
+  var pill = nav ? nav.querySelector(".nav-pill") : null;
+  function slidePill(link) {
+    if (!pill || !nav) {
+      return;
+    }
+    var target = link || nav.querySelector("a.on")
+      || nav.querySelector("a[data-nav]");
+    if (!target) {
+      pill.hidden = true;
+      return;
+    }
+    pill.hidden = false;
+    var box = nav.getBoundingClientRect();
+    var at = target.getBoundingClientRect();
+    pill.style.width = Math.round(at.width) + "px";
+    pill.style.transform = "translateX("
+      + Math.round(at.left - box.left) + "px)";
+  }
+  if (nav && pill) {
+    Array.prototype.forEach.call(
+      nav.querySelectorAll("a[data-nav]"), function (link) {
+        link.addEventListener("mouseenter", function () {
+          slidePill(link);
+        });
+        link.addEventListener("focus", function () {
+          slidePill(link);
+        });
+      });
+    nav.addEventListener("mouseleave", function () {
+      slidePill(null);
+    });
+    window.addEventListener("resize", function () {
+      slidePill(null);
+    });
+    slidePill(null);
+  }
 
   function toast(msg) {
     if (!msg) {

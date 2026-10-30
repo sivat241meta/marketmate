@@ -16,6 +16,48 @@ from app.pipeline.units import normalize_unit, rate
 
 STALE_AFTER_HOURS = 24
 
+# Task 122: category browse wordlists (shared with the homepage "mind"
+# row, the shop-page accordion and the filter pop-up): code -> label
+# i18n key + space-separated item names (exact matches, like search).
+CATEGORIES: dict[str, tuple[str, str]] = {
+    "veg": ("hp.tab_veg",
+            ("tomato onion potato brinjal carrot beans cabbage "
+             "cauliflower okra peas radish beetroot chilli chillies "
+             "garlic ginger drumstick pumpkin gourd cucumber capsicum "
+             "corn mushroom ladyfinger yam colocasia")),
+    "fruit": ("hp.tab_fruit",
+              ("banana mango apple orange papaya guava grapes pineapple "
+               "watermelon lemon lime pomegranate jackfruit sapota "
+               "custard plum peach pear berries strawberry")),
+    "greens": ("hp.tab_greens",
+               ("greens keerai spinach coriander mint curry fenugreek "
+                "amaranth agathi ponnanganni mudakathan manathakkali "
+                "araikeerai mulaikeerai")),
+    "flowers": ("v12.cat_flowers",
+                ("flower flowers jasmine rose malli lotus lily "
+                 "chrysanthemum dahlia tuberose mullai sampangi "
+                 "kanakambaram")),
+    "coconut": ("v12.cat_coconut",
+                "coconut banana plantain poovan nendran robusta monthan"),
+    "grocery": ("v12.cat_grocery",
+                ("rice dal oil sugar salt flour wheat atta rava tamarind "
+                 "jaggery pulses lentils tea coffee masala turmeric "
+                 "cumin pepper toor urad moong chana groundnut")),
+}
+
+_CATEGORY_WORDS: dict[str, str] = {
+    word: code
+    for code, (_label, words) in CATEGORIES.items()
+    for word in words.split()
+}
+
+
+def category_of(name_en: str | None) -> str:
+    """Category code for an item name, ``"other"`` when unknown."""
+    if not name_en:
+        return "other"
+    return _CATEGORY_WORDS.get(name_en.strip().lower(), "other")
+
 
 @dataclass
 class Want:

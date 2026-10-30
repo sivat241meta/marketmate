@@ -18,7 +18,8 @@ Colour pairs (left, right):
   B  green + orange     #1FA34A + #F28C28
   C  navy + green       #1B2A5C + #1FA34A
   D  purple + orange    #5F55EE + #F28C28
-  E  meta blue + green  #0866FF + #1FA34A  (default; "Market" in #0064E0)
+  E  meta blue + green  #0866FF + #1FA34A  ("Market" in #0064E0)
+  F  teal + soft blue   #0F766E + #38BDF8  (default; "Market" in #0F766E)
 
 Outputs (all under app/web/static/brand/):
   logo.svg, mark.svg, mark-dark.svg (lighter left leaf for #1E1F21 chrome),
@@ -61,23 +62,27 @@ PAIRS: dict[str, tuple[str, str]] = {
     "B": ("#1FA34A", "#F28C28"),  # green + orange
     "C": ("#1B2A5C", "#1FA34A"),  # navy + green
     "D": ("#5F55EE", "#F28C28"),  # purple + orange
-    "E": ("#0866FF", "#1FA34A"),  # meta blue + green (default)
+    "E": ("#0866FF", "#1FA34A"),  # meta blue + green
+    "F": ("#0F766E", "#38BDF8"),  # teal + soft blue (default)
 }
 # Wordmark "Market" colour: the pair's left colour, except pair E where the
 # leaf stays Meta blue #0866FF but the wordmark uses the deeper #0064E0.
 WORD_LEFT: dict[str, str] = {
     "E": "#0064E0",
+    "F": "#0F766E",
 }
-# Left leaf on the dark seller chrome (#1E1F21): purple #5F55EE is only
-# 3.3:1 there, so the dark variant uses lighter purple; navy would vanish
-# (1.2:1) so pair C gets a lightened navy; green (5.1:1) stays as is.
-# Meta blue #0866FF is 3.4:1 there, so pair E uses #4D9BFF (5.9:1).
+# Left leaf on the dark chrome (#0B2A33): purple #5F55EE is weak there,
+# so the dark variant uses lighter purple; navy would vanish (1.2:1) so
+# pair C gets a lightened navy; green (5.1:1) stays as is. Meta blue
+# #0866FF is weak there, so pair E uses #4D9BFF; teal #0F766E is weak
+# too, so pair F uses the dark accent #5EEAD4 (10.2:1).
 DARK_LEFT: dict[str, str] = {
     "A": "#7B68EE",
     "B": "#1FA34A",
     "C": "#6C7FD8",
     "D": "#7B68EE",
     "E": "#4D9BFF",
+    "F": "#5EEAD4",
 }
 INK = "#292D34"  # candidate "Market" colour (kept for reference)
 
@@ -317,7 +322,7 @@ def lockup_svg(left: str, right: str, word_left: str | None = None) -> str:
     return _svg_doc(lay["w"], lay["h"], vb, grp + wm)
 
 
-def write_svgs(pair: str = "E") -> None:
+def write_svgs(pair: str = "F") -> None:
     BRAND_DIR.mkdir(parents=True, exist_ok=True)
     left, right = PAIRS[pair]
     word_left = WORD_LEFT.get(pair, left)
@@ -411,7 +416,7 @@ def render_lockup(height: int, left: str, right: str,
     return _downscale(img, (width, height))
 
 
-def write_pngs(pair: str = "E") -> None:
+def write_pngs(pair: str = "F") -> None:
     BRAND_DIR.mkdir(parents=True, exist_ok=True)
     left, right = PAIRS[pair]
     word_left = WORD_LEFT.get(pair, left)
@@ -440,8 +445,8 @@ def write_pngs(pair: str = "E") -> None:
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description="Regenerate MarketMate brand assets.")
-    ap.add_argument("--pair", choices=sorted(PAIRS), default="E",
-                    help="colour pair (default E: meta blue + green)")
+    ap.add_argument("--pair", choices=sorted(PAIRS), default="F",
+                    help="colour pair (default F: teal + soft blue)")
     args = ap.parse_args(argv)
     write_svgs(args.pair)
     write_pngs(args.pair)

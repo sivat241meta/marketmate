@@ -440,14 +440,18 @@ def test_home_credit_and_lost_link(tmp_path):
     client = make_client(tmp_path)
     html = client.get("/").text
     assert "Built with Muse Code" in html
+    assert t_for("en")("home.lost_title") not in html
+    html = client.get("/sellers").text
     assert "Lost your link?" in html
     client.cookies.set("ui_lang", "ta")
     html = client.get("/").text
     assert t_for("ta")("land.meta_code") in html
+    html = client.get("/sellers").text
     assert t_for("ta")("home.lost_title") in html
     client.cookies.set("ui_lang", "hi")
     html = client.get("/").text
     assert t_for("hi")("land.meta_code") in html
+    html = client.get("/sellers").text
     assert t_for("hi")("home.lost_title") in html
 
 

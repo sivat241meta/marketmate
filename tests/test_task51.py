@@ -168,24 +168,26 @@ def test_meta_blue_fonts_gone_and_unreferenced():
 def test_css_fresh_green_tokens():
     # Task 64 re-themed the app to v9 (workspace x fresh grid); the Fresh
     # Green tokens were replaced. Task 105 re-themed v11 to Meta blue.
-    # This test now pins the v11 tokens.
+    # Task 122 re-themed v12 to teal green + soft blue.
+    # This test now pins the v12 tokens.
     css = CSS.read_text()
     for token, value in (
-        ("--ink", "#1C2B33"), ("--ink2", "#3C4048"),
-        ("--muted", "#65676B"), ("--line", "#E4E6EB"),
-        ("--soft", "#F0F2F5"), ("--bg", "#F7F8FA"),
+        ("--ink", "#102A33"), ("--ink2", "#3C4048"),
+        ("--muted", "#56707A"), ("--line", "#E2EAEE"),
+        ("--soft", "#F0F2F5"), ("--bg", "#F3F8FA"),
         ("--surface", "#FFFFFF"),
-        ("--chrome", "#1E1F21"), ("--chrome-2", "#2C2D31"),
-        ("--chrome-line", "#3A3B40"), ("--chrome-txt", "#C8CCD3"),
-        ("--chrome-on", "#1B2B44"), ("--chrome-accent", "#4D9BFF"),
-        ("--accent", "#0866FF"), ("--accent-ink", "#0064E0"),
-        ("--accent-soft", "#E7F0FF"),
+        ("--chrome", "#0B2A33"), ("--chrome-2", "#123A44"),
+        ("--chrome-line", "#1E4A55"), ("--chrome-txt", "#C8CCD3"),
+        ("--chrome-on", "#134E4A"), ("--chrome-accent", "#5EEAD4"),
+        ("--accent", "#0F766E"), ("--accent-ink", "#115E59"),
+        ("--accent-soft", "#E6FAF6"), ("--accent-bright", "#14B8A6"),
         ("--green", "#0F7F3F"), ("--green-soft", "#E8F7EE"),
         ("--amber", "#8A5208"), ("--amber-soft", "#FFF5E3"),
         ("--red", "#C4363B"), ("--red-soft", "#FDECEC"),
-        ("--blue", "#1F5FBF"), ("--blue-soft", "#EAF2FF"),
+        ("--blue", "#0369A1"), ("--blue-soft", "#E8F4FD"),
+        ("--sky", "#38BDF8"),
         ("--avatar-0", "#C2337A"), ("--avatar-1", "#1F5FBF"),
-        ("--avatar-2", "#0F7F3F"), ("--avatar-3", "#0064E0"),
+        ("--avatar-2", "#0F7F3F"), ("--avatar-3", "#0F766E"),
         ("--avatar-4", "#8A5208"),
         ("--r-card", "14px"), ("--r-pill", "999px"),
     ):
@@ -473,7 +475,7 @@ def test_shell_strings_translated(tmp_path):
 def test_manifest_and_theme_color(tmp_path):
     client = _client(tmp_path)
     body = client.get("/manifest.webmanifest").json()
-    assert body["theme_color"] == "#1E1F21"
-    assert body["background_color"] == "#FAFBFC"
+    assert body["theme_color"] == "#0B2A33"
+    assert body["background_color"] == "#F3F8FA"
     html = client.get("/").text
-    assert 'name="theme-color"' in html and "#1E1F21" in html
+    assert 'name="theme-color"' in html and "#0B2A33" in html

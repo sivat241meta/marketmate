@@ -5,25 +5,8 @@
 (function () {
   "use strict";
 
-  function initMenu() {
-    var btn = document.querySelector("[data-menu-open]");
-    var sheet = document.getElementById("mobile-nav");
-    if (!btn || !sheet || btn.dataset.mmBound) {
-      return;
-    }
-    btn.dataset.mmBound = "1";
-    btn.addEventListener("click", function () {
-      var open = sheet.hidden;
-      sheet.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    sheet.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        sheet.hidden = true;
-        btn.setAttribute("aria-expanded", "false");
-      });
-    });
-  }
+  /* Task 122: the phone menu sheet is owned by popups.js (loaded on
+     every public page through the shared header). */
 
   function initTabs() {
     document.querySelectorAll("form.hp-search").forEach(function (form) {
@@ -93,10 +76,52 @@
     });
   }
 
+  /* Task 122: market result tabs (Best basket / Shops / Items).
+     Without JS every panel stays visible; with JS the first panel
+     with content is shown and tabs switch between them. */
+  function initMarketTabs() {
+    var tabs = document.querySelectorAll("[data-mtab]");
+    if (!tabs.length) {
+      return;
+    }
+    var panels = {};
+    document.querySelectorAll("[data-mtab-panel]").forEach(function (panel) {
+      panels[panel.getAttribute("data-mtab-panel")] = panel;
+    });
+    function show(name) {
+      tabs.forEach(function (tab) {
+        var on = tab.getAttribute("data-mtab") === name;
+        tab.classList.toggle("on", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      Object.keys(panels).forEach(function (key) {
+        panels[key].hidden = key !== name;
+      });
+    }
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var name = tab.getAttribute("data-mtab");
+        if (panels[name]) {
+          show(name);
+        }
+      });
+    });
+    var first = null;
+    tabs.forEach(function (tab) {
+      var name = tab.getAttribute("data-mtab");
+      if (!first && panels[name] && !panels[name].hidden) {
+        first = name;
+      }
+    });
+    if (first) {
+      show(first);
+    }
+  }
+
   function init() {
-    initMenu();
     initTabs();
     initVoicePanel();
+    initMarketTabs();
   }
 
   if (typeof document !== "undefined" && document) {

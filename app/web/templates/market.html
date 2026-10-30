@@ -2,6 +2,7 @@
 {% import "_ui.html" as ui %}
 {% import "_v11.html" as v11 %}
 {% set _L = ui_lang|default('en') %}
+{% set _ph_popups = "loc,search,filter" %}
 {% block title %}Find prices — MarketMate{% endblock %}
 {% block body_class %}pub{% endblock %}
 {% block content %}
@@ -13,6 +14,10 @@
     <p class="lead">{{ t('pub.market_sub') }}</p>
   </div>
 </div>
+
+{% if q or cat_label %}
+<p><button type="button" class="mkt-pill" data-search-open aria-haspopup="dialog" aria-label="{{ t('v12.edit_search') }}: {{ q or cat_label }}">{{ ui.obj("search", 20) }}<span>{{ q or cat_label }}</span><span aria-hidden="true">▾</span></button></p>
+{% endif %}
 
 <form id="search" class="hp-search" method="get" action="/market" aria-label="{{ t('hp.search') }}">
   <div class="hp-tabs" role="tablist" aria-label="{{ t('hp.what') }}">
@@ -85,7 +90,15 @@
 {% endif %}
 
 {% if searched %}
-<section class="pub-sec" aria-label="{{ t('market.all_areas') }}">
+<section class="pub-sec" aria-label="{{ t('v12.filters') }}">
+  <p class="chip-row mkt-chips">
+    <button type="button" class="chip" data-filter-open aria-haspopup="dialog">{{ ui.obj("tag", 20) }}<span>{{ t('v12.filters') }}</span><span class="nbadge" data-filter-count hidden></span></button>
+  </p>
+  <div class="mkt-tabs" role="tablist" aria-label="{{ t('market.headline_a') }}">
+    <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="basket">{{ t('v12.tab_basket') }}</button>
+    <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="shops">{{ t('v12.tab_shops') }}</button>
+    <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="items">{{ t('v12.tab_items') }}</button>
+  </div>
   <form method="get" action="/market" class="filters" data-filters>
     <input type="hidden" name="q" value="{{ q or '' }}">
     {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
@@ -101,8 +114,9 @@
       </label>
       <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
       <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
-        <a data-sort="total"{% if sort != "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
+        <a data-sort="total"{% if sort != "distance" and sort != "items" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
         <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_distance') }}</a>
+        <a data-sort="items"{% if sort == "items" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=items{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('v12.sort_items') }}</a>
       </span>
       <span class="pin-wrap">
         <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
@@ -121,7 +135,7 @@
 {% endif %}
 
 {% if basket %}
-<section class="pub-sec" aria-label="Basket">
+<section class="pub-sec" id="mkt-basket" data-mtab-panel="basket" aria-label="{{ t('v12.tab_basket') }}">
   <div class="hp-sec-head">
     <div>
       {% if basket.budget %}
@@ -188,6 +202,39 @@
 </section>
 {% endif %}
 
+{% if rows %}
+{% set _ms = namespace(seen={}, order=[]) %}
+{% for row in rows %}
+{% if row.slug not in _ms.seen %}
+{% set _ = _ms.seen.update({row.slug: {'name': row.shop_name, 'area': row.area, 'cover': row.cover_url, 'open': row.open_state, 'ot': row.open_time, 'demo': row.is_demo, 'n': 1, 'min': row.price, 'cur': row.currency}}) %}
+{% set _ = _ms.order.append(row.slug) %}
+{% else %}
+{% set _e = _ms.seen[row.slug] %}
+{% set _ = _ms.seen.update({row.slug: {'name': _e.name, 'area': _e.area, 'cover': _e.cover, 'open': _e.open, 'ot': _e.ot, 'demo': _e.demo, 'cur': _e.cur, 'n': _e.n + 1, 'min': row.price if row.price|float < _e.min|float else _e.min}}) %}
+{% endif %}
+{% endfor %}
+<section class="pub-sec" id="mkt-shops" data-mtab-panel="shops" aria-label="{{ t('v12.tab_shops') }}">
+  <div class="results-grid">
+  {% for slug in _ms.order %}
+  {% set s = _ms.seen[slug] %}
+  <div class="mkt-shop">
+    {% if s.cover %}<img class="res-thumb" src="{{ s.cover }}" alt="" loading="lazy" width="52" height="52">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
+    <div class="mkt-shop-main">
+      <h3><a href="/s/{{ slug }}">{{ s.name }}</a>{% if s.demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}</h3>
+      <small class="muted">{{ s.area }} · {{ s.n }} {{ t('hp.price', count=s.n) }} · {{ t('market.best') }} {{ s.min | money(s.cur) }}</small>
+      {% if s.open == "open" %}<p><span class="pill pill-live" data-open-chip>{% if s.ot %}{{ t('hours.open_now', time=s.ot) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
+      {% elif s.open == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if s.ot %}{{ t('hours.closed', time=s.ot) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
+    </div>
+    <p class="card-actions">
+      <a class="pill ghost sm" href="/s/{{ slug }}">{{ t('market.open_shop') }}</a>
+      <a class="pill cta sm" href="/s/{{ slug }}/quote">{{ t('market.order_items') }}</a>
+    </p>
+  </div>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {% if market_empty %}
 <section class="card hp-empty empty-market">
   {{ ui.obj("search", 56) }}
@@ -204,7 +251,7 @@
 </section>
 {% endif %}
 {% if groups %}
-<section class="pub-sec" aria-label="{{ t('market.headline_a') }}">
+<section class="pub-sec" id="mkt-items" data-mtab-panel="items" aria-label="{{ t('market.headline_a') }}">
   <div class="results-grid">
   {% for group in groups %}
   <div class="card result-card" data-reveal data-shop-list>
@@ -215,6 +262,7 @@
       {% if row.cover_url %}<img class="res-thumb" src="{{ row.cover_url }}" alt="" loading="lazy" width="68" height="68">{% else %}<span class="res-ava">{{ ui.obj("store", 20) }}</span>{% endif %}
       <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
       <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
+      <a class="pill cta sm mkt-add" href="/s/{{ row.slug }}">{{ t('shop.add') }}</a>
     </div>
     {% if row.is_demo %}<p class="muted"><small>{{ row.rel }}</small></p>{% else %}<p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>{% endif %}
     </div>

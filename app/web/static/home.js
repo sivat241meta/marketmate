@@ -1,15 +1,12 @@
-// Marketplace homepage (Task 84): search tabs, mobile nav, area chooser.
+// Marketplace homepage (Task 84, v12 Task 122): hearts, carousels,
+// last search. The area chooser, phone menu and pop-ups moved to
+// popups.js; the nearest-area math stays here for the node test.
 //
 // PRIVACY: the customer's coordinates never leave this phone. This file
-// makes no network calls at all (no fetch, no XHR, no beacons); the
-// "Detect my location" button only reads the area coordinates already
-// rendered in data attributes and picks the nearest area in the browser.
-// The choice is remembered in localStorage and applied as ?area=.
+// makes no network calls at all (no fetch, no XHR, no beacons).
 
 (function () {
   "use strict";
-
-  var STORE_KEY = "mm_home_area";
 
   function toRad(deg) {
     return (deg * Math.PI) / 180;
@@ -61,269 +58,7 @@
     return;
   }
 
-  function remember(value) {
-    try {
-      if (window.localStorage) {
-        window.localStorage.setItem(STORE_KEY, value);
-      }
-    } catch (err) { /* private mode: the choice just isn't kept */ }
-  }
-
-  function recalled() {
-    try {
-      return window.localStorage
-        ? window.localStorage.getItem(STORE_KEY)
-        : null;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function goArea(name) {
-    remember(name);
-    window.location.assign("/?area=" + encodeURIComponent(name));
-  }
-
-  function currentAreaParam() {
-    try {
-      return new URLSearchParams(window.location.search).get("area") || "";
-    } catch (err) {
-      return "";
-    }
-  }
-
-  function optionAreas(select) {
-    var out = [];
-    select.querySelectorAll("option[value]").forEach(function (opt) {
-      if (!opt.value || opt.value === select.getAttribute("data-near-me")) {
-        return;
-      }
-      out.push({
-        name: opt.value,
-        lat: opt.getAttribute("data-lat"),
-        lng: opt.getAttribute("data-lng"),
-      });
-    });
-    return out;
-  }
-
-  function tileAreas(root) {
-    var out = [];
-    root.querySelectorAll("[data-pick]").forEach(function (tile) {
-      out.push({
-        name: tile.getAttribute("data-pick"),
-        lat: tile.getAttribute("data-area-lat"),
-        lng: tile.getAttribute("data-area-lng"),
-      });
-    });
-    return out;
-  }
-
-  function locate(success, failure) {
-    if (!navigator.geolocation) {
-      failure();
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        success(pos.coords.latitude, pos.coords.longitude);
-      },
-      function () { failure(); },
-      { timeout: 8000, maximumAge: 600000 },
-    );
-  }
-
-  function initTabs(form) {
-    var input = form.querySelector("#hp-q");
-    var tabs = form.querySelectorAll(".hp-tab[data-ph]");
-    tabs.forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        tabs.forEach(function (other) {
-          var on = other === tab;
-          other.classList.toggle("on", on);
-          other.setAttribute("aria-selected", on ? "true" : "false");
-        });
-        if (input) {
-          input.placeholder = tab.getAttribute("data-ph") || "";
-          input.focus();
-        }
-      });
-    });
-  }
-
-  function initMenu() {
-    var btn = document.querySelector("[data-menu-open]");
-    var sheet = document.getElementById("mobile-nav");
-    if (!btn || !sheet) {
-      return;
-    }
-    btn.addEventListener("click", function () {
-      var open = sheet.hidden;
-      sheet.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    sheet.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        sheet.hidden = true;
-        btn.setAttribute("aria-expanded", "false");
-      });
-    });
-  }
-
-  function initChooser() {
-    var modal = document.getElementById("area-chooser");
-    if (!modal) {
-      return;
-    }
-    var openers = document.querySelectorAll("[data-chooser-open]");
-    var search = modal.querySelector("[data-chooser-search]");
-    var tiles = Array.prototype.slice.call(
-      modal.querySelectorAll("[data-pick]"));
-    var noMatch = modal.querySelector("[data-no-match]");
-    var detectBtn = modal.querySelector("[data-detect]");
-    var detectMsg = modal.querySelector("[data-detect-msg]");
-
-    function open() {
-      modal.hidden = false;
-      if (search) {
-        search.value = "";
-        filter("");
-        search.focus();
-      }
-    }
-    function close() {
-      modal.hidden = true;
-    }
-    function filter(text) {
-      var needle = text.trim().toLowerCase();
-      var visible = 0;
-      tiles.forEach(function (tile) {
-        var name = tile.getAttribute("data-name-lower") || "";
-        var show = !needle || name.indexOf(needle) !== -1;
-        tile.hidden = !show;
-        if (show) {
-          visible += 1;
-        }
-      });
-      if (noMatch) {
-        noMatch.hidden = visible !== 0;
-      }
-    }
-
-    openers.forEach(function (btn) {
-      btn.addEventListener("click", open);
-    });
-    modal.querySelectorAll("[data-close]").forEach(function (btn) {
-      btn.addEventListener("click", close);
-    });
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) {
-        close();
-      }
-    });
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && !modal.hidden) {
-        close();
-      }
-    });
-    if (search) {
-      search.addEventListener("input", function () {
-        filter(search.value);
-      });
-    }
-    tiles.forEach(function (tile) {
-      tile.addEventListener("click", function () {
-        goArea(tile.getAttribute("data-pick") || "");
-      });
-    });
-    modal.querySelectorAll("[data-skip]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        remember("all");
-        close();
-      });
-    });
-    if (detectBtn) {
-      detectBtn.addEventListener("click", function () {
-        var idle = detectBtn.innerHTML;
-        detectBtn.disabled = true;
-        detectBtn.textContent = detectBtn.getAttribute("data-detecting")
-          || "…";
-        if (detectMsg) {
-          detectMsg.hidden = true;
-        }
-        locate(
-          function (lat, lng) {
-            var name = nearestArea(tileAreas(modal), lat, lng);
-            detectBtn.disabled = false;
-            detectBtn.innerHTML = idle;
-            if (name) {
-              goArea(name);
-            } else if (detectMsg) {
-              detectMsg.textContent = detectBtn.getAttribute("data-fail")
-                || "";
-              detectMsg.hidden = false;
-            }
-          },
-          function () {
-            detectBtn.disabled = false;
-            detectBtn.innerHTML = idle;
-            if (detectMsg) {
-              detectMsg.textContent = detectBtn.getAttribute("data-fail")
-                || "";
-              detectMsg.hidden = false;
-            }
-          },
-        );
-      });
-    }
-
-    // First visit (no area chosen yet): open the chooser. A remembered
-    // choice is applied as ?area=; an explicit ?area= wins and is kept.
-    var param = currentAreaParam().trim();
-    if (param) {
-      remember(param);
-    } else {
-      var known = recalled();
-      if (known && known !== "all") {
-        window.location.assign("/?area=" + encodeURIComponent(known));
-      } else if (!known && tiles.length) {
-        open();
-      }
-    }
-  }
-
-  function initNearMe() {
-    var select = document.getElementById("hp-area");
-    var form = document.getElementById("search");
-    if (!select || !form) {
-      return;
-    }
-    var nearValue = select.getAttribute("data-near-me") || "nearme";
-    select.addEventListener("change", function () {
-      if (select.value !== nearValue) {
-        return;
-      }
-      select.disabled = true;
-      locate(
-        function (lat, lng) {
-          select.disabled = false;
-          var name = nearestArea(optionAreas(select), lat, lng);
-          if (name) {
-            select.value = name;
-          } else {
-            select.value = "";
-          }
-        },
-        function () {
-          select.disabled = false;
-          select.value = "";
-        },
-      );
-    });
-  }
-
-  // Task 115: hearts (My list), hero rotating word, last search +
-  // basket match. Local only: no network calls, ever.
+  // Task 115: hearts (My list) + last search. Local only.
   var SAVE_KEY = "mm_saved_list";
   var LASTQ_KEY = "mm_last_q";
 
@@ -381,167 +116,146 @@
     });
   }
 
-  function initRot() {
-    var el = document.querySelector("[data-rot]");
-    if (!el) {
-      return;
-    }
-    var words = [];
-    try {
-      words = JSON.parse(el.getAttribute("data-words") || "[]");
-    } catch (err) {
-      words = [];
-    }
-    if (words.length < 2) {
-      return;
-    }
-    if (window.matchMedia && window.matchMedia(
-      "(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    var i = 0;
-    window.setInterval(function () {
-      if (document.hidden) {
+  function initLastQ() {
+    document.querySelectorAll("form[data-search-form]").forEach(
+      function (form) {
+        form.addEventListener("submit", function () {
+          var input = form.querySelector("input[name=\"q\"]");
+          try {
+            if (input && window.localStorage) {
+              window.localStorage.setItem(LASTQ_KEY, input.value || "");
+            }
+          } catch (err) { /* private mode: nothing remembered */ }
+        });
+      });
+  }
+
+  // Task 122: carousels — arrow buttons scroll one card, dots track
+  // pages and jump. Transform-free (native scroll + snap); the dots
+  // are plain buttons, so no-JS users still swipe.
+  function initCarousels() {
+    var reduce = window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll("[data-carousel]").forEach(function (box) {
+      if (box.dataset.mmBound) {
         return;
       }
-      el.classList.add("fade");
-      window.setTimeout(function () {
-        i = (i + 1) % words.length;
-        el.textContent = words[i];
-        el.classList.remove("fade");
-      }, 260);
-    }, 2800);
-  }
-
-  function initLastQ() {
-    document.querySelectorAll("form.hp-search").forEach(function (form) {
-      form.addEventListener("submit", function () {
-        var input = form.querySelector("input[name=\"q\"]");
-        try {
-          if (input && window.localStorage) {
-            window.localStorage.setItem(LASTQ_KEY, input.value || "");
-          }
-        } catch (err) { /* private mode: nothing remembered */ }
-      });
-    });
-  }
-
-  function wantOf(chunk) {
-    var stop = { kg: 1, g: 1, gram: 1, grams: 1, dozen: 1, pc: 1,
-      pcs: 1, piece: 1, bunch: 1, bunches: 1, kilo: 1, kilos: 1,
-      ltr: 1, litre: 1, ml: 1 };
-    var toks = chunk.toLowerCase()
-      .replace(/[^a-z\u0b80-\u0bff\u0900-\u097f ]/g, " ")
-      .split(/\s+/);
-    for (var i = 0; i < toks.length; i++) {
-      if (toks[i].length > 1 && !stop[toks[i]]) {
-        return toks[i];
-      }
-    }
-    return "";
-  }
-
-  function initBasket() {
-    var line = document.querySelector("[data-basket-line]");
-    var badge = document.querySelector("[data-basket-badge]");
-    if (!line || !badge) {
-      return;
-    }
-    var last = null;
-    try {
-      last = window.localStorage
-        ? window.localStorage.getItem(LASTQ_KEY)
+      box.dataset.mmBound = "1";
+      var scope = box.parentNode || document;
+      var prev = scope.querySelector
+        ? scope.querySelector("[data-prev]")
         : null;
-    } catch (err) {
-      return;
-    }
-    if (!last || !last.trim()) {
-      return;
-    }
-    var wants = last.split(/[,;]+/).map(wantOf).filter(function (w) {
-      return w !== "";
-    });
-    if (!wants.length) {
-      return;
-    }
-    var cards = document.querySelectorAll(".pick-card[data-name-en]");
-    if (!cards.length) {
-      return;
-    }
-    var byShop = {};
-    wants.forEach(function (want) {
-      cards.forEach(function (card) {
-        var name = (card.getAttribute("data-name-en") || "")
-          .toLowerCase();
-        if (!name || name.indexOf(want) === -1) {
-          return;
+      var next = scope.querySelector
+        ? scope.querySelector("[data-next]")
+        : null;
+      var dots = scope.querySelector
+        ? scope.querySelector("[data-dots]")
+        : null;
+
+      function step() {
+        var card = box.querySelector(":scope > *");
+        if (!card) {
+          return box.clientWidth;
         }
-        var slug = card.getAttribute("data-slug") || "";
-        if (!slug) {
-          return;
-        }
-        if (!byShop[slug]) {
-          byShop[slug] = {
-            n: 0,
-            seen: {},
-            name: card.getAttribute("data-shop") || "",
-          };
-        }
-        if (!byShop[slug].seen[want]) {
-          byShop[slug].seen[want] = 1;
-          byShop[slug].n += 1;
-        }
-      });
-    });
-    var best = null;
-    var bestN = 0;
-    Object.keys(byShop).forEach(function (slug) {
-      if (byShop[slug].n > bestN) {
-        bestN = byShop[slug].n;
-        best = slug;
+        var gap = 12;
+        try {
+          var cs = window.getComputedStyle(box);
+          gap = parseFloat(cs.columnGap || cs.gap || "12") || 12;
+        } catch (err) { /* default gap */ }
+        return card.offsetWidth + gap;
       }
-    });
-    if (!best) {
-      return;
-    }
-    var label = line.querySelector("small");
-    Array.prototype.slice.call(line.childNodes).forEach(function (node) {
-      if (node !== label) {
-        line.removeChild(node);
+
+      function pages() {
+        if (!box.scrollWidth || !box.clientWidth) {
+          return 1;
+        }
+        return Math.max(1, Math.round(
+          box.scrollWidth / box.clientWidth));
       }
+
+      function current() {
+        if (!box.clientWidth) {
+          return 0;
+        }
+        return Math.min(pages() - 1, Math.round(
+          box.scrollLeft / box.clientWidth));
+      }
+
+      function paint() {
+        if (prev) {
+          prev.disabled = box.scrollLeft <= 2;
+        }
+        if (next) {
+          next.disabled = box.scrollLeft + box.clientWidth
+            >= box.scrollWidth - 2;
+        }
+        if (dots) {
+          var n = pages();
+          var at = current();
+          var kids = dots.children;
+          if (kids.length !== n) {
+            dots.innerHTML = "";
+            for (var i = 0; i < n; i++) {
+              (function (page) {
+                var dot = document.createElement("button");
+                dot.type = "button";
+                dot.className = "cdot";
+                dot.setAttribute("aria-label", "Page " + (page + 1));
+                dot.addEventListener("click", function () {
+                  box.scrollTo({
+                    left: page * box.clientWidth,
+                    behavior: reduce ? "auto" : "smooth",
+                  });
+                });
+                dots.appendChild(dot);
+              })(i);
+            }
+            kids = dots.children;
+          }
+          Array.prototype.forEach.call(kids, function (dot, i) {
+            var on = i === at;
+            dot.classList.toggle("on", on);
+            if (on) {
+              dot.setAttribute("aria-current", "true");
+            } else {
+              dot.removeAttribute("aria-current");
+            }
+          });
+          dots.hidden = n < 2;
+        }
+      }
+
+      function go(dir) {
+        box.scrollBy({
+          left: dir * step(),
+          behavior: reduce ? "auto" : "smooth",
+        });
+      }
+
+      if (prev) {
+        prev.addEventListener("click", function () { go(-1); });
+      }
+      if (next) {
+        next.addEventListener("click", function () { go(1); });
+      }
+      var ticking = false;
+      box.addEventListener("scroll", function () {
+        if (!ticking) {
+          ticking = true;
+          window.requestAnimationFrame(function () {
+            paint();
+            ticking = false;
+          });
+        }
+      }, { passive: true });
+      window.addEventListener("resize", paint);
+      paint();
     });
-    line.appendChild(document.createTextNode(last.trim() + " …"));
-    var full = badge.getAttribute("data-full") || "";
-    var part = badge.getAttribute("data-part") || "";
-    badge.textContent = bestN === wants.length
-      ? full
-      : part.split("{n}").join(String(bestN))
-        .split("{m}").join(String(wants.length));
-    var shopEl = document.querySelector("[data-basket-shop]");
-    if (shopEl) {
-      shopEl.textContent = byShop[best].name;
-    }
-    var view = document.querySelector("[data-basket-view]");
-    if (view) {
-      view.setAttribute("href", "/s/" + best);
-    }
-    var quote = document.querySelector("[data-basket-quote]");
-    if (quote) {
-      quote.setAttribute("href", "/s/" + best + "/quote");
-    }
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    var form = document.getElementById("search");
-    if (form) {
-      initTabs(form);
-    }
-    initMenu();
-    initChooser();
-    initNearMe();
     initHearts();
-    initRot();
     initLastQ();
-    initBasket();
+    initCarousels();
   });
 })();

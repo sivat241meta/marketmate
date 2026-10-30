@@ -15,7 +15,7 @@ import html as htmlmod
 import re
 from pathlib import Path
 
-from test_task84 import _home, _section, make_client, seed_market
+from test_task84 import _home, make_client, seed_market
 
 from app import db
 from app.web.i18n import t_for
@@ -94,7 +94,8 @@ def test_thin_strip_real_shop_keeps_said_today(tmp_path):
 
 
 def _hero(client, lang="en"):
-    return _section(_home(client, lang), "hero", "banner")
+    # Task 122: counters live in their own strip after the header.
+    return _home(client, lang)
 
 
 def test_counters_count_only_real_prices_with_sample_note(tmp_path):

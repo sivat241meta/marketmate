@@ -5,7 +5,7 @@ import re
 import sqlite3
 import subprocess
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote as url_quote
@@ -42,6 +42,7 @@ from app.languages import (
     shop_form_languages,
 )
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
+from app.market.search import category_of
 from app.meta.sam import SamError
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
@@ -2116,10 +2117,17 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         min_price = price
                     if max_price is None or price > max_price:
                         max_price = price
+                clip_file = (db.media_path(data_dir, item.proof.audio_clip)
+                             if item.proof else None)
+                has_clip = bool(clip_file is not None and clip_file.is_file())
                 rows.append({
                     "name": f"{name} ({item.variety})" if item.variety else name,
                     "name_local": item.name_local,
                     "name_en": item.name_en,
+                    "has_clip": has_clip,
+                    "clip_url": (f"/s/{shop['slug']}/voice/{item.id}"
+                                 if has_clip else ""),
+                    "cat": category_of(item.name_en),
                     "tile": first_grapheme(item.name_local or name),
                     "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
@@ -2200,8 +2208,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "cover_url": _photo_url(db.shop_cover(other)),
                 })
         cover = db.shop_cover(shop)
+        try:
+            priced = [row for row in rows
+                      if row["price"] and not row["sold_out"]]
+            best_rows = sorted(
+                priced, key=lambda row: Decimal(row["price"]))[:5]
+        except (InvalidOperation, ValueError):
+            best_rows = [row for row in rows if row["price"]][:5]
         return templates.TemplateResponse(request, "shop.html", {
-            "shop": shop, "rows": rows, "rel": rel, "digits": digits,
+            "shop": shop, "rows": rows, "best_rows": best_rows,
+            "rel": rel, "digits": digits,
             "share_url": share_url,
             "lang": language, "shop_lang": shop_lang,
             "shop_native": shop_native, "t": strings,
@@ -2215,6 +2231,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "has_hours": has_hours(hours_raw),
             "nearby": nearby,
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
+
+    @app.get("/s/{slug}/voice/{item_id}")
+    def public_voice_clip(slug: str, item_id: int, conn: Conn):
+        """One price's voice proof, from the published list only."""
+        shop = conn.execute("SELECT * FROM shops WHERE slug = ?",
+                            (slug,)).fetchone()
+        if shop is None:
+            raise HTTPException(404, "unknown shop")
+        if shop["is_demo"] and not sample_shops_enabled(
+                app.state.settings):
+            raise HTTPException(404, "unknown shop")
+        version_id = db.latest_version(conn, shop["id"], published_only=True)
+        items = (db.version_items(conn, version_id)
+                 if version_id is not None else [])
+        item = next((it for it in items if it.id == item_id), None)
+        if item is None:
+            raise HTTPException(404, "no such item")
+        clip = (db.media_path(data_dir, item.proof.audio_clip)
+                if item.proof else None)
+        if clip is None or not clip.is_file():
+            raise HTTPException(404, "no voice clip")
+        return FileResponse(clip, media_type="audio/mp4")
 
     @app.get("/s/{slug}/qr.png")
     def shop_qr(slug: str, conn: Conn):

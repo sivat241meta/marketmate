@@ -4,6 +4,23 @@
    Ken Burns, sellers bob, tiny pulses). Everything is off under
    prefers-reduced-motion. No libraries. */
 
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
+}
+
 /* ---- keyframes (reference set + springs) ---- */
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px); }
@@ -91,6 +108,19 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Task 122: drawer slide-in, pop-up scale-in, staggered menu links. */
+@keyframes drawerleft {
+  from { opacity: 0; transform: translateX(-60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes popin {
+  from { opacity: 0; transform: scale(0.94) translateY(14px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes sheetlink {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* ---- scroll reveal (JS adds .in; .js gates the hidden start) ---- */
 html.js [data-reveal] {
@@ -110,7 +140,7 @@ html.js [data-reveal].in {
   animation: lbin 0.28s ease-out;
 }
 .hp-sheet:not([hidden]) {
-  animation: ddin 0.25s ease-out;
+  animation: sheetup 0.3s ease-out;
 }
 .sheet-wrap:not([hidden]) .sheet {
   animation: sheetup 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.12);
@@ -118,11 +148,25 @@ html.js [data-reveal].in {
 .sheet-wrap:not([hidden]) .sheet-backdrop {
   animation: fin 0.25s ease-out;
 }
+/* Task 122: shared pop-ups — drawer from the left, sheets scale in. */
+.mm-pop:not([hidden]) .mm-backdrop {
+  animation: fin 0.25s ease-out;
+}
+.mm-pop:not([hidden]) .mm-left {
+  animation: drawerleft 0.3s ease-out;
+}
+.mm-pop:not([hidden]) .mm-center {
+  animation: popin 0.28s ease-out;
+}
+/* Task 122: bag bar slides up when the first line lands. */
+[data-cart-bar]:not([hidden]) {
+  animation: sheetup 0.35s ease-out;
+}
 
 /* ---- sticky header shadow (JS toggles .scrolled) ---- */
 .hp-header.scrolled,
 .hdr.scrolled {
-  box-shadow: 0 6px 22px rgba(11, 27, 58, 0.14);
+  box-shadow: 0 6px 22px rgba(11, 42, 51, 0.14);
 }
 
 /* ---- button press + card lift (subtle, everywhere) ---- */
@@ -137,6 +181,17 @@ html.js [data-reveal].in {
 .choose-tile,
 .chip {
   transition: transform 0.16s ease-out;
+}
+/* Task 122: Swiggy-like card press + stepper tap. */
+.shop-card:active,
+.pick-card:active {
+  transform: scale(0.98);
+}
+.step button:active {
+  transform: scale(0.9);
+}
+.step button {
+  transition: transform 0.12s ease-out;
 }
 .pick-card,
 .shop-card,
@@ -169,7 +224,7 @@ html.js [data-reveal].in {
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 90;
-  background: #1c2b33;
+  background: #102a33;
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -190,9 +245,10 @@ html.js [data-reveal].in {
    twice, then rests (never an endless shimmer wall) ---- */
 .pick-photo,
 .shop-photo,
+.shop-cover,
 .tile-photo,
 .choose-tile .tile-photo {
-  background: linear-gradient(135deg, #e7f0ff, #f0f2f5 60%, #e7f0ff);
+  background: linear-gradient(135deg, #e6faf6, #f3f8fa 60%, #e6faf6);
 }
 .pick-photo:empty,
 .shop-photo:empty {

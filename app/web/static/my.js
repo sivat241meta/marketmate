@@ -5,6 +5,14 @@
    Nothing is stored on the server. */
 (function () {
   "use strict";
+  /* Task 122: the shared header loads this on every public page, while
+     /my, /q/* and /s/* also load it in their scripts block — run once. */
+  if (typeof window !== "undefined" && window.__mmMyLoaded) {
+    return;
+  }
+  if (typeof window !== "undefined") {
+    window.__mmMyLoaded = true;
+  }
 
   var SHOPS_KEY = "mm_my_shops";
   var ORDERS_KEY = "mm_my_orders";

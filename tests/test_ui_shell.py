@@ -50,12 +50,20 @@ def assert_shell(html, action):
 
 
 def test_home_has_shell_and_hero(tmp_path):
-    html = make_client(tmp_path).get("/").text
-    assert_shell(html, "Sell more.")
+    # Task 122: the hero + sellers content moved to /sellers and /how;
+    # the homepage keeps the shell, CTAs and the honesty line.
+    from app.web.i18n import t_for
+
+    client = make_client(tmp_path)
+    html = client.get("/").text
+    assert_shell(html, t_for("en")("v12.mind_t"))
     assert "Start selling" in html
     assert "/try" in html
-    assert 'action="/find"' in html and 'name="slug"' in html
     assert "Every price comes from the seller" in html
+    sellers = client.get("/sellers").text
+    assert_shell(sellers, "Sell more.")
+    how = client.get("/how").text
+    assert 'action="/find"' in how and 'name="slug"' in how
 
 
 def test_new_shop_has_shell_and_form(tmp_path):

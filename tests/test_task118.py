@@ -53,13 +53,19 @@ def test_sell_pill_never_wraps_or_breaks_words():
     assert ".home-mkt .hp-sell" in small
 
 
-def test_sell_pill_markup_kept(tmp_path):
+def test_sell_links_in_menu_and_sell_band(tmp_path):
+    # Task 122: the header sell pill moved to the phone menu; the
+    # sell band keeps a big Start selling CTA.
     client = make_client(tmp_path)
     html = _home(client, "en")
+    menu = html.split('id="mobile-nav"')[1]
+    assert 'href="/new"' in menu
     head = re.search(r'<header id="site-header".*?</header>', html,
                      re.DOTALL).group(0)
-    assert 'class="pill cta sm hp-sell"' in head
-    assert 'class="free-badge"' in head  # sold as compact via CSS
+    assert "For sellers" in head
+    sell = _section(html, "sell", "meta")
+    assert 'href="/new"' in sell
+    assert 'class="pill cta"' in sell
 
 
 # --- 2. install band: white text on the navy gradient ---
@@ -137,9 +143,9 @@ def test_pick_collage_and_tile_photos_render_unpadded_hooks(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     assert "data-cutout" in picks  # cut-out hook kept
-    shops = _section(html, "shops", "value")
+    shops = _section(html, "shops", "best-prices")
     assert 'src="/m/tom_cut.jpg"' in shops  # collage hook kept
 
 
@@ -228,7 +234,8 @@ def test_sparkles_behind_copy_in_margins():
     assert "right:" in second and "top:" in second
     third = _rule(css, ".sell-stars span:nth-child(3)")
     assert "right:" in third and "bottom:" in third
-    src = HOME_HTML.read_text()
+    src = (ROOT / "app" / "web" / "templates" / "sellers.html"
+           ).read_text()
     assert '<div class="sell-stars" aria-hidden="true">' in src
 
 
@@ -252,11 +259,11 @@ def test_area_tiles_use_pin_without_real_photo(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    areas = _section(html, "areas", "shops")
+    areas = _section(html, "markets", "sell")
     assert "data-cutout" not in areas
     assert "tile-photo" not in areas  # seed tiles only have cut-outs
     assert areas.count("tile-ic") >= 3  # all-areas + 2 tiles
     assert "pin.svg" in areas
     assert "Koyambedu" in areas and "Anna Nagar" in areas
-    chooser = _section(html, "area-chooser", None)
+    chooser = _section(html, "loc-drawer", "search-pop")
     assert "data-cutout" not in chooser
