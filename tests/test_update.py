@@ -315,11 +315,12 @@ def approve_first_version(client, data_dir):
     return version_id
 
 
-def test_update_page_has_recorder_and_notice(tmp_path, monkeypatch):
+def test_update_page_has_composer_and_notice(tmp_path, monkeypatch):
     client, _ = make_client(tmp_path, monkeypatch)
     client.cookies.set("ui_lang", "en")
     html = client.get(create_shop(client) + "/update").text
-    assert "recorder.js" in html
+    assert "composer.js" in html
+    assert "data-composer" in html
     assert 'name="audio"' in html
     assert NOTICE in html
 

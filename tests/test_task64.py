@@ -474,9 +474,9 @@ REVIEW_HOOKS = ["review-form", "data-approve-url", "data-review-counts",
                 "review.js"]
 BILLS_NEW_HOOKS = ["data-methods", "data-tap-form", "data-line",
                    "data-rate", "data-per", "data-stepper", "data-keypad",
-                   "data-live-order", "data-offline-banner", "methods.js",
-                   "live-order.js", "tap-chips.js", "offline-bills.js",
-                   "quote.js", "recorder.js"]
+                   "data-live-order", "data-offline-banner", "data-composer",
+                   "methods.js", "live-order.js", "tap-chips.js",
+                   "offline-bills.js", "quote.js", "composer.js"]
 BILL_HOOKS = ["data-receipt", "data-amount", "data-total", "data-cash",
               "data-cash-gave", "data-cash-back", "cash-gave",
               "receipt-card", "receipt-total", "bill-actions",
@@ -509,7 +509,7 @@ def test_js_hooks_present_on_key_pages(tmp_path):
 def test_hooks_match_what_js_queries():
     pooled = ""
     for name in ("live", "review", "methods", "live-order", "tap-chips",
-                 "offline-bills", "quote", "recorder", "my"):
+                 "offline-bills", "quote", "recorder", "composer", "my"):
         pooled += (ROOT / f"app/web/static/{name}.js").read_text()
     pooled += (ROOT / "app/web/templates/bill.html").read_text()
     pooled += (ROOT / "app/web/templates/shop.html").read_text()

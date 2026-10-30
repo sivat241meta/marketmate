@@ -1,0 +1,354 @@
+/* Task 123: ChatGPT-style voice/text composer. Theme-aware via the site's
+   custom properties so a theme change applies automatically. */
+
+.composer {
+  margin: 12px 0;
+}
+
+.composer [hidden] {
+  display: none !important;
+}
+
+/* --- thread: chat bubbles above the pill --- */
+
+.composer-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.composer-thread:empty {
+  display: none;
+}
+
+.composer-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+.composer-bubble-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.composer-bubble-status {
+  align-self: flex-start;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 18px 18px 18px 4px;
+}
+
+.composer-audio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.composer-audio-pill audio {
+  display: none;
+}
+
+.composer-audio-meta {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.composer-play {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.composer-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.composer-step.is-active {
+  color: var(--ink);
+}
+
+.composer-step.is-done {
+  color: var(--muted);
+}
+
+.composer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+  flex: none;
+}
+
+.composer-step.is-done .composer-dot {
+  background: var(--accent);
+}
+
+.composer-step.is-active .composer-dot {
+  background: var(--accent);
+  animation: composer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes composer-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.composer-result {
+  margin: 0 0 8px;
+}
+
+.composer-cta {
+  display: inline-block;
+  padding: 10px 18px;
+  min-height: 44px;
+  line-height: 24px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.composer-retry-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.composer-retry {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* --- the pill bar --- */
+
+.composer-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 6px;
+}
+
+.composer-pill:focus-within {
+  border-color: var(--accent);
+}
+
+.composer-attach {
+  position: relative;
+  flex: none;
+}
+
+.composer-plus,
+.composer-mic,
+.composer-send,
+.composer-cancel {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.composer-plus {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.composer-mic {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.composer-send {
+  background: var(--accent);
+  color: #fff;
+}
+
+.composer-cancel {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.composer-plus:disabled,
+.composer-mic:disabled,
+.composer-send:disabled,
+.composer-cancel:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Fallback row (no JS): the upload choice stays visible and usable. */
+.composer-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* With JS the menu becomes a dropdown above the + button. */
+.composer.is-js .composer-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 30;
+}
+
+.composer-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.composer.is-js .composer-menu-item:hover {
+  background: var(--accent-soft);
+}
+
+.composer-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.composer-text {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 10px 6px;
+  resize: none;
+  max-height: 120px;
+}
+
+.composer-text:focus {
+  outline: none;
+}
+
+.composer-wave {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 44px;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.composer-bar {
+  flex: 1;
+  min-width: 2px;
+  height: 20%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.composer-level {
+  display: block;
+  height: 8px;
+  width: 0;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.composer-timer {
+  flex: none;
+  margin: 0;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.composer-nojs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.composer-nojs-send {
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer-hint {
+  margin: 8px 4px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-step.is-active .composer-dot {
+    animation: none;
+    opacity: 1;
+  }
+
+  .composer-bar {
+    transition: none;
+  }
+}

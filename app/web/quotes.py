@@ -76,6 +76,24 @@ def customer_phone_ok(phone: str) -> bool:
                 or _INTL_PHONE_RE.match(phone))
 
 
+def _upload_has_bytes(upload) -> bool:
+    """True when a multipart file part carries at least one byte.
+
+    Browsers submit an empty part for an untouched file input; the chat
+    composer shares one form between typed and spoken input, so an empty
+    recording must fall through to the text path instead of failing.
+    """
+    try:
+        chunk = upload.file.read(1)
+    except (AttributeError, OSError, ValueError):
+        return True
+    try:
+        upload.file.seek(0)
+    except (AttributeError, OSError, ValueError):
+        pass
+    return bool(chunk)
+
+
 #: Quote line statuses that carry a price (needs_qty is priced with an
 #: assumed quantity). An order with none of these is never sent.
 PRICED_STATUSES = ("priced", "needs_qty")
@@ -508,7 +526,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         items = form.get("items")
         audio = form.get("audio")
         photo = form.get("photo")
-        has_audio = audio is not None and hasattr(audio, "file")
+        has_audio = (audio is not None and hasattr(audio, "file")
+                     and _upload_has_bytes(audio))
         has_photo = photo is not None and hasattr(photo, "file")
         strings = get_strings(language)
         name = clean_customer_name(form.get("customer_name"))

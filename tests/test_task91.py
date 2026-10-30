@@ -456,7 +456,8 @@ def test_js_hooks_present_on_v10_pages(tmp_path):
                  "data-search-row"):
         assert hook in today, hook
     live_fallback = client.get(f"/e/{token}/live").text
-    assert "data-upload-form" in live_fallback
+    assert "data-composer" in live_fallback
+    assert "composer.js" in live_fallback
     ai = client.get(f"/e/{token}/ai").text
     for hook in ("data-ai-list", "data-ai-poll", "data-ai-calls",
                  "ai.js"):

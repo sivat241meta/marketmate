@@ -568,7 +568,10 @@ def test_live_bill_page_has_speak_live_and_fallback(tmp_path):
     html = client.get(f"/e/{token}/bills/new").text
     assert "data-live-order" in html
     assert "live-order.js" in html
-    assert "Upload and bill" in html
+    assert "data-composer" in html
+    assert "composer.js" in html
+    assert 'name="audio"' in html
+    assert "Upload and bill" not in html
     assert "style=" not in html
 
 

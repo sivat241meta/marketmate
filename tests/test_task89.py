@@ -406,8 +406,9 @@ def test_bills_new_picker_total_and_type_card(tmp_path):
     assert "action-bar" in bar
     assert "data-tap-summary" in bar, "running total in the sticky bar"
     assert "Make bill" in bar
-    assert 'id="bill-items"' in html and 'name="items"' in html
-    assert "form-card" in html
+    assert 'name="items"' in html
+    assert "data-composer-text" in html, "type tab is the composer text mode"
+    assert "data-composer" in html and "composer.js" in html
 
 
 # --- 6. credit ----------------------------------------------------------------
@@ -443,7 +444,7 @@ def test_purchases_forms_error_and_saved(tmp_path):
     for name in ('name="audio"', 'name="item"', 'name="quantity"',
                  'name="unit"', 'name="total_paid"'):
         assert name in html, name
-    assert 'id="purchase-audio"' in html
+    assert "data-composer" in html and "composer.js" in html
     assert 'href="#record"' in html, "empty state needs a next step"
     bad = client.post(f"/e/{token}/purchases/add", data={
         "item": "tomato", "quantity": "ten", "unit": "kg",
@@ -488,8 +489,9 @@ def test_update_record_form_keeps_hooks(tmp_path):
     client = _client(tmp_path)
     token = _create_shop(client)
     html = client.get(f"/e/{token}/update").text
-    for hook in ("rec-start", "rec-stop", "rec-status", "update-audio",
-                 "board-photo", "data-upload-form", "data-max-bytes",
+    for hook in ("data-composer", "data-composer-form", "data-composer-mic",
+                 "data-composer-send", "data-composer-cancel",
+                 "data-composer-plus", "composer.js", "board-photo",
                  'name="audio"', 'name="photo"', 'id="board"'):
         assert hook in html, hook
     assert "form-card" in html
@@ -541,11 +543,11 @@ def _owned_urls(client, tmp_path, token):
         (f"/e/{token}/settings?saved=1", 'class="toast"'),
         (f"/e/{token}/bills/new", "data-tap-form"),
         (f"/e/{token}/credit/{key}", "credit-amount"),
-        (f"/e/{token}/purchases", "purchase-audio"),
+        (f"/e/{token}/purchases", "data-composer"),
         (f"/e/{token}/purchases?saved=1", 'class="toast"'),
         (f"/e/{token}/purchases/{purchase_id}", "sticky-bar"),
         (f"/e/{token}/photos", "photo-camera"),
-        (f"/e/{token}/update", "rec-start"),
+        (f"/e/{token}/update", "data-composer"),
         (f"/e/{token}/s/{lang_id}", "langcheck-go"),
     ]
 

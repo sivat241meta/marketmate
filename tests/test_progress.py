@@ -475,8 +475,10 @@ def test_dashboard_form_posts_video_with_progress_ui(tmp_path):
     assert "data-upload-cancel" in html
 
 
-def test_update_page_has_upload_progress_ui(tmp_path):
+def test_update_page_has_composer(tmp_path):
     client, location = _client_with_token(tmp_path)
     html = client.get(f"{location}/update").text
-    assert "upload.js" in html
-    assert "data-upload-form" in html
+    assert "data-composer" in html
+    assert "composer.js" in html
+    assert "data-composer-mic" in html
+    assert "data-composer-send" in html

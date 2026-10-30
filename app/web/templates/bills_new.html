@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% from "_composer.html" import composer with context %}
 {% block title %}{{ t('bn.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('bn.heading') }}{% endblock %}
@@ -18,7 +19,6 @@
 <div class="segmented chips" data-methods role="group" aria-label="{{ t('bn.method_aria') }}">
   <button type="button" class="chip" data-method="tap" aria-pressed="true">{{ ui.icon("tag") }}{{ t('bn.tap') }}</button>
   <button type="button" class="chip" data-method="speak" aria-pressed="false">{{ ui.icon("mic") }}{{ t('bn.speak') }}</button>
-  <button type="button" class="chip" data-method="type" aria-pressed="false">{{ ui.icon("receipt") }}{{ t('bn.type') }}</button>
   <button type="button" class="chip" data-method="photo" aria-pressed="false">{{ ui.icon("photo") }}{{ t('bn.photo') }}</button>
 </div>
 
@@ -131,37 +131,8 @@
     </div>
     <p><button class="btn btn-primary btn-big" type="button" data-live-order-done hidden>{{ t('bn.done') }}</button></p>
   </div>
-  <details class="card">
-    <summary>{{ t('bn.upload_instead') }}</summary>
-    <div class="record-actions">
-      <div class="mic-wrap">
-        <button class="mic-btn is-big" type="button" id="rec-start" data-upload-url="/e/{{ token }}/bills/new" data-rec-prompt="Recording… say the order." aria-label="{{ t('bn.speak_label') }}">{{ ui.icon("mic") }}</button>
-        <span class="mic-label">{{ t('bn.speak_label') }}</span>
-      </div>
-      <button class="btn btn-secondary" type="button" id="rec-stop" disabled>{{ t('bn.stop') }}</button>
-    </div>
-    <p class="muted" id="rec-status">{{ t('bn.tap_speak_order') }}</p>
-    <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
-      <div class="field">
-        <label class="drop-zone" for="bill-audio">{{ ui.icon("mic") }}<span>{{ t('bn.or_upload') }}</span><strong>{{ t('bn.choose_rec') }}</strong>
-          <input id="bill-audio" class="file-hidden" type="file" name="audio" accept="audio/*,video/*,.webm,.mp4,.m4a" required>
-        </label>
-      </div>
-      <button class="btn btn-secondary" type="submit">{{ t('bn.upload_bill') }}</button>
-    </form>
-  </details>
+  {{ composer("/e/" ~ token ~ "/bills/new", text_field="items", placeholder=t('bn.type_placeholder'), mode="voice+text", max_seconds=120, done_label=t('composer.view_bill')) }}
   <p class="notice">{{ t('notice.voice') }}</p>
-</section>
-
-<section class="method-panel" data-panel="type">
-  {% call ui.form_card(t('bn.type_title')) %}
-  <form method="post" action="/e/{{ token }}/bills/new">
-    {{ ui.field(t('bn.what_took'), "items", value="", required=True, autocomplete="off", attrs={"id": "bill-items", "placeholder": t('bn.type_placeholder'), "maxlength": "300"}) }}
-    {% call ui.action_bar() %}
-    <button class="btn btn-primary" type="submit">{{ t('bn.make_bill') }}</button>
-    {% endcall %}
-  </form>
-  {% endcall %}
 </section>
 
 <section class="card method-panel" data-panel="photo" data-needs-internet>
@@ -179,7 +150,6 @@
 </section>
 {% endblock %}
 {% block scripts %}
-<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>

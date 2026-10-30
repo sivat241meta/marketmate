@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% from "_composer.html" import composer with context %}
 {% block title %}{{ t('pur.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{{ t('pur.heading') }}{% endblock %}
@@ -15,12 +16,8 @@
 
 {% call ui.form_card(t('pur.say_title'), t('pur.say_desc'), cls="rcpt") %}
 <div id="record"></div>
-<form method="post" action="/e/{{ token }}/purchases/voice" enctype="multipart/form-data">
-  {{ ui.field(t('pur.upload_label'), "audio", type="file", hint=t('pur.say_hint'), required=True, attrs={"id": "purchase-audio", "accept": "audio/*,video/*,.webm,.mp4,.m4a"}) }}
-  {% call ui.action_bar() %}
-  <button class="btn btn-primary" type="submit">{{ t('pur.upload_check') }}</button>
-  {% endcall %}
-</form>
+<p class="muted">{{ t('pur.say_hint') }}</p>
+{{ composer("/e/" ~ token ~ "/purchases/voice", max_seconds=120, done_label=t('composer.check_purchases')) }}
 <p class="notice">{{ notice | safe }}</p>
 {% endcall %}
 

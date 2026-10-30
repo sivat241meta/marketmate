@@ -238,11 +238,13 @@ ORDER_HOOKS = ["data-methods", "data-method=", "data-panel=",
                "data-live-order-partial", "data-live-order-error",
                "data-live-order-lines", "data-live-order-list",
                "data-live-order-total", "data-live-order-done",
-               "rec-start", "rec-stop", "rec-status",
+               "data-composer", "data-composer-form", "data-composer-mic",
+               "data-composer-send", "data-composer-cancel",
+               "data-composer-plus", "data-composer-text",
                "data-needs-internet", "data-customer-name",
                "data-customer-phone", 'name="audio"', 'name="items"',
                'name="photo"', "methods.js", "live-order.js",
-               "recorder.js", "customer-contact.js"]
+               "composer.js", "customer-contact.js"]
 
 
 def test_quote_start_flow_steps_and_hooks(tmp_path):
