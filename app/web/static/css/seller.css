@@ -2,6 +2,23 @@
    Page CSS only; shared form-component CSS belongs to forms.css
    (Task 89) after the merge. v9 tokens, no new colours. */
 
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
+}
+
 /* ---- Page header block (breadcrumb stays in base.html) ---- */
 .page-head {
   display: flex;

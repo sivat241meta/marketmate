@@ -141,10 +141,19 @@ def test_phone_shop_section_order_and_compact_band(tmp_path):
     html = client.get(f"/s/{slug}").text
     assert "data-shop-strip" not in html
     assert "ph-shop-strip" not in html
-    order = ['class="ann"', 'id="site-header"', 'class="hero2"',
-             'id="shop-q"', "chip-row", "data-shop-grid"]
+    order = ['class="ann"', 'id="site-header"', 'class="hero2"']
     positions = [html.index(needle) for needle in order]
     assert positions == sorted(positions), order
+    # (The filter pop-up in the header also uses chip-row, so the
+    # tools row is located after the band.)
+    band_at = html.index('class="hero2"')
+    tools_at = html.index("chip-row", band_at)
+    grid_at = html.index("data-shop-grid")
+    assert band_at < tools_at < grid_at
+    # In-shop search moved into a sheet; the input keeps its hooks.
+    assert 'id="shopsearch-pop"' in html
+    assert 'id="shop-q"' in html and "data-shop-search" in html
+    assert "data-shopsearch-open" in html
     # Compact band: one h1 + one muted summary line + four icon actions.
     assert html.count("<h1>") == 1
     assert "T93 Store" in html
@@ -185,15 +194,15 @@ def test_compact_band_css_is_phone_only():
 
 
 def test_bag_in_header_only_on_shop_pages(tmp_path):
+    # Task 122: Bag (with count badge) sits in the header on every
+    # public page now, not just shop pages.
     client, _token, slug, qtoken, _public = _seed(tmp_path)
-    for url in (f"/s/{slug}", f"/s/{slug}/quote", f"/q/{qtoken}"):
+    for url in (f"/s/{slug}", f"/s/{slug}/quote", f"/q/{qtoken}",
+                "/", "/market", "/my", "/share", "/new"):
         head = _header(client.get(url).text)
         assert "hp-bag" in head, f"{url}: no Bag in header"
         assert 'href="/my"' in head, f"{url}: Bag link missing"
-        assert "with-bag" in head, f"{url}: header not marked"
-    for url in ("/", "/market", "/my", "/share", "/new"):
-        head = _header(client.get(url).text)
-        assert "hp-bag" not in head, f"{url}: stray Bag in header"
+        assert "data-bag-count" in head, f"{url}: no Bag badge"
 
 
 # --- 2. one language switch per page, in the header ---------------------------
@@ -254,9 +263,10 @@ def test_new_shop_uses_shared_public_header(tmp_path):
     assert "data-public-header" in html
     head = _header(html)
     assert 'href="/market"' in head
-    assert 'href="/new"' in head
+    assert 'href="/sellers"' in head
     assert 'href="/my"' in head
-    assert "hp-bag" not in head
+    assert "hp-bag" in head
+    assert 'href="/new"' in html  # Start selling lives in the menu
     for hook in ("data-newshop", "data-steps", "data-step-dot",
                  "data-step-count", "data-pane", "data-next", "data-back"):
         assert hook in html, f"/new missing {hook}"

@@ -45,4 +45,6 @@ def test_no_old_gradient_logo_square():
         assert 'class="mk"' not in hay
     css = CSS.read_text()
     assert ".bnav .mic span" in css
-    assert css.count("var(--grad)") == 1  # mic button only
+    # Task 122: the gradient lives on the voice mic and the search
+    # pop-up mic only.
+    assert css.count("var(--grad)") == 2  # mic buttons only

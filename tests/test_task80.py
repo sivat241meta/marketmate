@@ -1,9 +1,9 @@
-"""Task 80: refined MarketMate logo (updated by Tasks 95 and 105).
+"""Task 80: refined MarketMate logo (updated by Tasks 95, 105, 122).
 
 Task 95 replaced the basket mark with direction 3 ("Mm leaves"): a
 lowercase "m" whose two humps peak in outward leaf tips. Task 105 made
-pair E the default: left leaf Meta blue #0866FF and right leaf green
-#1FA34A, plus a dark-chrome variant with a lighter left leaf. These
+pair F the default: left leaf teal #0F766E and right leaf soft blue
+#38BDF8, plus a dark-chrome variant with a lighter left leaf. These
 tests pin the generator outputs (names, sizes, transparency, no
 font-dependent SVG) and check the 16px favicon keeps both leaf colours.
 
@@ -36,8 +36,8 @@ PNG_SIZES = {
     "icon-maskable-512.png": (512, 512),
 }
 LOGO_HEIGHTS = {"logo-full.png": 160, "logo-full@2x.png": 320}
-LEFT = "#0866FF"
-RIGHT = "#1FA34A"
+LEFT = "#0F766E"
+RIGHT = "#38BDF8"
 
 
 def _load_gen():
@@ -102,12 +102,12 @@ def test_brand_outputs_deterministic():
 
 
 def test_favicon_16keeps_two_colour_groups():
-    """The 16px favicon must not collapse into one blob: the blue and
-    green leaf colours must each own a solid set of pixels."""
+    """The 16px favicon must not collapse into one blob: the teal and
+    soft-blue leaf colours must each own a solid set of pixels."""
     img = Image.open(BRAND / "favicon-16.png").convert("RGBA")
     groups = {
-        "blue": [(8, 102, 255)],
-        "green": [(31, 163, 74)],
+        "teal": [(15, 118, 110)],
+        "sky": [(56, 189, 248)],
     }
     counts = dict.fromkeys(groups, 0)
     for x in range(16):
@@ -123,8 +123,8 @@ def test_favicon_16keeps_two_colour_groups():
                         best, dist = name, d
             if dist < 60:
                 counts[best] += 1
-    assert counts["blue"] >= 20, counts
-    assert counts["green"] >= 20, counts
+    assert counts["teal"] >= 20, counts
+    assert counts["sky"] >= 20, counts
 
 
 def _path_points(d: str) -> tuple[list[float], list[float]]:

@@ -31,8 +31,10 @@ PHOTOS = (
     ("customer-phone.jpg", "iJfM5uaZ1N4", "Emil Widlund", (1600, 2240)),
 )
 
-SECTIONS = ("hero", "value", "who", "how", "customers", "day", "meta",
-            "footer")
+# Task 122: the homepage is the v12 marketplace; sellers/how content
+# moved to /sellers and /how.
+SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
+            "sell", "meta", "install", "footer")
 
 
 def make_client(tmp_path):
@@ -105,15 +107,18 @@ def test_landing_headline_and_honesty_all_langs(tmp_path):
 
     client = make_client(tmp_path)
     for lang in ("en", "ta", "hi"):
+        client.cookies.set("ui_lang", lang)
         html = htmlmod.unescape(_home(client, lang))
         t = t_for(lang)
-        assert t("land.hero_a") in html, lang
-        assert t("land.hero_b") in html, lang
         assert t("land.honest") in html, lang
         assert t("land.meta_code") in html, lang
         assert "github.com/sivat241meta/marketmate" in html, lang
         assert t("land.photos_credit") in html, lang
         assert t("land.icons_credit") in html, lang
+        sellers = htmlmod.unescape(client.get("/sellers").text)
+        assert t("land.hero_a") in sellers, lang
+        assert t("land.hero_b") in sellers, lang
+        client.cookies.clear()
 
 
 # --- 4. CTAs point at existing routes -----------------------------------------
@@ -136,7 +141,7 @@ def test_landing_ctas_hit_existing_routes(tmp_path):
 def test_meta_section_model_ids_exist_in_code(tmp_path):
     client = make_client(tmp_path)
     html = _home(client, "en")
-    meta = html.split('id="meta"')[1].split('id="lost-link"')[0]
+    meta = html.split('id="meta"')[1].split('id="install"')[0]
     text = re.sub(r"<[^>]+>", " ", meta)
     # Task 118: compare rendered text, not markup — entities like &#39;
     # (apostrophe) contain digits that are not model ids.
@@ -161,8 +166,11 @@ def test_meta_section_model_ids_exist_in_code(tmp_path):
 
 
 def test_no_shop_template_uses_landing_photos():
+    # Task 122: landing photos live on /sellers + /how now, never on
+    # product/shop cards.
+    allowed = {"sellers.html", "how.html"}
     offenders = [path.name for path in sorted(TEMPLATES.glob("*.html"))
-                 if path.name != "home.html"
+                 if path.name not in allowed
                  and "landing/" in path.read_text()]
     assert offenders == []
 
@@ -171,8 +179,9 @@ def test_no_shop_template_uses_landing_photos():
 
 
 def test_landing_images_lazy_sized_with_srcset(tmp_path):
+    # Task 122: the five landing photos live on /sellers + /how.
     client = make_client(tmp_path)
-    html = _home(client, "en")
+    html = client.get("/sellers").text + client.get("/how").text
     imgs = re.findall(r"<img\b[^>]*landing/[^>]*>", html)
     assert len(imgs) == 5, len(imgs)
     for tag in imgs:

@@ -2264,6 +2264,16 @@ def _media_candidate(data_dir: Path, stored: str | None) -> Path | None:
     return _inside(data_dir, data_dir.parent / raw)
 
 
+def media_path(data_dir: Path, stored: str | None) -> Path | None:
+    """Stored media path resolved inside ``data_dir`` (else None).
+
+    Public wrapper around :func:`_media_candidate` for the web layer:
+    absolute paths must already sit inside the data dir, relative ones
+    are resolved against its parent (the ``data/...`` layout).
+    """
+    return _media_candidate(data_dir, stored)
+
+
 def _unlink_quietly(path: Path | None) -> None:
     if path is None:
         return

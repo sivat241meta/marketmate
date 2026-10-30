@@ -27,8 +27,10 @@ ROOT = Path(__file__).resolve().parent.parent
 HOME_JS = ROOT / "app" / "web" / "static" / "home.js"
 APP_CSS = ROOT / "app" / "web" / "static" / "app.css"
 
-SECTIONS = ("strip", "hero", "search", "banner", "picks", "areas",
-            "shops", "how", "sellers", "customers", "meta", "footer")
+# Task 122: v12 marketplace sections in order (marketing moved to
+# /sellers and /how; "empty-all" only renders with no shop data).
+SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
+            "sell", "meta", "install", "footer")
 
 
 def make_client(tmp_path):
@@ -137,31 +139,33 @@ def test_homepage_sections_in_order_all_langs(tmp_path):
 
 
 def test_search_form_targets_market_with_right_params(tmp_path):
+    # Task 122: the hero search card became the search pop-up; area /
+    # budget / sort live in the filter pop-up. Both submit GET /market.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    form = _section(html, "search", "banner")
-    assert form.startswith('id="search" class="hp-search"')
-    assert 'method="get" action="/market"' in form
-    assert 'name="q"' in form
-    assert 'name="area"' in form
-    assert 'name="budget"' in form
-    assert "Koyambedu" in form and "Anna Nagar" in form
+    pop = html.split('id="search-pop"')[1].split('id="filter-pop"')[0]
+    assert 'method="get" action="/market"' in pop
+    assert 'name="q"' in pop
+    assert 'placeholder=' in pop
+    t = t_for("en")
+    assert t("v12.search_ph") in pop
+    assert t("v12.recent") in html and t("v12.popular") in html
+    # Voice search still opens the existing voice panel on /market.
+    assert 'href="/market#rec-start"' in pop
+    filt = html.split('id="filter-pop"')[1]
+    assert 'method="get" action="/market"' in filt
+    assert 'name="sort"' in filt and 'name="area"' in filt
+    assert 'name="budget"' in filt and 'name="open_now"' in filt
+    assert 'name="cat"' in filt
+    assert "Koyambedu" in filt and "Anna Nagar" in filt
     for value in ('value=""', 'value="100"', 'value="200"',
                   'value="500"', 'value="1000"'):
-        assert value in form, value
-    t = t_for("en")
-    for key in ("hp.tab_all", "hp.tab_veg", "hp.tab_fruit",
-                "hp.tab_greens", "hp.tab_voice"):
-        assert t(key) in form, key
-    assert t("hp.search") in form
-    # "Order by voice" opens the existing voice search on /market.
-    assert 'href="/market#rec-start"' in form
-    # Category tabs only prefill: placeholder data, no filter params.
-    assert "data-ph=" in form
-    assert "data-filter=" not in form
+        assert value in filt, value
+    for value in ('value="total"', 'value="distance"', 'value="items"'):
+        assert value in filt, value
 
 
 def test_market_accepts_budget_param(tmp_path, monkeypatch):
@@ -215,7 +219,7 @@ def test_stale_list_excluded_from_today(tmp_path):
         conn.close()
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     assert "Kannan Veg" not in picks
     assert "Anna Fresh" not in picks
 
@@ -240,7 +244,7 @@ def test_area_counts_are_correct(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    areas = _section(html, "areas", "shops")
+    areas = _section(html, "markets", "sell")
     t = t_for("en")
     # Koyambedu: 2 shops, 6 priced items. Anna Nagar: 1 shop, 1 item.
     assert t("hp.area_counts", n=2, m=6) in areas
@@ -251,9 +255,9 @@ def test_popular_chips_use_real_item_names(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    hero = _section(html, "hero", "banner")
-    assert "/market?q=tomato" in hero
-    chips = re.findall(r"/market\?q=[a-z]+", hero)
+    markets = _section(html, "markets", "sell")
+    assert "/market?q=tomato" in markets
+    chips = re.findall(r"/market\?q=[a-z]+", markets)
     assert 1 <= len(chips) <= 6, chips
     # Every chip names a real live item.
     for chip in chips:
@@ -266,7 +270,7 @@ def test_recent_shops_show_cheapest_three(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    shops = _section(html, "shops", "value")
+    shops = _section(html, "shops", "best-prices")
     assert "Kannan Veg" in shops
     for name in ("potato", "onion", "tomato"):
         assert name in shops.lower(), name
@@ -281,7 +285,7 @@ def test_picks_max_eight_cutout_first(tmp_path):
     seed_shop(tmp_path, "Big Veg", "Koyambedu", items)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     cards = re.findall(r'class="pick-card"', picks)
     assert len(cards) == 8, len(cards)
     assert picks.index("it9_cut.jpg") < picks.index("item0")
@@ -300,12 +304,12 @@ def test_area_param_filters_homepage(tmp_path):
     assert "Kannan Veg" not in html
     assert "Malar Greens" not in html
     assert "Anna Fresh" in html
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     assert "tomato" not in picks.lower()
     assert "mango" in picks.lower()
     # Unknown areas show honest empty states, not other areas' shops.
     html = htmlmod.unescape(_home(client, "en", "?area=Nowhere"))
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     assert "Anna Fresh" not in picks
     assert t_for("en")("hp.picks_empty_t") in picks
 
@@ -319,10 +323,10 @@ def test_empty_homepage_has_honest_empty_states(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    assert t("hp.picks_empty_t") in _section(html, "picks", "areas")
-    assert t("hp.shops_empty_t") in _section(html, "shops", "value")
-    assert t("hp.areas_empty_t") in _section(html, "areas", "shops")
-    assert 'href="/new"' in _section(html, "picks", "areas")
+    assert t("hp.picks_empty_t") in _section(html, "best-prices", "markets")
+    assert t("hp.shops_empty_t") in _section(html, "shops", "best-prices")
+    assert t("hp.areas_empty_t") in _section(html, "markets", "sell")
+    assert 'href="/new"' in _section(html, "best-prices", "markets")
     assert 'class="pick-card"' not in html
     assert 'class="shop-card"' not in html
 
@@ -334,8 +338,8 @@ def test_no_landing_photos_in_product_or_shop_cards(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    for section, nxt in (("picks", "areas"), ("shops", "value"),
-                         ("areas", "shops")):
+    for section, nxt in (("best-prices", "markets"), ("shops", "best-prices"),
+                         ("top-shops", "shops"), ("markets", "sell")):
         body = _section(html, section, nxt)
         assert "landing/" not in body, section
         assert "Unsplash" not in body, section
@@ -345,41 +349,51 @@ def test_no_landing_photos_in_product_or_shop_cards(tmp_path):
 
 
 def test_strip_and_header(tmp_path):
+    # Task 122: the strip is gone; the header carries a location
+    # button, five nav links, search, orders, bag and the switch.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
     t = t_for("en")
-    strip = _section(html, "strip", "hero")
-    assert "Koyambedu" in strip
-    assert t("hp.strip_today") in strip
-    assert "data-chooser-open" in strip
     head = re.search(r'<header id="site-header".*?</header>', html,
                      re.DOTALL).group(0)
-    for href in ("/market", "#picks", "#areas", "#sellers", "#how"):
+    assert "data-loc-open" in head
+    assert "Koyambedu" in head
+    for href in ("/market", "#best-prices", "#markets", "/sellers",
+                 "/how"):
         assert f'href="{href}"' in head, href
-    assert 'href="/new"' in head
-    assert t("hp.free") in head
+    assert "data-search-open" in head
     assert 'href="/my"' in head
+    assert "data-bag-count" in head
     assert "data-ui-toggle" in head
     assert "data-menu-open" in head
+    assert head.count("nav-pill") == 1
+    html = htmlmod.unescape(_home(client, "en"))
+    head = re.search(r'<header id="site-header".*?</header>', html,
+                     re.DOTALL).group(0)
+    assert t("hp.all_areas") in head
 
 
 def test_hero_headline_names_area_or_default(tmp_path):
+    # Task 122: no hero; the location button names the picked area,
+    # and the sellers hero lives on /sellers.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     t = t_for("en")
     html = htmlmod.unescape(_home(client, "en"))
-    hero = _section(html, "hero", "banner")
-    assert t("hp.hero_a") in hero
-    assert t("hp.hero_default") in hero
-    assert "curve" in hero  # soft blue curve under the place name
+    head = re.search(r'<header id="site-header".*?</header>', html,
+                     re.DOTALL).group(0)
+    assert t("hp.all_areas") in head
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
-    assert "Koyambedu" in _section(html, "hero", "banner")
-    assert t("hp.hero_sub") in _section(html, "hero", "banner")
+    head = re.search(r'<header id="site-header".*?</header>', html,
+                     re.DOTALL).group(0)
+    assert "Koyambedu" in head
+    sellers = htmlmod.unescape(client.get("/sellers").text)
+    assert t("land.hero_a") in sellers
 
 
 def test_banner_and_meta_mention(tmp_path):
@@ -388,12 +402,12 @@ def test_banner_and_meta_mention(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    banner = _section(html, "banner", "picks")
-    assert t("hp.banner_t1") in banner
-    assert t("hp.banner_t2") in banner
-    assert t("hp.banner_d") in banner
-    assert 'href="/new"' in banner
-    meta = _section(html, "meta", "footer")
+    sell = _section(html, "sell", "meta")
+    assert t("v12.sell_t") in sell
+    assert t("v12.sell_d") in sell
+    assert 'href="/new"' in sell
+    assert 'href="/try"' in sell
+    meta = _section(html, "meta", "install")
     assert "/e/<token>/ai" in meta
 
 
@@ -407,16 +421,17 @@ def test_area_chooser_modal_and_tiles(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    assert 'id="area-chooser"' in html
-    modal = html.split('id="area-chooser"')[1]
+    assert 'id="loc-drawer"' in html
+    modal = html.split('id="loc-drawer"')[1].split('id="search-pop"')[0]
+    assert 'role="dialog"' in modal and 'aria-modal="true"' in modal
+    assert "data-close" in modal
     assert t("hp.chooser_t") in modal
     assert t("hp.chooser_d") in modal
     assert t("hp.detect") in modal
-    assert t("hp.skip") in modal
     assert "Koyambedu" in modal and "Anna Nagar" in modal
-    assert t("hp.area_counts", n=2, m=6) in modal
+    assert "2 shops" in modal
     assert "data-area-lat" in modal and "data-area-lng" in modal
-    assert "home.js" in html
+    assert "popups.js" in html and "locate.js" in html
 
 
 def test_chooser_js_carries_no_coordinates():
@@ -507,9 +522,10 @@ def test_tamil_homepage_renders_translated_strings(tmp_path):
     html = htmlmod.unescape(_home(client, "ta"))
     t = t_for("ta")
     assert t("hp.search") in html
-    assert t("hp.picks_t") in html
-    assert t("hp.areas_t") in html
-    assert t("hp.shops_t") in html
+    assert t("v12.mind_t") in html
+    assert t("v12.best_t") in html
+    assert t("v12.markets_t") in html
+    assert t("v12.grid_t") in html
     # Tamil text must wrap, never be cut: no nowrap on homepage text.
     css = APP_CSS.read_text()
     home_css = css.split("/* Task 84 homepage */")[1]

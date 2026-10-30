@@ -1,6 +1,23 @@
 /* Task 89: shared v10 form components. Tasks 90/91 use these same classes.
    Loaded after app.css; v9 tokens only. */
 
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
+}
+
 /* ---- Fields: label above, hint + error below ---- */
 .field { margin: 0 0 20px; }
 .field > .field-label {

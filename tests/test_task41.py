@@ -91,8 +91,8 @@ def test_manifest_served_with_json(tmp_path):
     body = resp.json()
     assert body["name"] == "MarketMate"
     assert body["short_name"] == "MarketMate"
-    assert body["theme_color"] == "#1E1F21"
-    assert body["background_color"] == "#FAFBFC"
+    assert body["theme_color"] == "#0B2A33"
+    assert body["background_color"] == "#F3F8FA"
     assert body["display"] == "standalone"
     assert body["start_url"] == "/"
     sizes = {icon["sizes"] for icon in body["icons"]}
@@ -113,7 +113,7 @@ def test_base_links_manifest_and_icons(tmp_path):
     html = client.get("/").text
     assert 'href="/manifest.webmanifest"' in html
     assert 'rel="apple-touch-icon"' in html
-    assert 'name="theme-color"' in html and "#1E1F21" in html
+    assert 'name="theme-color"' in html and "#0B2A33" in html
 
 
 def test_icons_exist_with_right_sizes():
@@ -442,7 +442,8 @@ def test_link_recovery_buttons_and_card(tmp_path):
 
 
 def test_home_has_lost_link(tmp_path):
+    # Task 122: the sellers content (incl. lost-link) moved to /sellers.
     client = _client(tmp_path)
-    html = client.get("/").text
+    html = client.get("/sellers").text
     assert "Lost your link?" in html
     assert "no passwords" in html.lower() or "without passwords" in html.lower()

@@ -3,6 +3,23 @@
    components (.card, .pill, .chip, .kick, homepage hp-* styles) come
    from app.css; this file only composes them for public pages. */
 
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+  --sky-pale: #7DD3FC;
+  --teal-glow: #5EEAD4;
+}
+
 /* ---- Shared public header: base .hdr stays hidden, partial shows ---- */
 body.pub > .hdr { display: none; }
 /* No empty band between the top strip and the header (like home). */
@@ -566,4 +583,268 @@ body.pub .hp-bag .nbadge { margin-left: 0; }
   body.pub .hp-sell .free-badge { display: none; }
   body.pub .hp-bag { padding: 8px; }
   body.pub .hp-bag .bag-label { display: none; }
+}
+
+/* ---- Task 122 (v12): shop page item rows ---- */
+body.pub .shop-rows .grid-products {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+body.pub .shop-rows .card[data-card] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 12px;
+  align-items: start;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  border-radius: 16px;
+  padding: 14px;
+}
+body.pub .shop-rows .row-main {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+body.pub .shop-rows .card .nm {
+  font-size: 15px;
+}
+body.pub .shop-rows .card .nm small {
+  font-size: 12.5px;
+}
+body.pub .shop-rows .card .price .pp {
+  font-size: 15px;
+}
+body.pub .shop-rows .card .price .per {
+  font-size: 13px;
+}
+body.pub .shop-rows .card .price {
+  margin-top: 0;
+}
+body.pub .shop-rows .card .sz {
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+}
+body.pub .shop-rows .card .pw .step button {
+  width: 44px;
+  height: 44px;
+}
+body.pub .shop-rows .card .ph {
+  width: 150px;
+  height: 130px;
+  aspect-ratio: auto;
+  border-radius: 12px;
+}
+body.pub .shop-rows .card .pw {
+  padding-bottom: 14px;
+}
+body.pub .shop-rows .card .pw .add,
+body.pub .shop-rows .card .pw .step {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: 0;
+}
+body.pub .shop-rows .card .pw .add {
+  text-transform: uppercase;
+  min-height: 44px;
+  padding-left: 22px;
+  padding-right: 22px;
+}
+body.pub .shop-rows .card .pw .step {
+  background: var(--accent-ink);
+  border-radius: 9px;
+  min-height: 44px;
+}
+.voice-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+/* Category accordion: open by default, counts in the summary. */
+body.pub .cat-acc {
+  min-width: 0;
+}
+body.pub .cat-acc > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  padding: 6px 2px;
+  list-style: none;
+}
+body.pub .cat-acc > summary::-webkit-details-marker {
+  display: none;
+}
+body.pub .cat-acc > summary small {
+  color: var(--muted);
+  font-weight: 700;
+}
+body.pub .cat-acc > summary .chev {
+  margin-left: auto;
+  color: var(--accent-ink);
+  transition: transform 0.2s ease-out;
+}
+body.pub .cat-acc[open] > summary .chev {
+  transform: rotate(180deg);
+}
+body.pub .cat-cards {
+  display: grid;
+  gap: 14px;
+  padding: 4px 0 10px;
+}
+/* Today's best prices strip on the shop page. */
+body.pub .best-strip {
+  margin: 4px 0 0;
+}
+body.pub .best-strip-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px 2px 12px;
+  scroll-snap-type: x mandatory;
+}
+body.pub .strip-chip {
+  flex: none;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  border-radius: 999px;
+  padding: 6px 14px 6px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 44px;
+}
+body.pub .strip-chip img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: var(--accent-soft);
+}
+body.pub .strip-chip b {
+  color: var(--accent-ink);
+}
+/* Phones: the bag bar spans the bottom edge. */
+@media (max-width: 600px) {
+  body.pub .float.shop-float {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+  }
+}
+
+/* ---- Task 122 (v12): market page pills, tabs, shops ---- */
+body.pub .mkt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--accent-ink);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  min-height: 44px;
+  max-width: 100%;
+}
+body.pub .mkt-pill span {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+body.pub .mkt-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 0;
+  border-bottom: 1px solid var(--line);
+}
+body.pub .mkt-tab {
+  background: none;
+  border: 0;
+  border-bottom: 2.5px solid transparent;
+  padding: 10px 4px;
+  margin-bottom: -1px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--muted);
+  cursor: pointer;
+  min-height: 44px;
+}
+body.pub .mkt-tab.on {
+  color: var(--accent-ink);
+  border-bottom-color: var(--accent);
+}
+body.pub .mkt-shop {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  border-radius: 14px;
+  padding: 12px;
+  min-width: 0;
+}
+body.pub .mkt-shop .res-ava {
+  width: 52px;
+  height: 52px;
+}
+body.pub .mkt-shop .res-thumb {
+  width: 52px;
+  height: 52px;
+}
+body.pub .mkt-shop-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+body.pub .mkt-shop-main h3 {
+  margin: 0;
+  font-size: 16px;
+  overflow-wrap: break-word;
+}
+body.pub .mkt-add {
+  text-transform: uppercase;
+  flex: none;
+  min-height: 44px;
+}
+body.pub .shop-row .mkt-add {
+  margin-left: 8px;
+}
+@media (max-width: 520px) {
+  body.pub .mkt-shop {
+    flex-wrap: wrap;
+  }
+  body.pub .mkt-shop .card-actions {
+    flex: 1 1 100%;
+  }
+  body.pub .shop-row {
+    flex-wrap: wrap;
+  }
+  body.pub .shop-row .mkt-add {
+    margin-left: 0;
+  }
 }

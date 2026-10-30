@@ -1,0 +1,153 @@
+{# Shared v12 pop-ups (Task 122): location drawer, search pop-up and
+   filter/sort pop-up. One dialog pattern: .mm-pop wrapper (hidden),
+   backdrop + sheet with role=dialog/aria-modal, data-close buttons.
+   Behaviour lives in static/popups.js. Pages opt into the filter
+   pop-up with {% set _ph_popups = "loc,search,filter" %}. #}
+{% import "_ui.html" as ui %}
+{% set _pop = _ph_popups|default("loc,search") %}
+{% set _L = ui_lang|default('en') %}
+{% set _tiles = hp.tiles if hp is defined and hp and hp.tiles is defined else [] %}
+{% set _mkt_areas = areas if areas is defined and areas else [] %}
+{% set _cur_area = hp.area if hp is defined and hp and hp.area else (area|default("")) %}
+{% if "loc" in _pop %}
+<div class="mm-pop" id="loc-drawer" hidden>
+  <div class="mm-backdrop" data-close></div>
+  <div class="mm-sheet mm-left" role="dialog" aria-modal="true" aria-label="{{ t('hp.chooser_t') }}">
+    <div class="mm-head">
+      <div>
+        <h2>{{ t('hp.chooser_t') }}</h2>
+        <p class="muted">{{ t('hp.chooser_d') }}</p>
+      </div>
+      <button type="button" class="iconbtn mm-x" data-close aria-label="{{ t('hp.close') }}">×</button>
+    </div>
+    <div class="field">
+      <label class="field-label visually-hidden" for="loc-q">{{ t('hp.chooser_search') }}</label>
+      <input class="field-input" type="search" id="loc-q" data-loc-search placeholder="{{ t('hp.chooser_search') }}" autocomplete="off">
+    </div>
+    {% set _has_coords = _tiles|selectattr("lat")|list|length > 0 %}
+    {% if _has_coords %}
+    <p><button type="button" class="pill ghost" data-loc-detect data-detecting="{{ t('hp.detecting') }}" data-fail="{{ t('hp.detect_fail') }}">{{ ui.obj("pin", 20) }}{{ t('hp.detect') }}</button></p>
+    <p class="muted" data-loc-msg aria-live="polite" hidden></p>
+    {% endif %}
+    <div class="mm-loc-grid" data-loc-list data-areas-url="/market/suggest.json" data-cur="{{ _cur_area }}">
+      {% for tile in _tiles %}
+      <button type="button" class="choose-tile" data-pick="{{ tile.name }}" data-area-lat="{{ tile.lat if tile.lat is not none else '' }}" data-area-lng="{{ tile.lng if tile.lng is not none else '' }}" data-name-lower="{{ tile.name | lower }}">
+        {% if tile.photo_url and not tile.photo_cutout %}<span class="tile-photo"><img src="{{ tile.photo_url }}" alt="" loading="lazy" width="200" height="150"></span>{% else %}<span class="tile-ic">{{ ui.obj("pin", 28) }}</span>{% endif %}
+        <b>{{ tile.name }}</b>
+        <small class="muted">{{ tile.n_shops }} {{ t('hp.shop', count=tile.n_shops) }}</small>
+      </button>
+      {% endfor %}
+      {% for name in _mkt_areas %}
+      <button type="button" class="choose-tile" data-pick="{{ name }}" data-name-lower="{{ name | lower }}">
+        <span class="tile-ic">{{ ui.obj("pin", 28) }}</span>
+        <b>{{ name }}</b>
+      </button>
+      {% endfor %}
+    </div>
+    <p class="muted" data-loc-none hidden>{{ t('hp.no_match') }}</p>
+  </div>
+</div>
+{% endif %}
+{% if "search" in _pop %}
+<div class="mm-pop" id="search-pop" hidden>
+  <div class="mm-backdrop" data-close></div>
+  <div class="mm-sheet mm-center" role="dialog" aria-modal="true" aria-label="{{ t('hp.search') }}">
+    <div class="mm-head">
+      <h2>{{ t('hp.search') }}</h2>
+      <button type="button" class="iconbtn mm-x" data-close aria-label="{{ t('hp.close') }}">×</button>
+    </div>
+    <form method="get" action="/market" data-search-form>
+      <div class="mm-search-row">
+        <label class="visually-hidden" for="mm-q">{{ t('v12.search_ph') }}</label>
+        <input type="search" id="mm-q" name="q" data-search-input data-suggest-url="/market/suggest.json" data-area="{{ _cur_area }}" data-none="{{ t('v12.search_none') }}" data-items="{{ t('v12.items') }}" data-shops="{{ t('v12.shops') }}" placeholder="{{ t('v12.search_ph') }}" autocomplete="off">
+        <a class="mm-mic" href="/market#rec-start" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
+      </div>
+    </form>
+    <div data-live hidden></div>
+    <p class="muted" data-live-none hidden>{{ t('v12.search_none') }}</p>
+    <div data-recent-wrap hidden>
+      <p class="mm-row-head"><span>{{ t('v12.recent') }}</span><button type="button" class="linklike" data-recent-clear>{{ t('v12.clear') }}</button></p>
+      <div class="chip-row" data-recent></div>
+    </div>
+    {% set _pop_list = hp.popular if hp is defined and hp and hp.popular is defined else [] %}
+    <div data-popular>
+      <p class="mm-row-head"><span>{{ t('v12.popular') }}</span></p>
+      <div class="mm-pop-grid">
+        {% for chip in _pop_list %}
+        {% set _ph = namespace(u=none) %}
+        {% for card in hp.picks %}{% if _ph.u is none and card.photo_url and (card.name_en|lower) == (chip.name|lower) %}{% set _ph.u = card.photo_url %}{% endif %}{% endfor %}
+        <a class="pop-circle" href="/market?q={{ chip.name | urlencode }}">
+          {% if _ph.u %}<img src="{{ _ph.u }}" alt="" loading="lazy" width="96" height="96">{% else %}<span class="nophoto" aria-hidden="true">{{ chip.name[:1] }}</span>{% endif %}
+          <span>{{ chip.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if "filter" in _pop %}
+<div class="mm-pop" id="filter-pop" hidden>
+  <div class="mm-backdrop" data-close></div>
+  <div class="mm-sheet mm-center" role="dialog" aria-modal="true" aria-label="{{ t('v12.filters') }}">
+    <div class="mm-head">
+      <div>
+        <h2>{{ t('v12.filters') }}</h2>
+      </div>
+      <button type="button" class="iconbtn mm-x" data-close aria-label="{{ t('hp.close') }}">×</button>
+    </div>
+    {% set _f_sort = sort|default("total") %}
+    {% set _f_open = open_now|default(false) %}
+    {% set _f_area = _cur_area %}
+    {% set _f_budget = budget|default("") %}
+    {% set _f_cat = request.query_params.get("cat", "") if request is defined else "" %}
+    {% set _f_areas = hp.areas if hp is defined and hp and hp.areas is defined else _mkt_areas %}
+    <form method="get" action="/market" data-filter-form>
+      {% if q is defined and q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      <input type="hidden" name="open_now" value="0">
+      <fieldset class="mm-f-group">
+        <legend>{{ t('v12.sort') }}</legend>
+        <div class="chip-row" role="group" aria-label="{{ t('v12.sort') }}">
+          <label class="chip{% if _f_sort != 'distance' and _f_sort != 'items' %} on{% endif %}"><input type="radio" name="sort" value="total"{% if _f_sort != 'distance' and _f_sort != 'items' %} checked{% endif %}> {{ t('v12.sort_total') }}</label>
+          <label class="chip{% if _f_sort == 'distance' %} on{% endif %}"><input type="radio" name="sort" value="distance"{% if _f_sort == 'distance' %} checked{% endif %}> {{ t('v12.sort_near') }}</label>
+          <label class="chip{% if _f_sort == 'items' %} on{% endif %}"><input type="radio" name="sort" value="items"{% if _f_sort == 'items' %} checked{% endif %}> {{ t('v12.sort_items') }}</label>
+        </div>
+      </fieldset>
+      <fieldset class="mm-f-group">
+        <legend>{{ t('v12.open_now') }}</legend>
+        <label class="chip chip-check{% if _f_open %} on{% endif %}"><input type="checkbox" name="open_now" value="1"{% if _f_open %} checked{% endif %}> {{ t('v12.open_now') }}</label>
+      </fieldset>
+      <fieldset class="mm-f-group">
+        <legend>{{ t('hp.area') }}</legend>
+        <div class="chip-row" role="group" aria-label="{{ t('hp.area') }}">
+          <label class="chip{% if not _f_area %} on{% endif %}"><input type="radio" name="area" value=""{% if not _f_area %} checked{% endif %}> {{ t('v12.any') }}</label>
+          {% for a in _f_areas %}{% set _an = a.name if a is mapping else a %}<label class="chip{% if _f_area == _an %} on{% endif %}"><input type="radio" name="area" value="{{ _an }}"{% if _f_area == _an %} checked{% endif %}> {{ _an }}</label>{% endfor %}
+        </div>
+      </fieldset>
+      <fieldset class="mm-f-group">
+        <legend>{{ t('v12.max_spend') }}</legend>
+        <div class="chip-row" role="group" aria-label="{{ t('v12.max_spend') }}">
+          <label class="chip{% if not _f_budget %} on{% endif %}"><input type="radio" name="budget" value=""{% if not _f_budget %} checked{% endif %}> {{ t('v12.any') }}</label>
+          {% for b in ("100", "200", "500", "1000") %}<label class="chip{% if _f_budget == b %} on{% endif %}"><input type="radio" name="budget" value="{{ b }}"{% if _f_budget == b %} checked{% endif %}> {{ t('hp.budget_n', n=b) }}</label>{% endfor %}
+        </div>
+      </fieldset>
+      <fieldset class="mm-f-group">
+        <legend>{{ t('v12.category') }}</legend>
+        <div class="chip-row" role="group" aria-label="{{ t('v12.category') }}">
+          <label class="chip{% if not _f_cat %} on{% endif %}"><input type="radio" name="cat" value=""{% if not _f_cat %} checked{% endif %}> {{ t('v12.any') }}</label>
+          <label class="chip{% if _f_cat == 'veg' %} on{% endif %}"><input type="radio" name="cat" value="veg"{% if _f_cat == 'veg' %} checked{% endif %}> {{ t('hp.tab_veg') }}</label>
+          <label class="chip{% if _f_cat == 'fruit' %} on{% endif %}"><input type="radio" name="cat" value="fruit"{% if _f_cat == 'fruit' %} checked{% endif %}> {{ t('hp.tab_fruit') }}</label>
+          <label class="chip{% if _f_cat == 'greens' %} on{% endif %}"><input type="radio" name="cat" value="greens"{% if _f_cat == 'greens' %} checked{% endif %}> {{ t('hp.tab_greens') }}</label>
+          <label class="chip{% if _f_cat == 'flowers' %} on{% endif %}"><input type="radio" name="cat" value="flowers"{% if _f_cat == 'flowers' %} checked{% endif %}> {{ t('v12.cat_flowers') }}</label>
+          <label class="chip{% if _f_cat == 'coconut' %} on{% endif %}"><input type="radio" name="cat" value="coconut"{% if _f_cat == 'coconut' %} checked{% endif %}> {{ t('v12.cat_coconut') }}</label>
+          <label class="chip{% if _f_cat == 'grocery' %} on{% endif %}"><input type="radio" name="cat" value="grocery"{% if _f_cat == 'grocery' %} checked{% endif %}> {{ t('v12.cat_grocery') }}</label>
+        </div>
+      </fieldset>
+      <p class="mm-actions">
+        <button class="pill cta" type="submit">{{ t('v12.apply') }}</button>
+        <button class="pill ghost" type="button" data-filter-clear>{{ t('v12.clear_all') }}</button>
+      </p>
+    </form>
+  </div>
+</div>
+{% endif %}

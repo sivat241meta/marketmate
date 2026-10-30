@@ -697,6 +697,7 @@ def sweep_urls(seed):
     return [
         # Public pages.
         "/", "/?area=Koyambedu", "/market", "/new", "/my", "/share",
+        "/sellers", "/how",
         f"/s/{slug}", f"/s/{slug}?lang=ta", f"/s/{slug}/quote",
         f"/s/{slug}/quote?lang=ta",
         f"/s/{slug}/quote/{seed['quote_sid']}",

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% set _L = ui_lang|default('en') %}
+{% block title %}{{ t('v12.how_t') }} — MarketMate{% endblock %}
+{% block body_class %}pub how{% endblock %}
+{% block content %}
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ t('v12.how_t') }}</p>
+    <h1>{{ t('land.how_t') }}</h1>
+    <p class="lead">{{ t('land.cust_p') }}</p>
+  </div>
+  <p><a class="pill cta big" href="/market">{{ t('land.cust_cta') }}</a></p>
+</div>
+
+<section id="how" aria-label="{{ t('land.how_t') }}">
+  <h2 class="h2s">{{ t('land.how_t') }}</h2>
+  <div class="land-how">
+    <ol class="land-steps hp-steps" data-reveal-group>
+      <li class="card hp-step" data-reveal><span class="land-num" aria-hidden="true">01</span><span class="land-step-ic">{{ ui.obj("video", 28) }}</span><div><b>{{ t('land.h1_t') }}</b><p class="muted">{{ t('land.h1_d') }}</p></div></li>
+      <li class="card hp-step" data-reveal><span class="land-num" aria-hidden="true">02</span><span class="land-step-ic">{{ ui.obj("check", 28) }}</span><div><b>{{ t('land.h2_t') }}</b><p class="muted">{{ t('land.h2_d') }}</p></div></li>
+      <li class="card hp-step" data-reveal><span class="land-num" aria-hidden="true">03</span><span class="land-step-ic">{{ ui.obj("link", 28) }}</span><div><b>{{ t('land.h3_t') }}</b><p class="muted">{{ t('land.h3_d') }}</p></div></li>
+    </ol>
+    <figure class="land-photo" data-reveal title="{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}">
+      <img src="{{ static_url('landing/seller-phone.jpg') }}" srcset="{{ static_url('landing/seller-phone-800.jpg') }} 800w, {{ static_url('landing/seller-phone.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 50vw" width="1600" height="1246" alt="{{ t('land.alt_seller') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Ashwini Chaudhary (Monty)') }}</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="customers" aria-label="{{ t('land.cust_t') }}">
+  <div class="land-cust">
+    <figure class="land-photo tall" data-reveal title="{{ t('land.photo_by', name='Emil Widlund') }}">
+      <img src="{{ static_url('landing/customer-phone.jpg') }}" srcset="{{ static_url('landing/customer-phone-800.jpg') }} 800w, {{ static_url('landing/customer-phone.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 40vw" width="1600" height="2240" alt="{{ t('land.alt_customer') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Emil Widlund') }}</figcaption>
+    </figure>
+    <div data-reveal>
+      <h2 class="h2s">{{ t('land.cust_t') }}</h2>
+      <p class="lead">{{ t('land.cust_p') }}</p>
+      <p><a class="pill dark big" href="/market">{{ t('land.cust_cta') }}</a></p>
+      <form class="land-find" method="post" action="/find">
+        <div class="field">
+          <label for="find-slug">{{ t('set.name') }}</label>
+          <input id="find-slug" name="slug" placeholder="shop-name" required>
+        </div>
+        <button class="pill ghost sm" type="submit">{{ t('shell.find_shop') }}</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="meta-full" aria-label="{{ t('land.meta_t') }}">
+  <h2 class="h2s">{{ t('land.meta_t') }}</h2>
+  <p class="lead">{{ t('land.meta_voice') }} {{ t('land.meta_spark') }} {{ t('land.meta_sam') }} {{ t('land.meta_open') }}</p>
+  <p><a class="pill ghost" href="/#meta">{{ t('land.meta_log') }}</a></p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
+{% endblock %}

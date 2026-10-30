@@ -1,16 +1,15 @@
-{# Shared public header (Task 90, compacted Task 93): the homepage header,
-   used by every public/customer page. Task 93 removed the separate shop
-   strip: on shop pages the Bag link sits in this header instead, and the
-   header carries the page's only language switch (the top strip keeps
-   none). Home keeps byte-identical hrefs via the _ph_root prefix. #}
+{# Shared public header — v12 (Task 122): white 72px bar with a
+   location button, five animated nav links with one sliding pill,
+   a search button, My orders, Bag, and the language switch. Phones
+   get a bottom-sheet menu. Included by every public/customer page. #}
 {% import "_ui.html" as ui %}
 {% set _ph_root = "" if (request is defined and request.url.path == "/") else "/" %}
 {% set _ph_path = request.url.path if request is defined else "/" %}
 {% set _ph_ann = request.state.shell_ann if request is defined else none %}
 {% set _ph_shop_known = shop is defined and shop is not none %}
 {# Shop content pages drive UI + item names from ?lang=, so the switch
-   there is links (moved from the top strip in Task 93), not cookie
-   buttons. Everywhere else it sets the ui_lang cookie. #}
+   there is links, not cookie buttons. Everywhere else it sets the
+   ui_lang cookie. #}
 {% set _ph_content_lang = _ph_shop_known and _ph_ann and (_ph_path.startswith("/s/") or _ph_path.startswith("/q/")) %}
 {% macro _ph_links(exact, label, active, native_lang, native_name) %}
   <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle>
@@ -25,32 +24,54 @@
     <button type="button" data-ui-lang="hi" lang="hi" class="{% if active == 'hi' %}on{% endif %}">हिन्दी</button>
   </span>
 {% endmacro %}
-<header id="site-header" class="hp-header{% if _ph_shop_known %} with-bag{% endif %}" data-public-header>
+{# The location button shows the picked area when the page knows one. #}
+{% set _ph_ns = namespace(loc="") %}
+{% if hp is defined and hp and hp.area %}{% set _ph_ns.loc = hp.area %}
+{% elif area is defined and area %}{% set _ph_ns.loc = area %}
+{% elif _ph_shop_known and shop["area"] %}{% set _ph_ns.loc = shop["area"] %}
+{% endif %}
+{# Pages that must stay form-free (the public bill receipt) opt out
+   of every pop-up; the openers hide with them. #}
+{% set _ph_pop = _ph_popups|default("loc,search") %}
+<header id="site-header" class="hp-header" data-public-header>
   <a class="logo" href="/" aria-label="MarketMate home">
     <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
   </a>
+  {% if "loc" in _ph_pop %}
+  <button type="button" class="loc-btn" data-loc-open aria-haspopup="dialog" aria-controls="loc-drawer">
+    {{ ui.obj("pin", 20) }}
+    <span class="loc-txt">{{ _ph_ns.loc or t('hp.all_areas') }}</span>
+    <span class="loc-chev" aria-hidden="true">▾</span>
+  </button>
+  {% endif %}
   <nav class="hp-nav" aria-label="{{ t('top.main_nav') }}">
-    <a href="/market">{{ t('hp.nav_find') }}</a>
-    <a href="{{ _ph_root }}#picks">{{ t('hp.nav_picks') }}</a>
-    <a href="{{ _ph_root }}#areas">{{ t('hp.nav_areas') }}</a>
-    <a href="{{ _ph_root }}#sellers">{{ t('hp.nav_sellers') }}</a>
-    <a href="{{ _ph_root }}#how">{{ t('hp.nav_how') }}</a>
+    <a href="/market" data-nav class="{% if _ph_path == '/market' %}on{% endif %}"{% if _ph_path == '/market' %} aria-current="page"{% endif %}>{{ ui.obj("store", 20) }}<span>{{ t('hp.nav_find') }}</span></a>
+    <a href="{{ _ph_root }}#best-prices" data-nav>{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
+    <a href="{{ _ph_root }}#markets" data-nav>{{ ui.obj("pin", 20) }}<span>{{ t('hp.nav_areas') }}</span></a>
+    <a href="/sellers" data-nav class="{% if _ph_path == '/sellers' %}on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
+    <a href="/how" data-nav class="{% if _ph_path == '/how' %}on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
+    <span class="nav-pill" aria-hidden="true"></span>
   </nav>
   <span class="sp" aria-hidden="true"></span>
-  <a class="pill cta sm hp-sell" href="/new">{{ t('hp.start_selling') }}<span class="free-badge">{{ t('hp.free') }}</span></a>
-  {% if _ph_shop_known %}
-  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}<span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
+  {% if "search" in _ph_pop %}
+  <button type="button" class="iconbtn hp-search-btn" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{{ t('hp.search') }}">{{ ui.obj("search", 24) }}<span class="visually-hidden">{{ t('hp.search') }}</span></button>
   {% endif %}
   <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
+  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}<span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
   {% if _ph_content_lang %}{{ _ph_links("lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
   <button type="button" class="iconbtn hp-menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}">☰</button>
 </header>
 <nav id="mobile-nav" class="hp-sheet" aria-label="{{ t('top.main_nav') }}" hidden>
-  <a href="/market">{{ t('hp.nav_find') }}</a>
-  <a href="{{ _ph_root }}#picks">{{ t('hp.nav_picks') }}</a>
-  <a href="{{ _ph_root }}#areas">{{ t('hp.nav_areas') }}</a>
-  <a href="{{ _ph_root }}#sellers">{{ t('hp.nav_sellers') }}</a>
-  <a href="{{ _ph_root }}#how">{{ t('hp.nav_how') }}</a>
-  <a href="/my">{{ t('hp.my_orders') }}</a>
+  <a href="/market">{{ ui.obj("store", 20) }}<span>{{ t('hp.nav_find') }}</span></a>
+  <a href="{{ _ph_root }}#best-prices">{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
+  <a href="{{ _ph_root }}#markets">{{ ui.obj("pin", 20) }}<span>{{ t('hp.nav_areas') }}</span></a>
+  <a href="/sellers">{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
+  <a href="/how">{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
+  <a href="/my">{{ ui.obj("bags", 20) }}<span>{{ t('hp.my_orders') }}</span></a>
+  <a href="/new" class="hp-sell-link">{{ t('hp.start_selling') }}</a>
   {% if _ph_content_lang %}{{ _ph_links("lang hp-sheet-lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang hp-sheet-lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
 </nav>
+{% include "_popups.html" %}
+<script src="{{ static_url('popups.js') if static_url is defined else '/static/popups.js' }}"></script>
+<script src="{{ static_url('locate.js') if static_url is defined else '/static/locate.js' }}"></script>
+<script src="{{ static_url('my.js') if static_url is defined else '/static/my.js' }}"></script>

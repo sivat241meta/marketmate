@@ -18,7 +18,7 @@ from app.config import Settings, load_settings
 from app.costs import CostCapExceeded, CostLedger
 from app.limits import RateLimiter
 from app.market.basket import best_partial_shop, explain_basket, plan_basket
-from app.market.search import find_listings, parse_query
+from app.market.search import CATEGORIES, find_listings, parse_query
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.outputs.money import format_money
@@ -252,7 +252,7 @@ def create_app(settings: Settings) -> FastAPI:
             chips.append(query.area)
         return chips
 
-    def _basket_dict(plans, budget, explanation, conn):
+    def _basket_dict(plans, budget, explanation, conn, sort="total"):
         from app.market.hours import shop_open_status
 
         plan_dicts = []
@@ -335,8 +335,12 @@ def create_app(settings: Settings) -> FastAPI:
                              and not plan.missing),
             })
         # Default sort: cheapest basket total first (stable), sample
-        # shops after real shops.
-        plan_dicts.sort(key=lambda entry: Decimal(entry["total"] or 0))
+        # shops after real shops. "Most items" sorts by coverage first.
+        if sort == "items":
+            plan_dicts.sort(key=lambda entry: Decimal(entry["total"] or 0))
+            plan_dicts.sort(key=lambda entry: -len(entry["lines"]))
+        else:
+            plan_dicts.sort(key=lambda entry: Decimal(entry["total"] or 0))
         plan_dicts.sort(key=lambda entry: entry["is_demo"])
         return {
             "budget": _fmt_rate(budget) if budget is not None else "",
@@ -345,7 +349,7 @@ def create_app(settings: Settings) -> FastAPI:
         }
 
     def _build_basket(conn, query, listings, ledger, *, empty_text,
-                      closed_text=""):
+                      closed_text="", sort="total"):
         if not query.wants:
             return None
         has_qty = any(want.amount is not None for want in query.wants)
@@ -365,19 +369,22 @@ def create_app(settings: Settings) -> FastAPI:
         else:
             explanation = explain_basket(plans, query.budget, ledger=ledger,
                                          settings=app.state.settings)
-        return _basket_dict(plans, query.budget, explanation, conn)
+        return _basket_dict(plans, query.budget, explanation, conn, sort)
 
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None, areas=None,
                         area="", pincode="", open_now=False, sort="total",
-                        market_empty=False, budget="", closed_notice=None):
+                        market_empty=False, budget="", closed_notice=None,
+                        chip_labels=None, cat="", cat_label=""):
         from app.web.i18n import get_strings, get_ui_lang
 
         flat = rows or []
         ui_lang = get_ui_lang(request)
         return templates.TemplateResponse(request, "market.html", {
             "q": q, "heard": heard, "rows": flat, "groups": _group_rows(flat),
-            "chips": _chips(query),
+            "chips": list(chip_labels) if chip_labels is not None
+            else _chips(query),
+            "cat": cat, "cat_label": cat_label,
             "unknown": list(query.unknown) if query else [],
             "error": error, "searched": searched, "basket": basket,
             "areas": areas or [], "area": area or "",
@@ -393,8 +400,8 @@ def create_app(settings: Settings) -> FastAPI:
             {
                 "name": "MarketMate",
                 "short_name": "MarketMate",
-                "theme_color": "#1E1F21",
-                "background_color": "#FAFBFC",
+                "theme_color": "#0B2A33",
+                "background_color": "#F3F8FA",
                 "display": "standalone",
                 "start_url": "/",
                 "icons": [
@@ -463,7 +470,8 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/market")
     def market_page(request: Request, conn: Conn, q: str | None = None,
                     area: str | None = None, pincode: str | None = None,
-                    sort: str | None = None, budget: str | None = None):
+                    sort: str | None = None, budget: str | None = None,
+                    cat: str | None = None):
         from app.config import sample_shops_enabled
 
         areas = db.listed_areas(
@@ -473,24 +481,46 @@ def create_app(settings: Settings) -> FastAPI:
         # open_now=0 plus open_now=1 when ticked, so read every value.
         picked = request.query_params.getlist("open_now")
         open_flag = ("1" in picked) if picked else False
-        sort_mode = sort if sort in ("total", "distance") else "total"
+        sort_mode = sort if sort in ("total", "distance", "items") \
+            else "total"
         budget_text = budget or ""
-        if not q or not q.strip():
+        cat_code = (cat or "").strip().lower()
+        if cat_code not in CATEGORIES:
+            cat_code = ""
+        if (not q or not q.strip()) and not cat_code:
             return _market_context(request, areas=areas, area=area or "",
                                    pincode=pincode or "",
                                    open_now=open_flag, sort=sort_mode,
                                    budget=budget_text)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
-        try:
-            query = parse_query(q.strip(), ledger=ledger,
-                                settings=app.state.settings)
-        except (SparkError, CostCapExceeded) as exc:
-            return _market_context(request, q=q.strip(), error=str(exc),
-                                   searched=True, areas=areas,
-                                   area=area or "", pincode=pincode or "",
-                                   open_now=open_flag, sort=sort_mode,
-                                   budget=budget_text)
+        cat_label = ""
+        chip_labels = None
+        if q and q.strip():
+            q_text = q.strip()
+            try:
+                query = parse_query(q_text, ledger=ledger,
+                                    settings=app.state.settings)
+            except (SparkError, CostCapExceeded) as exc:
+                return _market_context(request, q=q_text, error=str(exc),
+                                       searched=True, areas=areas,
+                                       area=area or "", pincode=pincode or "",
+                                       open_now=open_flag, sort=sort_mode,
+                                       budget=budget_text)
+        else:
+            # Category browse: wants straight from the wordlist, no AI
+            # parse and no cost; the understood line shows one label.
+            from app.market.search import Query, Want
+            from app.web.i18n import get_strings, get_ui_lang
+
+            words = CATEGORIES[cat_code][1].split()
+            query = Query(wants=[Want(word, None, None, None)
+                                 for word in words],
+                          budget=None, area=area or None)
+            q_text = ""
+            cat_label = get_strings(get_ui_lang(request))(
+                CATEGORIES[cat_code][0])
+            chip_labels = [cat_label]
         explicit = _parse_budget(budget)
         if explicit is not None:
             query.budget = explicit
@@ -516,7 +546,8 @@ def create_app(settings: Settings) -> FastAPI:
         basket = (None if market_empty
                   else _build_basket(conn, query, listings, ledger,
                                      empty_text=empty_text,
-                                     closed_text=closed_text))
+                                     closed_text=closed_text,
+                                     sort=sort_mode))
         rows = _rows_from_listings(listings, now, ui_lang, conn)
         closed_notice = None
         if open_flag and closed_n:
@@ -528,16 +559,106 @@ def create_app(settings: Settings) -> FastAPI:
                 basket = None
             closed_notice = {
                 "n": closed_n,
-                "url": _open_all_url(q=q.strip(), area=area or "",
+                "url": _open_all_url(q=q_text, area=area or "",
                                      pincode=pincode or "",
                                      sort=sort_mode, budget=budget_text),
             }
         return _market_context(
-            request, q=q.strip(), query=query, rows=rows, basket=basket,
+            request, q=q_text, query=query, rows=rows, basket=basket,
             searched=True, areas=areas, area=area or "",
             pincode=pincode or "", open_now=open_flag, sort=sort_mode,
             market_empty=market_empty, budget=budget_text,
-            closed_notice=closed_notice)
+            closed_notice=closed_notice, chip_labels=chip_labels,
+            cat=cat_code, cat_label=cat_label)
+
+    @app.get("/market/suggest.json")
+    def market_suggest(request: Request, conn: Conn, q: str = "",
+                       area: str = "", limit: int = 8):
+        """Live search suggestions from today's lists (Task 122).
+
+        Pure local filtering over the homepage data — no AI, no cost.
+        Never returns coordinates: the browser only ever sees names,
+        prices and photos.
+        """
+        from app.web.i18n import get_strings, get_ui_lang
+
+        ui_lang = get_ui_lang(request)
+        strings = get_strings(ui_lang)
+        try:
+            cap = min(max(int(limit), 1), 12)
+        except (TypeError, ValueError):
+            cap = 8
+        data = home_data_mod.home_data(
+            conn, area=(area.strip() or None),
+            settings=app.state.settings)
+        needle = (q or "").strip().lower()
+        items: list[dict] = []
+        shops: list[dict] = []
+        if needle:
+            for card in data["picks"]:
+                hay = " ".join((card["name_en"] or "",
+                                card["name_local"] or "",
+                                card["variety"] or "",
+                                card["shop_name"] or "")).lower()
+                if needle in hay:
+                    price = format_money(Decimal(card["price"]),
+                                         card["currency"])
+                    items.append({
+                        "name": card["name_local"] or card["name_en"],
+                        "price": (f"{price}/{card['per']}"
+                                  if card["per"] else price),
+                        "shop": card["shop_name"],
+                        "slug": card["slug"],
+                        "photo": card["photo_url"],
+                    })
+                    if len(items) >= cap:
+                        break
+            for shop in data["shops"]:
+                hay = f"{shop['name']} {shop['area']}".lower()
+                if needle in hay:
+                    shops.append({
+                        "name": shop["name"],
+                        "slug": shop["slug"],
+                        "area": shop["area"] or "",
+                        "photo": (shop["cover_url"]
+                                  or shop["photo_url"]),
+                    })
+                    if len(shops) >= cap:
+                        break
+        areas_out = [{
+            "name": tile["name"],
+            "label": strings("hp.area_counts", n=tile["n_shops"],
+                             m=tile["m_prices"]),
+            "photo": (tile["photo_url"]
+                      if tile["photo_url"] and not tile["photo_cutout"]
+                      else None),
+        } for tile in data["tiles"]]
+        photos: dict[str, str] = {}
+        for card in data["picks"]:
+            key = (card["name_en"] or "").strip().lower()
+            if key and card["photo_url"] and key not in photos:
+                photos[key] = card["photo_url"]
+        popular = [{
+            "name": entry["name"],
+            "photo": photos.get(entry["name"].strip().lower()),
+        } for entry in data["popular"]]
+        return JSONResponse({"items": items, "shops": shops,
+                             "areas": areas_out, "popular": popular})
+
+    @app.get("/sellers")
+    def sellers_page(request: Request):
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "sellers.html",
+            {"ui_lang": get_ui_lang(request)})
+
+    @app.get("/how")
+    def how_page(request: Request):
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "how.html", {"ui_lang": get_ui_lang(request)})
 
     @app.post("/market/voice")
     async def market_voice(request: Request):

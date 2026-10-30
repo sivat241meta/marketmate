@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% import "_v11.html" as v11 %}
+{% set _L = ui_lang|default('en') %}
+{% block title %}{{ t('v12.sellers_t') }} — MarketMate{% endblock %}
+{% block body_class %}pub sellers{% endblock %}
+{% block content %}
+{% include "_public_header.html" %}
+<div class="ph-head">
+  <div>
+    <p class="kick">{{ t('land.nav_sellers') }}</p>
+    <h1>{{ t('v12.sell_t') }} — {{ t('v12.sell_d') }}</h1>
+    <p class="lead">{{ t('land.hero_sub') }}</p>
+  </div>
+  <p><a class="pill cta big" href="/new">{{ t('v12.sell_cta') }}</a></p>
+</div>
+
+<section id="sell-hero" class="hp-band" aria-label="{{ t('land.hero_a') }} {{ t('land.hero_b') }}" title="{{ t('land.photo_by', name='Frédéric Barriol') }}">
+  <img class="hp-band-img kb" src="{{ static_url('landing/hero.jpg') }}" srcset="{{ static_url('landing/hero-800.jpg') }} 800w, {{ static_url('landing/hero.jpg') }} 1600w" sizes="100vw" width="1600" height="1061" alt="{{ t('land.alt_hero') }}" fetchpriority="high">
+  <div class="hp-band-shade" aria-hidden="true"></div>
+  <div class="hp-hero-in">
+    <h2 class="hp-headline">{{ t('land.hero_a') }} {{ t('land.hero_b') }}</h2>
+    <p class="hp-sub">{{ t('land.hero_sub') }}</p>
+    <div class="hero-cta">
+      <a class="pill dark big" href="/new">{{ t('land.cta_sell') }}</a>
+      <a class="pill ghost big" href="/how">{{ t('land.nav_how') }}</a>
+    </div>
+  </div>
+  <p class="hp-credit">{{ t('land.photo_by', name='Frédéric Barriol') }}</p>
+</section>
+
+<section id="value" aria-label="{{ t('land.value_t') }}">
+  <h2 class="h2s">{{ t('land.value_t') }}</h2>
+  <div class="land-grid" data-reveal-group>
+    <div class="card land-card" data-reveal>{{ ui.obj("mic", 28) }}<h3>{{ t('land.v1_t') }}</h3><p class="muted">{{ t('land.v1_d') }}</p></div>
+    <div class="card land-card" data-reveal>{{ ui.obj("check", 28) }}<h3>{{ t('land.v2_t') }}</h3><p class="muted">{{ t('land.v2_d') }}</p></div>
+    <div class="card land-card" data-reveal>{{ ui.obj("receipt", 28) }}<h3>{{ t('land.v3_t') }}</h3><p class="muted">{{ t('land.v3_d') }}</p></div>
+    <div class="card land-card" data-reveal>{{ ui.obj("tag", 28) }}<h3>{{ t('land.v4_t') }}</h3><p class="muted">{{ t('land.v4_d') }}</p></div>
+  </div>
+</section>
+
+<section id="who" aria-label="{{ t('land.who_t') }}">
+  <h2 class="h2s">{{ t('land.who_t') }}</h2>
+  <p class="lead">{{ t('land.who_p') }}</p>
+  <div class="land-split" data-reveal-group>
+    <figure class="land-photo" data-reveal title="{{ t('land.photo_by', name='Aditya Sethia') }}">
+      <img src="{{ static_url('landing/banana-cart.jpg') }}" srcset="{{ static_url('landing/banana-cart-800.jpg') }} 800w, {{ static_url('landing/banana-cart.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 25vw" width="1600" height="1164" alt="{{ t('land.alt_cart') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Aditya Sethia') }}</figcaption>
+    </figure>
+    <figure class="land-photo tall" data-reveal title="{{ t('land.photo_by', name='Abdullah Azeez') }}">
+      <img src="{{ static_url('landing/street-market.jpg') }}" srcset="{{ static_url('landing/street-market-800.jpg') }} 800w, {{ static_url('landing/street-market.jpg') }} 1600w" sizes="(max-width: 860px) 100vw, 25vw" width="1600" height="2844" alt="{{ t('land.alt_market') }}" loading="lazy">
+      <figcaption>{{ t('land.photo_by', name='Abdullah Azeez') }}</figcaption>
+    </figure>
+  </div>
+  <ul class="land-ticks">
+    <li>{{ ui.obj("phone", 20) }}<span>{{ t('land.who_b1') }}</span></li>
+    <li>{{ ui.obj("chat", 20) }}<span>{{ t('land.who_b2') }}</span></li>
+    <li>{{ ui.obj("link", 20) }}<span>{{ t('land.who_b3') }}</span></li>
+  </ul>
+</section>
+
+<section id="day" aria-label="{{ t('land.day_t') }}">
+  <h2 class="h2s">{{ t('land.day_t') }}</h2>
+  <ol class="land-day" data-reveal>
+    <li>{{ ui.obj("clock", 28) }}<div><b>{{ t('land.d1_t') }}</b><p class="muted">{{ t('land.d1_d') }}</p></div></li>
+    <li>{{ ui.obj("receipt", 28) }}<div><b>{{ t('land.d2_t') }}</b><p class="muted">{{ t('land.d2_d') }}</p></div></li>
+    <li>{{ ui.obj("moon", 28) }}<div><b>{{ t('land.d3_t') }}</b><p class="muted">{{ t('land.d3_d') }}</p></div></li>
+  </ol>
+</section>
+
+<section id="sellers" class="hp-sellers" aria-label="{{ t('land.nav_sellers') }}">
+  <div class="hp-sellers-band" data-reveal>
+    <div class="sell-stars" aria-hidden="true"><span><svg class="icon" width="18" height="18" viewBox="0 0 24 24"><path d="M12 2c.7 5.5 4.5 9.3 10 10-5.5.7-9.3 4.5-10 10-.7-5.5-4.5-9.3-10-10 5.5-.7 9.3-4.5 10-10z" fill="currentColor"/></svg></span><span><svg class="icon" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2c.7 5.5 4.5 9.3 10 10-5.5.7-9.3 4.5-10 10-.7-5.5-4.5-9.3-10-10 5.5-.7 9.3-4.5 10-10z" fill="currentColor"/></svg></span><span><svg class="icon" width="15" height="15" viewBox="0 0 24 24"><path d="M12 2c.7 5.5 4.5 9.3 10 10-5.5.7-9.3 4.5-10 10-.7-5.5-4.5-9.3-10-10 5.5-.7 9.3-4.5 10-10z" fill="currentColor"/></svg></span></div>
+    <div class="sell-wrap">
+      <div class="sell-copy">
+        <p class="kick">{{ t('land.nav_sellers') }}</p>
+        <h2 class="big">{{ t('land.hero_a') }} <em>{{ t('land.hero_b') }}</em></h2>
+        <p class="lead">{{ t('land.hero_sub') }}</p>
+        <div class="hero-cta">
+          <a class="pill dark big" href="/new">{{ t('land.cta_sell') }}</a>
+          <a class="pill ghost big" href="/how">{{ t('land.nav_how') }}</a>
+        </div>
+        <p class="notice">{{ ui.obj("check", 20) }}<span>{{ t('land.honest') }}</span></p>
+      </div>
+      <div class="sell-phone">
+        <div class="sp-screen">
+          <p class="sp-q">{{ v11.t('check_q', _L) }}</p>
+          <a class="sp-play" href="/try" aria-label="{{ v11.t('play', _L) }}"><svg class="icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></a>
+          <div class="sp-opts" aria-hidden="true"><span>₹40</span><span>₹14</span></div>
+        </div>
+        <div class="sp-float">{{ v11.t('float_ok', _L) }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="banner" class="hp-banner" aria-label="{{ t('hp.banner_t1') }} {{ t('hp.banner_t2') }}">
+  <span class="hp-banner-ic">{{ ui.obj("chat", 56) }}</span>
+  <div class="hp-banner-txt">
+    <h2>{{ t('hp.banner_t1') }} <span class="accent-ink hlshine">{{ t('hp.banner_t2') }}</span></h2>
+    <p class="muted">{{ t('hp.banner_d') }}</p>
+  </div>
+  <a class="pill cta big" href="/new">{{ t('hp.banner_cta') }}</a>
+</section>
+
+<section class="card entry-card" id="lost-link">
+  <h2 class="h2s">{{ t('home.lost_title') }}</h2>
+  <p class="muted">{{ t('home.lost_p1') }}</p>
+  <p class="muted">{{ t('home.lost_p2') }}</p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
+{% endblock %}

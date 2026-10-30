@@ -57,15 +57,15 @@ def test_sections_share_heading_block(tmp_path):
     t = t_for("en")
     html = _home(client, "en")
     for section, nxt, title, sub in (
-            ("picks", "areas", "hp.picks_t", "hp.picks_sub"),
-            ("areas", "shops", "hp.areas_t", "hp.areas_sub"),
-            ("shops", "value", "hp.shops_t", "hp.shops_sub")):
+            ("best-prices", "markets", "v12.best_t", "v12.best_sub"),
+            ("markets", "sell", "v12.markets_t", "v12.markets_sub"),
+            ("shops", "best-prices", "v12.grid_t", "v12.grid_sub")):
         body = _section(html, section, nxt)
-        assert 'class="hp-sec-head"' in body, section
+        assert 'hp-sec-head' in body, section
         assert t(title) in htmlmod.unescape(body), section
         assert t(sub) in htmlmod.unescape(body), section
-    picks = _section(html, "picks", "areas")
-    assert t("hp.compare") in htmlmod.unescape(picks)
+    shops = _section(html, "shops", "best-prices")
+    assert t("hp.compare") in htmlmod.unescape(shops)
 
 
 # --- 2. explore-by-market cards -----------------------------------------------
@@ -77,7 +77,7 @@ def test_all_areas_is_a_normal_card(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    areas = _section(html, "areas", "shops")
+    areas = _section(html, "markets", "sell")
     t = t_for("en")
     assert "hp-reset" not in areas
     tiles = re.findall(r'<a class="area-tile( on)?" href="([^"]*)">(.*?)</a>',
@@ -98,7 +98,7 @@ def test_selected_area_keeps_accent_border(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
-    areas = _section(html, "areas", "shops")
+    areas = _section(html, "markets", "sell")
     tiles = re.findall(r'<a class="area-tile( on)?" href="([^"]*)">(.*?)</a>',
                        areas, re.DOTALL)
     by_href = {href: (cls, body) for cls, href, body in tiles}
@@ -140,10 +140,10 @@ def test_rendered_counts_use_plurals(tmp_path):
     for lang in ("en", "ta", "hi"):
         t = t_for(lang)
         html = htmlmod.unescape(_home(client, lang))
-        areas = _section(html, "areas", "shops")
+        areas = _section(html, "markets", "sell")
         assert t("hp.area_counts", n=1, m=1) in areas, lang
         assert t("hp.area_counts", n=2, m=6) in areas, lang
-        shops = _section(html, "shops", "value")
+        shops = _section(html, "shops", "best-prices")
         assert t("hp.prices_today", n=1) in shops, lang  # Anna Fresh
         assert t("hp.prices_today", n=4) in shops, lang  # Kannan Veg
     assert "1 shops" not in htmlmod.unescape(_home(client, "en"))
@@ -159,7 +159,7 @@ def test_shop_line_splits_name_and_area(tmp_path):
         draft("carrot", "கேரட்", "50")])
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "picks", "areas")
+    picks = _section(html, "best-prices", "markets")
     assert "shop-line" not in picks
     names = re.findall(r'<p class="shop-name" lang="(\w+)">(.*?)</p>',
                        picks)
@@ -198,13 +198,13 @@ def test_single_shop_gets_dashed_slot(tmp_path):
     for lang in ("en", "ta", "hi"):
         t = t_for(lang)
         html = htmlmod.unescape(_home(client, lang))
-        shops = _section(html, "shops", "value")
+        shops = _section(html, "shops", "best-prices")
         assert shops.count('class="shop-card"') == 1, lang
         assert shops.count('class="shop-card hp-slot"') == 1, lang
         assert t("hp.slot_t") in shops, lang
         assert t("hp.start_selling") in shops, lang
         assert 'class="shop-card hp-slot" href="/new"' in shops, lang
-        picks = _section(html, "picks", "areas")
+        picks = _section(html, "best-prices", "markets")
         assert picks.count('class="pick-card hp-slot"') == 1, lang
 
 
@@ -212,13 +212,13 @@ def test_full_grids_and_empty_states_have_no_slot(tmp_path):
     seed_market(tmp_path)  # 7 picks, 3 shops
     client = make_client(tmp_path)
     html = _home(client, "en")
-    assert "hp-slot" not in _section(html, "picks", "areas")
-    shops = _section(html, "shops", "value")
+    assert "hp-slot" not in _section(html, "best-prices", "markets")
+    shops = _section(html, "shops", "best-prices")
     assert shops.count('class="shop-card hp-slot"') == 1
     client2 = make_client(tmp_path)
     html = _home(client2, "en", "?area=Nowhere")
-    assert "hp-slot" not in _section(html, "picks", "areas")
-    assert "hp-slot" not in _section(html, "shops", "value")
+    assert "hp-slot" not in _section(html, "best-prices", "markets")
+    assert "hp-slot" not in _section(html, "shops", "best-prices")
 
 
 def test_slot_css_is_dashed():
