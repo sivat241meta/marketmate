@@ -49,9 +49,54 @@
     });
   }
 
+  /* Task 120: the Order-by-voice panel sits right under the search
+     card and shows only when the voice tab is selected or there is
+     no query (the server hides it once a typed search has results).
+     Text tabs hide it again; the mic link always reveals it. */
+  function initVoicePanel() {
+    document.querySelectorAll("form.hp-search").forEach(function (form) {
+      if (form.dataset.mmVoiceBound) {
+        return;
+      }
+      form.dataset.mmVoiceBound = "1";
+      var scope = form.parentNode || document;
+      var panel = scope.querySelector
+        ? scope.querySelector("[data-voice-panel]")
+        : null;
+      if (!panel) {
+        return;
+      }
+      var voiceTab = form.querySelector(".hp-tab-voice");
+      var micLink = form.querySelector(".hp-mic");
+      var tabs = form.querySelectorAll(".hp-tab[data-ph]");
+      function showPanel(show) {
+        panel.hidden = !show;
+        if (voiceTab) {
+          voiceTab.classList.toggle("on", show);
+        }
+      }
+      if (voiceTab) {
+        voiceTab.addEventListener("click", function () {
+          showPanel(panel.hidden);
+        });
+      }
+      if (micLink) {
+        micLink.addEventListener("click", function () {
+          showPanel(true);
+        });
+      }
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          showPanel(false);
+        });
+      });
+    });
+  }
+
   function init() {
     initMenu();
     initTabs();
+    initVoicePanel();
   }
 
   if (typeof document !== "undefined" && document) {

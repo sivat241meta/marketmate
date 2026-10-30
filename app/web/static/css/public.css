@@ -332,11 +332,21 @@ body.pub .sheet .rt {
 }
 body.pub .sheet .rt b { font-size: 22px; font-weight: 800; color: var(--ink); }
 @media (min-width: 1000px) {
+  /* Task 120: the product grid uses the full content width while the
+     bag is empty; it shares the row with the sticky order column only
+     once the bag has lines (the shop page script toggles .has-cart
+     on .shop-layout). Phones keep the 3/2-column rules in app.css. */
   body.pub .shop-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
     align-items: start;
+  }
+  body.pub .shop-layout.has-cart {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  body.pub .shop-layout:not(.has-cart) .shop-side {
+    display: none;
   }
   body.pub .shop-side {
     position: sticky;
@@ -349,6 +359,15 @@ body.pub .sheet .rt b { font-size: 22px; font-weight: 800; color: var(--ink); }
     position: static;
     margin: 0;
     max-width: none;
+  }
+  /* Task 120: roomy laptop tiles (4-6 per row at 1280-1440px),
+     square photo with contain so price + name stay readable and
+     the quantity chips fit in one row. */
+  body.pub .shop-layout .grid-products {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+  body.pub .shop-layout .grid-products .card .ph img {
+    object-fit: contain;
   }
 }
 
@@ -377,6 +396,17 @@ body.pub .filter-row .seg { flex: none; }
 body.pub .result-card { min-width: 0; }
 body.pub .shop-row { min-width: 0; }
 body.pub .rec-row { display: flex; gap: 10px; align-items: center; }
+/* ---- Task 120: Order-by-voice is a compact panel directly under the
+   search card. It shows only when the voice tab is selected or there
+   is no query; after a typed search it stays hidden so the results
+   come right after the search card. */
+body.pub .voice-panel { margin-top: 12px; max-width: 100%; }
+body.pub .voice-panel .form-card { padding: 14px 16px; margin: 0; }
+body.pub .voice-panel .h2s { font-size: 17px; margin-bottom: 6px; }
+body.pub .voice-panel .rec-row { margin: 0; }
+body.pub .voice-panel #rec-status { margin: 6px 0; }
+body.pub .voice-panel .more { margin: 6px 0 0; }
+body.pub .voice-panel .notice { margin: 8px 0 0; }
 
 /* ---- Order flow ---- */
 .flow-steps {
