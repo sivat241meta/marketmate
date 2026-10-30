@@ -300,15 +300,27 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
               "photo_url": covers.get(name)}
              for name in db.listed_areas(
                  conn, include_samples=show_samples)]
+    real = [entry for entry in entries
+            if not entry["shop"]["is_demo"]]
+    samples = [entry for entry in entries
+               if entry["shop"]["is_demo"]]
     return {
         "area": picked,
         "areas": areas,
         "tiles": _area_tiles(entries),
         "totals": {
-            "n_shops": len(entries),
+            # Counters never imply sample prices were said today:
+            # n_shops/m_prices cover real shops only; sample shops
+            # get their own counts and a separate "+ N sample shops"
+            # note (or a "Prices listed" label when nothing is real).
+            "n_shops": len(real),
             "m_prices": sum(len(item.price_lines)
-                            for entry in entries
+                            for entry in real
                             for item in entry["items"]),
+            "n_sample_shops": len(samples),
+            "m_sample_prices": sum(len(item.price_lines)
+                                   for entry in samples
+                                   for item in entry["items"]),
         },
         "picks": _pick_cards(scoped),
         "popular": _popular(scoped),

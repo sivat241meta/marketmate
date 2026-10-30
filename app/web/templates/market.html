@@ -50,7 +50,7 @@
   </div>
 </form>
 
-<section class="pub-sec" aria-label="{{ t('hp.tab_voice') }}">
+<section class="pub-sec voice-panel" data-voice-panel aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
   <div class="form-card">
     <h2 class="h2s">{{ t('hp.tab_voice') }}</h2>
     <p class="rec-row">
@@ -216,7 +216,7 @@
       <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
       <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
     </div>
-    <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>
+    {% if row.is_demo %}<p class="muted"><small>{{ row.rel }}</small></p>{% else %}<p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>{% endif %}
     </div>
     {% endfor %}
   </div>

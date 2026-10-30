@@ -83,11 +83,13 @@
     </div>
   </form>
 
-  {% if hp.totals.n_shops or hp.totals.m_prices or hp.tiles|length %}
+  {% if hp.totals.n_shops or hp.totals.m_prices or hp.tiles|length or hp.totals.n_sample_shops %}
   <div class="hp-counters" data-reveal-group>
     {% if hp.totals.n_shops %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.n_shops }}">{{ hp.totals.n_shops }}</b><span>{{ v11.t('shops_lbl', _L) }}</span></div>{% endif %}
     {% if hp.totals.m_prices %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.m_prices }}">{{ hp.totals.m_prices }}</b><span>{{ v11.t('prices_lbl', _L) }}</span></div>{% endif %}
+    {% if not hp.totals.m_prices and hp.totals.m_sample_prices %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.m_sample_prices }}">{{ hp.totals.m_sample_prices }}</b><span>{{ t('hp.prices_listed') }}</span></div>{% endif %}
     {% if hp.tiles|length %}<div class="hp-counter" data-reveal><b data-count="{{ hp.tiles|length }}">{{ hp.tiles|length }}</b><span>{{ v11.t('markets_lbl', _L) }}</span></div>{% endif %}
+    {% if hp.totals.n_sample_shops %}<small class="hp-samples-note">{{ t('hp.samples_note', n=hp.totals.n_sample_shops, count=hp.totals.n_sample_shops) }}</small>{% endif %}
   </div>
   {% endif %}
   {% if hp.popular %}
@@ -203,7 +205,7 @@
     <a class="area-tile{% if not hp.area %} on{% endif %}" href="/">
       <span class="tile-ic">{{ ui.obj("pin", 28) }}</span>
       <b>{{ t('hp.all_areas') }}</b>
-      <small class="muted">{{ t('hp.area_counts', n=hp.totals.n_shops, m=hp.totals.m_prices) }}</small>
+      <small class="muted">{{ t('hp.area_counts', n=hp.totals.n_shops + hp.totals.n_sample_shops, m=hp.totals.m_prices + hp.totals.m_sample_prices) }}</small>
       <span class="tile-chev" aria-hidden="true">›</span>
     </a>
     {% for tile in hp.tiles %}
@@ -247,7 +249,7 @@
         <div class="shop-title-row"><h3>{{ shop.name }}</h3></div>
         <p class="muted">{{ shop.area }}</p>
         <p class="prices-line">{{ t('hp.prices_today', n=shop.n_prices) }}{% if _said.by.get(shop.slug) %} · {{ t('hp.said', time=_said.by[shop.slug]) }}{% endif %}</p>
-        <p class="voice-badge">{{ ui.icon("check") }}<span>{{ v11.t('voice_badge', _L) }}</span></p>
+        <p class="voice-badge">{{ ui.icon("check") }}<span>{% if shop.is_demo %}{{ t('hp.voice_badge_sample') }}{% else %}{{ v11.t('voice_badge', _L) }}{% endif %}</span></p>
         {% if shop.cheapest %}<p class="cheap-line">{% for item in shop.cheapest %}{{ item.name | capitalize }} {{ item.price | money(item.currency) }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
         <p class="card-actions"><a class="pill ghost sm" href="/s/{{ shop.slug }}">{{ t('hp.view') }}</a><a class="pill cta sm" href="/s/{{ shop.slug }}/quote">{{ t('hp.order') }}</a></p>
       </div>
@@ -270,7 +272,7 @@
   {% endif %}
 </section>
 
-{% if not hp.totals.n_shops %}
+{% if not hp.totals.n_shops and not hp.totals.n_sample_shops %}
 <section id="empty-all" aria-label="{{ t('hp.picks_empty_t') }}">
   <div class="card empty-all">
     {{ ui.obj("search", 56) }}

@@ -129,6 +129,16 @@
   font-weight: 600;
   overflow-wrap: break-word;
 }
+/* Task 120: separate small note so sample shops never inflate the
+   "said today" counters. Own flex row, wraps safely at 320px. */
+.hp-samples-note {
+  flex: 1 1 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
 
 /* ---- tabs: shine on the active tab; pulsing new dot ---- */
 .hp-tab {

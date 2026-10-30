@@ -45,7 +45,7 @@
 {% macro _brand_mark_dark(size) %}<img class="brand-mark" src="/static/brand/mark-dark.svg" width="{{ size }}" height="{{ size }}" alt="MarketMate">{% endmacro %}
 {% macro _brand_logo(height) %}<img class="brand-logo" src="/static/brand/logo.svg" height="{{ height }}" alt="MarketMate">{% endmacro %}
 <div class="ann">
-  <span><span class="dot" aria-hidden="true"></span>{% if _is_seller %}{% if _ann %}{{ t('ann.shop_open') }} · {% if _ann.prices_time %}{{ t('ann.last_prices', time=_ann.prices_time) }}{% else %}{{ t('ann.no_prices') }}{% endif %}{% if _ann.need %} · {{ t('ann.need_tap', n=_ann.need, count=_ann.need) }}{% endif %}{% else %}{{ shop["name"] }} · {{ shop["area"] }}{% endif %}{% elif _shop_known %}{% if _ann and _ann.prices_time %}{{ t('ann.said_today', time=_ann.prices_time, area=shop["area"]) }}{% else %}{{ t('ann.said_notime', area=shop["area"]) }}{% endif %}{% else %}{{ t('ann.public') }}{% endif %}</span>
+  <span><span class="dot" aria-hidden="true"></span>{% if _is_seller %}{% if _ann %}{{ t('ann.shop_open') }} · {% if _ann.prices_time %}{{ t('ann.last_prices', time=_ann.prices_time) }}{% else %}{{ t('ann.no_prices') }}{% endif %}{% if _ann.need %} · {{ t('ann.need_tap', n=_ann.need, count=_ann.need) }}{% endif %}{% else %}{{ shop["name"] }} · {{ shop["area"] }}{% endif %}{% elif _shop_known %}{% if shop["is_demo"] %}{{ t('ann.said_sample', area=shop["area"]) }}{% elif _ann and _ann.prices_time %}{{ t('ann.said_today', time=_ann.prices_time, area=shop["area"]) }}{% else %}{{ t('ann.said_notime', area=shop["area"]) }}{% endif %}{% else %}{{ t('ann.public') }}{% endif %}</span>
   {% if _is_seller %}
   {{ _lang_seg() }}
   {% endif %}
