@@ -21,6 +21,7 @@ from fastapi.templating import Jinja2Templates
 from PIL import Image
 
 from app import db, jobs
+from app.config import sample_shops_enabled
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
     IST,
@@ -44,7 +45,7 @@ from app.outputs.time import format_relative
 from app.pipeline.media import extract_audio
 from app.pipeline.names import display_name_en, display_name_local, keywords_for
 from app.pipeline.run import friendly_error_message
-from app.web.i18n import get_strings, quote_whatsapp_text
+from app.web.i18n import SAMPLE_TIME, get_strings, quote_whatsapp_text
 
 MAX_QUOTE_PHOTO_BYTES = 10 * 1024 * 1024
 
@@ -135,9 +136,11 @@ def write_quote_meta(data_dir: Path, session_id: int, payload: dict) -> None:
     path.write_text(json.dumps(payload))
 
 
-def _shop_or_404(conn, slug: str):
+def _shop_or_404(conn, slug: str, settings=None):
     shop = db.shop_by_slug(conn, slug)
     if shop is None:
+        raise HTTPException(404, "unknown shop")
+    if shop["is_demo"] and not sample_shops_enabled(settings):
         raise HTTPException(404, "unknown shop")
     return shop
 
@@ -392,6 +395,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if when.tzinfo is None:
                 when = when.replace(tzinfo=UTC)
             prices_time = when.astimezone(IST).strftime("%H:%M")
+        is_sample = bool(shop["is_demo"])
+        if is_sample and published_id is not None:
+            prices_time = SAMPLE_TIME
+            rel = strings("hp.said_sample")
         quote_url = (f"{app.state.settings.public_base_url}/q/{row['token']}")
         # Paid orders finished the whole flow; show every step done with
         # Collected current. Older accepted rows stuck at "billed" read as
@@ -419,10 +426,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "error": error, "lang": language, "t": strings,
             "shop_lang": shop["language"] or "en",
             "ui_lang": language if language in ("ta", "hi", "en") else "en",
-            "subtitle": strings["quote_subtitle"].format(
-                shop=shop["name"], rel=rel),
-            "whatsapp_url": _whatsapp_link(shop, raw_lines, row["total"],
-                                           quote_url, language),
+            "subtitle": (strings["quote_subtitle_sample"].format(
+                shop=shop["name"]) if is_sample
+                else strings["quote_subtitle"].format(
+                    shop=shop["name"], rel=rel)),
+            # Sample shops have no phone: no WhatsApp ordering either.
+            "whatsapp_url": (None if is_sample
+                             else _whatsapp_link(
+                                 shop, raw_lines, row["total"],
+                                 quote_url, language)),
             "order_status": display_status,
             "order_steps": steps,
             "open_state": open_info["state"],
@@ -475,7 +487,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/s/{slug}/quote")
     def quote_start(request: Request, slug: str, conn: Conn, lang: str = "en"):
-        shop = _shop_or_404(conn, slug)
+        shop = _shop_or_404(conn, slug, settings)
         return _start_context(request, shop, lang=lang)
 
     @app.post("/s/{slug}/quote")
@@ -488,7 +500,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             conn.close()
 
     async def _quote_submit_impl(request: Request, slug: str, conn):
-        shop = _shop_or_404(conn, slug)
+        shop = _shop_or_404(conn, slug, settings)
         language = _customer_lang(shop, request.query_params.get("lang"))
         if "application/json" in request.headers.get("content-type", ""):
             return await _quote_submit_cart(request, shop, conn, language)
@@ -741,7 +753,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/s/{slug}/quote/{session_id}")
     def quote_session_page(request: Request, slug: str, session_id: int,
                            conn: Conn, lang: str = "en"):
-        shop = _shop_or_404(conn, slug)
+        shop = _shop_or_404(conn, slug, settings)
         language = _customer_lang(shop, lang)
         session = _session_of_shop(conn, shop["id"], session_id)
         meta = read_quote_meta(data_dir, session_id)
@@ -762,7 +774,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/s/{slug}/quote/{session_id}/status")
     def quote_session_status(slug: str, session_id: int, conn: Conn):
-        shop = _shop_or_404(conn, slug)
+        shop = _shop_or_404(conn, slug, settings)
         session = _session_of_shop(conn, shop["id"], session_id)
         progress = db.session_progress(session)
         meta = read_quote_meta(data_dir, session_id)

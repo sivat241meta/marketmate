@@ -26,6 +26,7 @@ _ENGLISH: dict[str, str] = {
     "sold_out": "Sold out",
     "no_prices": "No prices published yet.",
     "quote_subtitle": "Prices from this shop's list, set {rel}",
+    "quote_subtitle_sample": "{shop} · Sample prices",
     "check_quantity": "check quantity",
     "per": "per",
     "update_quote": "Update order",
@@ -94,6 +95,7 @@ _ENGLISH: dict[str, str] = {
     "ann.no_prices": "no prices yet",
     "ann.said_today": "Prices said by the seller today, {time} · {area}",
     "ann.said_notime": "Prices from the seller · {area}",
+    "ann.said_sample": "Sample prices · {area}",
     "ann.public": "Fresh prices, said by sellers",
     "shell.say_prices": "Say today's prices",
     "shell.order_voice": "Order by voice",
@@ -669,6 +671,14 @@ _ENGLISH: dict[str, str] = {
     "set.round": "Round bills to the nearest rupee",
     "set.round_help": "Bill totals round to whole rupees; the round-off shows on the bill.",
     "set.save": "Save settings",
+    "set.cover": "Shop photo",
+    "set.cover_sub": "A photo of your stall, shown at the top of your shop page.",
+    "set.cover_help": "JPEG or PNG, up to 5 MB.",
+    "set.cover_choose": "Choose a photo of your stall",
+    "set.cover_upload": "Upload shop photo",
+    "set.cover_current": "Current shop photo",
+    "set.cover_saved": "Shop photo saved.",
+    "set.cover_bad": "That photo did not work — try a JPEG or PNG under 5 MB.",
     "set.seller_link": "Your seller link",
     "set.seller_desc": "Open your dashboard, bills and prices from any device.",
     "set.keep_private": "Keep this link private: anyone with this link can change your prices.",
@@ -873,6 +883,7 @@ _ENGLISH: dict[str, str] = {
     "shop.said_short": "said today {time}",
     "shop.all": "All",
     "shop.notice": "Every price here was said by the seller {source} at {time} and checked by them",
+    "shop.notice_sample": "These sample prices were spoken in a voice note and checked like a real shop's list",
     "shop.src_video": "in today's video",
     "shop.src_voice": "in today's voice note",
     "shop.src_live": "in today's live prices",
@@ -890,6 +901,8 @@ _ENGLISH: dict[str, str] = {
     "order.right_now": "RIGHT NOW",
     "order.pay_at_shop": "Pay at the shop",
     "order.notice": "Prices from the shop's own list today, {time}. Nothing is guessed.",
+    "order.notice_sample": "Sample prices from a sample list. Nothing is guessed.",
+    "order.sample_notice": "Sample shop — this order is only a test; nobody will pack it",
     "order.call_shop": "Call shop",
     "order.none_title": "This shop doesn't have these today",
     "order.try_again": "Type or speak again",
@@ -1219,7 +1232,8 @@ _ENGLISH: dict[str, str] = {
     "hp.view": "View shop",
     "hp.order": "Order",
     "hp.said": "said today {time}",
-    "hp.demo": "Demo shop",
+    "hp.demo": "Sample shop",
+    "hp.said_sample": "Sample prices",
     "hp.picks_empty_t": "No prices yet today",
     "hp.picks_empty_d": "Shops near you haven't said today's prices yet. Be the first — it's free.",
     "hp.areas_t": "Explore by market",
@@ -1323,6 +1337,7 @@ _TAMIL: dict[str, str] = {
     "sold_out": "விற்றுத் தீர்ந்தது",
     "no_prices": "இன்னும் விலைகள் வெளியிடப்படவில்லை.",
     "quote_subtitle": "{shop} பட்டியல் விலைகள் · {rel} நிர்ணயம்",
+    "quote_subtitle_sample": "{shop} · மாதிரி விலைகள்",
     "check_quantity": "அளவை சரிபார்க்கவும்",
     "per": "per",
     "update_quote": "ஆர்டரைப் புதுப்பிக்கவும்",
@@ -1390,6 +1405,7 @@ _TAMIL: dict[str, str] = {
     "ann.no_prices": "விலை இன்னும் இல்லை",
     "ann.said_today": "விற்பனையாளர் இன்று சொன்ன விலை, {time} · {area}",
     "ann.said_notime": "விற்பனையாளர் விலை · {area}",
+    "ann.said_sample": "மாதிரி விலைகள் · {area}",
     "ann.public": "புது விலை, விற்பனையாளர் சொன்னது",
     "shell.say_prices": "இன்றைய விலையைச் சொல்லுங்கள்",
     "shell.order_voice": "குரலில் ஆர்டர் செய்க",
@@ -1962,6 +1978,14 @@ _TAMIL: dict[str, str] = {
     "set.payee_help": "வாடிக்கையாளர் UPIயில் தெரியும். இல்லைனா கடை பெயர்.",
     "set.round": "பில்லை ரூபாய்க்கு முழுதாக்கு",
     "set.round_help": "மொத்தம் முழு ரூபாய்; சில்லரை பில்லில் தெரியும்.",
+    "set.cover": "கடை புகைப்படம்",
+    "set.cover_sub": "உங்கள் கடையின் புகைப்படம், கடை பக்கத்தின் மேலே தெரியும்.",
+    "set.cover_help": "JPEG அல்லது PNG, 5 MB வரை.",
+    "set.cover_choose": "கடை புகைப்படத்தை தேர்வு செய்க",
+    "set.cover_upload": "கடை புகைப்படத்தை பதிவேற்று",
+    "set.cover_current": "தற்போதைய கடை புகைப்படம்",
+    "set.cover_saved": "கடை புகைப்படம் சேமிக்கப்பட்டது.",
+    "set.cover_bad": "அந்த புகைப்படம் சரியில்லை — 5 MBக்குள் JPEG அல்லது PNG கொடுங்கள்.",
     "set.save": "சேமி",
     "set.seller_link": "உங்க விற்பனை லிங்க்",
     "set.seller_desc": "எந்த போனிலிருந்தும் முகப்பு, பில், விலையை திறங்க.",
@@ -2166,6 +2190,7 @@ _TAMIL: dict[str, str] = {
     "shop.said_short": "இன்று சொன்னது {time}",
     "shop.all": "அனைத்தும்",
     "shop.notice": "இங்குள்ள ஒவ்வொரு விலையும் விற்பனையாளர் {source} {time} மணிக்கு சொன்னது, அவரே சரிபார்த்தது",
+    "shop.notice_sample": "இந்த மாதிரி விலைகள் குரல் பதிவில் சொல்லப்பட்டு, உண்மைக் கடை பட்டியல் போல சரிபார்க்கப்பட்டவை",
     "shop.src_video": "இன்றைய வீடியோவில்",
     "shop.src_voice": "இன்றைய குரல் பதிவில்",
     "shop.src_live": "இன்றைய நேரலையில்",
@@ -2183,6 +2208,8 @@ _TAMIL: dict[str, str] = {
     "order.right_now": "இப்போது",
     "order.pay_at_shop": "கடையில் பணம்",
     "order.notice": "இன்று {time} மணி கடை பட்டியல் விலைகள். யூகமில்லை.",
+    "order.notice_sample": "மாதிரி பட்டியலின் மாதிரி விலைகள். யூகமில்லை.",
+    "order.sample_notice": "மாதிரி கடை — இந்த ஆர்டர் வெறும் சோதனை மட்டுமே; யாரும் பொட்டலம் கட்ட மாட்டார்கள்",
     "order.call_shop": "கடைக்கு அழை",
     "order.none_title": "இந்தக் கடையில் இவை இன்று இல்லை",
     "order.try_again": "மீண்டும் எழுதுக அல்லது பேசுக",
@@ -2510,7 +2537,8 @@ _TAMIL: dict[str, str] = {
     "hp.view": "கடையைப் பார்",
     "hp.order": "ஆர்டர்",
     "hp.said": "இன்று சொன்னது {time}",
-    "hp.demo": "டெமோ கடை",
+    "hp.demo": "மாதிரி கடை",
+    "hp.said_sample": "மாதிரி விலைகள்",
     "hp.picks_empty_t": "இன்று இன்னும் விலைகள் இல்லை",
     "hp.picks_empty_d": "அருகிலுள்ள கடைகள் இன்னும் இன்றைய விலைகளைச் சொல்லவில்லை. முதலில் நீங்கள் சொல்லுங்கள் — இலவசம்.",
     "hp.areas_t": "சந்தை வாரியாகப் பாருங்கள்",
@@ -2614,6 +2642,7 @@ _HINDI: dict[str, str] = {
     "sold_out": "समाप्त",
     "no_prices": "अभी कोई कीमत प्रकाशित नहीं हुई।",
     "quote_subtitle": "{shop} की सूची से कीमतें · {rel} निर्धारित",
+    "quote_subtitle_sample": "{shop} · नमूने की कीमतें",
     "check_quantity": "मात्रा जाँचें",
     "per": "per",
     "update_quote": "ऑर्डर अपडेट करें",
@@ -2681,6 +2710,7 @@ _HINDI: dict[str, str] = {
     "ann.no_prices": "अभी दाम नहीं",
     "ann.said_today": "विक्रेता ने आज बताए दाम, {time} · {area}",
     "ann.said_notime": "विक्रेता के दाम · {area}",
+    "ann.said_sample": "नमूने की कीमतें · {area}",
     "ann.public": "ताज़ा दाम, विक्रेताओं के बताए",
     "shell.say_prices": "आज के दाम बोलें",
     "shell.order_voice": "आवाज़ से ऑर्डर करें",
@@ -3254,6 +3284,14 @@ _HINDI: dict[str, str] = {
     "set.round": "बिल पूरे रुपये में करिए",
     "set.round_help": "कुल पूरे रुपये; फर्क बिल पर दिखेगा।",
     "set.save": "सहेजिए",
+    "set.cover": "दुकान की फ़ोटो",
+    "set.cover_sub": "आपके ठेले की फ़ोटो, दुकान पेज पर सबसे ऊपर दिखेगी।",
+    "set.cover_help": "JPEG या PNG, 5 MB तक।",
+    "set.cover_choose": "ठेले की फ़ोटो चुनिए",
+    "set.cover_upload": "दुकान की फ़ोटो डालिए",
+    "set.cover_current": "मौजूदा दुकान फ़ोटो",
+    "set.cover_saved": "दुकान की फ़ोटो सहेजी गई।",
+    "set.cover_bad": "वह फ़ोटो नहीं चली — 5 MB के अंदर JPEG या PNG दीजिए।",
     "set.seller_link": "आपका विक्रेता लिंक",
     "set.seller_desc": "किसी फोन से होम, बिल, दाम खोलिए।",
     "set.keep_private": "ये लिंक छिपाकर रखिए: इससे दाम बदल सकते हैं।",
@@ -3457,6 +3495,7 @@ _HINDI: dict[str, str] = {
     "shop.said_short": "आज बताया {time}",
     "shop.all": "सभी",
     "shop.notice": "यहाँ हर कीमत विक्रेता ने {source} {time} बजे बताई और खुद जाँची है",
+    "shop.notice_sample": "ये नमूने की कीमतें वॉइस नोट में बोली गईं और असली दुकान की सूची की तरह जाँची गईं",
     "shop.src_video": "आज के वीडियो में",
     "shop.src_voice": "आज के वॉइस नोट में",
     "shop.src_live": "आज के लाइव भाव में",
@@ -3474,6 +3513,8 @@ _HINDI: dict[str, str] = {
     "order.right_now": "अभी",
     "order.pay_at_shop": "दुकान पर भुगतान",
     "order.notice": "आज {time} की दुकान सूची की कीमतें। कोई अंदाज़ा नहीं।",
+    "order.notice_sample": "नमूना सूची से नमूने की कीमतें। कोई अंदाज़ा नहीं।",
+    "order.sample_notice": "नमूना दुकान — यह ऑर्डर सिर्फ़ एक परीक्षण है; कोई इसे पैक नहीं करेगा",
     "order.call_shop": "दुकान को कॉल",
     "order.none_title": "इस दुकान में ये आज नहीं हैं",
     "order.try_again": "फिर से लिखें या बोलें",
@@ -3801,7 +3842,8 @@ _HINDI: dict[str, str] = {
     "hp.view": "दुकान देखें",
     "hp.order": "ऑर्डर",
     "hp.said": "आज बताया {time}",
-    "hp.demo": "डेमो दुकान",
+    "hp.demo": "नमूना दुकान",
+    "hp.said_sample": "नमूने की कीमतें",
     "hp.picks_empty_t": "आज अभी कीमतें नहीं हैं",
     "hp.picks_empty_d": "पास की दुकानों ने आज की कीमतें अभी नहीं बताईं। सबसे पहले आप बताएँ — मुफ़्त है।",
     "hp.areas_t": "बाज़ार के हिसाब से देखें",
@@ -3966,6 +4008,20 @@ def _plural_word(code: str, key: str, count: Any) -> str:
     return template
 
 
+#: Time value home/shop contexts pass for sample shops instead of "HH:MM".
+#: ``t()`` renders the sample wording below for these keys, in the UI
+#: language, so frozen public templates show "Sample prices" with no edits.
+SAMPLE_TIME = "sample"
+
+#: "said today" keys -> their sample-shop wording when time == SAMPLE_TIME.
+_SAMPLE_TIME_KEYS = {
+    "hp.said": "hp.said_sample",
+    "shop.said_short": "hp.said_sample",
+    "ann.said_today": "ann.said_sample",
+    "shop.notice": "shop.notice_sample",
+}
+
+
 def t_for(lang: str):
     """Return ``t(key, **vars)`` bound to a language with English fallback.
 
@@ -3976,6 +4032,8 @@ def t_for(lang: str):
     code = _normalize_lang(lang)
 
     def t(key: str, **vars: Any) -> str:
+        if vars.get("time") == SAMPLE_TIME and key in _SAMPLE_TIME_KEYS:
+            key = _SAMPLE_TIME_KEYS[key]
         if "count" in vars and _has_plural(code, key):
             count = vars.pop("count")
             vars.setdefault("n", count)

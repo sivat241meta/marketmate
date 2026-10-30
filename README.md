@@ -95,6 +95,35 @@ PYTHONPATH=$PWD .venv/bin/pytest -q
 
 1675 tests pass. `.venv/bin/ruff check .` is clean.
 
+## Sample shops
+
+Five labelled sample shops keep the site from looking empty: Selvi
+Vegetable Stall (Koyambedu, Chennai), Pandian Fruit Centre
+(Mattuthavani, Madurai), Amma Keerai Kadai (R.S. Puram, Coimbatore),
+Gupta Sabzi Wale (Azadpur Mandi, Delhi) and Green Basket (Russell
+Market, Bengaluru). Every one is always labelled "Sample shop", shows
+"Sample prices" instead of "said today", sorts after real shops, and
+has no phone number or UPI id — orders to them are clearly marked as
+tests nobody will pack.
+
+Their prices really went through the Meta pipeline: each list was
+spoken as a voice note and processed by Muse Voice Transcribe, Muse
+Spark and the same checks as an uploaded voice note, and each item
+photo went through the same SAM 3.1 cut-out + Spark photo check.
+Re-seeding costs nothing and makes no API calls — the pipeline output
+is committed in `scripts/sample_data/`.
+
+```sh
+PYTHONPATH=$PWD .venv/bin/python scripts/seed_samples.py            # seed
+PYTHONPATH=$PWD .venv/bin/python scripts/seed_samples.py --remove   # delete
+SAMPLE_SHOPS=0  # hide them everywhere without deleting
+```
+
+Photo credits for all 63 sample images are in
+[docs/photo-credits.md](docs/photo-credits.md) (Unsplash License).
+Real sellers can upload their own stall photo under Settings →
+"Shop photo".
+
 ## Deploy
 
 See [docs/deploy.md](docs/deploy.md) for the Modal deploy. The app runs as one container with a persistent volume for the database, photos, clips and cost ledger. Secrets come from a Modal secret built from `.env`. It scales to zero after 20 idle minutes and the daily budget cap still applies.

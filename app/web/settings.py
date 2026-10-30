@@ -1,13 +1,15 @@
 """Seller settings: shop profile, UPI, language, currency, rounding, helpers."""
 
+import io
 import re
 import sqlite3
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from PIL import Image, ImageOps
 
 from app import db
 from app.languages import LANGUAGES, all_currencies
@@ -32,6 +34,52 @@ _CURRENCIES = set(all_currencies())
 #: The settings form renders these as a select; any other stored value
 #: is kept as an extra option so nothing is ever lost.
 SHOP_TYPES = ("vegetable",)
+
+#: Shop cover uploads: JPEG/PNG at most this big, resized to 1600px and
+#: 800px wide progressive JPEGs with EXIF stripped (no API calls).
+MAX_COVER_BYTES = 5 * 1024 * 1024
+COVER_WIDTHS = (1600, 800)
+COVER_QUALITY = 82
+
+
+class BadCoverUpload(ValueError):
+    """A cover upload that is too big or not a JPEG/PNG image."""
+
+
+def save_cover(data: bytes, out_stem: Path) -> str:
+    """Save a stall cover photo: 1600px + 800px progressive JPEGs.
+
+    Returns the stored 1600px file name. Raises ``BadCoverUpload``
+    for oversized or non-JPEG/PNG uploads. Never upscales.
+    """
+    if len(data) > MAX_COVER_BYTES:
+        raise BadCoverUpload("photo is bigger than 5 MB")
+    try:
+        probe = Image.open(io.BytesIO(data))
+        probe.verify()
+    except Exception as exc:
+        raise BadCoverUpload("not an image") from exc
+    try:
+        img = Image.open(io.BytesIO(data))
+        if (img.format or "").upper() not in ("JPEG", "PNG", "MPO"):
+            raise BadCoverUpload("not a JPEG or PNG photo")
+        img = ImageOps.exif_transpose(img).convert("RGB")
+    except BadCoverUpload:
+        raise
+    except Exception as exc:
+        raise BadCoverUpload("not an image") from exc
+    out_stem.parent.mkdir(parents=True, exist_ok=True)
+    for width in COVER_WIDTHS:
+        frame = img
+        if frame.width > width:
+            frame = frame.resize((width, round(frame.height * width
+                                               / frame.width)),
+                                 Image.LANCZOS)
+        name = (f"{out_stem.name}.jpg" if width == COVER_WIDTHS[0]
+                else f"{out_stem.name}-800.jpg")
+        frame.save(out_stem.parent / name, "JPEG", quality=COVER_QUALITY,
+                   progressive=True, optimize=True)
+    return f"{out_stem.name}.jpg"
 
 
 def _clean_phone(phone: str) -> str:
@@ -97,7 +145,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return {"hours_days": days, "has_hours": has_hours(raw)}
 
     def _context(request, shop, token, error=None, just_created=None,
-                 error_field=None, saved=False):
+                 error_field=None, saved=False, cover_saved=False):
         seller_url = f"{app.state.settings.public_base_url}/e/{token}"
         ui_lang = get_ui_lang(request, shop)
         conn = db.connect(data_dir)
@@ -108,6 +156,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return templates.TemplateResponse(request, "settings.html", {
             "shop": shop, "token": token, "error": error,
             "error_field": error_field, "saved": saved,
+            "cover_saved": cover_saved,
             "languages": LANGUAGES, "currencies": all_currencies(),
             "shop_types": SHOP_TYPES,
             "seller_url": seller_url,
@@ -122,11 +171,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/settings")
     def settings_page(request: Request, token: str, conn: Conn,
-                      saved: str | None = None):
+                      saved: str | None = None,
+                      cover: str | None = None):
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
-        return _context(request, shop, token, saved=bool(saved))
+        return _context(request, shop, token, saved=bool(saved),
+                        cover_saved=bool(cover))
 
     @app.post("/e/{token}/settings")
     async def settings_post(request: Request, token: str):
@@ -233,6 +284,28 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                     status_code=303)
         finally:
             conn.close()
+
+    @app.post("/e/{token}/settings/cover")
+    async def cover_post(request: Request, token: str, conn: Conn,
+                         cover: UploadFile):
+        """Save the seller's stall photo (JPEG/PNG ≤ 5 MB, no API calls)."""
+        from app.web.i18n import t_for
+
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        try:
+            filename = save_cover(
+                await cover.read(),
+                data_dir / "photos" / f"cover_{shop['id']}")
+        except BadCoverUpload:
+            return _context(request, shop, token,
+                            error=t_for(ui_lang)("set.cover_bad"),
+                            error_field="cover")
+        db.set_shop_cover(conn, shop["id"], filename)
+        return RedirectResponse(f"/e/{token}/settings?cover=1",
+                                status_code=303)
 
     @app.post("/e/{token}/settings/helpers")
     async def helper_add(request: Request, token: str):

@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
 from app import db
+from app.config import sample_shops_enabled
 from app.meta.spark import chat_json
 from app.models import PriceLine
 from app.pipeline.names import CANONICAL_NAMES, SYNONYMS
@@ -174,21 +175,24 @@ def _display_line(lines: list[PriceLine]) -> PriceLine | None:
 def find_listings(conn: sqlite3.Connection, query: Query,
                   now: datetime, *, area: str | None = None,
                   pincode: str | None = None,
-                  open_only: bool = False) -> list[Listing]:
+                  open_only: bool = False, settings=None) -> list[Listing]:
     """Compare published prices for the query's wants across listed shops.
 
     Only listed shops with a published version count; sold-out items are
     excluded. A max_rate filters on the per-kg/per-piece rate. Rows are
-    fresh-first, then cheapest rate first. ``area`` (explicit chip, else
-    the query's area) matches case-insensitively; ``pincode`` matches
-    exactly; ``open_only`` drops shops known to be closed right now
-    (shops without hours stay, as unknown).
+    fresh-first, then sample shops after real shops, then cheapest rate
+    first. ``area`` (explicit chip, else the query's area) matches
+    case-insensitively; ``pincode`` matches exactly; ``open_only`` drops
+    shops known to be closed right now (shops without hours stay, as
+    unknown). SAMPLE_SHOPS=0 hides sample shops entirely.
     """
     from app.market.hours import shop_open_status
 
     now = _as_aware(now)
     shops = conn.execute(
         "SELECT * FROM shops WHERE listed = 1 ORDER BY id").fetchall()
+    if not sample_shops_enabled(settings):
+        shops = [shop for shop in shops if not shop["is_demo"]]
     needle = (area or query.area or "").strip().lower()
     if needle:
         shops = [shop for shop in shops
@@ -233,5 +237,6 @@ def find_listings(conn: sqlite3.Connection, query: Query,
                     lat=shop["lat"], lng=shop["lng"],
                     open_state=status["state"],
                     open_time=status["time"]))
-    listings.sort(key=lambda row: (row.stale, row.rate is None, row.rate))
+    listings.sort(key=lambda row: (row.stale, row.is_demo,
+                                     row.rate is None, row.rate))
     return listings

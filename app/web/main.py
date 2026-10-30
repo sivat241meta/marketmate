@@ -43,7 +43,8 @@ def _fmt_rate(value: Decimal) -> str:
     return format(value.quantize(Decimal("0.01")).normalize(), "f")
 
 
-def _closed_with_items(conn, query, listings, now, area, pincode) -> int:
+def _closed_with_items(conn, query, listings, now, area, pincode,
+                     settings=None) -> int:
     """Distinct closed shops with fresh listings the open filter hides.
 
     ``listings`` is the open-filtered result; wants it covers need no
@@ -56,7 +57,7 @@ def _closed_with_items(conn, query, listings, now, area, pincode) -> int:
         return 0
     unfiltered = find_listings(conn, query, now, area=(area or None),
                                pincode=(pincode or None),
-                               open_only=False)
+                               open_only=False, settings=settings)
     return len({row.slug for row in unfiltered
                 if not row.stale and row.name_en in missing
                 and row.open_state == "closed"})
@@ -174,7 +175,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
-    def _rows_from_listings(listings, now):
+    def _rows_from_listings(listings, now, lang="en"):
+        from app.web.i18n import t_for
+
+        sample_rel = t_for(lang)("hp.said_sample")
         rows = []
         for found in listings:
             name = (f"{found.name_en} ({found.variety})"
@@ -194,7 +198,8 @@ def create_app(settings: Settings) -> FastAPI:
                 "rate": _fmt_rate(found.rate) if found.rate is not None else "",
                 "rate_unit": found.rate_unit or "",
                 "currency": found.currency,
-                "rel": format_relative(found.updated_at, now),
+                "rel": (sample_rel if found.is_demo
+                        else format_relative(found.updated_at, now)),
                 "stale": found.stale,
                 "lowest": False,
                 "area": found.area,
@@ -285,6 +290,17 @@ def create_app(settings: Settings) -> FastAPI:
                     area = shop["area"] or ""
                     status = shop_open_status(shop)
                     open_state, open_time = status["state"], status["time"]
+            plan_demo = False
+            if plan.kind == "split":
+                for line in lines:
+                    other = db.shop_by_slug(conn, line["slug"])
+                    if other is not None and other["is_demo"]:
+                        plan_demo = True
+                        break
+            elif slug is not None:
+                plan_shop = db.shop_by_slug(conn, slug)
+                plan_demo = bool(plan_shop is not None
+                                 and plan_shop["is_demo"])
             plan_dicts.append({
                 "kind": plan.kind,
                 "shop": plan.shop,
@@ -299,14 +315,17 @@ def create_app(settings: Settings) -> FastAPI:
                 "lng": lng,
                 "open_state": open_state,
                 "open_time": open_time,
+                "is_demo": plan_demo,
                 "best": bool(best_total is not None
                              and plan.total == best_total
                              and plan.kind in ("single_shop",
                                                "partial_shop")
                              and not plan.missing),
             })
-        # Default sort: cheapest basket total first (stable).
+        # Default sort: cheapest basket total first (stable), sample
+        # shops after real shops.
         plan_dicts.sort(key=lambda entry: Decimal(entry["total"] or 0))
+        plan_dicts.sort(key=lambda entry: entry["is_demo"])
         return {
             "budget": _fmt_rate(budget) if budget is not None else "",
             "explanation": explanation,
@@ -402,7 +421,8 @@ def create_app(settings: Settings) -> FastAPI:
     def home(request: Request, conn: Conn, area: str | None = None):
         from app.web.i18n import get_ui_lang
 
-        data = home_data_mod.home_data(conn, area=area)
+        data = home_data_mod.home_data(conn, area=area,
+                                       settings=app.state.settings)
         return templates.TemplateResponse(
             request, "home.html", {
                 "ui_lang": get_ui_lang(request),
@@ -432,7 +452,11 @@ def create_app(settings: Settings) -> FastAPI:
     def market_page(request: Request, conn: Conn, q: str | None = None,
                     area: str | None = None, pincode: str | None = None,
                     sort: str | None = None, budget: str | None = None):
-        areas = db.listed_areas(conn)
+        from app.config import sample_shops_enabled
+
+        areas = db.listed_areas(
+            conn, include_samples=sample_shops_enabled(
+                app.state.settings))
         # The open-now toggle is off by default; the form always sends
         # open_now=0 plus open_now=1 when ticked, so read every value.
         picked = request.query_params.getlist("open_now")
@@ -461,16 +485,19 @@ def create_app(settings: Settings) -> FastAPI:
         now = datetime.now(UTC)
         listings = find_listings(conn, query, now, area=(area or None),
                                  pincode=(pincode or None),
-                                 open_only=open_flag)
+                                 open_only=open_flag,
+                                 settings=app.state.settings)
         # Honest empty state: no listed shop has shared prices at all, so
         # there is no basket to plan (never a "totals 0" card).
         market_empty = bool(query.wants) and not areas
         from app.web.i18n import get_strings, get_ui_lang
 
-        strings = get_strings(get_ui_lang(request))
+        ui_lang = get_ui_lang(request)
+        strings = get_strings(ui_lang)
         closed_n = (0 if (market_empty or not open_flag)
                     else _closed_with_items(conn, query, listings, now,
-                                            area, pincode))
+                                            area, pincode,
+                                            app.state.settings))
         closed_text = (strings("market.closed_have", n=closed_n,
                                count=closed_n) if closed_n else "")
         empty_text = closed_text or strings("market.none_today")
@@ -478,7 +505,7 @@ def create_app(settings: Settings) -> FastAPI:
                   else _build_basket(conn, query, listings, ledger,
                                      empty_text=empty_text,
                                      closed_text=closed_text))
-        rows = _rows_from_listings(listings, now)
+        rows = _rows_from_listings(listings, now, ui_lang)
         closed_notice = None
         if open_flag and closed_n:
             if ((basket is None
@@ -537,17 +564,23 @@ def create_app(settings: Settings) -> FastAPI:
             saved.unlink(missing_ok=True)
             wav.unlink(missing_ok=True)
         now = datetime.now(UTC)
-        listings = find_listings(conn, query, now)
-        voice_areas = db.listed_areas(conn)
+        listings = find_listings(conn, query, now,
+                                 settings=app.state.settings)
+        from app.config import sample_shops_enabled
+
+        voice_areas = db.listed_areas(
+            conn, include_samples=sample_shops_enabled(
+                app.state.settings))
         market_empty = bool(query.wants) and not voice_areas
         from app.web.i18n import get_strings, get_ui_lang
 
         # Voice search never filters by open hours, so there is no
         # closed-shops sentence here; empty baskets get the fixed line.
-        voice_empty = get_strings(get_ui_lang(request))("market.none_today")
+        voice_lang = get_ui_lang(request)
+        voice_empty = get_strings(voice_lang)("market.none_today")
         return _market_context(
             request, q=transcript.text, heard=transcript.text, query=query,
-            rows=_rows_from_listings(listings, now),
+            rows=_rows_from_listings(listings, now, voice_lang),
             basket=(None if market_empty
                     else _build_basket(conn, query, listings, ledger,
                                        empty_text=voice_empty)),

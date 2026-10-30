@@ -1,0 +1,545 @@
+{
+  "slug": "gupta-sabzi-wale",
+  "name": "Gupta Sabzi Wale",
+  "area": "Azadpur Mandi, Delhi",
+  "language": "hi",
+  "currency": "INR",
+  "lat": 28.7041,
+  "lng": 77.1742,
+  "hours": {
+    "closed": [],
+    "slots": {
+      "0": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "1": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "2": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "3": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "4": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "5": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ],
+      "6": [
+        [
+          "05:30",
+          "22:00"
+        ]
+      ]
+    }
+  },
+  "cover": {
+    "file": "gupta-sabzi-wale.jpg",
+    "file_800": "gupta-sabzi-wale-800.jpg",
+    "photographer": "Sateesh Reddy Patlolla",
+    "page_url": "https://unsplash.com/photos/fresh-vegetables-displayed-at-an-outdoor-market-Sya_pQnqx8Y",
+    "img_id": "photo-1759003103614-11427d946af0",
+    "licence": "Unsplash License"
+  },
+  "transcript": "tomato, पैंतालीस रुपये किलो, प्याज पैंतीस रुपये किलो, आलू पच्चीस रुपये किलो, फूल गोभी पैंतालीस रुपये पीस, पत्ता गोभी पैंतीस रुपये पीस, मटर पचासी रुपये किलो, मूली पचपन रुपये किलो, पालक पैंतालीस रुपये किलो, भिंडी पचहत्तर रुपये किलो, बैंगन पचपन रुपये किलो,",
+  "meta_usd": {
+    "voice": 0.0127,
+    "photos": 0.0727
+  },
+  "items": [
+    {
+      "name_spoken": "tomato",
+      "name_local": "टमाटर",
+      "name_en": "tomato",
+      "variety": null,
+      "match_key": "tomato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__tomato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Jason Leung",
+        "page_url": "https://unsplash.com/photos/a-large-pile-of-ripe-red-tomatoes-on-vines-J1HgNWUPzXo",
+        "img_id": "photo-1769489023745-5d4effc83b9e",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "tomato, पैंतालीस रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "45",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पैंतालीस रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "प्याज",
+      "name_local": "प्याज",
+      "name_en": "onion",
+      "variety": null,
+      "match_key": "onion",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__onion.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Adhitya Sibikumar",
+        "page_url": "https://unsplash.com/photos/pile-of-red-onions-at-a-market-yAVMlADwbnU",
+        "img_id": "photo-1774978612854-de6a81b2cb39",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "प्याज पैंतीस रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "35",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पैंतीस रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "आलू",
+      "name_local": "आलू",
+      "name_en": "potato",
+      "variety": null,
+      "match_key": "potato",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__potato.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Rodrigo dos Reis",
+        "page_url": "https://unsplash.com/photos/pile-of-raw-yellow-potatoes-h3AkzboxK4Q",
+        "img_id": "photo-1590165482129-1b8b27698780",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "आलू पच्चीस रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "25",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पच्चीस रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "फूल गोभी",
+      "name_local": "फूल गोभी",
+      "name_en": "cauliflower",
+      "variety": null,
+      "match_key": "cauliflower",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__cauliflower.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "engin akyurt",
+        "page_url": "https://unsplash.com/photos/fresh-cauliflower-heads-displayed-at-market-cjxRVLDLG8w",
+        "img_id": "photo-1784043437088-c86a43eb695d",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "फूल गोभी पैंतालीस रुपये पीस",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "45",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "पैंतालीस रुपये पीस"
+        }
+      ],
+      "flags": [
+        {
+          "field": "unit",
+          "code": "UNIT_ODD",
+          "message": "usually sold by weight - is per piece right?",
+          "options": [],
+          "blocking": false
+        },
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "पत्ता गोभी",
+      "name_local": "पत्ता गोभी",
+      "name_en": "cabbage",
+      "variety": null,
+      "match_key": "cabbage",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__cabbage.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Prabhath Ilangakoon",
+        "page_url": "https://unsplash.com/photos/a-pile-of-fresh-green-savoy-cabbages-with-textured-leaves-crAXyYC4bjk",
+        "img_id": "photo-1781344107811-8431aba9942b",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "पत्ता गोभी पैंतीस रुपये पीस",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "35",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "पैंतीस रुपये पीस"
+        }
+      ],
+      "flags": [
+        {
+          "field": "unit",
+          "code": "UNIT_ODD",
+          "message": "usually sold by weight - is per piece right?",
+          "options": [],
+          "blocking": false
+        },
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "मटर",
+      "name_local": "मटर",
+      "name_en": "peas",
+      "variety": null,
+      "match_key": "peas",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__peas.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Anita Austvika",
+        "page_url": "https://unsplash.com/photos/a-pile-of-peas-and-peas-on-a-table-T9FZiRp0XKw",
+        "img_id": "photo-1690023614293-ac2ba2eb0731",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "मटर पचासी रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "85",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पचासी रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "मूली",
+      "name_local": "मूली",
+      "name_en": "radish",
+      "variety": null,
+      "match_key": "radish",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__radish.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "liam matthews",
+        "page_url": "https://unsplash.com/photos/white-radishes-and-bitter-melons-in-a-crate-0BCwHPrs9hM",
+        "img_id": "photo-1762710526515-b5c1f45d69ef",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "मूली पचपन रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "55",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पचपन रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "पालक",
+      "name_local": "पालक",
+      "name_en": "spinach",
+      "variety": null,
+      "match_key": "spinach",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__spinach.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "engin akyurt",
+        "page_url": "https://unsplash.com/photos/fresh-green-spinach-leaves-with-pink-stems-NoxzzaDGkfs",
+        "img_id": "photo-1784043436675-dbe53cbcec88",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "पालक पैंतालीस रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "45",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पैंतालीस रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "भिंडी",
+      "name_local": "भिंडी",
+      "name_en": "ladies finger",
+      "variety": null,
+      "match_key": "ladies finger",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__ladies-finger.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Elianna Friedman",
+        "page_url": "https://unsplash.com/photos/ladies-finger-lo-uDeMugA9ojU",
+        "img_id": "photo-1558408525-1092038389ae",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "भिंडी पचहत्तर रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "75",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पचहत्तर रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "बैंगन",
+      "name_local": "बैंगन",
+      "name_en": "brinjal",
+      "variety": null,
+      "match_key": "brinjal",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "gupta-sabzi-wale__brinjal.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "charlesdeluvio",
+        "page_url": "https://unsplash.com/photos/purple-eggplant-sRBUzcxqt6c",
+        "img_id": "photo-1528826007177-f38517ce9a8a",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "बैंगन पचपन रुपये किलो",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 27340,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "55",
+          "per_amount": "1",
+          "unit": "kg",
+          "said": "पचपन रुपये किलो"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}

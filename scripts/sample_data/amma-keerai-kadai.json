@@ -1,0 +1,573 @@
+{
+  "slug": "amma-keerai-kadai",
+  "name": "Amma Keerai Kadai",
+  "area": "R.S. Puram, Coimbatore",
+  "language": "ta",
+  "currency": "INR",
+  "lat": 11.0087,
+  "lng": 76.9478,
+  "hours": {
+    "closed": [
+      6
+    ],
+    "slots": {
+      "0": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ],
+      "1": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ],
+      "2": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ],
+      "3": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ],
+      "4": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ],
+      "5": [
+        [
+          "06:30",
+          "20:30"
+        ]
+      ]
+    }
+  },
+  "cover": {
+    "file": "amma-keerai-kadai.jpg",
+    "file_800": "amma-keerai-kadai-800.jpg",
+    "photographer": "Tofan Teodor",
+    "page_url": "https://unsplash.com/photos/pile-of-fresh-green-beans-on-a-market-stall-ofYQCDKdh3Y",
+    "img_id": "photo-1768734837711-1fcab086d826",
+    "licence": "Unsplash License"
+  },
+  "transcript": "பசலைக்கீரை கட்டு முப்பது ரூபாய். அரைக்கீரை கட்டு முப்பது ரூபாய். சிறுகீரை கட்டு இருபது ரூபாய். வெந்தயக்கீரை கட்டு முப்பது ரூபாய். கொத்தமல்லி கட்டு இருபது ரூபாய். புதினா கட்டு இருபது ரூபாய். வெங்காயத்தாள் கட்டு முப்பது ரூபாய். முருங்கை கீரை கட்டு நாற்பது ரூபாய். தேங்காய் ஒன்று ன்று முப்பது ரூபாய். வாழை இலை ஒன்று பத்து ரூபாய். கறிவேப்பிலை கட்டு இருபது ரூபாய்.",
+  "meta_usd": {
+    "voice": 0.0203,
+    "photos": 0.0756
+  },
+  "items": [
+    {
+      "name_spoken": "pasalaikeerai",
+      "name_local": "பசலைக்கீரை",
+      "name_en": "spinach",
+      "variety": null,
+      "match_key": "spinach",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__spinach.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Shutter Sphere Collective",
+        "page_url": "https://unsplash.com/photos/fresh-green-spinach-leaves-6AAptb2kBak",
+        "img_id": "photo-1574316071802-0d684efa7bf5",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "பசலைக்கீரை கட்டு முப்பது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "araikeerai",
+      "name_local": "அரைக்கீரை",
+      "name_en": "amaranth",
+      "variety": null,
+      "match_key": "amaranth",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__amaranth.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Monika Grabkowska",
+        "page_url": "https://unsplash.com/photos/green-and-purple-leaves-with-water-droplets-i14VzlCp-Eo",
+        "img_id": "photo-1617884638394-d9eef1b0f40e",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "அரைக்கீரை கட்டு முப்பது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "sirukeerai",
+      "name_local": "சிறுகீரை",
+      "name_en": "amaranth",
+      "variety": null,
+      "match_key": "amaranth",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__amaranth-2.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Ram Kishor",
+        "page_url": "https://unsplash.com/photos/a-group-of-leaves-RTr1EyuZtDQ",
+        "img_id": "photo-1664883885923-788ba85e3110",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "சிறுகீரை கட்டு இருபது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "20",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு இருபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "vendhayakeerai",
+      "name_local": "வெந்தயக்கீரை",
+      "name_en": "fenugreek leaves",
+      "variety": null,
+      "match_key": "fenugreek leaves",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__fenugreek-leaves.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "C P",
+        "page_url": "https://unsplash.com/photos/a-close-up-of-a-bunch-of-green-plants-Yz9s7tg9Yr0",
+        "img_id": "photo-1654151749030-9e931772e555",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "வெந்தயக்கீரை கட்டு முப்பது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "kothamalli",
+      "name_local": "கொத்தமல்லி",
+      "name_en": "coriander",
+      "variety": null,
+      "match_key": "coriander",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__coriander.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Natalie Kinnear",
+        "page_url": "https://unsplash.com/photos/fresh-cilantro-leaves-with-a-soft-green-background-hx_vvcIiRzw",
+        "img_id": "photo-1776089770931-e422e57f760c",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கொத்தமல்லி கட்டு இருபது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "20",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு இருபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "pudhina",
+      "name_local": "புதினா",
+      "name_en": "mint",
+      "variety": null,
+      "match_key": "mint",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__mint.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "SIMON LEE",
+        "page_url": "https://unsplash.com/photos/green-mint-leaves-texture-bHWRSq8fUUE",
+        "img_id": "photo-1618130070080-91f4d55a2383",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "புதினா கட்டு இருபது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "20",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு இருபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "vengayathaal",
+      "name_local": "வெங்காயத்தாள்",
+      "name_en": "spring onion",
+      "variety": null,
+      "match_key": "spring onion",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__spring-onion.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Laura Mitulla",
+        "page_url": "https://unsplash.com/photos/green-spring-onions-CQOm4U4E71M",
+        "img_id": "photo-1559836833-2a2c99b1f54f",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "வெங்காயத்தாள் கட்டு முப்பது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "murungai keerai",
+      "name_local": "முருங்கை கீரை",
+      "name_en": "moringa leaves",
+      "variety": null,
+      "match_key": "moringa leaves",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__moringa-leaves.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "David Clode",
+        "page_url": "https://unsplash.com/photos/close-up-of-vibrant-green-moringa-leaves-on-branches-fz7nSSfQDZo",
+        "img_id": "photo-1771643033515-0028fd03b708",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "முருங்கை கீரை கட்டு நாற்பது ரூபாய்.",
+        "turn_ids": [
+          1
+        ],
+        "start_ms": 0,
+        "end_ms": 25660,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "40",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு நாற்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "thengai",
+      "name_local": "தேங்காய்",
+      "name_en": "coconut",
+      "variety": null,
+      "match_key": "coconut",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__coconut.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Saravanan Narayanan",
+        "page_url": "https://unsplash.com/photos/a-pile-of-brown-coconuts-with-husks-ha4CPWwTXMs",
+        "img_id": "photo-1777732786332-3e78390f76aa",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "தேங்காய் ஒன்று ன்று முப்பது ரூபாய்.",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 26220,
+        "end_ms": 35420,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "30",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "ஒன்று ன்று முப்பது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "vaazhai ilai",
+      "name_local": "வாழை இலை",
+      "name_en": "banana leaf",
+      "variety": null,
+      "match_key": "banana leaf",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__banana-leaf.webp",
+      "photo_method": "fallback-square",
+      "photo_credit": {
+        "photographer": "Eline Somers",
+        "page_url": "https://unsplash.com/photos/a-close-up-of-a-large-green-leaf-cyqtI1LcMWY",
+        "img_id": "photo-1528207620916-db0d5aab17cb",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "வாழை இலை ஒன்று பத்து ரூபாய்.",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 26220,
+        "end_ms": 35420,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "10",
+          "per_amount": "1",
+          "unit": "piece",
+          "said": "ஒன்று பத்து ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    },
+    {
+      "name_spoken": "kariveppilai",
+      "name_local": "கறிவேப்பிலை",
+      "name_en": "curry leaves",
+      "variety": null,
+      "match_key": "curry leaves",
+      "qty": null,
+      "qty_unit": null,
+      "photo": "amma-keerai-kadai__curry-leaves.webp",
+      "photo_method": "cutout",
+      "photo_credit": {
+        "photographer": "Sujana Rahman",
+        "page_url": "https://unsplash.com/photos/hand-holding-fresh-green-curry-leaves-Dx8wkE6GgxY",
+        "img_id": "photo-1789194980416-35d3d64cc805",
+        "licence": "Unsplash License"
+      },
+      "proof": {
+        "quote": "கறிவேப்பிலை கட்டு இருபது ரூபாய்.",
+        "turn_ids": [
+          2
+        ],
+        "start_ms": 26220,
+        "end_ms": 35420,
+        "frame": null,
+        "audio_clip": null,
+        "number_check": null,
+        "source": null
+      },
+      "price_lines": [
+        {
+          "price": "20",
+          "per_amount": "1",
+          "unit": "bunch",
+          "said": "கட்டு இருபது ரூபாய்"
+        }
+      ],
+      "flags": [
+        {
+          "field": "qty",
+          "code": "QTY_MISSING",
+          "message": "no quantity",
+          "options": [],
+          "blocking": false
+        }
+      ]
+    }
+  ]
+}
