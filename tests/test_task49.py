@@ -200,7 +200,9 @@ def test_market_renders(tmp_path):
     client = _client(tmp_path)
     html = client.get("/market").text
     assert 'class="kick"' in html
-    assert 'id="market-q"' in html
+    # Task 125: one search — the query pill opens the search pop-up.
+    assert "mkt-pill" in html
+    assert 'id="market-q"' not in html
     # Task 124: the voice panel is the voice+text composer.
     assert 'id="market-voice"' in html
     assert "data-composer" in html

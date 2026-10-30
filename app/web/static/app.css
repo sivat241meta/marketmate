@@ -3785,13 +3785,20 @@ body.land .pill.big { max-width: 100%; }
    white-space: nowrap below its marker. */
 .hp-sell,
 .hp-sell .free-badge { white-space: nowrap; }
+/* Task 125: header chrome never wraps — nav labels stay one line at
+   every width and the location button ellipsizes. Placed before the
+   Task 84 section, which forbids white-space: nowrap below its
+   marker. */
+.hp-nav a > span,
+.nav-more-btn > span,
+.nav-more-menu a > span,
+.loc-txt { white-space: nowrap; }
 @media (max-width: 430px) {
   .hp-sell .free-badge { display: none; }
   .home-mkt .hp-header {
     gap: 8px;
     padding: 8px 12px;
-    flex-wrap: wrap;
-    row-gap: 8px;
+    flex-wrap: nowrap;
   }
   .home-mkt .hp-menu-btn { margin-left: auto; }
   .home-mkt .hp-sell { font-size: 13px; padding: 8px 10px; }
@@ -3853,6 +3860,7 @@ body.home-mkt > .hdr { display: none; }
   min-height: 72px;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--line-2);
@@ -3864,6 +3872,9 @@ body.home-mkt > .hdr { display: none; }
 }
 .hp-header.compact { min-height: 60px; }
 .hp-header .logo { flex: none; }
+/* Task 125: the small mark shows only on narrow phones (logo wordmark
+   hidden there); everywhere else the full logo shows. */
+.hp-header .brand-mark-sm { display: none; }
 /* Location button: area + chevron, opens the drawer. */
 .loc-btn {
   display: inline-flex;
@@ -3880,13 +3891,14 @@ body.home-mkt > .hdr { display: none; }
   cursor: pointer;
   border-radius: 10px;
   min-height: 44px;
-  max-width: 38vw;
+  min-width: 0;
+  max-width: 220px;
 }
 .loc-txt {
+  display: block;
+  min-width: 0;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
 }
 .loc-chev { color: var(--accent-ink); font-size: 12px; }
 .loc-btn:hover { background: var(--accent-soft); }
@@ -3937,6 +3949,88 @@ body.home-mkt > .hdr { display: none; }
   z-index: 0;
 }
 .nav-pill[hidden] { display: none; }
+/* Task 125: "More ▾" dropdown — hidden on wide laptops where all five
+   nav links fit; below ~1180px it replaces For sellers + How it works.
+   Same underline + timing as the nav links; the sliding pill targets
+   the button (motion.js) while the menu links keep it parked there. */
+.nav-more { display: none; position: relative; z-index: 1; }
+.nav-more-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14.5px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  z-index: 1;
+}
+.nav-more-btn::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 5px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.22s ease-out;
+}
+.nav-more-btn:hover::after,
+.nav-more-btn:focus-visible::after,
+.nav-more-btn[aria-expanded="true"]::after { transform: scaleX(1); }
+.nav-more-btn[aria-expanded="true"] { color: var(--accent-ink); }
+.nav-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1.5px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lift);
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transform-origin: top center;
+  transition: opacity 0.22s ease-out, transform 0.22s ease-out;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+.nav-more:hover .nav-more-menu,
+.nav-more:focus-within .nav-more-menu,
+.nav-more.open .nav-more-menu {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+.nav-more-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14.5px;
+  padding: 10px 12px;
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 0.18s ease-out;
+}
+.nav-more-menu a:hover,
+.nav-more-menu a:focus-visible { background: var(--accent-soft); }
+.nav-more-menu a.on { color: var(--accent-ink); }
 .hp-header .sp { flex: 1; }
 .hp-sell { position: relative; }
 .free-badge {
@@ -4650,9 +4744,34 @@ body.mm-locked { overflow: hidden; }
   .hp-bag .bag-label { display: none; }
   .hp-bag { padding-left: 10px; padding-right: 10px; }
 }
+/* Task 125: laptop header fit — below ~1360px the nav drops its
+   icons (labels stay, never wrapping); below ~1180px For sellers +
+   How it works move into the More dropdown. */
+@media (max-width: 1360px) {
+  .hp-nav > a > .obj,
+  .hp-nav > a > .obj-tint { display: none; }
+  .loc-btn { max-width: 160px; }
+}
+@media (max-width: 1180px) {
+  .hp-nav a.nav-extra { display: none; }
+  .hp-nav .nav-more { display: block; }
+}
+/* Task 125: one-row phone header — mark only (no wordmark under
+   430px), ellipsis location, search, bag, menu, each 40–44px tall
+   and never wrapping to a second row. */
 @media (max-width: 430px) {
-  .loc-btn { max-width: 30vw; }
-  .hp-header { gap: 6px; padding: 8px 10px; }
+  .loc-btn { max-width: 30vw; flex: 0 1 auto; }
+  .hp-header { gap: 6px; padding: 8px 10px; flex-wrap: nowrap; }
+  .hp-header .brand-logo { display: none; }
+  .hp-header .brand-mark-sm { display: block; }
+  .hp-header .logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 44px;
+  }
+  .hp-header .hp-bag { min-height: 44px; justify-content: center; }
 }
 @media (min-width: 912px) {
   .home-mkt .hp-search { margin-left: auto; margin-right: auto; }

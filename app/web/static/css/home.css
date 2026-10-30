@@ -113,6 +113,110 @@
   overflow-wrap: break-word;
 }
 
+/* ---- Task 125: promo banner carousel + slim count line ----
+   Three wide rounded slides (teal/soft-blue gradients, white text)
+   with real repo photos; one slide visible at a time. Arrows/dots
+   come from the shared carousel code; home.js auto-advances every
+   5 s (paused on hover/focus, off under reduced motion). */
+#promo {
+  margin: 14px 0 0;
+}
+.promo-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding: 4px 2px 8px;
+}
+.promo-slide {
+  position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 20px;
+  padding: 20px;
+  min-height: 150px;
+  width: 100%;
+  color: #fff;
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.promo-1 { background: linear-gradient(120deg, #0b3b44, #0f766e 70%); }
+.promo-2 { background: linear-gradient(120deg, #0e4a5a, #0369a1 70%); }
+.promo-3 { background: linear-gradient(120deg, #0f766e, #0e7c86 70%); }
+.promo-txt {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  align-content: center;
+}
+.promo-txt b {
+  font-size: 21px;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+.promo-cta {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.promo-img {
+  width: 132px;
+  height: 132px;
+  object-fit: cover;
+  border-radius: 16px;
+  flex: none;
+}
+.promo-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+@media (max-width: 480px) {
+  .promo-slide {
+    padding: 16px;
+    min-height: 132px;
+  }
+  .promo-txt b { font-size: 18px; }
+  .promo-img {
+    width: 96px;
+    height: 96px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .promo-track { scroll-behavior: auto; }
+}
+.hp-count-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  margin: 10px 16px 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+.hp-count-line b {
+  color: var(--accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+.hp-count-line > span + span::before {
+  content: "·";
+  margin: 0 8px;
+  color: var(--muted);
+}
+
 /* ---- tabs: shine on the active tab; pulsing new dot ---- */
 .hp-tab {
   position: relative;
@@ -346,6 +450,8 @@
 .shop-card:hover .shop-cover img {
   transform: scale(1.05);
 }
+/* Task 125: the avatar sits below the photo, never overlapping the
+   cover price line (the old -26px pull covered the text). */
 .shop-ava {
   width: 52px;
   height: 52px;
@@ -358,11 +464,11 @@
   place-items: center;
   flex: none;
   border: 3px solid #fff;
-  margin: -26px 0 0 12px;
+  margin: 10px 0 0 12px;
   position: relative;
 }
 .shop-card .shop-body {
-  padding-top: 8px;
+  padding-top: 4px;
 }
 .shop-body h3 {
   overflow-wrap: anywhere;

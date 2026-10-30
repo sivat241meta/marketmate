@@ -167,12 +167,19 @@ def test_meta_section_model_ids_exist_in_code(tmp_path):
 
 def test_no_shop_template_uses_landing_photos():
     # Task 122: landing photos live on /sellers + /how now, never on
-    # product/shop cards.
+    # product/shop cards. Task 125: the homepage promo banner is the
+    # one exception — landing photos only inside #promo there.
     allowed = {"sellers.html", "how.html"}
     offenders = [path.name for path in sorted(TEMPLATES.glob("*.html"))
                  if path.name not in allowed
+                 and path.name != "home.html"
                  and "landing/" in path.read_text()]
     assert offenders == []
+    home = (TEMPLATES / "home.html").read_text()
+    promo = home.split('id="promo"')[1].split('id="mind"')[0]
+    rest = home.split('id="promo"')[0] + home.split('id="mind"')[1]
+    assert "landing/" in promo
+    assert "landing/" not in rest
 
 
 # --- 7. images: lazy, sized, srcset -------------------------------------------

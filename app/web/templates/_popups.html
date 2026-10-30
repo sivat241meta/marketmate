@@ -79,10 +79,8 @@
       <p class="mm-row-head"><span>{{ t('v12.popular') }}</span></p>
       <div class="mm-pop-grid">
         {% for chip in _pop_list %}
-        {% set _ph = namespace(u=none) %}
-        {% for card in hp.picks %}{% if _ph.u is none and card.photo_url and (card.name_en|lower) == (chip.name|lower) %}{% set _ph.u = card.photo_url %}{% endif %}{% endfor %}
         <a class="pop-circle" href="/market?q={{ chip.name | urlencode }}">
-          {% if _ph.u %}<img src="{{ _ph.u }}" alt="" loading="lazy" width="96" height="96">{% else %}<span class="nophoto" aria-hidden="true">{{ chip.name[:1] }}</span>{% endif %}
+          {% if chip.photo_url %}<img src="{{ chip.photo_url }}" alt="" loading="lazy" width="96" height="96"{% if chip.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ chip.name[:1] }}</span>{% endif %}
           <span>{{ chip.name }}</span>
         </a>
         {% endfor %}

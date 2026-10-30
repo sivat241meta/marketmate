@@ -305,9 +305,16 @@ def test_area_param_filters_homepage(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en", "?area=Anna+Nagar"))
     assert "Anna Nagar" in html
-    assert "Kannan Veg" not in html
-    assert "Malar Greens" not in html
     assert "Anna Fresh" in html
+    # Task 125: only the top-shops carousel borrows other areas'
+    # shops (under an "and nearby markets" heading) so its row is
+    # never near-empty; every other section stays area-scoped.
+    top = _section(html, "top-shops", "shops")
+    assert "and nearby markets" in top
+    assert "Kannan Veg" in top
+    grid = _section(html, "shops", "best-prices")
+    assert "Kannan Veg" not in grid
+    assert "Malar Greens" not in grid
     picks = _section(html, "best-prices", "markets")
     assert "tomato" not in picks.lower()
     assert "mango" in picks.lower()

@@ -390,7 +390,10 @@ def test_phone_header_css_420_rules():
     assert ".hp-sell .free-badge" in block and "display: none" in block
     assert ".hp-bag .bag-label" in block
     assert ".hp-sell" in block and "font-size: 13px" in block
-    assert "flex-wrap: wrap" in block  # 320px backstop, nothing overflows
+    # Task 125: one row — the header never wraps; the location
+    # button ellipsizes instead.
+    assert "flex-wrap: nowrap" in block
+    assert "flex-wrap: wrap" not in block
     assert ".hp-menu-btn" in block
 
 

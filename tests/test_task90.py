@@ -232,18 +232,15 @@ def test_shop_more_shops_near_you(tmp_path):
 
 # --- 3. order flow ---------------------------------------------------------------
 
+# Task 125: the old live-order recorder left the quote page — the
+# composer is the only recorder there now.
 ORDER_HOOKS = ["data-methods", "data-method=", "data-panel=",
-               "data-live-order", "data-ws-url", "data-live-order-mic",
-               "data-live-order-hint", "data-live-order-last",
-               "data-live-order-partial", "data-live-order-error",
-               "data-live-order-lines", "data-live-order-list",
-               "data-live-order-total", "data-live-order-done",
                "data-composer", "data-composer-form", "data-composer-mic",
                "data-composer-send", "data-composer-cancel",
                "data-composer-plus", "data-composer-text",
                "data-needs-internet", "data-customer-name",
                "data-customer-phone", 'name="audio"', 'name="items"',
-               'name="photo"', "methods.js", "live-order.js",
+               'name="photo"', "methods.js",
                "composer.js", "customer-contact.js"]
 
 
@@ -264,7 +261,9 @@ def test_quote_start_flow_steps_and_hooks(tmp_path):
 def test_quote_start_labels_inputs_and_errors(tmp_path):
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     html = client.get(f"/s/{slug}/quote").text
-    for field_id in ("quote-name-voice", "quote-phone-voice",
+    # Task 125: the speak panel keeps one name/phone pair, inside
+    # the composer (the old recorder's duplicate pair is gone).
+    for field_id in ("quote-name-speak", "quote-phone-speak",
                      "quote-name-type", "quote-phone-type", "quote-items",
                      "quote-name-photo", "quote-phone-photo", "quote-photo"):
         assert f'for="{field_id}"' in html, f"no label for {field_id}"
@@ -360,15 +359,18 @@ MARKET_RESULT_HOOKS = ["data-shop-list", "data-shop-row", "data-distance",
 
 
 def test_market_search_card_prefilled_and_hooks(tmp_path):
+    # Task 125: one search — the query shows as a pill (tap opens the
+    # search pop-up) and area/budget live in the filter pop-up.
     client, _token, _slug, _qtoken, _public = _seed(tmp_path)
     html = client.get("/market?q=tomato&area=Koyambedu&budget=200").text
-    assert 'class="hp-search"' in html
-    assert 'name="q"' in html and 'value="tomato"' in html
-    assert 'name="area"' in html
-    assert '<option value="Koyambedu" selected>' in html
-    assert 'name="budget"' in html
-    assert '<option value="200" selected>' in html
-    assert "hp-tab" in html
+    assert 'class="hp-search"' not in html
+    assert "mkt-pill" in html and "tomato" in html
+    assert 'name="q"' in html
+    filt = html.split('id="filter-pop"')[1]
+    assert 'name="area"' in filt
+    assert 'value="Koyambedu" checked' in filt
+    assert 'name="budget"' in filt
+    assert 'value="200" checked' in filt
     for hook in MARKET_HOOKS:
         assert hook in html, f"market page missing {hook}"
 

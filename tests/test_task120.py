@@ -106,7 +106,8 @@ def test_counters_count_only_real_prices_with_sample_note(tmp_path):
     assert 'data-count="3"' in hero
     assert 'data-count="7"' in hero
     assert "Prices said today" in hero
-    assert "+ 5 sample shops" in hero
+    # Task 125: the slim count line says "incl. N sample shops".
+    assert "incl. 5 sample shops" in hero
 
 
 def test_counters_all_sample_label_prices_listed(tmp_path):
@@ -114,7 +115,8 @@ def test_counters_all_sample_label_prices_listed(tmp_path):
     hero = _hero(make_client(tmp_path))
     assert "Prices listed" in hero
     assert "Prices said today" not in hero
-    assert "+ 5 sample shops" in hero
+    # Task 125: the slim count line says "incl. N sample shops".
+    assert "incl. 5 sample shops" in hero
     assert 'id="empty-all"' not in _home(make_client(tmp_path), "en")
 
 
@@ -284,15 +286,19 @@ def test_voice_panel_hidden_after_typed_search(tmp_path, monkeypatch):
                  "data-composer-mic", "data-composer-text",
                  'action="/market/voice"'):
         assert hook in html, hook
-    assert html.index('id="search"') < html.index("data-voice-panel")
+    assert html.index("mkt-pill") < html.index("data-voice-panel")
 
 
 def test_voice_panel_js_toggles_on_tabs():
+    # Task 125: the old search card (and its voice tab toggle) is
+    # gone; the mic toggle lives in the search pop-up instead.
     src = PUBLIC_JS.read_text()
-    assert "data-voice-panel" in src
-    assert "hp-tab-voice" in src
-    assert "hp-mic" in src
-    assert "panel.hidden" in src
+    assert "hp-tab-voice" not in src
+    assert "hp-mic" not in src
+    assert "initMarketTabs" in src
+    popups = (ROOT / "app" / "web" / "static" / "popups.js").read_text()
+    assert "data-voice-toggle" in popups
+    assert "search-voice" in popups
 
 
 def test_sample_strings_exist_in_all_langs():

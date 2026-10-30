@@ -564,10 +564,13 @@ def test_amount_chip_posts_to_existing_endpoints(tmp_path):
 
 
 def test_live_bill_page_has_speak_live_and_fallback(tmp_path):
+    # Task 125: the composer is the only recorder on the page — the
+    # old live-order mic block is gone.
     client, _, _, token = _client_with_shop(tmp_path)
     html = client.get(f"/e/{token}/bills/new").text
-    assert "data-live-order" in html
-    assert "live-order.js" in html
+    assert "data-live-order" not in html
+    assert "live-order.js" not in html
+    assert "mic-btn" not in html
     assert "data-composer" in html
     assert "composer.js" in html
     assert 'name="audio"' in html
@@ -576,9 +579,14 @@ def test_live_bill_page_has_speak_live_and_fallback(tmp_path):
 
 
 def test_quote_speak_has_live_and_fallback(tmp_path):
+    # Task 125: the composer is the only recorder on the page — the
+    # old live-order mic block is gone.
     client, _, slug, _ = _client_with_shop(tmp_path)
     html = client.get(f"/s/{slug}/quote").text
-    assert "data-live-order" in html
-    assert "live-order.js" in html
+    assert "data-live-order" not in html
+    assert "live-order.js" not in html
+    assert "mic-btn" not in html
+    assert "data-composer" in html
+    assert "composer.js" in html
     assert "Upload" in html or "upload" in html
     assert "style=" not in html

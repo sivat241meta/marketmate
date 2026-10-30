@@ -606,7 +606,9 @@
   }
 
   /* Task 124: the search pop-up mic reveals the voice+text composer
-     (same /market/voice action as the Find-a-shop voice panel). */
+     (same /market/voice action as the Find-a-shop voice panel).
+     Task 125: openers carrying data-search-voice (the homepage
+     banner's voice slide) open the pop-up with voice already shown. */
   function initVoice() {
     document.querySelectorAll("[data-voice-toggle]").forEach(
       function (btn) {
@@ -621,6 +623,47 @@
             panel.hidden ? "false" : "true");
         });
       });
+    document.querySelectorAll("[data-search-open][data-search-voice]")
+      .forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var panel = document.getElementById("search-voice");
+          if (panel) {
+            panel.hidden = false;
+          }
+          var toggle = document.querySelector("[data-voice-toggle]");
+          if (toggle) {
+            toggle.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
+  }
+
+  /* Task 125: the header More dropdown toggles on click for touch
+     users (CSS also opens it on hover/focus-within). */
+  function initMore() {
+    var btn = document.querySelector("[data-nav-more-btn]");
+    var wrap = document.querySelector("[data-nav-more]");
+    if (!btn || !wrap || btn.dataset.mmBound) {
+      return;
+    }
+    btn.dataset.mmBound = "1";
+    function set(open) {
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      wrap.classList.toggle("open", open);
+    }
+    btn.addEventListener("click", function () {
+      set(btn.getAttribute("aria-expanded") !== "true");
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") {
+        set(false);
+      }
+    });
+    document.addEventListener("click", function (ev) {
+      if (!wrap.contains(ev.target)) {
+        set(false);
+      }
+    });
   }
 
   function init() {
@@ -634,6 +677,7 @@
     initSearch();
     initFilter();
     initVoice();
+    initMore();
   }
 
   if (typeof document !== "undefined" && document) {
