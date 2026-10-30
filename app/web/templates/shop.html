@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% import "_v11.html" as v11 %}
+{% set _L = ui_lang|default('en') %}
 {% block title %}{{ shop["name"] }}{% endblock %}
 {% block body_class %}pub is-shop{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
 <div data-shop-visit data-slug="{{ shop["slug"] }}" data-name="{{ shop["name"] }}" data-area="{{ shop["area"] }}" hidden></div>
 <section class="hero2" aria-label="{{ shop["name"] }}">
+  <div class="hero-cover">
+    {% if shop_cover_url %}<img src="{{ shop_cover_url }}" alt="" width="600" height="200">{% else %}{% set _hc = namespace(n=0) %}{% for row in rows %}{% if row.photo_url and _hc.n < 3 %}<img src="{{ row.photo_url }}" alt="" width="400" height="300"{% if row.photo_cutout %} data-cutout class="cut"{% endif %}>{% set _hc.n = _hc.n + 1 %}{% endif %}{% endfor %}{% if _hc.n == 0 %}<span class="nophoto" aria-hidden="true">{{ shop["name"][:1] }}</span>{% endif %}{% endif %}
+  </div>
+  <span class="hero-ava" aria-hidden="true">{{ shop["name"][:1] }}</span>
   <div class="shop-band-copy">
     <p class="kick band-full">{{ t('shell.todays_prices') }}</p>
     <h1>{{ shop["name"] }}</h1>
@@ -19,8 +25,8 @@
   </div>
   <div class="shop-band-actions">
     <a class="pill cta big btn-primary shop-action" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}"><span class="act-ic">{{ ui.obj("mic", 20) }}</span><span class="act-full">{{ t.get_quote }}</span><span class="act-short">{{ t.get_quote_short }}</span></a>
-    <a class="pill ghost sm shop-action" href="https://wa.me/{{ digits }}"><span class="act-ic">{{ ui.obj("chat", 20, tint="green") }}</span><span class="act-full">{{ t.whatsapp }}</span><span class="act-short">{{ t.whatsapp }}</span></a>
-    <a class="pill ghost sm shop-action" href="tel:{{ shop["phone"] }}"><span class="act-ic">{{ ui.obj("call", 20) }}</span><span class="act-full">{{ t.call }}</span><span class="act-short">{{ t.call }}</span></a>
+    {% if shop["phone"] %}<a class="pill ghost sm shop-action" href="https://wa.me/{{ digits }}"><span class="act-ic">{{ ui.obj("chat", 20, tint="green") }}</span><span class="act-full">{{ t.whatsapp }}</span><span class="act-short">{{ t.whatsapp }}</span></a>
+    <a class="pill ghost sm shop-action" href="tel:{{ shop["phone"] }}"><span class="act-ic">{{ ui.obj("call", 20) }}</span><span class="act-full">{{ t.call }}</span><span class="act-short">{{ t.call }}</span></a>{% endif %}
     <a class="pill ghost sm shop-action" href="{{ share_url }}"><span class="act-ic">{{ ui.obj("link", 20) }}</span><span class="act-full">{{ t('wa.share_list') }}</span><span class="act-short">{{ t('dash.share') }}</span></a>
   </div>
 </section>
@@ -44,9 +50,9 @@
   <p class="notice">{{ ui.obj("check", 20) }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).</span></p>
 
   <div class="shop-layout">
-    <div class="grid-products" data-shop-grid>
+    <div class="grid-products" data-shop-grid data-reveal-group>
 {% for row in rows %}
-      <article class="card{% if row.sold_out %} out{% endif %}" data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
+      <article class="card{% if row.sold_out %} out{% endif %}" data-reveal data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
         <div class="pw">
           <div class="ph{% if not row.photo_url %} letter{% endif %}">{% if row.photo_url %}<img src="{{ row.photo_url }}" alt="" loading="lazy" width="400" height="300"{% if row.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true"><span class="til-g">{{ row.tile }}</span>{% if row.tile_var %}<span class="til-v">{{ row.tile_var }}</span>{% endif %}</span>{% endif %}</div>
           {% if not row.sold_out %}
@@ -125,8 +131,8 @@
   <h2>{{ t.no_prices_title }}</h2>
   <p class="muted">{{ t.no_prices }} {{ t.call }} or {{ t.whatsapp }} the seller for today's prices.</p>
   <div class="card-actions">
-    <a class="pill ghost" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
-    <a class="pill cta" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>
+    {% if shop["phone"] %}<a class="pill ghost" href="tel:{{ shop["phone"] }}">{{ ui.obj("call", 20) }}{{ t.call }}</a>
+    <a class="pill cta" href="https://wa.me/{{ digits }}">{{ ui.obj("chat", 20) }}{{ t.whatsapp }}</a>{% else %}<a class="pill cta" href="/market">{{ t('shell.find_shop') }}</a>{% endif %}
   </div>
 </section>
 {% endif %}
@@ -142,11 +148,12 @@
   </div>
   <div class="hp-shop-grid">
     {% for nb in nearby %}
-    <article class="shop-card">
-      <div class="shop-photo letter">
-        <span class="nophoto" aria-hidden="true"><span class="til-g">{{ nb.tile }}</span></span>
+    <article class="shop-card" data-reveal>
+      <div class="shop-cover">
+        <span class="nophoto" aria-hidden="true">{{ nb.tile }}</span>
         {% if nb.open_state == "open" %}<span class="pill pill-live shop-open">{{ t('hp.open') }}</span>{% elif nb.open_state == "closed" %}<span class="pill sm ghost shop-open">{{ t('hp.closed') }}</span>{% endif %}
       </div>
+      <span class="shop-ava" aria-hidden="true">{{ nb.tile }}</span>
       <div class="shop-body">
         <h3>{{ nb.name }}</h3>
         <p class="muted">{{ nb.area }}</p>
@@ -252,6 +259,9 @@ document.addEventListener("DOMContentLoaded", () => {
       qtyEl.textContent = cardQty(card);
       add.hidden = true;
       step.hidden = false;
+      card.classList.remove("added");
+      void card.offsetWidth;
+      card.classList.add("added");
       refresh();
     });
     card.querySelector("[data-inc]").addEventListener("click", () => {
