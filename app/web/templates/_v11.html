@@ -1,0 +1,49 @@
+{# Task 115 strings: template-side en/ta/hi for the v11 public-site
+   copy. i18n.py is untouched (parallel Task 116 owns Python here), so
+   new short labels live in this dict. Usage:
+   {% import "_v11.html" as v11 %}{{ v11.t('best', ui_lang) }} #}
+{% macro t(key, lang='en', n='', m='') -%}
+{% set _V11 = {
+  "shops_lbl": {"en": "Shops", "ta": "கடைகள்", "hi": "दुकानें"},
+  "prices_lbl": {"en": "Prices said today", "ta": "இன்று சொன்ன விலைகள்", "hi": "आज बताई कीमतें"},
+  "markets_lbl": {"en": "Markets", "ta": "சந்தைகள்", "hi": "बाज़ार"},
+  "rot_spot": {"en": "Today's spotlight", "ta": "இன்றைய சிறப்பு", "hi": "आज की ख़ास"},
+  "flowers": {"en": "Flowers", "ta": "பூக்கள்", "hi": "फूल"},
+  "coconut": {"en": "Coconut & banana", "ta": "தேங்காய் & வாழை", "hi": "नारियल और केला"},
+  "groceries": {"en": "Groceries", "ta": "மளிகை", "hi": "किराना"},
+  "best": {"en": "Best price", "ta": "குறைந்த விலை", "hi": "सबसे कम कीमत"},
+  "save": {"en": "Save to My list", "ta": "என் பட்டியலில் சேர்", "hi": "मेरी सूची में जोड़ें"},
+  "saved": {"en": "Saved to My list", "ta": "பட்டியலில் சேர்ந்தது", "hi": "सूची में जुड़ा"},
+  "unsaved": {"en": "Removed from My list", "ta": "பட்டியலிலிருந்து நீக்கப்பட்டது", "hi": "सूची से हटाया गया"},
+  "bag_add": {"en": "Add to bag", "ta": "பையில் சேர்", "hi": "थैली में डालें"},
+  "cats_t": {"en": "Shop by category", "ta": "வகையில் தேடுக", "hi": "श्रेणी से चुनें"},
+  "cats_sub": {"en": "Jump straight to what you need.", "ta": "உங்களுக்கு வேண்டியதைத் தேர்வு செய்க.", "hi": "आपको जो चाहिए चुनें।"},
+  "item_one": {"en": "item", "ta": "பொருள்", "hi": "आइटम"},
+  "item_other": {"en": "items", "ta": "பொருட்கள்", "hi": "आइटम"},
+  "voice_badge": {"en": "Prices from the seller's voice", "ta": "விற்பனையாளர் குரல் விலைகள்", "hi": "विक्रेता की आवाज़ की कीमतें"},
+  "basket_t": {"en": "Matched for your basket", "ta": "உங்கள் கூடைக்கு ஏற்றது", "hi": "आपकी टोकरी के लिए"},
+  "basket_sub": {"en": "One shop covering most of your list.", "ta": "உங்கள் பட்டியலில் பெரும்பாலானவை ஒரே கடையில்.", "hi": "आपकी सूची की ज़्यादातर चीज़ें एक ही दुकान में।"},
+  "basket_full": {"en": "100% of your list", "ta": "உங்கள் பட்டியல் 100%", "hi": "आपकी सूची 100%"},
+  "basket_part": {"en": "{n} of {m} items", "ta": "{m} பொருட்களில் {n}", "hi": "{m} में से {n} आइटम"},
+  "basket_list": {"en": "Your list", "ta": "உங்கள் பட்டியல்", "hi": "आपकी सूची"},
+  "check_q": {"en": "Did you say ₹40 or ₹14?", "ta": "₹40 சொன்னீங்களா, ₹14-ஆ?", "hi": "क्या आपने ₹40 कहा या ₹14?"},
+  "play": {"en": "Try the demo", "ta": "டெமோ பார்க்க", "hi": "डेमो देखें"},
+  "float_ok": {"en": "₹40 ✓ confirmed in your voice", "ta": "₹40 ✓ உங்கள் குரலில் உறுதி", "hi": "₹40 ✓ आपकी आवाज़ में पक्का"},
+  "s_voice": {"en": "Listens", "ta": "கேட்கும்", "hi": "सुनता है"},
+  "s_items": {"en": "Reads prices", "ta": "விலைகளைப் படிக்கும்", "hi": "कीमतें पढ़ता है"},
+  "s_photos": {"en": "Cuts out photos", "ta": "புகைப்படங்களை வெட்டும்", "hi": "फ़ोटो काटता है"},
+  "s_check": {"en": "Double-checks", "ta": "மீண்டும் சரிபார்க்கும்", "hi": "दोबारा जाँचता है"},
+  "f_voice": {"en": "voice", "ta": "குரல்", "hi": "आवाज़"},
+  "f_items": {"en": "items", "ta": "பொருட்கள்", "hi": "आइटम"},
+  "f_photos": {"en": "photos", "ta": "புகைப்படங்கள்", "hi": "फ़ोटो"},
+  "f_list": {"en": "checked list", "ta": "சரிபார்த்த பட்டியல்", "hi": "जाँची सूची"},
+  "install_t": {"en": "Install on your phone", "ta": "உங்கள் போனில் நிறுவுக", "hi": "अपने फ़ोन में लगाएँ"},
+  "install_d": {"en": "Add to home screen — works in any phone browser.", "ta": "ஹோம் ஸ்கிரீனில் சேர்க்கவும் — எந்த போன் பிரவுசரிலும் வேலை செய்யும்.", "hi": "होम स्क्रीन पर जोड़ें — किसी भी फ़ोन ब्राउज़र में चलता है।"},
+  "promise": {"en": "Today's real prices, said by sellers in their own voice.", "ta": "விற்பனையாளர்கள் தங்கள் குரலில் சொன்ன இன்றைய உண்மை விலைகள்.", "hi": "विक्रेताओं की अपनी आवाज़ में आज की असली कीमतें।"},
+  "col_find": {"en": "Find", "ta": "தேடுக", "hi": "खोजें"},
+  "col_sell": {"en": "Sell", "ta": "விற்க", "hi": "बेचें"},
+  "col_learn": {"en": "Learn", "ta": "அறிக", "hi": "सीखें"},
+  "share_lbl": {"en": "Share", "ta": "பகிர்க", "hi": "साझा करें"}
+} -%}
+{{ _V11.get(key, {}).get((lang or 'en')|lower, _V11.get(key, {}).get('en', key))|replace('{n}', n|string)|replace('{m}', m|string) }}
+{%- endmacro %}

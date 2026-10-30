@@ -322,6 +322,215 @@
     });
   }
 
+  // Task 115: hearts (My list), hero rotating word, last search +
+  // basket match. Local only: no network calls, ever.
+  var SAVE_KEY = "mm_saved_list";
+  var LASTQ_KEY = "mm_last_q";
+
+  function loadSaved() {
+    try {
+      var raw = window.localStorage
+        ? window.localStorage.getItem(SAVE_KEY)
+        : null;
+      var parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function storeSaved(saved) {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+      }
+    } catch (err) { /* private mode: hearts just work once */ }
+  }
+
+  function toast(msg) {
+    if (msg && window.Motion && window.Motion.toast) {
+      window.Motion.toast(msg);
+    }
+  }
+
+  function initHearts() {
+    var btns = document.querySelectorAll("[data-heart]");
+    if (!btns.length) {
+      return;
+    }
+    var saved = loadSaved();
+    btns.forEach(function (btn) {
+      var key = btn.getAttribute("data-key") || "";
+      if (key && saved[key]) {
+        btn.classList.add("on");
+        btn.setAttribute("aria-pressed", "true");
+      }
+      btn.addEventListener("click", function () {
+        var on = btn.classList.toggle("on");
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        var cur = loadSaved();
+        if (on) {
+          cur[key] = 1;
+          toast(btn.getAttribute("data-saved"));
+        } else {
+          delete cur[key];
+          toast(btn.getAttribute("data-removed"));
+        }
+        storeSaved(cur);
+      });
+    });
+  }
+
+  function initRot() {
+    var el = document.querySelector("[data-rot]");
+    if (!el) {
+      return;
+    }
+    var words = [];
+    try {
+      words = JSON.parse(el.getAttribute("data-words") || "[]");
+    } catch (err) {
+      words = [];
+    }
+    if (words.length < 2) {
+      return;
+    }
+    if (window.matchMedia && window.matchMedia(
+      "(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    var i = 0;
+    window.setInterval(function () {
+      if (document.hidden) {
+        return;
+      }
+      el.classList.add("fade");
+      window.setTimeout(function () {
+        i = (i + 1) % words.length;
+        el.textContent = words[i];
+        el.classList.remove("fade");
+      }, 260);
+    }, 2800);
+  }
+
+  function initLastQ() {
+    document.querySelectorAll("form.hp-search").forEach(function (form) {
+      form.addEventListener("submit", function () {
+        var input = form.querySelector("input[name=\"q\"]");
+        try {
+          if (input && window.localStorage) {
+            window.localStorage.setItem(LASTQ_KEY, input.value || "");
+          }
+        } catch (err) { /* private mode: nothing remembered */ }
+      });
+    });
+  }
+
+  function wantOf(chunk) {
+    var stop = { kg: 1, g: 1, gram: 1, grams: 1, dozen: 1, pc: 1,
+      pcs: 1, piece: 1, bunch: 1, bunches: 1, kilo: 1, kilos: 1,
+      ltr: 1, litre: 1, ml: 1 };
+    var toks = chunk.toLowerCase()
+      .replace(/[^a-z\u0b80-\u0bff\u0900-\u097f ]/g, " ")
+      .split(/\s+/);
+    for (var i = 0; i < toks.length; i++) {
+      if (toks[i].length > 1 && !stop[toks[i]]) {
+        return toks[i];
+      }
+    }
+    return "";
+  }
+
+  function initBasket() {
+    var line = document.querySelector("[data-basket-line]");
+    var badge = document.querySelector("[data-basket-badge]");
+    if (!line || !badge) {
+      return;
+    }
+    var last = null;
+    try {
+      last = window.localStorage
+        ? window.localStorage.getItem(LASTQ_KEY)
+        : null;
+    } catch (err) {
+      return;
+    }
+    if (!last || !last.trim()) {
+      return;
+    }
+    var wants = last.split(/[,;]+/).map(wantOf).filter(function (w) {
+      return w !== "";
+    });
+    if (!wants.length) {
+      return;
+    }
+    var cards = document.querySelectorAll(".pick-card[data-name-en]");
+    if (!cards.length) {
+      return;
+    }
+    var byShop = {};
+    wants.forEach(function (want) {
+      cards.forEach(function (card) {
+        var name = (card.getAttribute("data-name-en") || "")
+          .toLowerCase();
+        if (!name || name.indexOf(want) === -1) {
+          return;
+        }
+        var slug = card.getAttribute("data-slug") || "";
+        if (!slug) {
+          return;
+        }
+        if (!byShop[slug]) {
+          byShop[slug] = {
+            n: 0,
+            seen: {},
+            name: card.getAttribute("data-shop") || "",
+          };
+        }
+        if (!byShop[slug].seen[want]) {
+          byShop[slug].seen[want] = 1;
+          byShop[slug].n += 1;
+        }
+      });
+    });
+    var best = null;
+    var bestN = 0;
+    Object.keys(byShop).forEach(function (slug) {
+      if (byShop[slug].n > bestN) {
+        bestN = byShop[slug].n;
+        best = slug;
+      }
+    });
+    if (!best) {
+      return;
+    }
+    var label = line.querySelector("small");
+    Array.prototype.slice.call(line.childNodes).forEach(function (node) {
+      if (node !== label) {
+        line.removeChild(node);
+      }
+    });
+    line.appendChild(document.createTextNode(last.trim() + " …"));
+    var full = badge.getAttribute("data-full") || "";
+    var part = badge.getAttribute("data-part") || "";
+    badge.textContent = bestN === wants.length
+      ? full
+      : part.split("{n}").join(String(bestN))
+        .split("{m}").join(String(wants.length));
+    var shopEl = document.querySelector("[data-basket-shop]");
+    if (shopEl) {
+      shopEl.textContent = byShop[best].name;
+    }
+    var view = document.querySelector("[data-basket-view]");
+    if (view) {
+      view.setAttribute("href", "/s/" + best);
+    }
+    var quote = document.querySelector("[data-basket-quote]");
+    if (quote) {
+      quote.setAttribute("href", "/s/" + best + "/quote");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("search");
     if (form) {
@@ -330,5 +539,9 @@
     initMenu();
     initChooser();
     initNearMe();
+    initHearts();
+    initRot();
+    initLastQ();
+    initBasket();
   });
 })();
