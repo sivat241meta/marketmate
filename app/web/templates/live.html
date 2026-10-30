@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% from "_composer.html" import composer with context %}
 {% block title %}{{ t('live.title', shop=shop["name"]) }}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block content %}
@@ -68,28 +69,14 @@
   </div>
   <div class="live-fallback" data-live-fallback hidden>
     <div class="alert alert-info">{{ t('live.no_support') }}</div>
-    <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
-      <div class="field">
-        <label for="live-clip">{{ t('live.video_label') }}</label>
-        <input id="live-clip" type="file" name="video" accept="video/*" capture="environment" required>
-        <span class="help">{{ t('live.video_help') }}</span>
-      </div>
-      <p class="upload-file" data-upload-file hidden></p>
-      <p class="form-error" data-upload-error hidden></p>
-      <div class="upload-progress" data-upload-progress hidden>
-        <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
-        <p class="upload-meta" data-upload-meta></p>
-        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
-      </div>
-      <button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('live.upload_instead') }}</button>
-    </form>
+    <p class="muted">{{ t('live.video_help') }}</p>
+    {{ composer("/e/" ~ token ~ "/upload", field="video", accept_upload="video", max_seconds=300, done_label=t('composer.check_prices')) }}
   </div>
   <p class="notice">{{ notice | safe }}</p>
   <p><a href="/e/{{ token }}">{{ t('live.back') }}</a></p>
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 <script src="{{ static_url('live.js') if static_url is defined else '/static/live.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 {% endblock %}

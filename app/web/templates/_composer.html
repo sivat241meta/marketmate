@@ -1,0 +1,54 @@
+{# ChatGPT-style voice/text composer (Task 123).
+   Usage: {% from "_composer.html" import composer with context %}
+          {{ composer("/s/shop/quote", text_field="items", placeholder="…",
+                      mode="voice+text", max_seconds=120,
+                      done_label=t('composer.review_order')) }}
+   Renders a chat pill (JS-enhanced) plus a plain form fallback that posts the
+   same action, method and field names without JS. Extra visible fields (e.g.
+   customer name/phone) can be injected inside the form with
+   {% call composer(...) %}…{% endcall %}.
+#}
+{% macro composer(action, field="audio", text_field=None, placeholder="", mode="voice", extra_fields={}, accept_upload=True, max_seconds=120, done_label=None) %}
+{% set has_text = (mode == "voice+text") and text_field %}
+{% set video_menu = (accept_upload == "video") %}
+{% set _done = done_label if done_label else t('composer.open_result') %}
+<link rel="stylesheet" href="{{ static_url('css/composer.css') if static_url is defined else '/static/css/composer.css' }}">
+<div class="composer" data-composer data-field="{{ field }}" data-text-field="{{ text_field or '' }}" data-max-seconds="{{ max_seconds }}" data-done-label="{{ _done }}" data-accept-video="{{ 'true' if video_menu else 'false' }}" data-str-recording="{{ t('composer.recording') }}" data-str-sending="{{ t('composer.sending') }}" data-str-listening="{{ t('composer.listening') }}" data-str-understanding="{{ t('composer.understanding') }}" data-str-done="{{ t('composer.done') }}" data-str-try-again="{{ t('composer.try_again') }}" data-str-record-again="{{ t('composer.record_again') }}" data-str-https-hint="{{ t('composer.https_hint') }}" data-str-seconds-left="{{ t('composer.seconds_left') }}" data-str-limit-reached="{{ t('composer.limit_reached') }}" data-str-type-first="{{ t('composer.type_first') }}" data-str-failed="{{ t('composer.failed') }}" data-str-sent="{{ t('composer.sent') }}" data-str-play="{{ t('composer.play_aria') }}" data-str-pause="{{ t('composer.pause_aria') }}">
+  <div class="composer-thread" data-composer-thread role="log" aria-live="polite"></div>
+  <form class="composer-form" method="post" action="{{ action }}" enctype="multipart/form-data" data-composer-form>
+    {% for _name, _value in (extra_fields or {}).items() %}
+    <input type="hidden" name="{{ _name }}" value="{{ _value }}">
+    {% endfor %}
+    {{ caller() if caller is defined }}
+    <div class="composer-pill" data-composer-pill>
+      {% if accept_upload %}
+      <div class="composer-attach">
+        <button class="composer-plus" type="button" data-composer-plus aria-label="{{ t('composer.plus_aria') }}" aria-haspopup="menu" aria-expanded="false" hidden><span aria-hidden="true">+</span></button>
+        <div class="composer-menu" role="menu" data-composer-menu>
+          <label class="composer-menu-item" role="menuitem"><input class="composer-file" type="file" name="{{ field }}" accept="audio/*,video/*,.webm,.mp4,.m4a" data-composer-file{% if not has_text %} required{% endif %}><span>{{ t('composer.upload_recording') }}</span></label>
+          {% if video_menu %}
+          <label class="composer-menu-item" role="menuitem" data-composer-video-only hidden><input class="composer-file" type="file" name="{{ field }}" accept="video/*,.mp4,.mov" data-composer-file disabled><span>{{ t('composer.upload_video') }}</span></label>
+          <label class="composer-menu-item" role="menuitem" data-composer-video-only hidden><input class="composer-file" type="file" name="{{ field }}" accept="video/*" capture="environment" data-composer-file disabled><span>{{ t('composer.take_video') }}</span></label>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% if has_text %}
+      <label class="visually-hidden" for="composer-text-{{ text_field }}">{{ placeholder }}</label>
+      <textarea class="composer-text" id="composer-text-{{ text_field }}" name="{{ text_field }}" rows="1" placeholder="{{ placeholder }}" autocomplete="off" data-composer-text></textarea>
+      {% endif %}
+      <div class="composer-wave" data-composer-wave aria-hidden="true" hidden></div>
+      <p class="composer-timer" data-composer-timer hidden>0:00</p>
+      <button class="composer-mic" type="button" data-composer-mic aria-label="{{ t('composer.mic_aria') }}" hidden><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+      <button class="composer-send" type="submit" data-composer-send aria-label="{{ t('composer.send_aria') }}" hidden><span aria-hidden="true">↑</span></button>
+      <button class="composer-cancel" type="button" data-composer-cancel aria-label="{{ t('composer.cancel_aria') }}" hidden><span aria-hidden="true">✕</span></button>
+      <div class="composer-nojs" data-composer-nojs>
+        <button class="composer-nojs-send" type="submit">{{ t('composer.send') }}</button>
+      </div>
+    </div>
+    <p class="composer-hint" data-composer-hint role="status" hidden></p>
+    <p class="visually-hidden" aria-live="polite" data-composer-live></p>
+  </form>
+</div>
+<script src="{{ static_url('composer.js') if static_url is defined else '/static/composer.js' }}"></script>
+{% endmacro %}

@@ -125,6 +125,24 @@ def write_bill_meta(data_dir: Path, session_id: int, payload: dict) -> None:
     path.write_text(json.dumps(payload))
 
 
+def _upload_has_bytes(upload) -> bool:
+    """True when a multipart file part carries at least one byte.
+
+    Browsers submit an empty part for an untouched file input; the chat
+    composer shares one form between typed and spoken input, so an empty
+    recording must fall through to the text path instead of failing.
+    """
+    try:
+        chunk = upload.file.read(1)
+    except (AttributeError, OSError, ValueError):
+        return True
+    try:
+        upload.file.seek(0)
+    except (AttributeError, OSError, ValueError):
+        pass
+    return bool(chunk)
+
+
 def _shop_or_404(conn, token: str):
     """Owner or staff shop lookup; the role is resolved alongside."""
     shop, _role, _helper = resolve_or_404(conn, token)
@@ -1163,7 +1181,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         form = await request.form()
         audio = form.get("audio")
         photo = form.get("photo")
-        has_audio = audio is not None and hasattr(audio, "file")
+        has_audio = (audio is not None and hasattr(audio, "file")
+                     and _upload_has_bytes(audio))
         has_photo = photo is not None and hasattr(photo, "file")
         if has_audio:
             return _start_voice_bill(request, shop, token, audio, conn,

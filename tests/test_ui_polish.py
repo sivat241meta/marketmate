@@ -218,8 +218,10 @@ def test_bills_new_has_tap_first_segmented_control(tmp_path):
     _slug, token, _shop_id = seed_shop(tmp_path)
     html = make_client(tmp_path).get(f"/e/{token}/bills/new").text
     assert "segmented" in html
-    for panel in ("tap", "speak", "type", "photo"):
+    for panel in ("tap", "speak", "photo"):
         assert f'data-panel="{panel}"' in html
+    assert 'data-panel="type"' not in html, \
+        "type tab is the composer text mode now"
     tap_at = html.find('data-panel="tap"')
     speak_at = html.find('data-panel="speak"')
     assert tap_at != -1 and tap_at < speak_at

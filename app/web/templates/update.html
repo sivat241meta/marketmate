@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
+{% from "_composer.html" import composer with context %}
 {% block title %}{% if mode == "confirm" %}{{ t('upd.confirm_title') }}{% else %}{{ t('upd.record_title') }}{% endif %}{% endblock %}
 {% block body_class %}is-seller{% endblock %}
 {% block crumb_page %}{% if mode == "confirm" %}{{ t('upd.confirm_title') }}{% else %}{{ t('upd.record_title') }}{% endif %}{% endblock %}
@@ -96,22 +97,7 @@
 {% if error %}{{ ui.error_summary(error) }}{% endif %}
 {% call ui.form_card() %}
   {% if hint %}<div class="alert alert-info">{{ t('upd.say_price_for', hint=hint) }}</div>{% endif %}
-  <div class="record-actions">
-    <button class="btn btn-primary" type="button" id="rec-start">{{ t('upd.start_rec') }}</button>
-    <button class="btn btn-secondary" type="button" id="rec-stop" disabled>{{ t('upd.stop_check') }}</button>
-  </div>
-  <p class="muted" id="rec-status">{{ t('upd.tap_start') }}</p>
-  <form method="post" action="/e/{{ token }}/update" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
-    {{ ui.field(t('upd.upload_rec'), "audio", type="file", required=True, attrs={"id": "update-audio", "accept": "audio/*,video/*,.webm,.mp4,.m4a"}) }}
-    <p class="upload-file" data-upload-file hidden></p>
-    <p class="form-error" data-upload-error hidden></p>
-    <div class="upload-progress" data-upload-progress hidden>
-      <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
-      <p class="upload-meta" data-upload-meta></p>
-      <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
-    </div>
-    <button class="btn btn-secondary" type="submit">{{ t('upd.upload_check') }}</button>
-  </form>
+  {{ composer("/e/" ~ token ~ "/update", max_seconds=300, done_label=t('composer.check_prices')) }}
   <p class="notice">{{ notice | safe }}</p>
 {% endcall %}
 <div id="board"></div>
@@ -145,8 +131,5 @@
 {% block scripts %}
 {% if mode == "confirm" %}
 <script src="{{ static_url('review.js') if static_url is defined else '/static/review.js' }}"></script>
-{% else %}
-<script src="{{ static_url('recorder.js') if static_url is defined else '/static/recorder.js' }}"></script>
-<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
 {% endif %}
 {% endblock %}

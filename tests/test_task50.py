@@ -281,11 +281,13 @@ BILLS_NEW_HOOKS = ["data-methods", "data-method=", "data-panel=",
                    "data-live-order-partial", "data-live-order-error",
                    "data-live-order-lines", "data-live-order-list",
                    "data-live-order-total", "data-live-order-done",
-                   "rec-start", "rec-stop", "rec-status",
+                   "data-composer", "data-composer-form", "data-composer-mic",
+                   "data-composer-send", "data-composer-cancel",
+                   "data-composer-plus", "data-composer-text",
                    "data-offline-banner", "data-offline-text",
                    "data-needs-internet", "data-needs-internet-hint",
                    "methods.js", "live-order.js", "tap-chips.js",
-                   "offline-bills.js", "quote.js", "recorder.js"]
+                   "offline-bills.js", "quote.js", "composer.js"]
 
 BILL_HOOKS = ["data-receipt", "data-line", "data-rate", "data-per",
               "data-stepper", "data-step=", "name=\"qty_",
@@ -317,7 +319,7 @@ def test_hooks_match_what_js_queries():
     """Every data-*/id/class hook asserted above is really queried by JS."""
     js = {}
     for name in ("live", "review", "methods", "live-order", "tap-chips",
-                 "offline-bills", "quote", "recorder"):
+                 "offline-bills", "quote", "recorder", "composer"):
         js[name] = (ROOT / f"app/web/static/{name}.js").read_text()
     # bill.html carries its own cash-helper script inline.
     js["bill-inline"] = (ROOT / "app/web/templates/bill.html").read_text()
