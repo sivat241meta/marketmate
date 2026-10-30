@@ -87,6 +87,16 @@
 .hp-rot-word.fade {
   opacity: 0;
 }
+/* Task 118: on phones the search card overlaps the band's bottom
+   edge, so the photo credit moves to bottom-left above the card
+   instead of peeking out at the right edge. */
+@media (max-width: 600px) {
+  .hp-credit {
+    left: 12px;
+    right: auto;
+    bottom: 80px;
+  }
+}
 .hp-counters {
   display: flex;
   gap: 12px;
@@ -234,6 +244,13 @@
 .heart.on svg {
   fill: currentColor;
 }
+/* Task 118: pick photos are product photos, never covers: the
+   whole photo shows, centred, on a tinted square with ~10% padding. */
+.home-mkt .pick-photo img {
+  object-fit: contain;
+  padding: 10%;
+  background: var(--accent-soft);
+}
 .said-line {
   display: flex;
   align-items: center;
@@ -329,6 +346,7 @@
 .tile-photo img.cut {
   object-fit: contain;
   background: var(--accent-soft);
+  padding: 8%;
 }
 .tile-chev {
   position: absolute;
@@ -354,12 +372,17 @@
   flex: 1;
   min-width: 0;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.14);
   display: block;
 }
-.shop-cover img.cut {
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.14);
+/* Task 118: only a real cover photo may use cover; the item
+   collage is always contained, padded and never cropped. */
+.shop-cover img.cov {
+  object-fit: cover;
+  padding: 0;
+  background: none;
 }
 .shop-cover .nophoto {
   margin: auto;
@@ -528,6 +551,7 @@
 .sell-stars {
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
 }
 .sell-stars span {
@@ -543,13 +567,16 @@
   width: 24px;
   height: 24px;
 }
-.sell-stars span:nth-child(1) { left: 8%; top: 16px; }
-.sell-stars span:nth-child(2) { left: 46%; top: 48px; animation-delay: 0.25s; }
-.sell-stars span:nth-child(3) { right: 10%; top: 22px; animation-delay: 0.5s; }
+/* Task 118: decorations stay in the band margins, behind the
+   copy (sell-wrap paints above), never over the eyebrow/heading. */
+.sell-stars span:nth-child(1) { left: 10px; bottom: 16px; }
+.sell-stars span:nth-child(2) { right: 12px; top: 14px; animation-delay: 0.25s; }
+.sell-stars span:nth-child(3) { right: 26px; bottom: 22px; animation-delay: 0.5s; }
 .sell-wrap {
   display: grid;
   gap: 28px;
   position: relative;
+  z-index: 1;
 }
 @media (min-width: 900px) {
   .sell-wrap {
@@ -728,6 +755,7 @@
 .install-band h2 {
   margin: 0;
   font-size: 22px;
+  color: #fff;
 }
 .install-band p {
   margin: 0;
@@ -736,6 +764,7 @@
 }
 .install-ic {
   background: rgba(255, 255, 255, 0.16);
+  color: #fff;
   border-radius: 16px;
   width: 64px;
   height: 64px;
@@ -878,6 +907,14 @@
 }
 
 /* ---- market + shop enrichment ---- */
+/* Task 118: public item tiles never crop: product photos (cut-out
+   or original) contain on a tinted square with ~10% padding.
+   Seller pages keep their own .card .ph rules in app.css. */
+body.pub .card .ph img {
+  object-fit: contain;
+  padding: 10%;
+  background: var(--accent-soft);
+}
 .res-top {
   display: flex;
   gap: 10px;
@@ -929,12 +966,17 @@
   flex: 1;
   min-width: 0;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.14);
   display: block;
 }
-.hero-cover img.cut {
-  object-fit: contain;
-  background: rgba(255, 255, 255, 0.14);
+/* Task 118: only a real cover photo may use cover; item
+   photos in the strip are contained, padded, never cropped. */
+.hero-cover img.cov {
+  object-fit: cover;
+  padding: 0;
+  background: none;
 }
 .hero-cover .nophoto {
   margin: auto;

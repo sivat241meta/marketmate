@@ -138,7 +138,9 @@ def test_meta_section_model_ids_exist_in_code(tmp_path):
     html = _home(client, "en")
     meta = html.split('id="meta"')[1].split('id="lost-link"')[0]
     text = re.sub(r"<[^>]+>", " ", meta)
-    text = text.replace("&amp;", "&")
+    # Task 118: compare rendered text, not markup — entities like &#39;
+    # (apostrophe) contain digits that are not model ids.
+    text = htmlmod.unescape(text)
     app_source = "\n".join(
         path.read_text()
         for path in sorted((ROOT / "app").rglob("*.py")))
