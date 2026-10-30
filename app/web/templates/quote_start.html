@@ -33,34 +33,9 @@
     <h2 class="h2s">{{ ui.icon("mic") }} {{ t.speak_list }}</h2>
     <p class="muted" data-needs-internet-hint hidden>needs internet</p>
     <p class="muted">{{ t.speak_help }}</p>
-    <div class="field">
-      <label class="field-label" for="quote-name-voice">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
-      <input class="field-input" id="quote-name-voice" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true" aria-describedby="quote-name-voice-err"{% endif %}>
-      {% if error and error_field == "customer_name" %}<p class="field-error" id="quote-name-voice-err">{{ error }}</p>{% endif %}
-    </div>
-    <div class="field">
-      <label class="field-label" for="quote-phone-voice">{{ t('order.phone_label') }}</label>
-      <input class="field-input" id="quote-phone-voice" type="tel" name="customer_phone" data-customer-phone autocomplete="tel" inputmode="tel" placeholder="98765 43210" aria-describedby="quote-phone-voice-hint"{% if error and error_field == "customer_phone" %} aria-invalid="true"{% endif %}>
-      <p class="field-hint" id="quote-phone-voice-hint">{{ t('order.phone_note') }}</p>
-      {% if error and error_field == "customer_phone" %}<p class="field-error">{{ error }}</p>{% endif %}
-    </div>
-    <div data-live-order data-ws-url="/s/{{ shop["slug"] }}/quote/ws" data-kind="quote" data-need-name="{{ t('order.name_required') }}" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
-      <div class="live-captions" aria-live="polite">
-        <p class="live-last" data-live-order-last></p>
-        <p class="live-partial" data-live-order-partial></p>
-      </div>
-      <div class="live-controls">
-        <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t.speak }}">{{ ui.icon("mic") }}</button>
-        <p class="muted live-hint" data-live-order-hint>{{ t.tap_speak }}</p>
-      </div>
-      <div class="alert alert-warn" data-live-order-error hidden></div>
-      <div data-live-order-lines hidden>
-        <h3>{{ t.total }}</h3>
-        <div data-live-order-list></div>
-        <p>Total: <strong class="money" data-live-order-total></strong></p>
-      </div>
-      <div class="action-bar"><button class="pill cta big" type="button" data-live-order-done hidden>Done</button></div>
-    </div>
+    {# Task 125: the composer is the only recorder here — the old
+       live-order mic block and its duplicate name/phone fields are
+       gone. #}
     {% call composer("/s/" ~ shop["slug"] ~ "/quote" ~ ("?lang=" ~ lang if lang != "en" else ""), text_field="items", placeholder=t.speak_help, mode="voice+text", max_seconds=120, done_label=t('composer.review_order')) %}
       <div class="field">
         <label class="field-label" for="quote-name-speak">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
@@ -128,22 +103,7 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
-<script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
 <script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const list = document.querySelector("[data-live-order-list]");
-  if (!list) return;
-  const tag = () => {
-    list.querySelectorAll(".list-row").forEach((row) => {
-      const sub = row.querySelector(".list-sub");
-      row.classList.toggle("is-unknown", !!sub && sub.textContent.trim() === "not on list");
-    });
-  };
-  new MutationObserver(tag).observe(list, { childList: true, subtree: true });
-  tag();
-});
-</script>
 {% endblock %}

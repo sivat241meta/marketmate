@@ -268,6 +268,8 @@ REVIEW_HOOKS = ["review-form", "data-approve-url", "data-msg-ready",
                 "approve-btn", "approve-error", "data-approve-count",
                 "review.js"]
 
+# Task 125: the old live-order recorder left bills/new — the
+# composer is the only recorder there now.
 BILLS_NEW_HOOKS = ["data-methods", "data-method=", "data-panel=",
                    "data-tap-form", "data-token", "data-version",
                    "data-zero", "data-line", "data-rate", "data-per",
@@ -276,17 +278,12 @@ BILLS_NEW_HOOKS = ["data-methods", "data-method=", "data-panel=",
                    "data-amount-label", "data-chips", "data-chip=",
                    "data-keypad", "data-keypad-display", "data-keypad-unit",
                    "data-keypad-cancel", "data-keypad-ok", "data-key=",
-                   "data-live-order", "data-ws-url", "data-live-order-mic",
-                   "data-live-order-hint", "data-live-order-last",
-                   "data-live-order-partial", "data-live-order-error",
-                   "data-live-order-lines", "data-live-order-list",
-                   "data-live-order-total", "data-live-order-done",
                    "data-composer", "data-composer-form", "data-composer-mic",
                    "data-composer-send", "data-composer-cancel",
                    "data-composer-plus", "data-composer-text",
                    "data-offline-banner", "data-offline-text",
                    "data-needs-internet", "data-needs-internet-hint",
-                   "methods.js", "live-order.js", "tap-chips.js",
+                   "methods.js", "tap-chips.js",
                    "offline-bills.js", "quote.js", "composer.js"]
 
 BILL_HOOKS = ["data-receipt", "data-line", "data-rate", "data-per",

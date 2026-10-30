@@ -33,6 +33,10 @@
         </div>
       </div>
       {% endif %}
+      {# Task 125: Cancel sits left of the waveform and Send right of
+         it, so the recording state reads ✕ | wave | ↑ like ChatGPT.
+         (Cancel stays `hidden` until a recording starts.) #}
+      <button class="composer-cancel" type="button" data-composer-cancel aria-label="{{ t('composer.cancel_aria') }}" hidden><span aria-hidden="true">✕</span></button>
       {% if has_text %}
       <label class="visually-hidden" for="composer-text-{{ text_field }}">{{ placeholder }}</label>
       <textarea class="composer-text" id="composer-text-{{ text_field }}" name="{{ text_field }}" rows="1" placeholder="{{ placeholder }}" autocomplete="off" data-composer-text></textarea>
@@ -41,7 +45,6 @@
       <p class="composer-timer" data-composer-timer hidden>0:00</p>
       <button class="composer-mic" type="button" data-composer-mic aria-label="{{ t('composer.mic_aria') }}" hidden><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
       <button class="composer-send" type="submit" data-composer-send aria-label="{{ t('composer.send_aria') }}" hidden><span aria-hidden="true">↑</span></button>
-      <button class="composer-cancel" type="button" data-composer-cancel aria-label="{{ t('composer.cancel_aria') }}" hidden><span aria-hidden="true">✕</span></button>
       <div class="composer-nojs" data-composer-nojs>
         <button class="composer-nojs-send" type="submit">{{ t('composer.send') }}</button>
       </div>

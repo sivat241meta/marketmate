@@ -253,9 +253,55 @@
     });
   }
 
+  // Task 125: promo banner auto-advance. The track is a shared
+  // [data-carousel] (arrows + dots via initCarousels); this only
+  // adds the 5 s loop — paused on hover/focus, never under
+  // reduced motion.
+  function initBanner() {
+    var banner = document.querySelector("[data-banner]");
+    if (!banner) {
+      return;
+    }
+    var track = banner.querySelector("[data-carousel]");
+    if (!track) {
+      return;
+    }
+    var reduce = window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      return;
+    }
+    var timer = null;
+    function advance() {
+      var max = track.scrollWidth - track.clientWidth;
+      if (track.scrollLeft >= max - 2) {
+        track.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
+      }
+    }
+    function start() {
+      if (!timer) {
+        timer = window.setInterval(advance, 5000);
+      }
+    }
+    function stop() {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+    banner.addEventListener("mouseenter", stop);
+    banner.addEventListener("mouseleave", start);
+    banner.addEventListener("focusin", stop);
+    banner.addEventListener("focusout", start);
+    start();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initHearts();
     initLastQ();
     initCarousels();
+    initBanner();
   });
 })();

@@ -65,8 +65,11 @@ def test_market_voice_panel_is_voice_text_composer(tmp_path):
     assert "data-composer-text" in panel
     assert "composer.js" in html
     assert "composer.css" in html
-    # The voice tab and mic jump to the composer panel now.
-    assert 'href="#market-voice"' in html
+    # Task 125: the old search card (with the voice tab and mic that
+    # jumped to the panel) is gone; the query pill opens the search
+    # pop-up, whose mic reveals the same composer.
+    assert 'class="hp-search"' not in html
+    assert "mkt-pill" in html
     # The old recorder markup is gone from the page.
     for hook in ("rec-start", "rec-stop", "rec-status", "market-audio",
                  "data-upload-url", "recorder.js", "Upload and search"):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -150,9 +151,15 @@ def _pick_cards(entries: list[dict]) -> list[dict]:
 
 
 def _popular(entries: list[dict]) -> list[dict]:
-    """Most common live item names by number of shops, max 6."""
+    """Most common live item names by number of shops, max 6.
+
+    Each entry carries a photo when any live item with that name has
+    one (a cut-out wins over a plain crop), so the search pop-up
+    shows the photo instead of a letter circle.
+    """
     shops_per_name: dict[str, set[str]] = {}
     display: dict[str, str] = {}
+    photos: dict[str, tuple[str, bool]] = {}
     for entry in entries:
         slug = entry["shop"]["slug"]
         for item in entry["items"]:
@@ -161,10 +168,58 @@ def _popular(entries: list[dict]) -> list[dict]:
                 continue
             shops_per_name.setdefault(key, set()).add(slug)
             display.setdefault(key, item.name_en.strip())
+            if item.photo:
+                cutout = is_cutout_photo(item.photo)
+                prev = photos.get(key)
+                if prev is None or (cutout and not prev[1]):
+                    photos[key] = (_photo_url(item.photo), cutout)
     ranked = sorted(shops_per_name,
                     key=lambda key: (-len(shops_per_name[key]), key))
-    return [{"name": display[key], "shops": len(shops_per_name[key])}
-            for key in ranked[:MAX_POPULAR]]
+    out = []
+    for key in ranked[:MAX_POPULAR]:
+        url, cutout = photos.get(key, (None, False))
+        out.append({"name": display[key],
+                    "shops": len(shops_per_name[key]),
+                    "photo_url": url,
+                    "photo_cutout": cutout})
+    return out
+
+
+def _shop_card(entry: dict, now: datetime) -> dict:
+    shop = entry["shop"]
+    items = entry["items"]
+    priced = [(item, _first_price(item)) for item in items]
+    priced = [(item, line) for item, line in priced if line is not None]
+    photo = photo_cutout = None
+    for item in sorted(items,
+                       key=lambda it: (0 if is_cutout_photo(it.photo)
+                                       else 1 if it.photo else 2)):
+        if item.photo:
+            photo, photo_cutout = _photo_url(item.photo), \
+                is_cutout_photo(item.photo)
+            break
+    cheapest = sorted(priced, key=lambda pair: pair[1].price)[:3]
+    status = shop_open_status(shop)
+    moment = _parse_moment(shop["created_at"])
+    return {
+        "name": shop["name"],
+        "slug": shop["slug"],
+        "area": shop["area"] or "",
+        "is_demo": bool(shop["is_demo"]),
+        "is_new": bool(moment is not None
+                       and (_as_aware(now) - moment).days < NEW_SHOP_DAYS),
+        "open_state": status["state"],
+        "open_time": status["time"],
+        "n_prices": sum(len(item.price_lines) for item in items),
+        "photo_url": photo,
+        "photo_cutout": bool(photo_cutout),
+        "cover_url": _photo_url(db.shop_cover(shop)),
+        "tile": first_grapheme(shop["name"]),
+        "cheapest": [{"name": item.name_en,
+                      "price": str(line.price),
+                      "currency": shop["currency"] or "INR"}
+                     for item, line in cheapest],
+    }
 
 
 def _shop_cards(entries: list[dict], now: datetime) -> list[dict]:
@@ -175,43 +230,64 @@ def _shop_cards(entries: list[dict], now: datetime) -> list[dict]:
     # second sort is stable, so each group stays newest-first).
     ordered = sorted(entries, key=created, reverse=True)
     ordered.sort(key=lambda entry: bool(entry["shop"]["is_demo"]))
-    cards = []
-    for entry in ordered[:MAX_SHOPS]:
+    return [_shop_card(entry, now) for entry in ordered[:MAX_SHOPS]]
+
+
+def _haversine_km(a_lat, a_lng, b_lat, b_lng) -> float:
+    radius = 6371.0
+    lat1, lat2 = math.radians(a_lat), math.radians(b_lat)
+    gap = math.asin(math.sqrt(
+        math.sin((lat2 - lat1) / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2)
+        * math.sin(math.radians(b_lng - a_lng) / 2) ** 2))
+    return 2 * radius * gap
+
+
+def _nearby_fillers(entries: list[dict], picked: str, have: int,
+                    coords: dict[str, tuple], now: datetime) -> list[dict]:
+    """Cards from other areas to fill the top-shops row up to 4.
+
+    Only for a known picked area with fewer than 4 shops of its own:
+    closest first when the picked area's location is known (a shop
+    without coordinates sorts after every shop with them), sample
+    shops always last. Unknown areas stay empty so the page stays
+    honest; callers hide the carousel when nothing fills it.
+    """
+    need = MAX_SHOPS - have
+    if need <= 0:
+        return []
+    others = [entry for entry in entries
+              if (entry["shop"]["area"] or "") != picked]
+    center = coords.get(picked)
+
+    def position(entry):
         shop = entry["shop"]
-        items = entry["items"]
-        priced = [(item, _first_price(item)) for item in items]
-        priced = [(item, line) for item, line in priced if line is not None]
-        photo = photo_cutout = None
-        for item in sorted(items,
-                           key=lambda it: (0 if is_cutout_photo(it.photo)
-                                           else 1 if it.photo else 2)):
-            if item.photo:
-                photo, photo_cutout = _photo_url(item.photo), \
-                    is_cutout_photo(item.photo)
-                break
-        cheapest = sorted(priced, key=lambda pair: pair[1].price)[:3]
-        status = shop_open_status(shop)
-        moment = _parse_moment(shop["created_at"])
-        cards.append({
-            "name": shop["name"],
-            "slug": shop["slug"],
-            "area": shop["area"] or "",
-            "is_demo": bool(shop["is_demo"]),
-            "is_new": bool(moment is not None
-                           and (_as_aware(now) - moment).days < NEW_SHOP_DAYS),
-            "open_state": status["state"],
-            "open_time": status["time"],
-            "n_prices": sum(len(item.price_lines) for item in items),
-            "photo_url": photo,
-            "photo_cutout": bool(photo_cutout),
-            "cover_url": _photo_url(db.shop_cover(shop)),
-            "tile": first_grapheme(shop["name"]),
-            "cheapest": [{"name": item.name_en,
-                          "price": str(line.price),
-                          "currency": shop["currency"] or "INR"}
-                         for item, line in cheapest],
-        })
-    return cards
+        if shop["lat"] is not None and shop["lng"] is not None:
+            return (shop["lat"], shop["lng"])
+        return coords.get(shop["area"] or "", (None, None))
+
+    def distance(entry):
+        if center is None or center[0] is None:
+            return None
+        lat, lng = position(entry)
+        if lat is None or lng is None:
+            return None
+        return _haversine_km(center[0], center[1], lat, lng)
+
+    def created(entry):
+        moment = _parse_moment(entry["shop"]["created_at"])
+        return moment or _as_aware(now)
+
+    scored = [(bool(entry["shop"]["is_demo"]),
+               distance(entry) is None,
+               distance(entry) or 0.0,
+               entry)
+              for entry in others]
+    # Newest first within equal distance (stable: sort by created
+    # first, then by the keys above).
+    scored.sort(key=lambda row: created(row[3]), reverse=True)
+    scored.sort(key=lambda row: (row[0], row[1], row[2]))
+    return [_shop_card(row[3], now) for row in scored[:need]]
 
 
 def _area_tiles(entries: list[dict]) -> list[dict]:
@@ -304,10 +380,21 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
             if not entry["shop"]["is_demo"]]
     samples = [entry for entry in entries
                if entry["shop"]["is_demo"]]
+    shops = _shop_cards(scoped, moment)
+    # Task 125: the top-shops carousel never shows a near-empty row —
+    # a known area with fewer than 4 shops borrows the closest shops
+    # from other areas ("and nearby markets"). Unknown areas and the
+    # unfiltered page keep exactly their own shops.
+    fillers = (_nearby_fillers(entries, picked, len(shops), coords,
+                               moment)
+               if picked is not None and picked in known
+               else [])
     return {
         "area": picked,
         "areas": areas,
         "tiles": _area_tiles(entries),
+        "top_shops": shops + fillers,
+        "top_nearby": bool(fillers),
         "totals": {
             # Counters never imply sample prices were said today:
             # n_shops/m_prices cover real shops only; sample shops
@@ -324,5 +411,5 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
         },
         "picks": _pick_cards(scoped),
         "popular": _popular(scoped),
-        "shops": _shop_cards(scoped, moment),
+        "shops": shops,
     }

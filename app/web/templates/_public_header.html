@@ -36,6 +36,7 @@
 <header id="site-header" class="hp-header" data-public-header>
   <a class="logo" href="/" aria-label="MarketMate home">
     <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
+    <img class="brand-mark-sm" src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="30" height="30" alt="MarketMate">
   </a>
   {% if "loc" in _ph_pop %}
   <button type="button" class="loc-btn" data-loc-open aria-haspopup="dialog" aria-controls="loc-drawer">
@@ -48,8 +49,15 @@
     <a href="/market" data-nav class="{% if _ph_path == '/market' %}on{% endif %}"{% if _ph_path == '/market' %} aria-current="page"{% endif %}>{{ ui.obj("store", 20) }}<span>{{ t('hp.nav_find') }}</span></a>
     <a href="{{ _ph_root }}#best-prices" data-nav>{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
     <a href="{{ _ph_root }}#markets" data-nav>{{ ui.obj("pin", 20) }}<span>{{ t('hp.nav_areas') }}</span></a>
-    <a href="/sellers" data-nav class="{% if _ph_path == '/sellers' %}on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
-    <a href="/how" data-nav class="{% if _ph_path == '/how' %}on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
+    <a href="/sellers" data-nav class="nav-extra{% if _ph_path == '/sellers' %} on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
+    <a href="/how" data-nav class="nav-extra{% if _ph_path == '/how' %} on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
+    <div class="nav-more" data-nav-more>
+      <button type="button" class="nav-more-btn" data-nav data-nav-more-btn aria-haspopup="true" aria-expanded="false" aria-controls="nav-more-menu"><span>{{ t('nav.more') }} ▾</span></button>
+      <div class="nav-more-menu" id="nav-more-menu" role="menu">
+        <a href="/sellers" role="menuitem" data-nav-more-link class="{% if _ph_path == '/sellers' %}on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
+        <a href="/how" role="menuitem" data-nav-more-link class="{% if _ph_path == '/how' %}on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
+      </div>
+    </div>
     <span class="nav-pill" aria-hidden="true"></span>
   </nav>
   <span class="sp" aria-hidden="true"></span>

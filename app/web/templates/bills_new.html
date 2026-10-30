@@ -114,23 +114,8 @@
   <h2>{{ ui.icon("mic") }} {{ t('bn.speak_title') }}</h2>
   <p class="muted" data-needs-internet-hint hidden>{{ t('notice.needs_internet') }}</p>
   <p class="muted">{{ t('bn.speak_desc') }}</p>
-  <div data-live-order data-ws-url="/e/{{ token }}/live/ws" data-kind="bill" data-worklet="{{ static_url('pcm-worklet.js') if static_url is defined else '/static/pcm-worklet.js' }}">
-    <div class="live-captions" aria-live="polite">
-      <p class="live-last" data-live-order-last></p>
-      <p class="live-partial" data-live-order-partial></p>
-    </div>
-    <div class="live-controls">
-      <button class="mic-btn is-big" type="button" data-live-order-mic aria-label="{{ t('bn.live_start_aria') }}">{{ ui.icon("mic") }}</button>
-      <p class="muted live-hint" data-live-order-hint>{{ t('bn.live_hint') }}</p>
-    </div>
-    <div class="alert alert-warn" data-live-order-error hidden></div>
-    <div data-live-order-lines hidden>
-      <h3>{{ t('bn.bill_so_far') }}</h3>
-      <div data-live-order-list></div>
-      <p>{{ t('bn.total_label') }} <strong class="money" data-live-order-total></strong></p>
-    </div>
-    <p><button class="btn btn-primary btn-big" type="button" data-live-order-done hidden>{{ t('bn.done') }}</button></p>
-  </div>
+  {# Task 125: the composer is the only recorder here — the old
+     live-order mic block is gone. #}
   {{ composer("/e/" ~ token ~ "/bills/new", text_field="items", placeholder=t('bn.type_placeholder'), mode="voice+text", max_seconds=120, done_label=t('composer.view_bill')) }}
   <p class="notice">{{ t('notice.voice') }}</p>
 </section>
@@ -152,7 +137,6 @@
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
-<script src="{{ static_url('live-order.js') if static_url is defined else '/static/live-order.js' }}"></script>
 <script src="{{ static_url('tap-chips.js') if static_url is defined else '/static/tap-chips.js' }}"></script>
 <script src="{{ static_url('offline-bills.js') if static_url is defined else '/static/offline-bills.js' }}"></script>
 {% endblock %}

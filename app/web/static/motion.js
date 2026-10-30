@@ -113,15 +113,37 @@
   shadow();
 
   /* Task 122: one shared pill slides under the active nav link (and
-     follows hover/focus) with transform only. */
+     follows hover/focus) with transform only. Task 125: below
+     ~1180px two links hide inside More, so hidden links are skipped
+     and the pill parks under the More button instead. The dropdown
+     itself opens on hover/focus (CSS) and toggles on click
+     (popups.js), which every header page loads. */
   var nav = document.querySelector(".hp-nav");
   var pill = nav ? nav.querySelector(".nav-pill") : null;
+  function shown(el) {
+    return !!el && el.offsetParent !== null
+      && el.getBoundingClientRect().width > 0;
+  }
   function slidePill(link) {
     if (!pill || !nav) {
       return;
     }
-    var target = link || nav.querySelector("a.on")
-      || nav.querySelector("a[data-nav]");
+    var target = shown(link) ? link : null;
+    if (!target) {
+      target = nav.querySelector("a.on");
+      if (target && !shown(target)) {
+        target = nav.querySelector("[data-nav-more-btn]");
+      }
+      if (!shown(target)) {
+        target = null;
+        Array.prototype.forEach.call(
+          nav.querySelectorAll("[data-nav]"), function (el) {
+            if (!target && shown(el)) {
+              target = el;
+            }
+          });
+      }
+    }
     if (!target) {
       pill.hidden = true;
       return;
@@ -135,12 +157,12 @@
   }
   if (nav && pill) {
     Array.prototype.forEach.call(
-      nav.querySelectorAll("a[data-nav]"), function (link) {
-        link.addEventListener("mouseenter", function () {
-          slidePill(link);
+      nav.querySelectorAll("[data-nav]"), function (el) {
+        el.addEventListener("mouseenter", function () {
+          slidePill(el);
         });
-        link.addEventListener("focus", function () {
-          slidePill(link);
+        el.addEventListener("focus", function () {
+          slidePill(el);
         });
       });
     nav.addEventListener("mouseleave", function () {

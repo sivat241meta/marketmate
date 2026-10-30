@@ -568,15 +568,14 @@ body.pub section.hero2 { overflow-wrap: break-word; }
 }
 /* Task 101: phone header fit. At <=420px "Start selling" goes compact
    (no FREE badge) and Bag goes icon-only with its count badge, so logo
-   + sell + bag + menu fit a 390px phone. The wrap backstop keeps long
-   translations inside viewports down to 320px. */
+   + sell + bag + menu fit a 390px phone. Task 125: the header stays
+   one row (location ellipsizes) down to 320px — never wrapping. */
 body.pub .hp-bag .nbadge { margin-left: 0; }
 @media (max-width: 420px) {
   body.pub .hp-header {
     gap: 8px;
     padding: 8px 12px;
-    flex-wrap: wrap;
-    row-gap: 8px;
+    flex-wrap: nowrap;
   }
   body.pub .hp-menu-btn { margin-left: auto; }
   body.pub .hp-sell { font-size: 13px; padding: 8px 10px; }
@@ -628,6 +627,14 @@ body.pub .shop-rows .card .sz {
   cursor: pointer;
   font-family: inherit;
   color: var(--ink);
+}
+/* Task 125: the rule above outranks `.card .sz.on`, which turned the
+   selected quantity chip into a dark block with dark text. Selected
+   chips are white on teal #0F766E (5.5:1). */
+body.pub .shop-rows .card .sz.on {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
 }
 body.pub .shop-rows .card .pw .step button {
   width: 44px;

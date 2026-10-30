@@ -16,45 +16,10 @@
   </div>
 </div>
 
-{% if q or cat_label %}
-<p><button type="button" class="mkt-pill" data-search-open aria-haspopup="dialog" aria-label="{{ t('v12.edit_search') }}: {{ q or cat_label }}">{{ ui.obj("search", 20) }}<span>{{ q or cat_label }}</span><span aria-hidden="true">▾</span></button></p>
-{% endif %}
-
-<form id="search" class="hp-search" method="get" action="/market" aria-label="{{ t('hp.search') }}">
-  <div class="hp-tabs" role="tablist" aria-label="{{ t('hp.what') }}">
-    <button type="button" role="tab" aria-selected="true" class="hp-tab on" data-ph="{{ t('hp.ph_all') }}">{{ t('hp.tab_all') }}</button>
-    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_veg') }}">{{ t('hp.tab_veg') }}</button>
-    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_fruit') }}">{{ t('hp.tab_fruit') }}</button>
-    <button type="button" role="tab" aria-selected="false" class="hp-tab" data-ph="{{ t('hp.ph_greens') }}">{{ t('hp.tab_greens') }}</button>
-    <a class="hp-tab hp-tab-voice" href="#market-voice">{{ t('hp.tab_voice') }}<span class="new-badge">{{ t('hp.new_badge') }}</span></a>
-  </div>
-  <div class="hp-fields">
-    <div class="hp-field hp-what">
-      <label for="market-q">{{ t('hp.what') }}</label>
-      <input type="search" id="market-q" name="q" value="{{ q or '' }}" placeholder="{{ t('hp.ph_all') }}" autocomplete="off">
-      <a class="hp-mic" href="#market-voice" aria-label="{{ t('hp.mic') }}">{{ ui.icon("mic") }}</a>
-    </div>
-    <div class="hp-field">
-      <label for="market-area">{{ t('hp.area') }}</label>
-      <select id="market-area" name="area" data-near-me="nearme">
-        <option value="">{{ t('hp.all_areas') }}</option>
-        {% for a in areas %}<option value="{{ a }}"{% if area == a %} selected{% endif %}>{{ a }}</option>{% endfor %}
-        <option value="nearme"{% if area == "nearme" %} selected{% endif %}>{{ t('hp.near_me') }}</option>
-      </select>
-    </div>
-    <div class="hp-field">
-      <label for="market-budget">{{ t('pub.max_spend') }}</label>
-      <select id="market-budget" name="budget">
-        <option value="">{{ t('pub.no_limit') }}</option>
-        <option value="100"{% if budget == "100" %} selected{% endif %}>{{ t('hp.budget_n', n='100') }}</option>
-        <option value="200"{% if budget == "200" %} selected{% endif %}>{{ t('hp.budget_n', n='200') }}</option>
-        <option value="500"{% if budget == "500" %} selected{% endif %}>{{ t('hp.budget_n', n='500') }}</option>
-        <option value="1000"{% if budget == "1000" %} selected{% endif %}>{{ t('hp.budget_n', n='1000') }}</option>
-      </select>
-    </div>
-    <button class="pill cta hp-go" type="submit">{{ t('hp.search') }}</button>
-  </div>
-</form>
+{# Task 125: one search — the query pill opens the search pop-up
+   (area / max spend / open now / sort live in the filter pop-up).
+   The old second search form is gone. #}
+<p><button type="button" class="mkt-pill" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{% if q or cat_label %}{{ t('v12.edit_search') }}: {{ q or cat_label }}{% else %}{{ t('hp.search') }}{% endif %}">{{ ui.obj("search", 20) }}<span>{{ q or cat_label or t('v12.search_ph') }}</span><span aria-hidden="true">▾</span></button></p>
 
 <section class="pub-sec voice-panel" id="market-voice" data-voice-panel aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
   <div class="form-card">

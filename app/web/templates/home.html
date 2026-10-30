@@ -68,14 +68,38 @@
 {% block content %}
 {% include "_public_header.html" %}
 
+{# Task 125: Swiggy-style promo carousel first, then the counters as
+   one slim line. Slide 2 opens the search pop-up with voice shown. #}
+<section id="promo" aria-label="{{ t('v12.banner_label') }}" data-banner>
+  <div class="promo-track" data-carousel>
+    <a class="promo-slide promo-1" href="/market{% if hp.area %}?area={{ hp.area | urlencode }}{% endif %}">
+      <span class="promo-txt"><b>{% if hp.area %}{{ t('v12.banner_prices', area=hp.area) }}{% else %}{{ t('v12.banner_prices_near') }}{% endif %}</b><span class="promo-cta">{{ t('hp.compare') }}</span></span>
+      <img class="promo-img" src="{{ static_url('landing/street-market-800.jpg') if static_url is defined else '/static/landing/street-market-800.jpg' }}" alt="" loading="lazy" width="800" height="1422">
+    </a>
+    <button type="button" class="promo-slide promo-2" data-search-open data-search-voice aria-haspopup="dialog" aria-controls="search-pop">
+      <span class="promo-txt"><b>{{ t('v12.banner_voice') }}</b><span class="promo-cta">{{ t('hp.mic') }} →</span></span>
+      <img class="promo-img" src="{{ static_url('landing/customer-phone-800.jpg') if static_url is defined else '/static/landing/customer-phone-800.jpg' }}" alt="" loading="lazy" width="800" height="1120">
+    </button>
+    <a class="promo-slide promo-3" href="/new">
+      <span class="promo-txt"><b>{{ t('v12.banner_sell') }}</b><span class="promo-cta">{{ t('hp.start_selling') }} →</span></span>
+      <img class="promo-img" src="{{ static_url('landing/seller-phone-800.jpg') if static_url is defined else '/static/landing/seller-phone-800.jpg' }}" alt="" loading="lazy" width="800" height="623">
+    </a>
+  </div>
+  <div class="promo-nav">
+    <button type="button" class="iconbtn" data-prev aria-label="{{ t('v12.prev') }}">‹</button>
+    <div class="cdots" data-dots></div>
+    <button type="button" class="iconbtn" data-next aria-label="{{ t('v12.next') }}">›</button>
+  </div>
+</section>
+
 {% if hp.totals.n_shops or hp.totals.m_prices or hp.tiles|length or hp.totals.n_sample_shops %}
-<div class="hp-counters" data-reveal-group>
-  {% if hp.totals.n_shops %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.n_shops }}">{{ hp.totals.n_shops }}</b><span>{{ v11.t('shops_lbl', _L) }}</span></div>{% endif %}
-  {% if hp.totals.m_prices %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.m_prices }}">{{ hp.totals.m_prices }}</b><span>{{ v11.t('prices_lbl', _L) }}</span></div>{% endif %}
-  {% if not hp.totals.m_prices and hp.totals.m_sample_prices %}<div class="hp-counter" data-reveal><b data-count="{{ hp.totals.m_sample_prices }}">{{ hp.totals.m_sample_prices }}</b><span>{{ t('hp.prices_listed') }}</span></div>{% endif %}
-  {% if hp.tiles|length %}<div class="hp-counter" data-reveal><b data-count="{{ hp.tiles|length }}">{{ hp.tiles|length }}</b><span>{{ v11.t('markets_lbl', _L) }}</span></div>{% endif %}
-  {% if hp.totals.n_sample_shops %}<small class="hp-samples-note">{{ t('hp.samples_note', n=hp.totals.n_sample_shops, count=hp.totals.n_sample_shops) }}</small>{% endif %}
-</div>
+<p class="hp-count-line">
+  {% if hp.totals.n_shops %}<span><b data-count="{{ hp.totals.n_shops }}">{{ hp.totals.n_shops }}</b> {{ v11.t('shops_lbl', _L) }}</span>{% endif %}
+  {% if hp.totals.m_prices %}<span><b data-count="{{ hp.totals.m_prices }}">{{ hp.totals.m_prices }}</b> {{ v11.t('prices_lbl', _L) }}</span>{% endif %}
+  {% if not hp.totals.m_prices and hp.totals.m_sample_prices %}<span><b data-count="{{ hp.totals.m_sample_prices }}">{{ hp.totals.m_sample_prices }}</b> {{ t('hp.prices_listed') }}</span>{% endif %}
+  {% if hp.tiles|length %}<span><b data-count="{{ hp.tiles|length }}">{{ hp.tiles|length }}</b> {{ v11.t('markets_lbl', _L) }}</span>{% endif %}
+  {% if hp.totals.n_sample_shops %}<span>{{ t('v12.count_incl', n=hp.totals.n_sample_shops, count=hp.totals.n_sample_shops) }}</span>{% endif %}
+</p>
 {% endif %}
 
 <section id="mind" aria-label="{{ t('v12.mind_t') }}"{% if not _mind.order %} hidden{% endif %}>
@@ -104,10 +128,12 @@
   <div class="cdots" data-dots></div>
 </section>
 
-<section id="top-shops" aria-label="{{ t('v12.top_t', area=(hp.area or t('hp.all_areas'))) }}"{% if not hp.shops %} hidden{% endif %}>
+{% set _top = hp.top_shops|default(hp.shops) %}
+{% set _top_label %}{% if hp.top_nearby|default(false) %}{{ t('v12.top_t_near', area=hp.area) }}{% elif hp.area %}{{ t('v12.top_t', area=hp.area) }}{% else %}{{ t('v12.top_t_all') }}{% endif %}{% endset %}
+<section id="top-shops" aria-label="{{ _top_label }}"{% if not _top %} hidden{% endif %}>
   <div class="hp-sec-head car-head">
     <div>
-      <h2 class="h2s">{% if hp.area %}{{ t('v12.top_t', area=hp.area) }}{% else %}{{ t('v12.top_t_all') }}{% endif %}</h2>
+      <h2 class="h2s">{{ _top_label }}</h2>
       <p class="muted">{{ t('v12.top_sub') }}</p>
     </div>
     <div class="car-btns">
@@ -115,9 +141,9 @@
       <button type="button" class="iconbtn" data-next aria-label="{{ t('v12.next') }}">›</button>
     </div>
   </div>
-  {% if hp.shops %}
+  {% if _top %}
   <div class="top-row" data-carousel data-reveal-group>
-    {% for shop in hp.shops %}{{ _shop_card(shop, _said.by, _coll.by, _newslugs, _L) }}{% endfor %}
+    {% for shop in _top %}{{ _shop_card(shop, _said.by, _coll.by, _newslugs, _L) }}{% endfor %}
   </div>
   <div class="cdots" data-dots></div>
   {% endif %}
@@ -260,7 +286,7 @@
   <div class="sell-band-in" data-reveal>
     <span class="sell-band-ic">{{ ui.obj("mic", 28) }}</span>
     <div class="sell-band-txt">
-      <h2>{{ t('v12.sell_t') }} — <span class="accent-ink hlshine">{{ t('v12.sell_d') }}</span></h2>
+      <h2>{{ t('v12.sell_t') }} — <span class="accent-ink">{{ t('v12.sell_d') }}</span></h2>
     </div>
     <a class="pill cta" href="/new">{{ t('v12.sell_cta') }}</a>
     <a class="hp-more" href="/try">{{ t('v12.try') }}</a>

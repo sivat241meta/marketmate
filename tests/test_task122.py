@@ -406,8 +406,10 @@ def test_market_page_pill_tabs_and_filter_popup(tmp_path, monkeypatch):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = client.get("/market").text
-    assert "mkt-pill" not in html  # no query, no pill
-    assert 'class="hp-search"' in html  # classic form kept
+    # Task 125: one search — the pill is always visible (it opens the
+    # search pop-up) and the classic second form is gone.
+    assert "mkt-pill" in html
+    assert 'class="hp-search"' not in html
     monkeypatch.setattr(
         "app.web.main.parse_query",
         lambda text, **_kw: Query(

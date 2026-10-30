@@ -1413,6 +1413,16 @@ _ENGLISH: dict[str, str] = {
     "v12.next": "Next",
     "v12.sellers_t": "Sell on MarketMate",
     "v12.how_t": "How it works",
+    # --- v12 polish (Task 125): promo banner, count line, nearby top shops ---
+    "v12.banner_label": "Featured",
+    "v12.banner_prices": "Fresh prices in {area} today",
+    "v12.banner_prices_near": "Fresh prices near you today",
+    "v12.banner_voice": "Order by voice in Tamil, Hindi or English",
+    "v12.banner_sell": "Sell on MarketMate — free",
+    "v12.count_incl": "incl. {n} sample shops",
+    "v12.count_incl.one": "incl. {n} sample shop",
+    "v12.count_incl.other": "incl. {n} sample shops",
+    "v12.top_t_near": "Top shops in {area} and nearby markets",
 }
 
 
@@ -2807,6 +2817,16 @@ _TAMIL: dict[str, str] = {
     "v12.next": "அடுத்தது",
     "v12.sellers_t": "MarketMate-இல் விற்கவும்",
     "v12.how_t": "எப்படி வேலை செய்யும்",
+    # --- v12 polish (Task 125): promo banner, count line, nearby top shops ---
+    "v12.banner_label": "சிறப்பு",
+    "v12.banner_prices": "{area} பகுதியில் இன்றைய புது விலைகள்",
+    "v12.banner_prices_near": "உங்கள் அருகில் இன்றைய புது விலைகள்",
+    "v12.banner_voice": "தமிழ், இந்தி அல்லது ஆங்கிலத்தில் குரலில் ஆர்டர் செய்யுங்கள்",
+    "v12.banner_sell": "MarketMate-இல் விற்கவும் — இலவசம்",
+    "v12.count_incl": "உள்பட {n} மாதிரி கடைகள்",
+    "v12.count_incl.one": "உள்பட {n} மாதிரி கடை",
+    "v12.count_incl.other": "உள்பட {n} மாதிரி கடைகள்",
+    "v12.top_t_near": "{area} மற்றும் அருகிலுள்ள சந்தைகளில் சிறந்த கடைகள்",
 }
 
 
@@ -4201,6 +4221,16 @@ _HINDI: dict[str, str] = {
     "v12.next": "अगला",
     "v12.sellers_t": "MarketMate पर बेचें",
     "v12.how_t": "यह कैसे काम करता है",
+    # --- v12 polish (Task 125): promo banner, count line, nearby top shops ---
+    "v12.banner_label": "ख़ास",
+    "v12.banner_prices": "{area} में आज के ताज़ा भाव",
+    "v12.banner_prices_near": "आपके पास आज के ताज़ा भाव",
+    "v12.banner_voice": "तमिल, हिंदी या अंग्रेज़ी में बोलकर ऑर्डर करें",
+    "v12.banner_sell": "MarketMate पर बेचें — मुफ़्त",
+    "v12.count_incl": "सहित {n} नमूना दुकानें",
+    "v12.count_incl.one": "सहित {n} नमूना दुकान",
+    "v12.count_incl.other": "सहित {n} नमूना दुकानें",
+    "v12.top_t_near": "{area} और आसपास के बाज़ारों में शीर्ष दुकानें",
 }
 
 

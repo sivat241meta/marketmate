@@ -48,8 +48,10 @@ def test_sell_pill_never_wraps_or_breaks_words():
     small = small.split("@media", 1)[0]
     assert ".hp-sell .free-badge" in small
     assert "display: none" in small
-    # Wrap backstop so logo + pill + menu fit 320px in long locales.
-    assert "flex-wrap: wrap" in small
+    # Task 125: one row — the header never wraps; the location
+    # button ellipsizes so logo + pill + menu fit 320px.
+    assert "flex-wrap: nowrap" in small
+    assert "flex-wrap: wrap" not in small
     assert ".home-mkt .hp-sell" in small
 
 
