@@ -278,7 +278,8 @@ def test_market_results_badges_links_and_no_proof(tmp_path, monkeypatch):
     monkeypatch.setattr("app.web.main.parse_query", fake_parse_query)
     client = make_client(tmp_path, monkeypatch)
     html = client.get("/market", params={"q": "tomato"}).text
-    assert "Demo data" in html
+    from app.web.i18n import t_for
+    assert t_for("en")("hp.demo") in html
     assert "may be old" in html
     assert f"/s/{a_slug}" in html and f"/s/{b_slug}" in html
     assert "₹18" in html and "₹30" in html

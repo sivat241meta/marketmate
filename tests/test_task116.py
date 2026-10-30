@@ -306,8 +306,9 @@ def test_sample_shop_page_has_no_phone_or_upi(tmp_path):
     seed(tmp_path / "data")
     client = make_client(tmp_path)
     html = client.get("/s/selvi-vegetable-stall").text
-    assert 'href="tel:"' in html
-    assert "tel:+" not in html and "tel:0" not in html
+    # v11 hides the call button when the shop has no phone (share +
+    # quote stay), so sample pages carry no tel: link at all.
+    assert "tel:" not in html
     assert "upi" not in html.lower().replace("sample", "")
 
 

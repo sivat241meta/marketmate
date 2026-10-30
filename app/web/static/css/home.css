@@ -899,6 +899,18 @@
   height: 34px;
   border-radius: 10px;
 }
+.res-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex: none;
+}
+.shop-row .res-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
 .shop-row {
   gap: 10px;
 }

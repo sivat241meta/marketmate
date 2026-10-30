@@ -175,10 +175,16 @@ def create_app(settings: Settings) -> FastAPI:
 
     Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 
-    def _rows_from_listings(listings, now, lang="en"):
+    def _rows_from_listings(listings, now, lang="en", conn=None):
         from app.web.i18n import t_for
 
         sample_rel = t_for(lang)("hp.said_sample")
+        covers = {}
+        if conn is not None:
+            for slug, cover in conn.execute(
+                    "SELECT slug, cover_photo FROM shops"):
+                if cover:
+                    covers[slug] = "/m/" + Path(cover).name
         rows = []
         for found in listings:
             name = (f"{found.name_en} ({found.variety})"
@@ -207,6 +213,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "lng": found.lng,
                 "open_state": found.open_state,
                 "open_time": found.open_time,
+                "cover_url": covers.get(found.slug),
             })
         return rows
 
@@ -281,6 +288,7 @@ def create_app(settings: Settings) -> FastAPI:
             lat = lng = None
             slug = None
             area = ""
+            cover_url = None
             open_state, open_time = "unknown", ""
             if plan.kind in ("single_shop", "partial_shop") and lines:
                 slug = lines[0]["slug"]
@@ -290,6 +298,9 @@ def create_app(settings: Settings) -> FastAPI:
                     area = shop["area"] or ""
                     status = shop_open_status(shop)
                     open_state, open_time = status["state"], status["time"]
+                    cover = db.shop_cover(shop)
+                    if cover:
+                        cover_url = "/m/" + Path(cover).name
             plan_demo = False
             if plan.kind == "split":
                 for line in lines:
@@ -315,6 +326,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "lng": lng,
                 "open_state": open_state,
                 "open_time": open_time,
+                "cover_url": cover_url,
                 "is_demo": plan_demo,
                 "best": bool(best_total is not None
                              and plan.total == best_total
@@ -505,7 +517,7 @@ def create_app(settings: Settings) -> FastAPI:
                   else _build_basket(conn, query, listings, ledger,
                                      empty_text=empty_text,
                                      closed_text=closed_text))
-        rows = _rows_from_listings(listings, now, ui_lang)
+        rows = _rows_from_listings(listings, now, ui_lang, conn)
         closed_notice = None
         if open_flag and closed_n:
             if ((basket is None
@@ -580,7 +592,7 @@ def create_app(settings: Settings) -> FastAPI:
         voice_empty = get_strings(voice_lang)("market.none_today")
         return _market_context(
             request, q=transcript.text, heard=transcript.text, query=query,
-            rows=_rows_from_listings(listings, now, voice_lang),
+            rows=_rows_from_listings(listings, now, voice_lang, conn),
             basket=(None if market_empty
                     else _build_basket(conn, query, listings, ledger,
                                        empty_text=voice_empty)),

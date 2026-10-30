@@ -93,7 +93,8 @@ def test_demo_badge_and_tamil(tmp_path, monkeypatch):
         tmp_path, monkeypatch, name="Demo Stall", is_demo=True)
     client.post(f"/e/{token}/v/{version_id}/publish")
     html = client.get(f"/s/{slug}").text
-    assert "Demo data" in html
+    from app.web.i18n import t_for
+    assert t_for("en")("hp.demo") in html
     assert "தக்காளி" in client.get(f"/s/{slug}?lang=ta").text
     assert "tomato" in client.get(f"/s/{slug}?lang=en").text
 

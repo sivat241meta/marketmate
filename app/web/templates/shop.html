@@ -21,7 +21,7 @@
     {% elif open_state == "closed" %}<p class="open-line band-full"><span class="pill sm ghost" data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
     {% if rows %}<p class="said-line muted band-full">{{ t('ann.said_today', time=prices_time, area=shop["area"]) }}</p>
     {% else %}<p class="said-line muted band-full">{{ t('ann.said_notime', area=shop["area"]) }}</p>{% endif %}
-    {% if shop["is_demo"] %}<p>{{ ui.pill("Demo data", "info") }}</p>{% endif %}
+    {% if shop["is_demo"] %}<p class="demo-tag">{{ t('hp.demo') }}</p>{% endif %}
   </div>
   <div class="shop-band-actions">
     <a class="pill cta big btn-primary shop-action" href="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}"><span class="act-ic">{{ ui.obj("mic", 20) }}</span><span class="act-full">{{ t.get_quote }}</span><span class="act-short">{{ t.get_quote_short }}</span></a>
@@ -30,6 +30,8 @@
     <a class="pill ghost sm shop-action" href="{{ share_url }}"><span class="act-ic">{{ ui.obj("link", 20) }}</span><span class="act-full">{{ t('wa.share_list') }}</span><span class="act-short">{{ t('dash.share') }}</span></a>
   </div>
 </section>
+
+{% if shop["is_demo"] %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
 
 {% if rows %}
 <section class="pub-sec" aria-label="{{ t('shell.todays_prices') }}">
@@ -150,11 +152,12 @@
     {% for nb in nearby %}
     <article class="shop-card" data-reveal>
       <div class="shop-cover">
-        <span class="nophoto" aria-hidden="true">{{ nb.tile }}</span>
+        {% if nb.cover_url %}<img src="{{ nb.cover_url }}" alt="" loading="lazy" width="600" height="200">{% else %}<span class="nophoto" aria-hidden="true">{{ nb.tile }}</span>{% endif %}
         {% if nb.open_state == "open" %}<span class="pill pill-live shop-open">{{ t('hp.open') }}</span>{% elif nb.open_state == "closed" %}<span class="pill sm ghost shop-open">{{ t('hp.closed') }}</span>{% endif %}
       </div>
       <span class="shop-ava" aria-hidden="true">{{ nb.tile }}</span>
       <div class="shop-body">
+        {% if nb.is_demo %}<p class="demo-tag">{{ t('hp.demo') }}</p>{% endif %}
         <h3>{{ nb.name }}</h3>
         <p class="muted">{{ nb.area }}</p>
         <p class="prices-line">{{ t('hp.prices_today', n=nb.n_prices) }}</p>

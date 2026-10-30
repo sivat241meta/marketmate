@@ -141,7 +141,7 @@
   <div class="basket card" data-reveal data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
     <div class="bd">
       <div class="res-top">
-        <span class="res-ava">{{ ui.obj("store", 24) }}</span>
+        {% if plan.cover_url %}<img class="res-thumb" src="{{ plan.cover_url }}" alt="" loading="lazy" width="80" height="80">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
         <div class="res-tt">
           {% if plan.kind == "split" %}
           <span class="kk">{{ t('market.cheapest_split') }}</span>
@@ -150,8 +150,10 @@
           <span class="kk">{{ plan.shop }} · {% if plan.kind == "partial_shop" %}{{ t('market.partial') }}{% else %}{{ t('market.one_shop') }}{% endif %}</span>
           <h3>{{ plan.shop }}{% if plan.best %} <span class="chip c-live">{{ t('market.best') }}</span>{% endif %}</h3>
           {% endif %}
+          {% if plan.is_demo %}<span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}
         </div>
       </div>
+      {% if plan.is_demo %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
       {% if plan.area %}<p class="muted">{{ plan.area }}</p>{% endif %}
       {% set _got = plan.lines|length %}{% set _miss = plan.missing|length %}{% set _tot = _got + _miss %}
       {% if _tot %}<p><span class="cov-badge">{% if _miss == 0 %}{{ v11.t('basket_full', _L) }}{% else %}{{ v11.t('basket_part', _L, n=_got, m=_tot) }}{% endif %}</span></p>{% endif %}
@@ -210,8 +212,8 @@
     {% for row in group.rows %}
     <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
     <div class="shop-row">
-      <span class="res-ava">{{ ui.obj("store", 20) }}</span>
-      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <small class="muted">Demo data</small>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
+      {% if row.cover_url %}<img class="res-thumb" src="{{ row.cover_url }}" alt="" loading="lazy" width="68" height="68">{% else %}<span class="res-ava">{{ ui.obj("store", 20) }}</span>{% endif %}
+      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
       <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
     </div>
     <p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>

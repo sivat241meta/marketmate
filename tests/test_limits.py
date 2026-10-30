@@ -418,7 +418,8 @@ def test_seed_demo_creates_listed_published_demo_shop(tmp_path, monkeypatch):
     client = TestClient(
         create_app(make_settings(tmp_path, DATA_DIR=str(data_dir))))
     html = client.get(f"/s/{slug}").text
-    assert "Demo data" in html
+    from app.web.i18n import t_for
+    assert t_for("en")("hp.demo") in html
     assert "₹18" in html and "₹25" in html
 
 
