@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from time import monotonic
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from app.config import (
     BASETEN_BASE_URL,
@@ -16,6 +16,7 @@ from app.config import (
     Settings,
 )
 from app.costs import CostLedger, spark_cost
+from app.parallel import MAX_429_RETRIES, api_slot, sleep_backoff
 
 
 class SparkError(Exception):
@@ -91,7 +92,9 @@ def chat_json(
     OpenAI-compatible endpoint accepts it); an empty reply cut off by length
     escalates the token budget once to 16000 before giving up.
     ``summary`` is a fixed string or a function of the parsed reply; every
-    attempt logs its own latency and ok flag.
+    attempt logs its own latency and ok flag. Task 140: at most
+    PHOTO_WORKERS Meta calls are in flight process-wide, and an HTTP 429
+    retries with back-off before the call fails.
     """
     ledger.check()
     wanted = provider or settings.text_provider
@@ -103,7 +106,9 @@ def chat_json(
     else:
         base_url, key, model = META_BASE_URL, settings.model_api_key, SPARK_MODEL
         log_provider = "meta"
-    client = OpenAI(base_url=base_url, api_key=key, timeout=180.0, max_retries=2)
+    # SDK retries stay off: 429s use the explicit back-off below so every
+    # parallel worker shares one in-flight cap and one retry policy.
+    client = OpenAI(base_url=base_url, api_key=key, timeout=180.0, max_retries=0)
     budget = max_tokens
     current = list(messages)
     for attempt in (1, 2):
@@ -112,7 +117,7 @@ def chat_json(
             call: dict = {"model": model, "max_tokens": budget, "messages": current}
             if reasoning_effort is not None:
                 call["reasoning_effort"] = reasoning_effort
-            response = client.chat.completions.create(**call)
+            response = _create_with_429_retry(client, call)
         except Exception as exc:
             ledger.add(log_provider, model, 0.0,
                        f"chat_json max={budget} finish=error",
@@ -146,6 +151,22 @@ def chat_json(
                    _render_summary(summary, data))
         return data
     raise SparkError("could not get JSON after retry")
+
+
+def _create_with_429_retry(client: OpenAI, call: dict):
+    """One chat completion: at most PHOTO_WORKERS in flight, 429s retried.
+
+    The last RateLimitError propagates so the caller logs one failed row.
+    """
+    for retry in range(MAX_429_RETRIES + 1):
+        try:
+            with api_slot():
+                return client.chat.completions.create(**call)
+        except RateLimitError:
+            if retry >= MAX_429_RETRIES:
+                raise
+            sleep_backoff(retry)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def _render_summary(summary: str | Callable[[dict], str | None] | None,

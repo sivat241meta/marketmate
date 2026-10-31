@@ -21,6 +21,7 @@ from meta_sam_parser import (
 from app.config import META_BASE_URL, SAM_MODEL, Settings
 from app.costs import CostLedger
 from app.models import Box
+from app.parallel import MAX_429_RETRIES, api_slot, sleep_backoff
 
 SAM_USD_PER_IMAGE = 0.0025
 
@@ -191,7 +192,12 @@ def _request_text(image: Path, noun: str, *, ledger: CostLedger,
                   session_id: int | None = None,
                   summarize: Callable[[str], str | None] | None = None,
                   ) -> str:
-    """One SAM 3.1 call; returns the joined streamed text and logs cost."""
+    """One SAM 3.1 call; returns the joined streamed text and logs cost.
+
+    Task 140: at most PHOTO_WORKERS Meta calls are in flight process-wide,
+    and an HTTP 429 sleeps with back-off and retries before the call fails.
+    Retried 429s log one row with the total latency (429s are not billed).
+    """
     ledger.check()
     body = {
         "model": SAM_MODEL,
@@ -204,30 +210,45 @@ def _request_text(image: Path, noun: str, *, ledger: CostLedger,
     }
     chunks: list[str] = []
     started = monotonic()
-    try:
-        with httpx.stream("POST", f"{META_BASE_URL}/responses", json=body,
-                           headers={"Authorization": "Bearer " + settings.model_api_key},
-                           timeout=180.0) as response:
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line.startswith("data:"):
-                    continue
-                payload = line[len("data:"):].strip()
-                if payload == "[DONE]":
-                    break
-                try:
-                    event = json.loads(payload)
-                except json.JSONDecodeError:
-                    continue
-                if event.get("type") == "response.output_text.delta":
-                    chunks.append(event.get("delta", ""))
-                if event.get("type") == "response.completed":
-                    break
-    except Exception as exc:
-        ledger.add("meta", SAM_MODEL, 0.0, detail,
-                   shop_id=shop_id, session_id=session_id, step=step,
-                   latency_ms=int((monotonic() - started) * 1000), ok=0)
-        raise SamError(f"SAM request failed: {exc}") from exc
+    for retry in range(MAX_429_RETRIES + 1):
+        try:
+            with (api_slot(),
+                  httpx.stream(
+                      "POST", f"{META_BASE_URL}/responses", json=body,
+                      headers={"Authorization": "Bearer "
+                               + settings.model_api_key},
+                      timeout=180.0) as response):
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    payload = line[len("data:"):].strip()
+                    if payload == "[DONE]":
+                        break
+                    try:
+                        event = json.loads(payload)
+                    except json.JSONDecodeError:
+                        continue
+                    if event.get("type") == "response.output_text.delta":
+                        chunks.append(event.get("delta", ""))
+                    if event.get("type") == "response.completed":
+                        break
+        except httpx.HTTPStatusError as exc:
+            status = getattr(exc.response, "status_code", None)
+            if status == 429 and retry < MAX_429_RETRIES:
+                chunks = []
+                sleep_backoff(retry)
+                continue
+            ledger.add("meta", SAM_MODEL, 0.0, detail,
+                       shop_id=shop_id, session_id=session_id, step=step,
+                       latency_ms=int((monotonic() - started) * 1000), ok=0)
+            raise SamError(f"SAM request failed: {exc}") from exc
+        except Exception as exc:
+            ledger.add("meta", SAM_MODEL, 0.0, detail,
+                       shop_id=shop_id, session_id=session_id, step=step,
+                       latency_ms=int((monotonic() - started) * 1000), ok=0)
+            raise SamError(f"SAM request failed: {exc}") from exc
+        break
     text = "".join(chunks)
     summary = None
     if summarize is not None:

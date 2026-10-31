@@ -413,14 +413,29 @@ def _rename_error(ui_lang: str, exc) -> str:
     return t(exc.key, **params)
 
 
+_ITEM_COUNTER_RE = re.compile(r"item (\d+) of (\d+)$")
+
+
 def _translated_progress(session, lang: str = "en") -> tuple[dict, str]:
-    """session_progress with stepper labels + friendly line in ``lang``."""
+    """session_progress with stepper labels + friendly line in ``lang``.
+
+    Task 140: the active step's label carries the photo counter, so the
+    status JSON (and the upload bubble polling it) reads "Picking a photo
+    for each item (7 of 21)" while the step runs.
+    """
     progress = db.session_progress(session)
     kind = session["kind"]
+    counter = ""
+    match = _ITEM_COUNTER_RE.match(progress.get("detail") or "")
+    if match:
+        counter = f" ({match.group(1)} of {match.group(2)})"
     steps = []
     for step in progress.get("steps", []):
         key = step.get("key", "")
-        steps.append({**step, "label": stage_label(kind, key, lang)})
+        label = stage_label(kind, key, lang)
+        if counter and key == progress.get("stage"):
+            label = f"{label}{counter}"
+        steps.append({**step, "label": label})
     progress = {**progress, "steps": steps}
     friendly = stage_friendly(kind, progress.get("stage", ""), lang)
     return progress, friendly

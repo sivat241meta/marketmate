@@ -25,12 +25,16 @@
   var LANG_STORE_KEY = "mm_speak_lang";
   var WAVE_BARS = 24;
   /* Task 138: a 106 s stall video needs ~3 minutes, so the bubble polls
-     for up to 8 minutes with a gentle back-off (2 s at first, then up
-     to 5 s) instead of giving up after ~60 s. */
+     with a gentle back-off (2 s at first, then up to 5 s) instead of
+     giving up after ~60 s. Task 140: it keeps polling while the status
+     JSON shows progress (the active step or its "(n of m)" counter
+     changing) and gives up only after 3 minutes with no change, or
+     after 20 minutes total. */
   var POLL_FIRST_MS = 2000;
   var POLL_STEP_MS = 250;
   var POLL_CEIL_MS = 5000;
-  var POLL_BUDGET_MS = 8 * 60 * 1000;
+  var POLL_BUDGET_MS = 20 * 60 * 1000;
+  var POLL_STALL_MS = 3 * 60 * 1000;
   var WARN_LEFT_S = 10;
   var DONE_REDIRECT_MS = 1600;
 
@@ -168,6 +172,22 @@
       out.push({ label: labels[i], state: i < last ? "done" : "active" });
     }
     return out;
+  }
+
+  /* Task 140: what counts as server progress for the stall clock — the
+     stage, the active step label (which carries the "(n of m)" counter),
+     the detail line and the status message. Any change restarts the
+     3-minute clock. */
+  function pollProgressKey(data) {
+    var detail = data && data.detail ? String(data.detail) : "";
+    var message = data && (data.message || data.friendly)
+      ? String(data.message || data.friendly) : "";
+    return [stageOf(data), activeStepLabel(data), detail, message]
+      .join("|");
+  }
+
+  function pollStalled(idleMs) {
+    return idleMs >= POLL_STALL_MS;
   }
 
   function languagePostUrl(statusUrl) {
@@ -910,8 +930,19 @@
     postForm(ctx, form, bubble);
   }
 
-  function pollStatus(ctx, bubble, statusUrl, finalUrl, count) {
+  /* Task 140: keep polling while the server progresses. tracker carries
+     the last-seen progress key plus when it last changed; the bubble
+     shows "Still working" only after 3 minutes with no change, or after
+     20 minutes total. */
+  function pollStatus(ctx, bubble, statusUrl, finalUrl, count, tracker) {
     if (pollElapsedMs(count) >= POLL_BUDGET_MS) {
+      showOpenLink(ctx, bubble, finalUrl);
+      return;
+    }
+    if (!tracker) {
+      tracker = { key: "", changedAt: Date.now() };
+    } else if (tracker.key &&
+        pollStalled(Date.now() - tracker.changedAt)) {
       showOpenLink(ctx, bubble, finalUrl);
       return;
     }
@@ -935,13 +966,21 @@
         showDone(ctx, bubble, data, finalUrl);
         return;
       }
+      var key = pollProgressKey(data);
+      if (!tracker.key || key !== tracker.key) {
+        tracker.key = key;
+        tracker.changedAt = Date.now();
+      } else if (pollStalled(Date.now() - tracker.changedAt)) {
+        showOpenLink(ctx, bubble, finalUrl);
+        return;
+      }
       setStep(bubble, view.step);
       var label = activeStepLabel(data);
       if (label) {
         setActiveLabel(bubble, label);
       }
       window.setTimeout(function () {
-        pollStatus(ctx, bubble, statusUrl, finalUrl, count + 1);
+        pollStatus(ctx, bubble, statusUrl, finalUrl, count + 1, tracker);
       }, pollDelay(count));
     }).catch(function () {
       /* Status endpoint gone (or finished page): continue where we landed. */
@@ -1424,6 +1463,9 @@
     pollElapsedMs: pollElapsedMs,
     activeStepLabel: activeStepLabel,
     bubbleSteps: bubbleSteps,
+    pollProgressKey: pollProgressKey,
+    pollStalled: pollStalled,
     POLL_BUDGET_MS: POLL_BUDGET_MS,
+    POLL_STALL_MS: POLL_STALL_MS,
   };
 })();
