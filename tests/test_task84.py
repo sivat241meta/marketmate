@@ -206,7 +206,11 @@ def test_unlisted_shop_never_appears(tmp_path):
         html = _home(client, lang)
         assert "Hidden Store" not in html, lang
         assert "Silent Shop" not in html, lang
-        assert "papaya" not in html.lower(), lang
+        # Task 127 polish: the Fruits tile art is a fixed cluster
+        # (papaya/apple/guava cut-outs), so the hidden item is
+        # matched as content — never the asset filename.
+        assert "/market?q=papaya" not in html.lower(), lang
+        assert ">papaya<" not in html.lower(), lang
     html = _home(client, "en")
     assert "Kannan Veg" in html
     assert "Malar Greens" in html

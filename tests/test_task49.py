@@ -128,7 +128,8 @@ def test_shop_renders_cards_with_add_and_time(tmp_path):
     assert "4" in html  # price count in trio/summary
     assert expected in html  # published HH:MM, never invented
     assert "data-shopsearch-open" in html
-    assert 'class="notice"' in html or 'class="notice ' in html
+    # Task 127 polish: the green notice box is gone from the shop page.
+    assert 'class="notice"' not in html and 'class="notice ' not in html
     assert html.count('<article class="row') >= 4
     assert ">Add<" in html
     # Summary from real data: N items, min to max.

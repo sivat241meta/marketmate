@@ -57,8 +57,6 @@
     </div>
   </section>
 
-  <p class="notice">{{ ui.obj("check", 20) }}<span><strong>{{ t.prices_set_by_seller }}</strong><br>{% if shop["is_demo"] %}{{ t('shop.notice', source=price_source, time=prices_time) }}.{% else %}{{ t('shop.notice', source=price_source, time=prices_time) }} ({{ t.spoken_and_checked }} {{ rel }}).{% endif %}</span></p>
-
   {% if rows %}
   {% if best_cards %}
   <section class="deals" id="best" aria-label="{{ t('v13.best_here') }}">
@@ -98,7 +96,7 @@
         <div class="row-txt">
           {% if row.variety %}<span class="veg-tag blue">{{ t('v13.variety', v=row.variety) }}</span>
           {% elif said_today %}<span class="veg-tag">{{ t('v13.fresh_today') }}</span>{% endif %}
-          <h4><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en }}</small>{% endif %}</h4>
+          <h4><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en | capitalize }}</small>{% endif %}</h4>
           <p class="price">{{ row.price | money(shop["currency"]) }} <span>/ {{ row.lines[0].per if row.lines else row.unit }}</span></p>
           {% if row.said %}{% if row.has_clip %}<a class="said-link voice-link" href="{{ row.clip_url }}">▶ “{{ row.said }}” {{ t('v13.in_voice') }}</a>{% else %}<p class="said-link">▶ “{{ row.said }}” {{ t('v13.in_voice') }}</p>{% endif %}{% endif %}
           {% if not row.sold_out %}

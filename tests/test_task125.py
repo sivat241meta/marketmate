@@ -183,7 +183,7 @@ def test_banner_autoadvance_js_and_reduced_motion():
     assert "setInterval" not in src
     css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
     assert "@keyframes bob13" in css
-    assert ".float" in css and "animation:bob13" in css.replace(" ", "")
+    assert ".hero-float" in css and "animation:bob13" in css.replace(" ", "")
     assert "prefers-reduced-motion" in css
     motion = (ROOT / "app" / "web" / "static" / "css"
               / "motion.css").read_text()

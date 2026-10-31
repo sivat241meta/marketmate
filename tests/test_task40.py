@@ -103,7 +103,9 @@ def test_customer_pages_keep_lang_behaviour(tmp_path):
     finally:
         conn.close()
     html_en = client.get(f"/s/{slug}?lang=en").text
-    assert "Prices set by the seller" in html_en
+    # Task 127 polish: the green notice box is gone; the top strip
+    # keeps the said-today line in the page language.
+    assert "Prices said by the seller today" in html_en
     html_ta = client.get(f"/s/{slug}?lang=ta").text
     assert "விற்பனையாளர்" in html_ta
 

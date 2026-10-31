@@ -60,6 +60,28 @@ V13_CUTOUTS = {
 }
 
 
+#: Designed v13 category art (Task 127 polish): fixed clusters from
+#: the designer reference, shown whenever the category has something
+#: said today. Other categories keep clustering live item photos.
+V13_CATEGORY_ART: dict[str, tuple[str, list[str]]] = {
+    "veg": ("cluster", [
+        "/static/img/v13/cauliflower.webp",
+        "/static/img/v13/tomato.webp",
+        "/static/img/v13/capsicum.webp",
+    ]),
+    "fruit": ("cluster", [
+        "/static/img/v13/papaya.webp",
+        "/static/img/v13/apple.webp",
+        "/static/img/v13/guava.webp",
+    ]),
+    "greens": ("photo", ["/static/img/v13/spinach.jpg"]),
+    "coconut": ("cluster", [
+        "/static/img/v13/coconut.webp",
+        "/static/img/v13/banana.webp",
+    ]),
+}
+
+
 def v13_cutout_url(name_en: str | None) -> str | None:
     """Transparent v13 cut-out URL for an item name, else None."""
     if not name_en:
@@ -395,6 +417,16 @@ def _category_cards(entries: list[dict]) -> list[dict]:
     cards = []
     for code in CATEGORIES:
         if code not in counts:
+            continue
+        if code in V13_CATEGORY_ART:
+            mode, fixed = V13_CATEGORY_ART[code]
+            cards.append({
+                "code": code,
+                "label_key": CATEGORIES[code][0],
+                "photos": list(fixed),
+                "mode": mode,
+                "n_items": counts[code],
+            })
             continue
         seen = set()
         clustered = []

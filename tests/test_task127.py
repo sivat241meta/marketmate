@@ -108,6 +108,73 @@ def test_reduced_motion_rule_present():
     assert "prefers-reduced-motion" in css
 
 
+def test_hero_uses_unclashed_classes(tmp_path):
+    # Task 127 polish: app.css owns .hero (card) and .float (dark
+    # bar), so the v13 hero uses v13-hero/hero-float instead.
+    html = _seed(tmp_path).get("/").text
+    assert 'class="v13-hero"' in html
+    assert "hero-float" in html
+    assert 'class="float' not in html
+    assert 'class="hero"' not in html
+    css = V13_CSS.read_text()
+    assert re.search(r"\.hero\{", css) is None
+    assert re.search(r"\.float\{", css) is None
+
+
+def test_voice_card_clearance_css():
+    # Task 127 polish: one bubble above the mic, and the Tamil pill
+    # wraps left of it instead of running underneath.
+    css = V13_CSS.read_text()
+    flat = css.replace(" ", "")
+    assert ".art-voice.b1{bottom:118px;right:20px}" in flat
+    assert ".svc-pill:lang(ta){max-width:160px}" in flat
+
+
+def test_shop_has_no_green_notice_box(tmp_path):
+    # Task 127 polish: the green "Prices set by the seller" box is
+    # gone from real shop pages; the info card + top strip stay.
+    html = _seed(tmp_path).get("/s/t127-veg").text
+    assert "Prices set by the seller" not in html
+    assert "spoken and checked" not in html
+    assert 'class="info-card"' in html
+
+
+def test_sample_shop_keeps_tag_and_honest_note(tmp_path):
+    # Task 127 polish: sample pages keep the SAMPLE SHOP tag and the
+    # blue honest-note instead of the green box.
+    from scripts import seed_samples
+
+    seed_samples.seed(tmp_path / "data",
+                      ROOT / "scripts" / "sample_data",
+                      "http://localhost:8000")
+    html = make_client(tmp_path).get("/s/green-basket").text
+    assert "Prices set by the seller" not in html
+    assert "tag-sample" in html
+    assert "honest-note" in html
+
+
+def test_shop_row_capitalises_english_name(tmp_path):
+    html = _seed(tmp_path).get("/s/t127-veg").text
+    assert "<small>Tomato</small>" in html
+    assert "<small>Onion</small>" in html
+    assert "<small>tomato</small>" not in html
+
+
+def test_market_chips_are_one_scroll_row(tmp_path):
+    # Task 127 polish: area chips scroll horizontally under the
+    # query pill + Filters chip instead of stacking.
+    html = _seed(tmp_path).get("/market").text
+    assert 'class="mkt-chips"' in html
+    assert html.index("mkt-tools") < html.index("mkt-chips")
+    css = V13_CSS.read_text()
+    chips = re.search(r"body\.v13 \.mkt-chips\{[^}]*\}",
+                      css).group(0).replace(" ", "")
+    assert "flex-wrap:nowrap" in chips
+    assert "overflow-x:auto" in chips
+    assert "scroll-snap-type:xmandatory" in chips
+    assert "scrollbar-width:none" in chips
+
+
 def test_qr_uses_public_base_url(tmp_path):
     from app.outputs.qr import qr_png
 

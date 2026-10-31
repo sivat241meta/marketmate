@@ -76,7 +76,7 @@ def test_accent_ink_class_renamed():
     # Task 127: the v13 homepage uses the v13 hero band; the market
     # basket keeps the accent-ink "under budget" line.
     assert "accent-ink" in (TEMPLATES / "market.html").read_text()
-    assert 'class="hero"' in (TEMPLATES / "home.html").read_text()
+    assert 'class="v13-hero"' in (TEMPLATES / "home.html").read_text()
 
 
 def test_inline_template_colours_are_blue():

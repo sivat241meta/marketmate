@@ -9,7 +9,7 @@
 {% block body_class %}land home-mkt v13{% endblock %}
 {% block content %}
 {# ============ HERO: full-width teal band, header sits on it ============ #}
-<section class="hero" id="hero" aria-label="{{ t('v13.hero_a') }}">
+<section class="v13-hero" id="hero" aria-label="{{ t('v13.hero_a') }}">
   <header class="topbar">
     <div class="wrap topbar-in">
       <a class="brand" href="/" aria-label="MarketMate home"><span class="brand-tile"><img src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="30" height="30" alt="MarketMate"></span><span class="brand-word">MarketMate</span></a>
@@ -31,7 +31,7 @@
 
   {% set _v13 = 'img/v13/' %}
   {% set _float_src = ["tomato", "capsicum", "carrot", "onion", "curry", "pineapple", "pomegranate", "banana", "coconut2"] %}
-  {% for name in _float_src %}<img class="float {{ _float_cls[loop.index0] }}" src="{{ static_url(_v13 ~ name ~ '.webp') if static_url is defined else '/static/' ~ _v13 ~ name ~ '.webp' }}" alt="" aria-hidden="true" loading="eager" width="150">{% endfor %}
+  {% for name in _float_src %}<img class="hero-float {{ _float_cls[loop.index0] }}" src="{{ static_url(_v13 ~ name ~ '.webp') if static_url is defined else '/static/' ~ _v13 ~ name ~ '.webp' }}" alt="" aria-hidden="true" loading="eager" width="150">{% endfor %}
 
   <div class="wrap hero-in">
     <h1>{{ t('v13.hero_a') }}<br>{{ t('v13.hero_b') }} <span class="hl">{{ t('v13.hero_c') }}</span></h1>
@@ -68,7 +68,6 @@
         <span class="svc-go" aria-hidden="true"><svg width="20" height="20" class="icon" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         <span class="svc-art art-voice" aria-hidden="true">
           <span class="bubble b1">2 kg தக்காளி</span>
-          <span class="bubble b2">1 kg onion</span>
           <span class="mic-big"><svg width="20" height="20" class="icon" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></span>
           <span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         </span>

@@ -257,7 +257,7 @@
   // hero has scrolled away (inner pages render .solid instead).
   function initStickybar() {
     var bar = document.querySelector("#site-header:not(.solid)");
-    var hero = document.querySelector(".hero");
+    var hero = document.querySelector(".v13-hero");
     if (!bar || !hero || bar.dataset.mmBound) {
       return;
     }

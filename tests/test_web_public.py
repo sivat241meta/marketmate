@@ -1,4 +1,3 @@
-import re
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
@@ -105,5 +104,7 @@ def test_relative_time_shown(tmp_path, monkeypatch):
     client, token, slug, version_id, _ = seed(tmp_path, monkeypatch)
     client.post(f"/e/{token}/v/{version_id}/publish")
     html = client.get(f"/s/{slug}").text
-    assert re.search(r"spoken and checked (just now|\d+ (minutes|hours|days) ago)",
-                     html)
+    # Task 127 polish: the green "(spoken and checked … ago)" box is
+    # gone; the top strip keeps the said-today HH:MM line.
+    assert "spoken and checked" not in html
+    assert "Prices said by the seller today" in html

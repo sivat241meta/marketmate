@@ -187,19 +187,28 @@ def test_market_rows_real_shop_keeps_updated(tmp_path, monkeypatch):
 
 
 def test_shop_note_single_sentence_all_langs(tmp_path):
+    # Task 127 polish: the green shop note box is gone; sample pages
+    # keep the SAMPLE SHOP tag plus the blue honest-note instead.
     seed(tmp_path / "data")
     client = make_client(tmp_path)
     for lang, slug in SAMPLE_PAGES:
         html = htmlmod.unescape(client.get(_shop_url(slug, lang)).text)
         t = t_for(lang)
-        assert t("shop.notice_sample") + "." in html, lang
-        assert "(" + t("spoken_and_checked") not in html, lang
+        assert t("prices_set_by_seller") not in html, lang
+        assert t("shop.notice_sample") not in html, lang
+        assert t("hp.demo") in html, lang
+        assert t("order.sample_notice") in html, lang
 
 
 def test_shop_note_real_shop_keeps_bracket(tmp_path):
+    # Task 127 polish: the green note box (with its "(spoken and
+    # checked …)" bracket) is gone from real shop pages too; the
+    # top strip keeps the said-today line.
     seed_market(tmp_path)
     html = make_client(tmp_path).get("/s/kannan-veg").text
-    assert "(spoken and checked " in html
+    assert "(spoken and checked " not in html
+    assert "Prices set by the seller" not in html
+    assert "Prices said by the seller today" in html
 
 
 # --- 1e. sample card badge ---

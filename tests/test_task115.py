@@ -389,7 +389,7 @@ def test_homepage_images_sized_and_lazy(tmp_path):
         if "/static/brand/" in tag:
             continue  # SVG logo: intrinsic ratio, height-only is shift-free
         assert 'width="' in tag, tag
-        if re.search(r'class="(float|a\d|aa\d)\b', tag):
+        if re.search(r'class="(float|hero-float|a\d|aa\d)\b', tag):
             continue  # decorative cut-out, sized by width
         assert 'height="' in tag, tag
         if 'loading="eager"' in tag:

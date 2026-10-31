@@ -234,7 +234,7 @@ def test_hero_gradient_band():
     flat = css.replace(" ", "")
     assert "--hero:linear-gradient(118deg,#0B6F67" in flat
     assert "background:var(--hero)" in _rule(
-        css, "body.v13 .hero").replace(" ", "")
-    head = _rule(css, "body.v13 .hero h1").replace(" ", "")
+        css, "body.v13 .v13-hero").replace(" ", "")
+    head = _rule(css, "body.v13 .v13-hero h1").replace(" ", "")
     assert "color:#fff" in head
     assert "font-weight:800" in head

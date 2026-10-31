@@ -369,6 +369,9 @@ def _shop_notice(tmp_path, token, lang="en"):
 
 
 def test_customer_notice_names_the_source(tmp_path):
+    # Task 127 polish: the green source notice box is gone from the
+    # shop page — the page keeps the info card, never the source
+    # sentence. Every source kind still renders a shop page.
     client = make_client(tmp_path)
     cases = [("video", "in today&#39;s video"),
              ("live", "live prices"),
@@ -379,21 +382,25 @@ def test_customer_notice_names_the_source(tmp_path):
         seed_published(tmp_path, token, [draft("tomato", "தக்காளி", 40)],
                        kind=kind)
         html = _shop_notice(tmp_path, token)
-        assert phrase in html.lower() or phrase in html, (kind, html)
+        assert 'class="info-card"' in html, kind
+        assert "Prices set by the seller" not in html, kind
+        assert phrase not in html.lower(), (kind, phrase)
 
 
 def test_customer_notice_tamil_and_mixed(tmp_path):
+    # Task 127 polish: no source notice box in any language.
     client = make_client(tmp_path)
     token = token_of(create_shop(client))
     seed_published(tmp_path, token, [draft("tomato", "தக்காளி", 40)],
                    kind="video")
     html = _shop_notice(tmp_path, token, lang="ta")
-    assert "இன்றைய வீடியோவில்" in html
+    assert "இன்றைய வீடியோவில்" not in html
+    assert 'class="info-card"' in html
     # A board photo on top of a video version mixes the sources.
     seed_published(tmp_path, token, [draft("onion", "வெங்காயம்", 30)],
                    kind="board")
     html = _shop_notice(tmp_path, token)
-    assert "today&#39;s recording" in html.lower()
+    assert "today&#39;s recording" not in html.lower()
 
 
 # --- 8. capitalised flag questions ----------------------------------------------
