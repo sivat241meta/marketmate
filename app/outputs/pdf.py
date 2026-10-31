@@ -10,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 from app.models import Item
 from app.outputs.money import format_money
 from app.outputs.qr import qr_png
+from app.pipeline.names import english_title, local_title
 
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
@@ -37,14 +38,28 @@ def _photo_data_uri(path) -> str | None:
     return f"data:{mime};base64," + base64.b64encode(file.read_bytes()).decode()
 
 
-def _rows(items: list[Item]) -> list[dict]:
+def _shop_lang(shop) -> str:
+    try:
+        lang = shop["language"]
+    except (KeyError, IndexError, TypeError):
+        return "en"
+    return lang or "en"
+
+
+def _rows(items: list[Item], language: str = "en") -> list[dict]:
     rows = []
     for item in items:
         photo = _photo_data_uri(item.photo)
+        titles = {
+            "name_local": item.name_local, "name_en": item.name_en,
+            "variety": item.variety,
+            "title_local": local_title(item.name_local, item.variety,
+                                       item.name_en, language),
+            "title_en": english_title(item.name_en, item.variety),
+        }
         if item.sold_out:
             rows.append({
-                "name_local": item.name_local, "name_en": item.name_en,
-                "variety": item.variety, "photo": photo, "sold_out": True,
+                **titles, "photo": photo, "sold_out": True,
                 "price": "", "per": "",
             })
             continue
@@ -53,9 +68,7 @@ def _rows(items: list[Item]) -> list[dict]:
                 continue
             amount = line.per_amount if line.per_amount is not None else ""
             rows.append({
-                "name_local": item.name_local,
-                "name_en": item.name_en,
-                "variety": item.variety,
+                **titles,
                 "photo": photo,
                 "sold_out": False,
                 "price": _plain(line.price),
@@ -79,13 +92,14 @@ def price_board_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
     qr_data_uri = ("data:image/png;base64,"
                    + base64.b64encode(qr_png(shop_url)).decode())
     html = template.render(
-        shop=shop, rows=_rows(items), at=at.strftime("%d %b %Y, %H:%M"),
+        shop=shop, rows=_rows(items, _shop_lang(shop)),
+        at=at.strftime("%d %b %Y, %H:%M"),
         shop_url=shop_url, qr_data_uri=qr_data_uri, fonts_uri=_FONTS_URI,
         brand_uri=_BRAND_URI)
     return HTML(string=html).write_pdf()
 
 
-def _tags(items: list[Item]) -> list[dict]:
+def _tags(items: list[Item], language: str = "en") -> list[dict]:
     """One tag per published item; sold-out items are skipped."""
     tags = []
     for item in items:
@@ -101,6 +115,9 @@ def _tags(items: list[Item]) -> list[dict]:
             "name_local": item.name_local,
             "name_en": item.name_en,
             "variety": item.variety,
+            "title_local": local_title(item.name_local, item.variety,
+                                       item.name_en, language),
+            "title_en": english_title(item.name_en, item.variety),
             "price": _plain(line.price),
             "per": per,
         })
@@ -121,7 +138,7 @@ def price_tags_pdf(shop: sqlite3.Row, items: list[Item], at: datetime,
     template = env.get_template("tags.html")
     qr_data_uri = ("data:image/png;base64,"
                    + base64.b64encode(qr_png(shop_url)).decode())
-    tags = _tags(items)
+    tags = _tags(items, _shop_lang(shop))
     pages = [tags[index:index + 8] for index in range(0, len(tags), 8)] or [[]]
     html = template.render(
         shop=shop, pages=pages, at=at.strftime("%d %b %Y"),

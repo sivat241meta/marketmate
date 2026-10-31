@@ -33,7 +33,7 @@
   <button type="button" class="review-summary" data-card-toggle aria-expanded="true" aria-controls="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
-      <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
+      <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ card.title_local }}</span>{% if card.title_en %} · {{ card.title_en }}{% endif %}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
     </span>
     {{ ui.pill(t('review.needs_you'), "check") }}
@@ -143,7 +143,7 @@
   <button type="button" class="review-summary" data-card-toggle aria-expanded="false" aria-controls="card-body-{{ card.index }}">
     {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
-      <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}</span>
+      <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ card.title_local }}</span>{% if card.title_en %} · {{ card.title_en }}{% endif %}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
     </span>
     <span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>
@@ -237,7 +237,7 @@
   <label class="card-confirm">
     <input type="checkbox" data-carried data-id="{{ item.id }}" checked>
     {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% endif %}
-    <span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> · {{ item.name_en }}{% if item.variety %} ({{ item.variety }}){% endif %} — {{ item.price_summary }}{% if item.sold_out %} ({{ t('review.sold_out') }}){% endif %}
+    <span class="name-local" lang="{{ shop_lang }}">{{ item.title_local }}</span>{% if item.title_en %} · {{ item.title_en }}{% endif %} — {{ item.price_summary }}{% if item.sold_out %} ({{ t('review.sold_out') }}){% endif %}
   </label>
   {% endfor %}
 </section>

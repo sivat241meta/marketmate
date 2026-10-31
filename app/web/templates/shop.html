@@ -92,11 +92,11 @@
         <div class="cat-cards">
 {% for row in _gb.by[code] %}
 {% set _idx.n = _idx.n + 1 %}
-      <article class="row{% if row.sold_out %} out{% endif %}" id="item-{{ _idx.n }}" data-reveal data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
+      <article class="row{% if row.sold_out %} out{% endif %}" id="item-{{ _idx.n }}" data-reveal data-card data-name-en="{{ row.name_en }}" data-variety="{{ row.variety or '' }}" data-title-en="{{ row.title_en }}" data-unit="{{ row.unit }}" data-price="{{ row.price }}" data-per="{{ row.per_amount }}" data-search="{{ (row.name_en ~ " " ~ (row.variety or '') ~ " " ~ row.name_local) | lower }}">
         <div class="row-txt">
           {% if row.variety %}<span class="veg-tag blue">{{ t('v13.variety', v=row.variety) }}</span>
           {% elif said_today %}<span class="veg-tag">{{ t('v13.fresh_today') }}</span>{% endif %}
-          <h4><span class="tname">{{ row.name_local }}</span>{% if row.name_en != row.name_local and row.name_en != "other" %}<small>{{ row.name_en | capitalize }}</small>{% endif %}</h4>
+          <h4><span class="tname">{{ row.title_local }}</span>{% if row.title_en and row.title_en != row.title_local %}<small>{{ row.title_en | capitalize }}</small>{% endif %}</h4>
           <p class="price">{{ row.price | money(shop["currency"]) }} <span>/ {{ row.lines[0].per if row.lines else row.unit }}</span></p>
           {% if row.said %}{% if row.has_clip %}<a class="said-link voice-link" href="{{ row.clip_url }}">▶ “{{ row.said }}” {{ t('v13.in_voice') }}</a>{% else %}<p class="said-link">▶ “{{ row.said }}” {{ t('v13.in_voice') }}</p>{% endif %}{% endif %}
           {% if not row.sold_out %}
@@ -220,7 +220,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const line = entry.rate * entry.qty;
       total += line;
       const vlabel = entry.variety ? " (" + entry.variety + ")" : "";
-      lines.push(`<div class="rl"><div><b>${entry.local}${vlabel}</b><small>${entry.qty} ${entry.unit} · ${fmt(line)} (${fmt(entry.price)} / ${entry.per} ${entry.unit})</small></div><b>${fmt(line)}</b></div>`);
+      const enlabel = entry.english ? entry.english + " · " : "";
+      lines.push(`<div class="rl"><div><b>${entry.local}${vlabel}</b><small>${enlabel}${entry.qty} ${entry.unit} · ${fmt(line)} (${fmt(entry.price)} / ${entry.per} ${entry.unit})</small></div><b>${fmt(line)}</b></div>`);
     });
     const one = bar.getAttribute("data-one") || "1 item · {total}";
     const many = bar.getAttribute("data-many") || "{n} items · {total}";
@@ -271,7 +272,8 @@ document.addEventListener("DOMContentLoaded", () => {
       cart.set(key, { qty: cardQty(card), unit: card.dataset.unit, rate: cardRate(card),
         price: parseFloat(card.dataset.price || "0") || 0,
         per: parseFloat(card.dataset.per || "1") || 1,
-        local: card.querySelector(".tname").textContent, name, variety });
+        local: card.querySelector(".tname").textContent, name, variety,
+        english: card.dataset.titleEn || "" });
       qtyEl.textContent = cardQty(card);
       add.hidden = true;
       step.hidden = false;

@@ -56,8 +56,11 @@ from app.pipeline.checks import check_item
 from app.pipeline.media import extract_audio
 from app.pipeline.names import (
     CANONICAL_NAMES,
+    QUALIFIER_VARIETIES,
     display_name_en,
+    english_title,
     keywords_for,
+    local_title,
 )
 from app.pipeline.numbers import parse_number
 from app.pipeline.photos import (
@@ -687,19 +690,29 @@ def build_price_message(conn, shop, lang, base_url: str | None = None) -> str:
     first = f"{shop['name']} · {t('wa.today_prices')} · {day}"
     lines: list[str] = []
     sold_names: list[str] = []
+    shop_lang = shop["language"] or "en"
     for item in db.version_items(conn, version_id):
         local = (item.name_local or "").strip() or item.name_en
+        variety = (item.variety or "").strip()
+        is_qualifier = (bool(variety)
+                        and variety.lower() in QUALIFIER_VARIETIES)
         if item.sold_out:
-            sold_names.append(local)
+            sold_names.append(
+                local_title(local, item.variety, item.name_en, shop_lang)
+                if is_qualifier else local)
             continue
         priced = [line for line in item.price_lines
                   if line.price is not None]
         if not priced:
             continue
-        head = f"{local} ({item.name_en}"
-        if (item.variety or "").strip():
-            head += f", {item.variety.strip()}"
-        head += ")"
+        if is_qualifier:
+            head = (f"{local_title(local, item.variety, item.name_en, shop_lang)}"
+                    f" ({english_title(item.name_en, item.variety)})")
+        else:
+            head = f"{local} ({item.name_en}"
+            if variety:
+                head += f", {variety}"
+            head += ")"
         bits = []
         for line in priced:
             money = format_money(line.price, currency)
@@ -1326,12 +1339,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     base_items = db.version_items(conn, base_id)
                 except Exception:  # noqa: BLE001 - unreadable base means no carried
                     base_items = []
+                review_lang = shop["language"] or "en"
                 for base in db.carried_from_base(items, base_items):
                     carried.append({
                         "id": base.id,
                         "name_local": base.name_local,
                         "name_en": base.name_en,
                         "variety": base.variety,
+                        "title_local": local_title(
+                            base.name_local, base.variety, base.name_en,
+                            review_lang),
+                        "title_en": english_title(base.name_en,
+                                                  base.variety),
                         "photo_url": _photo_url(base.photo),
                         "photo_cutout": is_cutout_photo(base.photo),
                         "sold_out": base.sold_out,
@@ -1370,6 +1389,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     {
                         "index": index,
                         "item": item,
+                        "title_local": local_title(
+                            item.name_local, item.variety, item.name_en,
+                            shop["language"] or "en"),
+                        "title_en": english_title(item.name_en,
+                                                  item.variety),
                         "photo_url": _photo_url(item.photo),
                         "photo_cutout": is_cutout_photo(item.photo),
                         "candidates": candidates,
@@ -2131,6 +2155,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "name": f"{name} ({item.variety})" if item.variety else name,
                     "name_local": item.name_local,
                     "name_en": item.name_en,
+                    "title_local": local_title(
+                        item.name_local, item.variety, item.name_en,
+                        shop_lang),
+                    "title_en": english_title(item.name_en, item.variety),
                     "has_clip": has_clip,
                     "clip_url": (f"/s/{shop['slug']}/voice/{item.id}"
                                  if has_clip else ""),

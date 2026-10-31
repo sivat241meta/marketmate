@@ -15,6 +15,7 @@ from app.pipeline.names import (
     CANONICAL_NAMES,
     EN_TO_ROMAN,
     SYNONYMS,
+    TAMIL_SYNONYMS,
     VARIETY_ALIASES,
 )
 from app.pipeline.numbers import CURRENCY_WORDS, parse_number
@@ -182,6 +183,9 @@ def _build_canonical_index() -> dict[str, set[str]]:
             if len(bits) > 1:
                 add(bits[-1], canon)
     for syn, canon in SYNONYMS.items():
+        if canon in CANONICAL_NAMES:
+            add(syn, canon)
+    for syn, canon in TAMIL_SYNONYMS.items():
         if canon in CANONICAL_NAMES:
             add(syn, canon)
     return index

@@ -58,7 +58,7 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
 
     from app import db as _db
     from app.dayclose import bills_for_range, day_tiles, list_days, local_day_of, shop_tz
-    from app.pipeline.names import display_name_en
+    from app.pipeline.names import english_title
 
     tz = shop_tz(shop)
     book = Workbook()
@@ -141,7 +141,7 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
             if not name_en:
                 continue
             variety = str(line.get("variety") or "").strip() or None
-            item_name = (display_name_en(name_en, variety) if variety
+            item_name = (english_title(name_en, variety) if variety
                          else name_en)
             line_row = lines_ws.max_row + 1
             lines_ws.cell(row=line_row, column=1, value=row["id"])
@@ -249,7 +249,7 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
     for key in sorted(agg):
         entry = agg[key]
         if entry["variety"]:
-            display = display_name_en(entry["name"], entry["variety"])
+            display = english_title(entry["name"], entry["variety"])
         else:
             display = entry["name"][:1].upper() + entry["name"][1:]
         row_no = items_ws.max_row + 1

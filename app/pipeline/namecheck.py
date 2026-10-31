@@ -89,6 +89,11 @@ def validate_names(name_local: str | None, name_en: str | None,
         if _PRICE_RE.search(varied):
             raise NameValidationError(
                 "rename.err_price", {"field": "variety"})
+        # A transliterated qualifier becomes the English word (Task 136);
+        # every other spelling is the seller's own and stays untouched.
+        from app.pipeline.names import normalize_qualifier
+
+        varied = normalize_qualifier(varied) or varied
     try:
         allowed = expected_scripts(shop_bias(shop_lang or "en"))
     except (KeyError, ImportError, AttributeError):
