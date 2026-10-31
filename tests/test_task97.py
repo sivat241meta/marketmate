@@ -209,9 +209,13 @@ def test_photo_noun_is_brinjal(tmp_path, monkeypatch):
                           tmp_path / "audio.wav", settings=settings,
                           ledger=ledger, language="ta", all_frames=frames,
                           video=None)
-    assert nouns == ["beans", "carrot", "broad beans", "brinjal", "brinjal"]
+    # Task 140: the photo work runs concurrently, so invocations land in
+    # completion order; the names themselves (brinjal, not ujala) match.
+    assert sorted(nouns) == ["beans", "brinjal", "brinjal", "broad beans",
+                             "carrot"]
     drafts = db.load_drafts(conn, session_id)
-    assert [d.name_en for d in drafts] == nouns
+    assert [d.name_en for d in drafts] == ["beans", "carrot", "broad beans",
+                                          "brinjal", "brinjal"]
 
 
 def test_seller_chosen_name_never_overridden(tmp_path, monkeypatch):

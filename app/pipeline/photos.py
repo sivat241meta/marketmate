@@ -11,6 +11,7 @@ from app.costs import CostCapExceeded
 from app.meta.sam import SamError, SamInstance, find_boxes, find_instances
 from app.meta.spark import chat_json, image_part
 from app.models import Box, Frame
+from app.parallel import map_parallel_ordered
 
 #: Card photo ratio, long side cap and JPEG quality for item photos.
 PHOTO_RATIO = (4, 3)
@@ -1128,7 +1129,10 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
     Gates in order: target instances exist, a whole cluster selects, no
     face blocks, cross-check survivors remain, the cut-out verifies as
     the target item. Without decodable masks the original 4:3 crop is
-    offered alone when it still contains the target per SAM.
+    offered alone when it still contains the target per SAM. Task 140:
+    the rival cross-check queries run concurrently (same nouns, same
+    order); the target nouns stay sequential with their early break and
+    the face check stays first, so no speculative paid call is added.
     """
     noun = nouns[0]
     instances: list[SamInstance] = []
@@ -1157,12 +1161,19 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
                          cluster=cluster_box(cluster)):
         return None, True
     if others:
+        # The budget is reserved up front so the concurrent cross-checks
+        # either all run or the item ends, deterministically: the sequential
+        # code also abandoned the item on the first over-budget rival.
+        if used[0] + len(others) > MAX_SAM_PER_ITEM:
+            raise _BudgetOut
+        found_lists = map_parallel_ordered(
+            lambda other: find_instances(
+                frame.path, other, ledger=ledger, settings=settings,
+                detail=f"cross:{other}", step="cut-out mask"),
+            list(others), workers=len(others))
+        used[0] += len(others)
         rival: list[SamInstance] = []
-        for other in others:
-            found = _sam_call(used, find_instances, frame.path, other,
-                              ledger=ledger, settings=settings,
-                              detail=f"cross:{other}",
-                              step="cut-out mask")
+        for found in found_lists:
             rival.extend(inst for inst in found
                          if _passes(inst.box.confidence, PRODUCT_CONFIDENCE))
         cluster = select_whole(drop_confused(instances, rival), size)

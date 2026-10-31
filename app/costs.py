@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import threading
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -33,6 +34,12 @@ VISION_STEPS = frozenset({
 MAX_SUMMARY_CHARS = 140
 _PHONE_RE = re.compile(r"\+?\d[\d\s\-.()]{5,}\d")
 _DIGITS_RE = re.compile(r"\d{7,}")
+
+#: Serialises ledger writes process-wide (Task 140): the parallel photo
+#: workers share one CostLedger, and background jobs share its file.
+_LEDGER_WRITE_LOCK = threading.Lock()
+#: SQLite busy timeout so readers/writers wait out a parallel worker.
+_SQLITE_TIMEOUT_S = 30.0
 
 
 def sanitize_summary(text: str | None) -> str | None:
@@ -76,7 +83,7 @@ class CostLedger:
         self._shop_id: int | None = None
         self._session_id: int | None = None
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=_SQLITE_TIMEOUT_S) as conn:
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS costs ("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -104,7 +111,9 @@ class CostLedger:
             *, shop_id: int | None = None, session_id: int | None = None,
             step: str | None = None, latency_ms: int | None = None,
             ok: int | None = None, summary: str | None = None) -> None:
-        with sqlite3.connect(self._db_path) as conn:
+        with (_LEDGER_WRITE_LOCK,
+              sqlite3.connect(self._db_path,
+                              timeout=_SQLITE_TIMEOUT_S) as conn):
             conn.execute(
                 "INSERT INTO costs (day, provider, model, usd, detail,"
                 " created_at, shop_id, session_id, step, latency_ms, ok,"
@@ -119,7 +128,7 @@ class CostLedger:
             )
 
     def today_usd(self, provider: str = "meta") -> float:
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=_SQLITE_TIMEOUT_S) as conn:
             row = conn.execute(
                 "SELECT COALESCE(SUM(usd), 0) FROM costs WHERE day = ? AND provider = ?",
                 (_today_ist(), provider),
@@ -154,7 +163,7 @@ class CostLedger:
             params.append(SAM_MODEL)
         query += " ORDER BY id DESC LIMIT ?"
         params.append(limit)
-        with sqlite3.connect(self._db_path) as conn:
+        with sqlite3.connect(self._db_path, timeout=_SQLITE_TIMEOUT_S) as conn:
             conn.row_factory = sqlite3.Row
             return [dict(row) for row in conn.execute(query, params)]
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from time import perf_counter
 
 from app import db
 from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded, CostLedger
@@ -10,6 +11,7 @@ from app.languages import get_language, language_bias, shop_bias
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
+from app.parallel import map_parallel_ordered, photo_workers
 from app.pipeline.checks import check_item, flag_same_name_two_prices
 from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.frames import frames_for_window, item_window, pick_best_frame
@@ -23,7 +25,12 @@ from app.pipeline.media import (
     has_video_stream,
 )
 from app.pipeline.names import correct_draft_from_variety, keywords_for
-from app.pipeline.photos import make_candidates, make_photo, window_frames
+from app.pipeline.photos import (
+    ensure_visual_nouns,
+    make_candidates,
+    make_photo,
+    window_frames,
+)
 from app.pipeline.scripts import script_mismatch
 
 #: At most this many guard re-transcriptions per session; then the last
@@ -212,7 +219,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     photo_dir.mkdir(parents=True, exist_ok=True)
     clip_dir = session_dir / "clips"
     clip_dir.mkdir(parents=True, exist_ok=True)
-    matched: list[bool] = []
+    matched: list[bool] = [True] * len(items)
     use_live_frames = frames_by_turn is not None
     row = conn.execute("SELECT kind FROM sessions WHERE id = ?",
                        (session_id,)).fetchone()
@@ -224,9 +231,11 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
         db.set_stage(conn, session_id, "photos")
     # Video path, first pass: pick each item's frame and pool up front, so
     # the photo step knows the other items' picked frames (cross-check).
+    # Task 140: the per-item Spark frame picks run concurrently.
     video_prep: dict[int, tuple] = {}
-    if not use_live_frames and not audio_only:
-        for pos, entry in enumerate(items):
+    if not use_live_frames and not audio_only and items:
+        def _prep(pos: int):
+            entry = items[pos]
             start_ms, end_ms = item_window(entry, transcript.turns)
             picked, matches = pick_best_frame(
                 entry, frames_for_window(all_frames or [], start_ms, end_ms),
@@ -241,7 +250,11 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 except Exception:  # noqa: BLE001 - dense frames are optional
                     dense = []
                 pool = pool + dense
-            video_prep[pos] = (picked, matches, pool)
+            return (picked, matches, pool)
+
+        for pos, result in enumerate(map_parallel_ordered(
+                _prep, list(range(len(items))), workers=photo_workers())):
+            video_prep[pos] = result
     # Task 67: the session's visual-noun cache survives reprocessing.
     # Task 72: the kitchen-category cache ("fruit"/"vegetable"/"produce")
     # from the same Spark call rides along for the generic fallback.
@@ -267,38 +280,72 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             category_cache = {str(k): str(v)
                               for k, v in loaded_categories.items()
                               if isinstance(v, str)}
-    for index, item in enumerate(items):
-        if not is_live and not audio_only:
-            db.set_stage(conn, session_id, "photos",
-                         detail=f"item {index + 1} of {len(items)}")
-        if use_live_frames:
+    if not use_live_frames and not audio_only and items:
+        # One Spark call for every item's visual noun up front (the call the
+        # first item used to make), so the photo workers only read the
+        # caches. A failure falls back to English names, as before; without
+        # this the workers would hammer one failing call per item.
+        try:
+            ensure_visual_nouns(
+                [entry.name_en for entry in items], noun_cache,
+                ledger=ledger, settings=settings,
+                category_cache=category_cache)
+        except CostCapExceeded:
+            raise
+        except Exception:  # noqa: BLE001 - nouns fall back to English
+            for entry in items:
+                noun_cache.setdefault(entry.name_en, entry.name_en)
+    # Task 140: the per-item photo work runs concurrently. Workers only do
+    # API calls and file work on their own item; progress (and later the
+    # drafts) is written on this thread, in completion order for progress
+    # and in item order for results.
+    if use_live_frames:
+        def _live_one(index: int) -> bool:
+            item = items[index]
             frame = live_frame_for_item(item, frames_by_turn, turns)
             if frame is None:
-                matched.append(False)
                 clip = cut_audio_clip(wav_path, item.proof.start_ms,
                                       item.proof.end_ms,
                                       clip_dir / f"item_{index}.m4a")
                 item.proof.audio_clip = str(clip)
-                continue
-            matched.append(True)
-        elif audio_only:
-            matched.append(True)
+                return False
+            photo = make_photo(
+                frame, item.name_en,
+                photo_dir / f"s{session_id}_{index}.jpg",
+                ledger=ledger, settings=settings)
+            item.photo = str(photo) if photo is not None else None
+            item.proof.frame = str(frame.path)
             clip = cut_audio_clip(wav_path, item.proof.start_ms,
                                   item.proof.end_ms,
                                   clip_dir / f"item_{index}.m4a")
             item.proof.audio_clip = str(clip)
-            continue
-        else:
+            return True
+
+        for index, result in enumerate(map_parallel_ordered(
+                _live_one, list(range(len(items))),
+                workers=photo_workers())):
+            matched[index] = result
+    elif audio_only:
+        for index, item in enumerate(items):
+            clip = cut_audio_clip(wav_path, item.proof.start_ms,
+                                  item.proof.end_ms,
+                                  clip_dir / f"item_{index}.m4a")
+            item.proof.audio_clip = str(clip)
+    else:
+        session_names = [entry.name_en for entry in items]
+        picked_list = [(entry.name_en, video_prep[pos][0])
+                       for pos, entry in enumerate(items)]
+
+        def _photo_one(index: int) -> bool:
+            item = items[index]
             frame, matches, pool = video_prep[index]
-            matched.append(matches)
             ranked = window_frames(pool, frame)
             saved = make_candidates(
                 pool, frame, item.name_en,
                 photo_dir / f"s{session_id}_{index}",
                 ledger=ledger, settings=settings,
-                session_items=[entry.name_en for entry in items],
-                picked_frames=[(entry.name_en, video_prep[pos][0])
-                               for pos, entry in enumerate(items)],
+                session_items=session_names,
+                picked_frames=picked_list,
                 noun_cache=noun_cache, category_cache=category_cache)
             if saved:
                 item.photo = saved[0]
@@ -308,20 +355,29 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 # face-blocked: the item gets no photo (letter tile).
                 item.photo = None
                 item.photo_candidates = []
-            item.proof.frame = str(ranked[0].path) if ranked else str(frame.path)
+            item.proof.frame = (str(ranked[0].path) if ranked
+                                else str(frame.path))
             clip = cut_audio_clip(wav_path, item.proof.start_ms,
                                   item.proof.end_ms,
                                   clip_dir / f"item_{index}.m4a")
             item.proof.audio_clip = str(clip)
-            continue
-        photo = make_photo(
-            frame, item.name_en, photo_dir / f"s{session_id}_{index}.jpg",
-            ledger=ledger, settings=settings)
-        item.photo = str(photo) if photo is not None else None
-        item.proof.frame = str(frame.path)
-        clip = cut_audio_clip(wav_path, item.proof.start_ms, item.proof.end_ms,
-                              clip_dir / f"item_{index}.m4a")
-        item.proof.audio_clip = str(clip)
+            return matches
+
+        def _photo_done(done: int, total: int) -> None:
+            db.set_stage(conn, session_id, "photos",
+                         detail=f"item {done} of {total}")
+
+        photo_workers_used = photo_workers()
+        photo_started = perf_counter()
+        for index, result in enumerate(map_parallel_ordered(
+                _photo_one, list(range(len(items))),
+                workers=photo_workers_used, on_done=_photo_done)):
+            matched[index] = result
+        if items:
+            photo_s = perf_counter() - photo_started
+            ledger.add("local", "timing", 0.0, step="photos", ok=1,
+                       summary=(f"{len(items)} items in {photo_s:.1f} s"
+                                f" with {photo_workers_used} workers"))
     if not use_live_frames and not audio_only and noun_cache:
         try:
             nouns_path.write_text(json.dumps(noun_cache, sort_keys=True))
@@ -334,13 +390,19 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
         except OSError:
             pass  # The cache is a nice-to-have.
     db.set_stage(conn, session_id, "checking")
-    for item, matches in zip(items, matched):
-        item.flags.extend(check_item(item, previous, language=language,
-                                    ledger=ledger, settings=settings))
-        if not matches:
-            item.flags.append(Flag(
+    # Task 140: the per-item checks (one cross-check Spark call each for
+    # unparsed languages) run concurrently; flags land in item order.
+    def _check_one(index: int):
+        return check_item(items[index], previous, language=language,
+                          ledger=ledger, settings=settings)
+
+    for index, flags in enumerate(map_parallel_ordered(
+            _check_one, list(range(len(items))), workers=photo_workers())):
+        items[index].flags.extend(flags)
+        if not matched[index]:
+            items[index].flags.append(Flag(
                 field="photo", code="PICTURE_MISMATCH",
-                message=f"no frame clearly shows {item.name_en}"))
+                message=f"no frame clearly shows {items[index].name_en}"))
     flag_same_name_two_prices(items, language=language)
     db.save_drafts(conn, session_id, items)
     db.set_stage(conn, session_id, "ready")
