@@ -60,9 +60,11 @@ def test_publish_shows_price_without_proof(tmp_path, monkeypatch):
     assert response.status_code in (302, 303)
     html = client.get(f"/s/{slug}").text
     assert "₹18" in html
-    assert "/m/s1_0.jpg" in html
-    assert "Prices set by the seller" in html
-    assert "spoken and checked" in html
+    # Task 127: a name-matched item shows the transparent v13
+    # cut-out instead of its own photo on the shop page.
+    assert "/static/img/v13/tomato.webp" in html
+    assert "✓ Voice-checked prices" in html
+    assert "kilo eighteen" in html
     assert QUOTE not in html
     assert "/clip/" not in html
     assert "ripe" not in html

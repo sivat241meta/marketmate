@@ -2,9 +2,10 @@
 {% import "_ui.html" as ui %}
 {% set _L = ui_lang|default('en') %}
 {% block title %}{{ t('v12.how_t') }} — MarketMate{% endblock %}
-{% block body_class %}pub how{% endblock %}
+{% block body_class %}pub how v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 <div class="ph-head">
   <div>
     <p class="kick">{{ t('v12.how_t') }}</p>
@@ -55,7 +56,9 @@
   <p class="lead">{{ t('land.meta_voice') }} {{ t('land.meta_spark') }} {{ t('land.meta_sam') }} {{ t('land.meta_open') }}</p>
   <p><a class="pill ghost" href="/#meta">{{ t('land.meta_log') }}</a></p>
 </section>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

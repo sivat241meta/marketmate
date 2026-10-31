@@ -2,9 +2,10 @@
 {% import "_ui.html" as ui %}
 {% from "_composer.html" import composer with context %}
 {% block title %}{{ t.get_quote }} — {{ shop["name"] }}{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 <div class="ph-head">
   <div>
     <p class="kick">{{ shop["name"] }}</p>
@@ -100,7 +101,9 @@
   </section>
 </div>
 <p><a href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.back_to }} {{ shop["name"] }}</a></p>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('methods.js') if static_url is defined else '/static/methods.js' }}"></script>
 <script src="{{ static_url('customer-contact.js') if static_url is defined else '/static/customer-contact.js' }}"></script>

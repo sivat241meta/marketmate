@@ -507,19 +507,11 @@ def test_phone_shop_orders_products_first(tmp_path):
     _publish(tmp_path, token, [_draft("tomato", 40, "தக்காளி", None)])
     html = client.get(f"/s/{slug}").text
     assert 'class="is-shop"' in html or "is-shop" in html
-    # DOM order untouched: hero still precedes the grid.
-    assert html.index('class="hero2"') < html.index("data-shop-grid")
-    css = CSS.read_text()
-    assert "body.is-shop .content { display: flex" in css
-    for selector, order in (
-            ("body.is-shop .content > .search", "order: 1"),
-            ("body.is-shop .content > .chips", "order: 2"),
-            ("body.is-shop .content > .notice", "order: 3"),
-            ("body.is-shop .content > [data-shop-grid]", "order: 5"),
-            ("body.is-shop .content > .hero2", "order: 10")):
-        assert selector in css, selector
-        pos = css.index(selector)
-        assert order in css[pos:pos + 400], (selector, order)
+    # Task 127: no hero2 band — the compact info card precedes the
+    # grid in DOM order, so phones get prices without reordering.
+    assert 'class="hero2"' not in html
+    assert html.index('class="info-card"') < html.index("data-shop-grid")
+    assert html.index("data-shop-grid") < html.index("data-cart-bar")
 
 
 # --- 9. letter tiles carry the variety ----------------------------------------
@@ -544,9 +536,10 @@ def test_two_banana_varieties_have_distinct_tiles(tmp_path):
         _draft("banana", 60, "வாழைப்பழம்", "yelakki"),
     ])
     shop_html = client.get(f"/s/{slug}").text
-    assert shop_html.count('<span class="til-g">வா</span>') == 2
-    assert '<span class="til-v">பூவன்</span>' in shop_html
-    assert '<span class="til-v">ஏலக்கி</span>' in shop_html
+    # Task 127: the shop page shows item photos, so the two varieties
+    # are told apart by their variety tags, not letter tiles.
+    assert "poovan" in shop_html and "yelakki" in shop_html
+    assert shop_html.count("VARIETY:") == 2
     home = client.get(f"/e/{token}").text
     assert '<span class="til-v">பூவன்</span>' in home
     assert '<span class="til-v">ஏலக்கி</span>' in home

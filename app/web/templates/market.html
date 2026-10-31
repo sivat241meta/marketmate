@@ -2,230 +2,211 @@
 {% import "_ui.html" as ui %}
 {% import "_v11.html" as v11 %}
 {% from "_composer.html" import composer with context %}
-{% set _L = ui_lang|default('en') %}
 {% set _ph_popups = "loc,search,filter" %}
-{% block title %}Find prices — MarketMate{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% set _L = ui_lang|default('en') %}
+{% block title %}{{ t('market.kick') }} — MarketMate{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
-<div class="ph-head">
-  <div>
-    <p class="kick">{{ t('market.kick') }}</p>
-    <h1>{{ t('market.headline_a') }} {{ t('market.headline_b') }}</h1>
-    <p class="lead">{{ t('pub.market_sub') }}</p>
+<div class="wrap mkt-main">
+  <p class="kick">{{ t('market.kick') }}</p>
+  <h1 class="mkt-title">{{ t('market.headline_a') }} {{ t('market.headline_b') }}</h1>
+  {% if heard %}<p class="muted">Heard: {{ heard }}</p>{% endif %}
+  {% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
+
+  {# Task 125: one search — the query pill opens the search pop-up
+     (area / max spend / open now / sort live in the filter pop-up).
+     The old second search form is gone. #}
+  <div class="mkt-tools"><button type="button" class="mkt-pill" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{% if q or cat_label %}{{ t('v12.edit_search') }}: {{ q or cat_label }}{% else %}{{ t('hp.search') }}{% endif %}">{{ ui.obj("search", 20) }}<span>{{ q or cat_label or t('v12.search_ph') }}</span><span aria-hidden="true">▾</span></button>
+  <button type="button" class="chip" data-filter-open aria-haspopup="dialog" aria-controls="filter-pop">{{ ui.obj("tag", 20) }}<span>{{ t('v12.filters') }}</span><span class="nbadge" data-filter-count hidden></span></button></div>
+
+  {# Task 127: only area quick chips stay visible — open now, near
+     me, sort and pincode live in the Filters pop-up. #}
+  <div class="mkt-chips" role="group" aria-label="{{ t('market.all_areas') }}">
+    <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}" data-open-all>{{ t('market.all_areas') }}</a>
+    {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}" data-open-area>{{ a }}</a>{% endfor %}
   </div>
-</div>
 
-{# Task 125: one search — the query pill opens the search pop-up
-   (area / max spend / open now / sort live in the filter pop-up).
-   The old second search form is gone. #}
-<p><button type="button" class="mkt-pill" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{% if q or cat_label %}{{ t('v12.edit_search') }}: {{ q or cat_label }}{% else %}{{ t('hp.search') }}{% endif %}">{{ ui.obj("search", 20) }}<span>{{ q or cat_label or t('v12.search_ph') }}</span><span aria-hidden="true">▾</span></button></p>
-
-<section class="pub-sec voice-panel" id="market-voice" data-voice-panel aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
-  <div class="form-card">
-    <h2 class="h2s">{{ t('hp.tab_voice') }}</h2>
+  <section class="mkt-sec voice-panel" id="market-voice" data-voice-panel data-voice-url="/market/voice" aria-label="{{ t('hp.tab_voice') }}"{% if q %} hidden{% endif %}>
+    <div class="mkt-sec-head"><h2>{{ t('voice.title') }}</h2><p>{{ t('voice.sub') }}</p></div>
     {{ composer("/market/voice", text_field="q", placeholder=t('hp.ph_all'), mode="voice+text", max_seconds=120) }}
-    <p class="notice">Your voice recording is sent to Meta's AI service to be transcribed.</p>
-  </div>
-</section>
+  </section>
 
-{% if error %}<div class="alert alert-warn" role="alert">{{ error }}</div>{% endif %}
-{% if heard %}<p class="muted">Heard: {{ heard }}</p>{% endif %}
-{% if chips %}
-<section class="pub-sec" aria-label="{{ t('market.understood') }}">
-  <p class="kick">{{ t('market.understood') }}</p>
-  <div class="chip-row">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}</div>
-</section>
-{% endif %}
-{% if unknown %}
-<div class="alert alert-info">Sorry, these words were not understood: {{ unknown | join(", ") }}. Showing the rest instead.</div>
-{% endif %}
+  {% if chips %}
+  <section class="mkt-sec" aria-label="{{ t('market.understood') }}">
+    <p class="kick">{{ t('market.understood') }}</p>
+    <div class="chip-row">{% for chip in chips %}<span class="chip">{{ chip }}</span>{% endfor %}{% if budget %} <span class="chip on">{{ budget }}</span>{% endif %}</div>
+  </section>
+  {% endif %}
+  {% if unknown %}
+  <div class="alert alert-info">Sorry, these words were not understood: {{ unknown | join(", ") }}. Showing the rest instead.</div>
+  {% endif %}
 
-{% if searched %}
-<section class="pub-sec" aria-label="{{ t('v12.filters') }}">
-  <p class="chip-row mkt-chips">
-    <button type="button" class="chip" data-filter-open aria-haspopup="dialog">{{ ui.obj("tag", 20) }}<span>{{ t('v12.filters') }}</span><span class="nbadge" data-filter-count hidden></span></button>
-  </p>
+  {% if searched and (basket or rows) %}
   <div class="mkt-tabs" role="tablist" aria-label="{{ t('market.headline_a') }}">
     <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="basket">{{ t('v12.tab_basket') }}</button>
     <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="shops">{{ t('v12.tab_shops') }}</button>
     <button type="button" class="mkt-tab" role="tab" aria-selected="false" data-mtab="items">{{ t('v12.tab_items') }}</button>
   </div>
-  <form method="get" action="/market" class="filters" data-filters>
-    <input type="hidden" name="q" value="{{ q or '' }}">
-    {% if area %}<input type="hidden" name="area" value="{{ area }}">{% endif %}
-    {% if budget %}<input type="hidden" name="budget" value="{{ budget }}">{% endif %}
-    <input type="hidden" name="sort" id="sort-value" value="{{ sort }}">
-    <input type="hidden" name="open_now" value="0">
-    <div class="filter-row chip-row" role="group" aria-label="{{ t('market.all_areas') }}">
-      <a class="chip{% if not area %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.all_areas') }}</a>
-      {% for a in areas %}<a class="chip{% if area == a %} on{% endif %}" href="/market?q={{ (q or '') | urlencode }}&amp;area={{ a | urlencode }}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort={{ sort }}{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ a }}</a>{% endfor %}
-      <label class="chip chip-check{% if open_now %} on{% endif %}" for="market-open">
-        <input id="market-open" type="checkbox" name="open_now" value="1"{% if open_now %} checked{% endif %} onchange="this.form.submit()">
-        {{ ui.obj("clock", 20) }}<span>{{ t('market.open_now') }}</span>
-      </label>
-      <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
-      <span class="seg" id="sort" role="group" aria-label="{{ t('market.sort_label') }}">
-        <a data-sort="total"{% if sort != "distance" and sort != "items" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=total{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_total') }}</a>
-        <a data-sort="distance"{% if sort == "distance" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=distance{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('market.sort_distance') }}</a>
-        <a data-sort="items"{% if sort == "items" %} class="on"{% endif %} href="/market?q={{ (q or '') | urlencode }}{% if area %}&amp;area={{ area | urlencode }}{% endif %}&amp;pincode={{ (pincode or '') | urlencode }}&amp;open_now={{ '1' if open_now else '0' }}&amp;sort=items{% if budget %}&amp;budget={{ budget | urlencode }}{% endif %}">{{ t('v12.sort_items') }}</a>
-      </span>
-      <span class="pin-wrap">
-        <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
-        <input type="search" id="market-pincode" name="pincode" value="{{ pincode or '' }}" inputmode="numeric" maxlength="6" size="6" placeholder="{{ t('market.pincode') }}">
-      </span>
-    </div>
-    <span class="muted" id="near-me-status" aria-live="polite"></span>
-  </form>
-</section>
-{% endif %}
+  {% endif %}
 
-{% if closed_notice and not basket %}
-<section class="pub-sec" aria-label="{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}">
-  <p class="notice need" data-closed-notice><span>{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}</span> <a class="pill ghost sm" href="{{ closed_notice.url }}">{{ t('market.show_all') }}</a></p>
-</section>
-{% endif %}
-
-{% if basket %}
-<section class="pub-sec" id="mkt-basket" data-mtab-panel="basket" aria-label="{{ t('v12.tab_basket') }}">
-  <div class="hp-sec-head">
-    <div>
+  {% if basket %}
+  <section class="mkt-sec" id="mkt-basket" data-mtab-panel="basket" aria-label="{{ t('v12.tab_basket') }}">
+    <div class="mkt-sec-head"><div>
       {% if basket.budget %}
-      <h2 class="h2s">{{ ui.obj("basket", 28) }}Budget basket — {{ basket.budget | money("INR") }}</h2>
+      <h2>{{ ui.obj("basket", 28) }}Budget basket — {{ basket.budget | money("INR") }}</h2>
       {% else %}
-      <h2 class="h2s">{{ ui.obj("basket", 28) }}Your basket</h2>
+      <h2>{{ ui.obj("basket", 28) }}Your basket</h2>
       {% endif %}
       {% if closed_notice %}
       <p class="notice need" data-closed-notice><span>{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}</span> <a class="pill ghost sm" href="{{ closed_notice.url }}">{{ t('market.show_all') }}</a></p>
       {% else %}
       <p class="muted">{{ basket.explanation }}</p>
       {% endif %}
-    </div>
-  </div>
-  <div class="results-grid" data-plans>
-  {% for plan in basket.plans %}
-  <div class="basket card" data-reveal data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
-    <div class="bd">
-      <div class="res-top">
-        {% if plan.cover_url %}<img class="res-thumb" src="{{ plan.cover_url }}" alt="" loading="lazy" width="80" height="80">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
-        <div class="res-tt">
-          {% if plan.kind == "split" %}
-          <span class="kk">{{ t('market.cheapest_split') }}</span>
-          <h3>{{ t('market.cheapest_split') }}</h3>
-          {% else %}
-          <span class="kk">{{ plan.shop }} · {% if plan.kind == "partial_shop" %}{{ t('market.partial') }}{% else %}{{ t('market.one_shop') }}{% endif %}</span>
-          <h3>{{ plan.shop }}{% if plan.best %} <span class="chip c-live">{{ t('market.best') }}</span>{% endif %}</h3>
-          {% endif %}
-          {% if plan.is_demo %}<span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}
+    </div></div>
+    <div class="results-grid" data-plans>
+    {% for plan in basket.plans %}
+    <div class="basket card" data-reveal data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
+      <div class="bd">
+        <div class="res-top">
+          {% if plan.cover_url %}<img class="res-thumb" src="{{ plan.cover_url }}" alt="" loading="lazy" width="80" height="80">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
+          <div class="res-tt">
+            {% if plan.kind == "split" %}
+            <span class="kk">{{ t('market.cheapest_split') }}</span>
+            <h3>{{ t('market.cheapest_split') }}</h3>
+            {% else %}
+            <span class="kk">{{ plan.shop }} · {% if plan.kind == "partial_shop" %}{{ t('market.partial') }}{% else %}{{ t('market.one_shop') }}{% endif %}</span>
+            <h3>{{ plan.shop }}{% if plan.best %} <span class="chip c-live">{{ t('market.best') }}</span>{% endif %}</h3>
+            {% endif %}
+            {% if plan.is_demo %}<span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}
+          </div>
         </div>
+        {% if plan.is_demo %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
+        {% if plan.area %}<p class="muted">{{ plan.area }}</p>{% endif %}
+        {% set _got = plan.lines|length %}{% set _miss = plan.missing|length %}{% set _tot = _got + _miss %}
+        {% if _tot %}<p><span class="cov-badge">{% if _miss == 0 %}{{ v11.t('basket_full', _L) }}{% else %}{{ v11.t('basket_part', _L, n=_got, m=_tot) }}{% endif %}</span></p>{% endif %}
+        {% if plan.open_state == "open" %}<p><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if plan.open_time %}{{ t('hours.open_now', time=plan.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
+        {% elif plan.open_state == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if plan.open_time %}{{ t('hours.closed', time=plan.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
+        <p class="muted" data-distance-wrap hidden><small data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></p>
+        {% if plan.lines %}
+        <div class="rl"><div>
+          {% for line in plan.lines %}
+          <small>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</small>
+          {% endfor %}
+        </div><div class="price"><span class="pp">{{ plan.total | money(plan.currency) }}</span></div></div>
+        {% endif %}
+        {% if plan.saved %}<p class="accent-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
+        {% if plan.missing and not closed_notice %}
+        {% if plan.kind == "partial_shop" %}
+        <p class="miss"><small>{{ t('market.missing', items=(plan.missing | join(", "))) }}</small></p>
+        {% else %}
+        <p class="miss"><small>{{ t('market.no_fresh', items=(plan.missing | join(", "))) }}</small></p>
+        {% endif %}
+        {% endif %}
+        {% if plan.slug %}
+        <p class="card-actions">
+          <a class="pill ghost sm" href="/s/{{ plan.slug }}">{{ t('market.open_shop') }}</a>
+          <a class="pill cta sm" href="/s/{{ plan.slug }}/quote">{{ t('market.order_items') }}</a>
+        </p>
+        {% endif %}
       </div>
-      {% if plan.is_demo %}<div class="alert alert-warn" data-sample-notice>{{ t('order.sample_notice') }}</div>{% endif %}
-      {% if plan.area %}<p class="muted">{{ plan.area }}</p>{% endif %}
-      {% set _got = plan.lines|length %}{% set _miss = plan.missing|length %}{% set _tot = _got + _miss %}
-      {% if _tot %}<p><span class="cov-badge">{% if _miss == 0 %}{{ v11.t('basket_full', _L) }}{% else %}{{ v11.t('basket_part', _L, n=_got, m=_tot) }}{% endif %}</span></p>{% endif %}
-      {% if plan.open_state == "open" %}<p><span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if plan.open_time %}{{ t('hours.open_now', time=plan.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
-      {% elif plan.open_state == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if plan.open_time %}{{ t('hours.closed', time=plan.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
-      <p class="muted" data-distance-wrap hidden><small data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></p>
-      {% if plan.lines %}
-      <div class="rl"><div>
-        {% for line in plan.lines %}
-        <small>{{ line.want }} — {% if line.assumed %}(assumed {{ line.amount }}){% else %}{{ line.amount }}{% endif %} — <a href="/s/{{ line.slug }}">{{ line.shop }}</a> — {{ line.cost | money(line.currency) }}</small>
-        {% endfor %}
-      </div><div class="price"><span class="pp">{{ plan.total | money(plan.currency) }}</span></div></div>
-      {% endif %}
-      {% if plan.saved %}<p class="accent-ink"><b>{{ t('market.under_budget', amount=(plan.saved | money(plan.currency))) }}</b></p>{% endif %}
-      {% if plan.missing and not closed_notice %}
-      {% if plan.kind == "partial_shop" %}
-      <p class="miss"><small>{{ t('market.missing', items=(plan.missing | join(", "))) }}</small></p>
-      {% else %}
-      <p class="miss"><small>{{ t('market.no_fresh', items=(plan.missing | join(", "))) }}</small></p>
-      {% endif %}
-      {% endif %}
-      {% if plan.slug %}
-      <p class="card-actions">
-        <a class="pill ghost sm" href="/s/{{ plan.slug }}">{{ t('market.open_shop') }}</a>
-        <a class="pill cta sm" href="/s/{{ plan.slug }}/quote">{{ t('market.order_items') }}</a>
-      </p>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
-  </div>
-</section>
-{% endif %}
-
-{% if rows %}
-{% set _ms = namespace(seen={}, order=[]) %}
-{% for row in rows %}
-{% if row.slug not in _ms.seen %}
-{% set _ = _ms.seen.update({row.slug: {'name': row.shop_name, 'area': row.area, 'cover': row.cover_url, 'open': row.open_state, 'ot': row.open_time, 'demo': row.is_demo, 'n': 1, 'min': row.price, 'cur': row.currency}}) %}
-{% set _ = _ms.order.append(row.slug) %}
-{% else %}
-{% set _e = _ms.seen[row.slug] %}
-{% set _ = _ms.seen.update({row.slug: {'name': _e.name, 'area': _e.area, 'cover': _e.cover, 'open': _e.open, 'ot': _e.ot, 'demo': _e.demo, 'cur': _e.cur, 'n': _e.n + 1, 'min': row.price if row.price|float < _e.min|float else _e.min}}) %}
-{% endif %}
-{% endfor %}
-<section class="pub-sec" id="mkt-shops" data-mtab-panel="shops" aria-label="{{ t('v12.tab_shops') }}">
-  <div class="results-grid">
-  {% for slug in _ms.order %}
-  {% set s = _ms.seen[slug] %}
-  <div class="mkt-shop">
-    {% if s.cover %}<img class="res-thumb" src="{{ s.cover }}" alt="" loading="lazy" width="52" height="52">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
-    <div class="mkt-shop-main">
-      <h3><a href="/s/{{ slug }}">{{ s.name }}</a>{% if s.demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}</h3>
-      <small class="muted">{{ s.area }} · {{ s.n }} {{ t('hp.price', count=s.n) }} · {{ t('market.best') }} {{ s.min | money(s.cur) }}</small>
-      {% if s.open == "open" %}<p><span class="pill pill-live" data-open-chip>{% if s.ot %}{{ t('hours.open_now', time=s.ot) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span></p>
-      {% elif s.open == "closed" %}<p><span class="pill sm ghost" data-open-chip>{% if s.ot %}{{ t('hours.closed', time=s.ot) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span></p>{% endif %}
-    </div>
-    <p class="card-actions">
-      <a class="pill ghost sm" href="/s/{{ slug }}">{{ t('market.open_shop') }}</a>
-      <a class="pill cta sm" href="/s/{{ slug }}/quote">{{ t('market.order_items') }}</a>
-    </p>
-  </div>
-  {% endfor %}
-  </div>
-</section>
-{% endif %}
-
-{% if market_empty %}
-<section class="card hp-empty empty-market">
-  {{ ui.obj("search", 56) }}
-  <p><b>{{ t('market.empty_title') }}</b></p>
-  <p><a class="pill cta" href="/new">{{ t('market.empty_seller') }}</a></p>
-</section>
-{% endif %}
-
-{% if searched and not groups and not error and not basket and not market_empty and not closed_notice %}
-<section class="card hp-empty">
-  {{ ui.obj("search", 56) }}
-  <p><b>{{ t('market.no_results') }}</b></p>
-  <p><a class="pill cta" href="/market">{{ t('hp.search') }}</a></p>
-</section>
-{% endif %}
-{% if groups %}
-<section class="pub-sec" id="mkt-items" data-mtab-panel="items" aria-label="{{ t('market.headline_a') }}">
-  <div class="results-grid">
-  {% for group in groups %}
-  <div class="card result-card" data-reveal data-shop-list>
-    <div class="result-head"><span class="res-ava">{{ ui.obj("tag", 24) }}</span><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} {{ t('hp.shop', count=group.rows | length) }}</small></div>
-    {% for row in group.rows %}
-    <div data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
-    <div class="shop-row">
-      {% if row.cover_url %}<img class="res-thumb" src="{{ row.cover_url }}" alt="" loading="lazy" width="68" height="68">{% else %}<span class="res-ava">{{ ui.obj("store", 20) }}</span>{% endif %}
-      <span><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %} <a href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>{% if row.open_state == "open" %} <span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>{% elif row.open_state == "closed" %} <span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small></span>
-      <b>{{ row.price | money(row.currency) }} <small class="muted">/ {{ row.per }}{% if row.rate %} ({{ row.rate | money(row.currency) }}/{{ row.rate_unit }}){% endif %}</small></b>
-      <a class="pill cta sm mkt-add" href="/s/{{ row.slug }}">{{ t('shop.add') }}</a>
-    </div>
-    {% if row.is_demo %}<p class="muted"><small>{{ row.rel }}</small></p>{% else %}<p class="muted"><small>Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}</small></p>{% endif %}
     </div>
     {% endfor %}
-  </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if rows %}
+  {% set _ms = namespace(by={}, counts={}, order=[]) %}
+  {% for row in rows %}
+  {% if row.slug not in _ms.by %}
+  {% set _ = _ms.by.update({row.slug: {"name": row.shop_name, "slug": row.slug, "is_demo": row.is_demo, "area": row.area or "", "open_state": row.open_state, "open_time": row.open_time, "cover": row.cover_url, "rel": row.rel, "lat": row.lat, "lng": row.lng}}) %}
+  {% set _ = _ms.counts.update({row.slug: 0}) %}
+  {% set _ = _ms.order.append(row.slug) %}
+  {% endif %}
+  {% set _ = _ms.counts.update({row.slug: _ms.counts[row.slug] + 1}) %}
   {% endfor %}
-  </div>
-</section>
-{% endif %}
+  <section class="mkt-sec" id="mkt-shops" data-mtab-panel="shops" aria-label="{{ t('v12.tab_shops') }}">
+    <div class="mkt-sec-head"><h2 id="shops-h">{{ t('hp.nav_find') }} ({{ _ms.order | length }})</h2></div>
+    <div class="mkt-shop-grid" data-shop-list>
+      {% for slug in _ms.order %}
+      {% set shop = _ms.by[slug] %}
+      {% set live = live_cards.get(slug) %}
+      <a class="shop" href="/s/{{ shop.slug }}" data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ shop.lat if shop.lat is not none else '' }}" data-shop-lng="{{ shop.lng if shop.lng is not none else '' }}">
+        <span class="shop-photo">
+          {% if shop.cover %}<img src="{{ shop.cover }}" alt="" loading="lazy" width="400" height="170">{% else %}<span class="nophoto" aria-hidden="true">{{ shop.name[:1] }}</span>{% endif %}
+          {% if shop.is_demo %}<span class="tag-sample">{{ t('hp.demo') }}</span>{% endif %}
+          <b class="shop-name">{{ shop.name }}</b>
+          {% if live and live.voice_checked %}<span class="badge-ok">{{ t('v13.voice_checked') }}</span>{% endif %}
+        </span>
+        <span class="shop-meta"><span>{% if live %}{% for key in live.cat_labels %}{{ t(key) }}{% if not loop.last %} · {% endif %}{% endfor %}{% endif %}</span><span>{% if live %}{{ t('hp.prices_today', n=live.n_prices) }}{% else %}{{ _ms.counts[slug] }} {{ t('hp.price', count=_ms.counts[slug]) }}{% endif %}</span></span>
+        <span class="shop-meta"><span>{{ shop.area }}</span><span data-open-chip>{% if shop.open_state == "open" %}{% if shop.open_time %}{{ t('hours.open_now', time=shop.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}{% elif shop.open_state == "closed" %}{% if shop.open_time %}{{ t('hours.closed', time=shop.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}{% endif %}</span></span>
+        {% if live and live.cheapest %}<span class="bar-deal"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l9-9 9 9-9 9z"/></svg><span class="deal-txt">{% for top in live.cheapest %}{{ top.name | capitalize }} {{ top.price | money(top.currency) }}{% if not loop.last %} · {% endif %}{% endfor %}</span>{% if live.n_prices > 2 %}<em>+{{ live.n_prices - 2 }}</em>{% endif %}</span>{% endif %}
+        <span class="bar-soft">{{ t('v13.order_voice_lang') }}</span>
+        <span class="said">{% if shop.is_demo %}{{ t('hp.said_sample') }}{% elif live %}{{ t('v13.said_at', time=live.said) }}{% else %}Updated {{ shop.rel }}{% endif %}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if market_empty %}
+  <section class="card hp-empty empty-market">
+    {{ ui.obj("search", 56) }}
+    <p><b>{{ t('market.empty_title') }}</b></p>
+    <p><a class="pill cta" href="/new">{{ t('market.empty_seller') }}</a></p>
+  </section>
+  {% endif %}
+
+  {% if searched and not groups and not error and not basket and not market_empty and not closed_notice %}
+  <section class="card hp-empty">
+    {{ ui.obj("search", 56) }}
+    <p><b>{{ t('market.no_results') }}</b></p>
+    <p><a class="pill cta" href="/market">{{ t('hp.search') }}</a></p>
+  </section>
+  {% endif %}
+
+  {% if groups %}
+  <section class="mkt-sec" id="mkt-items" data-mtab-panel="items" aria-label="{{ t('market.headline_a') }}">
+    <div class="results-grid">
+      {% for group in groups %}
+      <section aria-label="{{ group.name }}" data-shop-list>
+        <div class="mkt-group-head"><b>{{ group.name }}</b><small class="muted">{{ group.rows | length }} {{ t('hp.shop', count=group.rows | length) }}</small></div>
+        <div class="deal-row scroller">
+          {% for row in group.rows %}
+          {% set _cut = v13_cutout_url(row.name_en) if v13_cutout_url is defined else none %}
+          {% set _live = (live_photos.get(row.slug) or {}).get((row.name_en or "") | lower) %}
+          {% set _pic = _cut or (_live.url if _live else none) %}
+          {% set _is_cut = _cut or (_live.cut if _live else false) %}
+          <div class="deal" data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
+            <span class="tile">{% if _pic %}<img src="{{ _pic }}" alt="" loading="lazy" width="110" height="110"{% if _is_cut %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ row.name_en[:1] }}</span>{% endif %}</span>
+            <b><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}</b>
+            <span class="unit">{{ row.per }} · {{ row.area }}{% if row.rate %} · {{ row.rate | money(row.currency) }}/{{ row.rate_unit }}{% endif %}</span>
+            <span class="rel">{% if row.is_demo %}{{ row.rel }}{% else %}Updated {{ row.rel }}{% if row.stale %} · <strong>may be old</strong>{% endif %}{% endif %}{% if row.km is not none %} · <span data-distance data-unknown="{{ t('market.distance_unknown') }}" data-km="{{ row.km }}">{% if ui_lang == "en" %}{{ row.km }} km{% else %}{{ row.mi }} mi{% endif %}</span>{% else %} <small class="muted" data-distance data-unknown="{{ t('market.distance_unknown') }}"></small>{% endif %}</span>
+            {% if row.open_state == "open" %}<span class="pill pill-live" data-open-chip>{{ ui.obj("clock", 20) }}{% if row.open_time %}{{ t('hours.open_now', time=row.open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</span>
+            {% elif row.open_state == "closed" %}<span class="pill sm ghost" data-open-chip>{% if row.open_time %}{{ t('hours.closed', time=row.open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</span>{% endif %}
+            <span class="deal-foot"><strong>{{ row.price | money(row.currency) }}{% if row.lowest %} <span class="pill pill-live best">Lowest</span>{% endif %}</strong><a class="add mkt-add" href="/s/{{ row.slug }}">{{ t('shop.add') }}</a></span>
+            <a class="order-link" href="/s/{{ row.slug }}/quote">{{ t('get_quote_short') }}</a>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if closed_notice and not basket %}
+  <section class="mkt-sec" aria-label="{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}">
+    <p class="notice need" data-closed-notice><span>{{ t('market.closed_have', n=closed_notice.n, count=closed_notice.n) }}</span> <a class="pill ghost sm" href="{{ closed_notice.url }}">{{ t('market.show_all') }}</a></p>
+  </section>
+  {% endif %}
+
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
-<script src="{{ static_url('near-me.js') if static_url is defined else '/static/near-me.js' }}"></script>
+<script src="{{ static_url('composer.js') if static_url is defined else '/static/composer.js' }}"></script>
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
+<script src="{{ static_url('near-me.js') if static_url is defined else '/static/near-me.js' }}"></script>
 {% endblock %}

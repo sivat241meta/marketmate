@@ -34,6 +34,8 @@ from test_task84 import seed_market, seed_shop
 
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_CSS = ROOT / "app" / "web" / "static" / "css" / "public.css"
+V13_CSS = ROOT / "app" / "web" / "static" / "css" / "v13.css"
+SHOP13_CSS = ROOT / "app" / "web" / "static" / "css" / "shop13.css"
 HEADER = ROOT / "app" / "web" / "templates" / "_public_header.html"
 MY_JS = ROOT / "app" / "web" / "static" / "my.js"
 
@@ -316,7 +318,8 @@ def test_shop_summary_singular(tmp_path):
     token = _create_shop(client)
     _publish(tmp_path, token, [_draft("tomato", 40)])
     html = htmlmod.unescape(client.get(f"/s/{_slug(tmp_path, token)}").text)
-    assert "1 item, from" in html
+    # Task 127: v13 info card uses singular grammar for one price.
+    assert "1 price today" in html
     assert "Search 1 item" in html
 
 
@@ -370,7 +373,7 @@ def test_phone_header_compact_structure(tmp_path):
     html = client.get(f"/s/{_slug(tmp_path, token)}").text
     head = re.search(r'<header id="site-header".*?</header>', html,
                      re.DOTALL).group(0)
-    bag = re.search(r'<a class="pill ghost sm hp-bag"[^>]*>(.*?)</a>', head,
+    bag = re.search(r'<a class="[^"]*hp-bag"[^>]*>(.*?)</a>', head,
                     re.DOTALL)
     assert bag, "no Bag button in header"
     assert 'aria-label="Bag"' in head
@@ -384,17 +387,15 @@ def test_phone_header_compact_structure(tmp_path):
 
 
 def test_phone_header_css_420_rules():
-    css = PUBLIC_CSS.read_text()
-    block = css.split("@media (max-width: 420px)", 1)[1]
+    # Task 127: the v13 sticky bar stays one row on phones — the
+    # location button ellipsizes and the menu button appears.
+    css = V13_CSS.read_text()
+    block = css.split("@media (max-width:700px)", 1)[1]
     block = block.split("@media", 1)[0]
-    assert ".hp-sell .free-badge" in block and "display: none" in block
-    assert ".hp-bag .bag-label" in block
-    assert ".hp-sell" in block and "font-size: 13px" in block
-    # Task 125: one row — the header never wraps; the location
-    # button ellipsizes instead.
-    assert "flex-wrap: nowrap" in block
-    assert "flex-wrap: wrap" not in block
-    assert ".hp-menu-btn" in block
+    flat = block.replace(" ", "")
+    assert ".stickybar.topbar-in" in flat
+    assert ".loc-mini" in block and "min-width:0" in flat
+    assert ".menu-btn{display:grid}" in css.replace(" ", "")
 
 
 def test_bag_badge_js_wiring():
@@ -413,26 +414,22 @@ def test_shop_cart_layout_structure(tmp_path):
     html = client.get(f"/s/{_slug(tmp_path, token)}").text
     for hook in SHOP_HOOKS:
         assert hook in html, hook
+    # Task 127: no side panel — grid, then the fixed bag bar that
+    # opens the bottom sheet.
     grid_at = html.index("data-shop-grid")
-    side_at = html.index('class="shop-side"')
     bar_at = html.index("data-cart-bar")
-    summary_at = html.index("data-cart-summary")
-    layout_at = html.index('class="shop-layout"')
-    assert layout_at < grid_at < side_at < bar_at < summary_at
-    side = html[side_at:html.index("</aside>", side_at)]
-    assert "data-cart-bar" in side and "data-cart-summary" in side
-    assert "data-cart-error" in side
+    sheet_at = html.index("data-cart-sheet")
+    assert grid_at < bar_at < sheet_at
+    assert "data-cart-error" in html
 
 
 def test_cart_bar_css_phone_and_laptop():
-    css = PUBLIC_CSS.read_text()
-    phone = re.search(r"body\.pub \.float\.shop-float \{(.*?)\}", css,
-                      re.DOTALL).group(1)
-    assert "position: fixed" in phone
-    assert "left: 12px" in phone and "right: 12px" in phone
-    laptop = css.split("@media (min-width: 1000px)", 1)[1]
-    assert "grid-template-columns: minmax(0, 1fr) 340px" in laptop
-    assert ".shop-side" in laptop and "position: sticky" in laptop
-    assert "position: static" in laptop  # bar docks, never overlaps
-    assert "display: none" not in laptop.split(
-        ".float.shop-float", 1)[1][:80]
+    # Task 127: the teal bag bar is fixed and centred; phones dock
+    # it closer to the bottom edge.
+    css = SHOP13_CSS.read_text()
+    bar = re.search(r"\.bag-bar\{(.*?)\}", css, re.DOTALL).group(1)
+    assert "position:fixed" in bar.replace(" ", "")
+    assert "translateX(-50%)" in bar
+    phone = css.split("@media (max-width:700px)", 1)[1]
+    assert ".bag-bar" in phone and "bottom:12px" in phone.replace(
+        " ", "")

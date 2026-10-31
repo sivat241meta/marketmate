@@ -253,55 +253,65 @@
     });
   }
 
-  // Task 125: promo banner auto-advance. The track is a shared
-  // [data-carousel] (arrows + dots via initCarousels); this only
-  // adds the 5 s loop — paused on hover/focus, never under
-  // reduced motion.
-  function initBanner() {
-    var banner = document.querySelector("[data-banner]");
-    if (!banner) {
+  // Task 127: the homepage white header slides down once the
+  // hero has scrolled away (inner pages render .solid instead).
+  function initStickybar() {
+    var bar = document.querySelector("#site-header:not(.solid)");
+    var hero = document.querySelector(".hero");
+    if (!bar || !hero || bar.dataset.mmBound) {
       return;
     }
-    var track = banner.querySelector("[data-carousel]");
-    if (!track) {
-      return;
+    bar.dataset.mmBound = "1";
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var past = window.scrollY
+        > Math.max(hero.offsetHeight - 120, 200);
+      bar.classList.toggle("on", past);
+      bar.setAttribute("aria-hidden", past ? "false" : "true");
     }
-    var reduce = window.matchMedia
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      return;
-    }
-    var timer = null;
-    function advance() {
-      var max = track.scrollWidth - track.clientWidth;
-      if (track.scrollLeft >= max - 2) {
-        track.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
+    window.addEventListener("scroll", function () {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(update);
       }
-    }
-    function start() {
-      if (!timer) {
-        timer = window.setInterval(advance, 5000);
+    }, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+
+  // Task 127: the markets grid hides links past the seventh behind
+  // Show more — from JS only, so no-JS users see every link.
+  function initMarketsMore() {
+    document.querySelectorAll("[data-markets]").forEach(function (grid) {
+      if (grid.dataset.mmBound) {
+        return;
       }
-    }
-    function stop() {
-      if (timer) {
-        window.clearInterval(timer);
-        timer = null;
+      grid.dataset.mmBound = "1";
+      var btn = grid.querySelector("[data-markets-more]");
+      var extra = grid.querySelector("[data-markets-extra]");
+      if (!btn || !extra) {
+        return;
       }
-    }
-    banner.addEventListener("mouseenter", stop);
-    banner.addEventListener("mouseleave", start);
-    banner.addEventListener("focusin", stop);
-    banner.addEventListener("focusout", start);
-    start();
+      extra.hidden = true;
+      btn.hidden = false;
+      btn.addEventListener("click", function () {
+        var open = extra.hidden;
+        extra.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        var label = open
+          ? btn.getAttribute("data-less")
+          : btn.getAttribute("data-more");
+        btn.childNodes[0].textContent = label + " ";
+      });
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     initHearts();
     initLastQ();
     initCarousels();
-    initBanner();
+    initStickybar();
+    initMarketsMore();
   });
 })();

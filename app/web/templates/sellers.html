@@ -3,9 +3,10 @@
 {% import "_v11.html" as v11 %}
 {% set _L = ui_lang|default('en') %}
 {% block title %}{{ t('v12.sellers_t') }} — MarketMate{% endblock %}
-{% block body_class %}pub sellers{% endblock %}
+{% block body_class %}pub sellers v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 <div class="ph-head">
   <div>
     <p class="kick">{{ t('land.nav_sellers') }}</p>
@@ -108,7 +109,9 @@
   <p class="muted">{{ t('home.lost_p1') }}</p>
   <p class="muted">{{ t('home.lost_p2') }}</p>
 </section>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

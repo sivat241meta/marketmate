@@ -24,6 +24,7 @@ from scripts import seed_samples
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_DATA = ROOT / "scripts" / "sample_data"
 PUBLIC_CSS = ROOT / "app" / "web" / "static" / "css" / "public.css"
+SHOP13_CSS = ROOT / "app" / "web" / "static" / "css" / "shop13.css"
 APP_CSS = ROOT / "app" / "web" / "static" / "app.css"
 PUBLIC_JS = ROOT / "app" / "web" / "static" / "public.js"
 SHOP_HTML = ROOT / "app" / "web" / "templates" / "shop.html"
@@ -99,24 +100,29 @@ def _hero(client, lang="en"):
 
 
 def test_counters_count_only_real_prices_with_sample_note(tmp_path):
+    # Task 127: the hero pill shows the real total (7 real + 53
+    # sample prices); sample cards carry their own SAMPLE labels.
+    from app.web.i18n import t_for as _t
+
     seed(tmp_path / "data")
     seed_market(tmp_path)
     hero = _hero(make_client(tmp_path))
-    # 3 real shops, 7 real prices; the 5 sample shops get their own note.
-    assert 'data-count="3"' in hero
-    assert 'data-count="7"' in hero
-    assert "Prices said today" in hero
-    # Task 125: the slim count line says "incl. N sample shops".
-    assert "incl. 5 sample shops" in hero
+    assert "data-count" not in hero
+    assert "60 PRICES TODAY" in hero
+    assert _t("en")("hp.demo") in hero
+    assert _t("en")("hp.said_sample") in hero
 
 
 def test_counters_all_sample_label_prices_listed(tmp_path):
+    # Task 127: all-sample data still counts honestly, and every
+    # card says SAMPLE.
+    from app.web.i18n import t_for as _t
+
     seed(tmp_path / "data")
     hero = _hero(make_client(tmp_path))
-    assert "Prices listed" in hero
-    assert "Prices said today" not in hero
-    # Task 125: the slim count line says "incl. N sample shops".
-    assert "incl. 5 sample shops" in hero
+    assert "53 PRICES TODAY" in hero
+    assert _t("en")("hp.demo") in hero
+    assert _t("en")("hp.said_sample") in hero
     assert 'id="empty-all"' not in _home(make_client(tmp_path), "en")
 
 
@@ -206,36 +212,40 @@ def test_sample_card_badge_all_langs(tmp_path):
     client = make_client(tmp_path)
     for lang in ("en", "ta", "hi"):
         html = _home(client, lang)
-        assert _t(lang)("hp.voice_badge_sample") in html, lang
+        assert _t(lang)("hp.said_sample") in html, lang
         assert _t(lang)("hp.demo") in html, lang
 
 
 def test_sample_card_badge_replaces_voice_line(tmp_path):
+    # Task 127: sample cards say SAMPLE + "Sample prices"; the
+    # seeded samples pass the proof check, so the voice badge shows
+    # too (ribbon + badge, like the reference).
     seed(tmp_path / "data")
     html = _home(make_client(tmp_path), "en")
-    assert "Sample prices · processed by Muse Voice + Spark" in html
-    assert "Prices from the seller&#39;s voice" not in html
-    assert "Prices from the seller's voice" not in html
+    assert "Sample shop" in html
+    assert "Sample prices" in html
+    assert "✓ Voice-checked" in html
 
 
 def test_real_card_keeps_voice_badge(tmp_path):
     seed_market(tmp_path)
     html = htmlmod.unescape(_home(make_client(tmp_path), "en"))
-    assert "Prices from the seller's voice" in html
+    assert "✓ Voice-checked" in html
 
 
 # --- 2. shop page grid: full width while the bag is empty ---
 
 
 def test_grid_css_full_width_when_bag_empty():
-    css = PUBLIC_CSS.read_text()
-    assert "body.pub .shop-layout:not(.has-cart) .shop-side" in css
-    assert "body.pub .shop-layout.has-cart" in css
-    assert "minmax(170px, 1fr)" in css
-    assert ".shop-layout .grid-products .card .ph img" in css
+    # Task 127: v13 rows run full width; the fixed bag bar slides up
+    # only when the bag has lines (bar.hidden toggles in-page).
+    css = SHOP13_CSS.read_text()
+    flat = css.replace(" ", "")
+    assert ".menu-wrap{width:min(800px,100%-32px)" in flat
+    assert "position:fixed" in flat.split(".bag-bar{")[1].split("}")[0]
     src = SHOP_HTML.read_text()
-    assert 'grid.closest(".shop-layout")' in src
-    assert 'layout.classList.toggle("has-cart", count > 0)' in src
+    assert "bar.hidden = count === 0" in src
+    assert "data-cart-bar" in src and "data-cart-sheet" in src
 
 
 def test_grid_phone_columns_unchanged():

@@ -1,5 +1,6 @@
 """Task 22: Fresh Market design system, app shell, home and seller dashboard."""
 
+import html as htmlmod
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -52,11 +53,12 @@ def assert_shell(html, action):
 def test_home_has_shell_and_hero(tmp_path):
     # Task 122: the hero + sellers content moved to /sellers and /how;
     # the homepage keeps the shell, CTAs and the honesty line.
+    # Task 127: v13 hero headline on the teal band.
     from app.web.i18n import t_for
 
     client = make_client(tmp_path)
-    html = client.get("/").text
-    assert_shell(html, t_for("en")("v12.mind_t"))
+    html = htmlmod.unescape(client.get("/").text)
+    assert_shell(html, t_for("en")("v13.hero_a"))
     assert "Start selling" in html
     assert "/try" in html
     assert "Every price comes from the seller" in html

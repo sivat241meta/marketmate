@@ -21,7 +21,7 @@
 }
 
 /* ---- Shared public header: base .hdr stays hidden, partial shows ---- */
-body.pub > .hdr { display: none; }
+body.pub > .hdr, body.v13 > .hdr { display: none; }
 /* No empty band between the top strip and the header (like home). */
 body.pub .content { padding-top: 0; }
 body.pub .hp-header,
@@ -153,112 +153,6 @@ body.pub details.more > summary {
 }
 body.pub details.more .form-card { box-shadow: none; margin: 12px 0 4px; }
 
-/* ---- Shop page band (keeps the hero2 class for the phone-order test) ---- */
-body.pub .content > section.hero2 {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--r-card);
-  box-shadow: var(--shadow-card);
-  padding: 20px;
-  margin-top: 20px;
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-body.pub section.hero2 h1 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0;
-  overflow-wrap: break-word;
-}
-body.pub section.hero2 .area-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-weight: 600;
-  margin: 0;
-}
-body.pub section.hero2 .open-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
-body.pub section.hero2 .said-line { margin: 0; }
-body.pub .shop-band-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-body.pub .shop-band-actions .pill { min-height: var(--tap); }
-@media (min-width: 900px) {
-  body.pub .content > section.hero2 { grid-template-columns: 1fr auto; align-items: center; }
-  body.pub section.hero2 h1 { font-size: 32px; }
-  body.pub .shop-band-copy { min-width: 0; }
-  body.pub .shop-band-actions { flex-direction: column; align-items: stretch; margin-top: 0; }
-  body.pub .shop-band-actions .pill { justify-content: center; }
-}
-/* The v10 shop page nests its tools in sections, so the old phone flex
-   reordering no longer applies. */
-@media (max-width: 600px) {
-  body.pub .content { display: block; }
-}
-
-/* Task 93 compact band: short labels + one-line summary only on phones. */
-body.pub .shop-compact-line { display: none; }
-body.pub .shop-band-actions .act-short { display: none; }
-body.pub .shop-band-actions .act-ic { display: inline-flex; align-items: center; }
-@media (max-width: 600px) {
-  body.pub .content > section.hero2 { padding: 14px; gap: 10px; }
-  body.pub section.hero2 h1 { font-size: 21px; }
-  body.pub section.hero2 .band-full { display: none; }
-  body.pub section.hero2 .shop-compact-line {
-    display: block;
-    margin: 2px 0 0;
-    font-size: 13px;
-  }
-  body.pub .shop-band-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    margin-top: 2px;
-  }
-  body.pub .shop-band-actions .shop-action {
-    flex-direction: column;
-    gap: 4px;
-    min-height: var(--tap);
-    min-width: 0;
-    padding: 8px 2px;
-    font-size: 11.5px;
-    line-height: 1.25;
-    font-weight: 700;
-    white-space: normal;
-    text-align: center;
-  }
-  body.pub .shop-band-actions .act-ic {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: var(--soft);
-  }
-  body.pub .shop-band-actions .shop-action.cta .act-ic {
-    background: rgba(255, 255, 255, 0.22);
-  }
-  body.pub .shop-band-actions .act-ic .obj-tint {
-    width: 32px;
-    height: 32px;
-  }
-  body.pub .shop-band-actions .act-full { display: none; }
-  body.pub .shop-band-actions .act-short {
-    display: block;
-    overflow-wrap: break-word;
-  }
-}
-
-/* Sticky search + chips under the header. */
-.shop-tools {
-  position: sticky;
-  top: 72px;
-  z-index: 5;
-  background: var(--bg);
-  padding: 10px 0;
-  margin-top: 20px;
-}
 body.pub .search.tools-search {
   display: flex;
   align-items: center;
@@ -305,27 +199,6 @@ body.pub .chip-row .chip.on {
   color: var(--accent-ink);
 }
 
-/* Task 101: cart bar. Bottom-fixed on phones; on laptop (>=1000px)
-   the shop section splits into grid + sticky right column and the bar
-   docks there as an in-flow card that can never overlap the tiles. */
-body.pub .float.shop-float {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  margin: 0 auto;
-  max-width: 560px;
-  z-index: 8;
-}
-body.pub .float.shop-float .pill.bar { min-height: var(--tap); }
-@media (max-width: 999.98px) {
-  body.pub.is-shop .content:has([data-cart-bar]:not([hidden])) {
-    padding-bottom: 120px;
-  }
-}
-@media (max-width: 600px) {
-  body.pub .float.shop-float { flex-wrap: wrap; }
-}
 /* Bag sheet lines mirror the laptop order column: name left with
    qty x price muted below, line amount right-aligned; total row
    label left / amount right. */
@@ -348,51 +221,7 @@ body.pub .sheet .rt {
   padding-top: 10px;
 }
 body.pub .sheet .rt b { font-size: 22px; font-weight: 800; color: var(--ink); }
-@media (min-width: 1000px) {
-  /* Task 120: the product grid uses the full content width while the
-     bag is empty; it shares the row with the sticky order column only
-     once the bag has lines (the shop page script toggles .has-cart
-     on .shop-layout). Phones keep the 3/2-column rules in app.css. */
-  body.pub .shop-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    align-items: start;
-  }
-  body.pub .shop-layout.has-cart {
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
-  body.pub .shop-layout:not(.has-cart) .shop-side {
-    display: none;
-  }
-  body.pub .shop-side {
-    position: sticky;
-    top: 76px;
-    display: grid;
-    gap: 16px;
-    align-content: start;
-  }
-  body.pub .float.shop-float {
-    position: static;
-    margin: 0;
-    max-width: none;
-  }
-  /* Task 120: roomy laptop tiles (4-6 per row at 1280-1440px),
-     square photo with contain so price + name stay readable and
-     the quantity chips fit in one row. */
-  body.pub .shop-layout .grid-products {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  }
-  body.pub .shop-layout .grid-products .card .ph img {
-    object-fit: contain;
-  }
-}
 
-/* ---- Market page: homepage search card, flat on the page ---- */
-body.pub form.hp-search { margin: 20px 0 0; min-width: 0; max-width: 100%; }
-body.pub .hp-search .hp-go { min-height: var(--tap); }
-body.pub .hp-search .hp-tabs { max-width: 100%; }
-body.pub form.filters { min-width: 0; max-width: 100%; }
 body.pub .filter-row {
   display: flex;
   gap: 8px;
@@ -410,7 +239,6 @@ body.pub [data-closed-notice] .pill { flex: none; }
 }
 body.pub .filter-row .chip,
 body.pub .filter-row .seg { flex: none; }
-body.pub .result-card { min-width: 0; }
 body.pub .shop-row { min-width: 0; }
 body.pub .rec-row { display: flex; gap: 10px; align-items: center; }
 /* ---- Task 120: Order-by-voice is a compact panel directly under the
@@ -545,8 +373,7 @@ body.pub .content { min-width: 0; }
 body.pub .card,
 body.pub .rcpt,
 body.pub .form-card,
-body.pub .my-card,
-body.pub section.hero2 { overflow-wrap: break-word; }
+body.pub .my-card { overflow-wrap: break-word; }
 @media (max-width: 600px) {
   body.pub .action-bar {
     position: sticky;
@@ -564,109 +391,10 @@ body.pub section.hero2 { overflow-wrap: break-word; }
   body.pub .ph-head-actions .pill { min-height: var(--tap); }
   body.pub .card-actions .pill { min-height: var(--tap); }
   body.pub .my-card-actions .pill { min-height: var(--tap); }
-  body.pub .shop-band-actions .pill.cta { flex: 1; justify-content: center; }
 }
-/* Task 101: phone header fit. At <=420px "Start selling" goes compact
-   (no FREE badge) and Bag goes icon-only with its count badge, so logo
-   + sell + bag + menu fit a 390px phone. Task 125: the header stays
-   one row (location ellipsizes) down to 320px — never wrapping. */
+/* The bag count badge sits on the icon corner (v13 positions it). */
 body.pub .hp-bag .nbadge { margin-left: 0; }
-@media (max-width: 420px) {
-  body.pub .hp-header {
-    gap: 8px;
-    padding: 8px 12px;
-    flex-wrap: nowrap;
-  }
-  body.pub .hp-menu-btn { margin-left: auto; }
-  body.pub .hp-sell { font-size: 13px; padding: 8px 10px; }
-  body.pub .hp-sell .free-badge { display: none; }
-  body.pub .hp-bag { padding: 8px; }
-  body.pub .hp-bag .bag-label { display: none; }
-}
 
-/* ---- Task 122 (v12): shop page item rows ---- */
-body.pub .shop-rows .grid-products {
-  grid-template-columns: 1fr;
-  gap: 18px;
-}
-body.pub .shop-rows .card[data-card] {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
-  gap: 12px;
-  align-items: start;
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 16px;
-  padding: 14px;
-}
-body.pub .shop-rows .row-main {
-  display: grid;
-  gap: 6px;
-  align-content: start;
-  min-width: 0;
-}
-body.pub .shop-rows .card .nm {
-  font-size: 15px;
-}
-body.pub .shop-rows .card .nm small {
-  font-size: 12.5px;
-}
-body.pub .shop-rows .card .price .pp {
-  font-size: 15px;
-}
-body.pub .shop-rows .card .price .per {
-  font-size: 13px;
-}
-body.pub .shop-rows .card .price {
-  margin-top: 0;
-}
-body.pub .shop-rows .card .sz {
-  min-height: 44px;
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  color: var(--ink);
-}
-/* Task 125: the rule above outranks `.card .sz.on`, which turned the
-   selected quantity chip into a dark block with dark text. Selected
-   chips are white on teal #0F766E (5.5:1). */
-body.pub .shop-rows .card .sz.on {
-  background: #0f766e;
-  border-color: #0f766e;
-  color: #fff;
-}
-body.pub .shop-rows .card .pw .step button {
-  width: 44px;
-  height: 44px;
-}
-body.pub .shop-rows .card .ph {
-  width: 150px;
-  height: 130px;
-  aspect-ratio: auto;
-  border-radius: 12px;
-}
-body.pub .shop-rows .card .pw {
-  padding-bottom: 14px;
-}
-body.pub .shop-rows .card .pw .add,
-body.pub .shop-rows .card .pw .step {
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  bottom: 0;
-}
-body.pub .shop-rows .card .pw .add {
-  text-transform: uppercase;
-  min-height: 44px;
-  padding-left: 22px;
-  padding-right: 22px;
-}
-body.pub .shop-rows .card .pw .step {
-  background: var(--accent-ink);
-  border-radius: 9px;
-  min-height: 44px;
-}
 .voice-link {
   font-size: 13px;
   font-weight: 700;
@@ -710,52 +438,6 @@ body.pub .cat-cards {
   display: grid;
   gap: 14px;
   padding: 4px 0 10px;
-}
-/* Today's best prices strip on the shop page. */
-body.pub .best-strip {
-  margin: 4px 0 0;
-}
-body.pub .best-strip-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 8px 2px 12px;
-  scroll-snap-type: x mandatory;
-}
-body.pub .strip-chip {
-  flex: none;
-  scroll-snap-align: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 999px;
-  padding: 6px 14px 6px 6px;
-  font-size: 13px;
-  font-weight: 600;
-  min-height: 44px;
-}
-body.pub .strip-chip img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: contain;
-  background: var(--accent-soft);
-}
-body.pub .strip-chip b {
-  color: var(--accent-ink);
-}
-/* Phones: the bag bar spans the bottom edge. */
-@media (max-width: 600px) {
-  body.pub .float.shop-float {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-width: none;
-    border-radius: 16px 16px 0 0;
-    margin: 0;
-  }
 }
 
 /* ---- Task 122 (v12): market page pills, tabs, shops ---- */
@@ -804,54 +486,8 @@ body.pub .mkt-tab.on {
   color: var(--accent-ink);
   border-bottom-color: var(--accent);
 }
-body.pub .mkt-shop {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 14px;
-  padding: 12px;
-  min-width: 0;
-}
-body.pub .mkt-shop .res-ava {
-  width: 52px;
-  height: 52px;
-}
-body.pub .mkt-shop .res-thumb {
-  width: 52px;
-  height: 52px;
-}
-body.pub .mkt-shop-main {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-body.pub .mkt-shop-main h3 {
-  margin: 0;
-  font-size: 16px;
-  overflow-wrap: break-word;
-}
 body.pub .mkt-add {
   text-transform: uppercase;
   flex: none;
   min-height: 44px;
-}
-body.pub .shop-row .mkt-add {
-  margin-left: 8px;
-}
-@media (max-width: 520px) {
-  body.pub .mkt-shop {
-    flex-wrap: wrap;
-  }
-  body.pub .mkt-shop .card-actions {
-    flex: 1 1 100%;
-  }
-  body.pub .shop-row {
-    flex-wrap: wrap;
-  }
-  body.pub .shop-row .mkt-add {
-    margin-left: 0;
-  }
 }

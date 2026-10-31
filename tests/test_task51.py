@@ -427,7 +427,9 @@ def test_customer_pages_have_no_seller_nav(tmp_path):
         assert "seller-hero" not in html, f"{url} leaks seller hero"
         assert "side-link" not in html, f"{url} leaks seller sidebar"
         assert "tabbar" not in html, f"{url} leaks seller tabbar"
-        assert "topbar" not in html, f"{url} leaks old topbar"
+        # Task 127: .topbar is the v13 public header now; the seller
+        # topbar is pinned by its shell search instead.
+        assert "shell-q" not in html, f"{url} leaks seller topbar"
         assert 'class="hdr"' in html, f"{url} missing hdr"
 
 

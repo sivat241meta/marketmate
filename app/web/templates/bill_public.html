@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('bill.title', id=bill["id"], shop=shop["name"]) }}{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {# The receipt stays form-free: no pop-ups, no openers. #}
 {% set _ph_popups = "none" %}
 {% include "_public_header.html" %}
+<div class="wrap">
 <div class="ph-head">
   <div>
     <p class="kick">{{ shop["name"] }}</p>
@@ -55,7 +56,9 @@
   <img src="/s/{{ shop["slug"] }}/qr.png" alt="{{ t('bill.scan_shop') }}" width="120" height="120">
   <div><small class="muted">{{ t('bill.scan_shop') }}</small></div>
 </section>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% endblock %}

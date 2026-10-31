@@ -511,8 +511,10 @@ def test_bill_page_css_fits_phones():
 
 def test_market_rows_css_scroll_or_wrap():
     css = public_css()
-    # Tab row scrolls inside its own container.
-    assert "body.pub .hp-search .hp-tabs { max-width: 100%; }" in css
+    # Task 127: the v13 tab row scrolls inside its own container.
+    v13 = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    assert "overflow-x:auto" in v13.split(".mkt-tabs{")[1].split("}")[0].replace(
+        " ", "")
     # Filter row scrolls on laptop, wraps with pincode on its own line.
     assert "body.pub .filter-row {" in css
     assert "overflow-x: auto;" in css

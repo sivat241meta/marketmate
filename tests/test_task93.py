@@ -137,60 +137,49 @@ def _ann(html: str) -> str:
 
 
 def test_phone_shop_section_order_and_compact_band(tmp_path):
+    # Task 127: v13 shop page — crumbs, title, info card, price
+    # list, in-shop search, filter chips, open accordions with rows.
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     html = client.get(f"/s/{slug}").text
     assert "data-shop-strip" not in html
     assert "ph-shop-strip" not in html
-    order = ['class="ann"', 'id="site-header"', 'class="hero2"']
+    order = ['class="ann"', 'id="site-header"', 'class="crumbs"',
+             'class="shop-title"', 'class="info-card"',
+             'id="price-list"', 'menu-search', 'data-shop-grid']
     positions = [html.index(needle) for needle in order]
     assert positions == sorted(positions), order
-    # (The filter pop-up in the header also uses chip-row, so the
-    # tools row is located after the band.)
-    band_at = html.index('class="hero2"')
-    tools_at = html.index("chip-row", band_at)
-    grid_at = html.index("data-shop-grid")
-    assert band_at < tools_at < grid_at
     # In-shop search moved into a sheet; the input keeps its hooks.
     assert 'id="shopsearch-pop"' in html
     assert 'id="shop-q"' in html and "data-shop-search" in html
     assert "data-shopsearch-open" in html
-    # Compact band: one h1 + one muted summary line + four icon actions.
-    assert html.count("<h1>") == 1
+    # Info card: one h1 + area + open state + contact chips.
+    assert html.count("<h1") == 1
     assert "T93 Store" in html
-    assert "shop-compact-line" in html
-    compact = re.search(r'class="shop-compact-line[^"]*">(.*?)</p>', html,
-                        re.DOTALL).group(1)
-    compact_text = re.sub(r"<[^>]+>", "", compact)
-    assert "Anna Nagar" in compact_text
-    assert "Open now" in compact_text
-    assert "said today" in compact_text
-    assert html.count("band-full") >= 4
-    assert html.count('class="act-ic"') == 4
-    assert html.count('class="act-short"') == 4
-    assert html.count('class="act-full"') == 4
+    info = re.search(r'class="info-card".*?</section>', html,
+                     re.DOTALL).group(0)
+    info_text = re.sub(r"<[^>]+>", "", info)
+    assert "Anna Nagar" in info_text
+    assert "Open now" in info_text
+    assert "Share" in html
     assert "Order by voice" in html
-    assert ">Order</span>" in html
-    # Shop name once: in the band, never in the shared header.
+    # Shop name: in the page, never in the shared header.
     assert "T93 Store" not in _header(html)
-    # Tiles follow the tools in the same DOM order phones show.
+    # Rows follow the tools in the same DOM order phones show.
     assert html.count("data-card") >= 2
     for hook in SHOP_HOOKS:
         assert hook in html, f"shop page missing {hook}"
 
 
 def test_compact_band_css_is_phone_only():
-    css = CSS.read_text()
-    assert "@media (max-width: 600px)" in css
-    # The compact band block names the hero title size (20-22px).
-    assert re.search(r"section\.hero2 h1 \{ font-size: 2[0-2]px", css)
-    assert "repeat(4, 1fr)" in css
-    assert ".shop-band-actions .shop-action" in css
-    assert "min-height: var(--tap)" in css
-    assert ".act-full { display: none" in css
-    assert ".band-full { display: none" in css
-    # Laptop keeps the full band: compact bits hidden outside phones.
-    assert "body.pub .shop-compact-line { display: none; }" in css
-    assert "body.pub .shop-band-actions .act-short { display: none; }" in css
+    # Task 127: v13 shop rows shrink on phones (118px tiles) and the
+    # info-card actions wrap full-width.
+    css = (ROOT / "app" / "web" / "static" / "css" / "shop13.css").read_text()
+    assert "@media(max-width:700px)" in css.replace(" ", "")
+    block = css.split("@media (max-width:700px)", 1)[1]
+    assert ".row-pic" in block and "118px" in block
+    assert ".info-foot" in block and "wrap" in block
+    assert ".shop-title" in block and "font-size:23px" in block.replace(
+        " ", "")
 
 
 def test_bag_in_header_only_on_shop_pages(tmp_path):
@@ -218,7 +207,15 @@ def test_top_strip_has_no_language_switch_on_public_pages(tmp_path):
         assert "data-ui-toggle" not in ann, f"{url}: switch in top strip"
         assert 'class="lang' not in ann, f"{url}: lang in top strip"
         assert html.count('class="lang"') == 1, f"{url}: switch count"
-        assert "data-ui-toggle" in _header(html), f"{url}: no header switch"
+        if url == "/":
+            # Task 127: on the homepage the switch sits on the hero
+            # topbar; the sticky white header has none until scroll.
+            hero = re.search(r'<header class="topbar".*?</header>', html,
+                             re.DOTALL).group(0)
+            assert "data-ui-toggle" in hero, f"{url}: no hero switch"
+        else:
+            assert "data-ui-toggle" in _header(html), \
+                f"{url}: no header switch"
 
 
 def test_seller_top_strip_keeps_its_switch(tmp_path):
@@ -240,12 +237,11 @@ def test_shop_header_switch_keeps_content_links(tmp_path):
 
 
 def test_whatsapp_icon_sits_on_green_soft(tmp_path):
+    # Task 127: v13 shop contact actions are text chips; the tinted
+    # object-icon macro and CSS stay for the pages that use them.
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     html = client.get(f"/s/{slug}").text
-    match = re.search(r'<span class="obj-tint tint-green">'
-                      r'<img class="obj" src="[^"]*chat\.svg[^"]*"[^>]*>'
-                      r"</span>", html)
-    assert match, "WhatsApp bubble not on a green-soft square"
+    assert 'class="chip-btn" href="https://wa.me/' in html
     css = CSS.read_text()
     assert ".obj-tint" in css
     assert ".obj-tint.tint-green { background: var(--green-soft); }" in css
@@ -259,7 +255,7 @@ def test_whatsapp_icon_sits_on_green_soft(tmp_path):
 def test_new_shop_uses_shared_public_header(tmp_path):
     client = _client(tmp_path)
     html = client.get("/new").text
-    assert '<body class="pub">' in html
+    assert '<body class="pub v13">' in html
     assert "data-public-header" in html
     head = _header(html)
     assert 'href="/market"' in head

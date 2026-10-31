@@ -155,6 +155,22 @@ def create_app(settings: Settings) -> FastAPI:
 
     templates.env.globals["t"] = jinja_t
     templates.env.globals["t_flag"] = jinja_flag
+    templates.env.globals["v13_cutout_url"] = home_data_mod.v13_cutout_url
+    # v13 shared footer data, available on every public page without
+    # touching every route: real listed areas + the public base URL.
+    templates.env.globals["site_url"] = settings.public_base_url
+
+    def _footer_places():
+        from app.config import sample_shops_enabled as _enabled
+
+        conn = db.connect(data_dir)
+        try:
+            return db.listed_areas(
+                conn, include_samples=_enabled(app.state.settings))
+        finally:
+            conn.close()
+
+    templates.env.globals["footer_places"] = _footer_places
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)
@@ -199,6 +215,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "slug": found.slug,
                 "is_demo": found.is_demo,
                 "name": name,
+                "name_en": found.name_en,
                 "price": str(found.line.price),
                 "per": per,
                 "rate": _fmt_rate(found.rate) if found.rate is not None else "",
@@ -371,15 +388,77 @@ def create_app(settings: Settings) -> FastAPI:
                                          settings=app.state.settings)
         return _basket_dict(plans, query.budget, explanation, conn, sort)
 
+    def _live_maps(conn):
+        """Per-shop live facts + item photos for the v13 market cards.
+
+        ``live_cards[slug]`` mirrors the homepage photo card (said
+        time, voice badge, categories, cheapest prices);
+        ``live_photos[slug][item.lower()]`` is the /m/ photo url for
+        the item tiles. Shops with no fresh list simply miss from
+        both maps and the template falls back to neutral,
+        still-honest wording.
+        """
+        from app.costs import IST
+        from app.market.search import CATEGORIES, category_of
+        from app.pipeline.photos import is_cutout_photo
+        from app.web.i18n import SAMPLE_TIME
+
+        now = datetime.now(UTC)
+        cards = {}
+        photos = {}
+        for entry in home_data_mod.live_shops(
+                conn, now, settings=app.state.settings):
+            shop = entry["shop"]
+            slug = shop["slug"]
+            priced = [(item, item.price_lines[0])
+                      for item in entry["items"]
+                      if item.price_lines
+                      and item.price_lines[0].price is not None]
+            cheapest = sorted(priced,
+                              key=lambda pair: pair[1].price)[:2]
+            cats = sorted({category_of(item.name_en)
+                           for item in entry["items"]})
+            cards[slug] = {
+                "said": (SAMPLE_TIME if shop["is_demo"]
+                         else entry["said"].astimezone(IST)
+                         .strftime("%H:%M")),
+                "is_demo": bool(shop["is_demo"]),
+                "voice_checked": home_data_mod.voice_checked(
+                    entry["items"]),
+                "cat_labels": [CATEGORIES[code][0] for code in cats
+                               if code in CATEGORIES],
+                "cheapest": [{"name": item.name_en,
+                              "price": str(line.price),
+                              "currency": shop["currency"] or "INR"}
+                             for item, line in cheapest],
+                "n_prices": sum(len(item.price_lines)
+                                for item in entry["items"]),
+            }
+            per_shop = photos.setdefault(slug, {})
+            for item in entry["items"]:
+                if not item.photo:
+                    continue
+                key = (item.name_en or "").strip().lower()
+                cutout = is_cutout_photo(item.photo)
+                prev = per_shop.get(key)
+                if prev is None or (cutout and not prev[1]):
+                    per_shop[key] = ("/m/" + Path(item.photo).name, cutout)
+        nested = {slug: {name: {"url": url, "cut": cut}
+                        for name, (url, cut) in by_name.items()}
+                  for slug, by_name in photos.items()}
+        return cards, nested
+
     def _market_context(request, *, q="", heard=None, query=None, rows=None,
                         error=None, searched=False, basket=None, areas=None,
                         area="", pincode="", open_now=False, sort="total",
                         market_empty=False, budget="", closed_notice=None,
-                        chip_labels=None, cat="", cat_label=""):
+                        chip_labels=None, cat="", cat_label="", conn=None):
         from app.web.i18n import get_strings, get_ui_lang
 
         flat = rows or []
         ui_lang = get_ui_lang(request)
+        live_cards, live_photos = _live_maps(conn) if conn is not None \
+            else ({}, {})
         return templates.TemplateResponse(request, "market.html", {
             "q": q, "heard": heard, "rows": flat, "groups": _group_rows(flat),
             "chips": list(chip_labels) if chip_labels is not None
@@ -391,6 +470,7 @@ def create_app(settings: Settings) -> FastAPI:
             "pincode": pincode or "", "open_now": open_now,
             "sort": sort or "total", "market_empty": market_empty,
             "budget": budget or "", "closed_notice": closed_notice,
+            "live_cards": live_cards, "live_photos": live_photos,
             "t": get_strings(ui_lang),
             "ui_lang": ui_lang})
 
@@ -445,7 +525,27 @@ def create_app(settings: Settings) -> FastAPI:
         return templates.TemplateResponse(
             request, "home.html", {
                 "ui_lang": get_ui_lang(request),
-                "hp": data})
+                "hp": data,
+                "spark_open": (app.state.settings.text_provider
+                               == "baseten")})
+
+    @app.get("/app-qr.png")
+    def app_qr():
+        """v13 #app band QR: a real code for PUBLIC_BASE_URL."""
+        from app.outputs.qr import qr_png
+
+        return Response(
+            qr_png(app.state.settings.public_base_url),
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=3600"})
+
+    @app.get("/privacy")
+    def privacy_page(request: Request):
+        from app.web.i18n import get_ui_lang
+
+        return templates.TemplateResponse(
+            request, "privacy.html",
+            {"ui_lang": get_ui_lang(request)})
 
     @app.get("/my")
     def my_page(request: Request):
@@ -488,7 +588,7 @@ def create_app(settings: Settings) -> FastAPI:
         if cat_code not in CATEGORIES:
             cat_code = ""
         if (not q or not q.strip()) and not cat_code:
-            return _market_context(request, areas=areas, area=area or "",
+            return _market_context(request, conn=conn, areas=areas, area=area or "",
                                    pincode=pincode or "",
                                    open_now=open_flag, sort=sort_mode,
                                    budget=budget_text)
@@ -502,7 +602,7 @@ def create_app(settings: Settings) -> FastAPI:
                 query = parse_query(q_text, ledger=ledger,
                                     settings=app.state.settings)
             except (SparkError, CostCapExceeded) as exc:
-                return _market_context(request, q=q_text, error=str(exc),
+                return _market_context(request, conn=conn, q=q_text, error=str(exc),
                                        searched=True, areas=areas,
                                        area=area or "", pincode=pincode or "",
                                        open_now=open_flag, sort=sort_mode,
@@ -564,7 +664,7 @@ def create_app(settings: Settings) -> FastAPI:
                                      sort=sort_mode, budget=budget_text),
             }
         return _market_context(
-            request, q=q_text, query=query, rows=rows, basket=basket,
+            request, conn=conn, q=q_text, query=query, rows=rows, basket=basket,
             searched=True, areas=areas, area=area or "",
             pincode=pincode or "", open_now=open_flag, sort=sort_mode,
             market_empty=market_empty, budget=budget_text,
@@ -700,7 +800,7 @@ def create_app(settings: Settings) -> FastAPI:
             except (TranscribeError, SparkError, CostCapExceeded,
                     subprocess.CalledProcessError, OSError) as exc:
                 return _market_context(
-                    request, error=str(exc) or "search failed",
+                    request, conn=conn, error=str(exc) or "search failed",
                     searched=True)
             finally:
                 saved.unlink(missing_ok=True)
@@ -712,7 +812,7 @@ def create_app(settings: Settings) -> FastAPI:
                 query = parse_query(typed, ledger=ledger,
                                     settings=app.state.settings)
             except (SparkError, CostCapExceeded) as exc:
-                return _market_context(request, q=typed,
+                return _market_context(request, conn=conn, q=typed,
                                        error=str(exc) or "search failed",
                                        searched=True)
             q_text = typed
@@ -734,7 +834,7 @@ def create_app(settings: Settings) -> FastAPI:
         voice_lang = get_ui_lang(request)
         voice_empty = get_strings(voice_lang)("market.none_today")
         return _market_context(
-            request, q=q_text, heard=heard, query=query,
+            request, conn=conn, q=q_text, heard=heard, query=query,
             rows=_rows_from_listings(listings, now, voice_lang, conn),
             basket=(None if market_empty
                     else _build_basket(conn, query, listings, ledger,

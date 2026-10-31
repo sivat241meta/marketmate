@@ -56,10 +56,10 @@ def test_gradient_is_blue_and_only_on_the_mic_button():
 
 
 def test_new_badge_and_new_chip_use_accent_soft_and_ink():
+    # Task 127: the dead .new-badge rule is gone (no template uses
+    # it); the live NEW chip keeps the accent pair.
     css = CSS.read_text()
-    badge = re.search(r"\.new-badge\s*\{[^}]*\}", css).group(0)
-    assert "var(--accent-soft)" in badge
-    assert "var(--accent-ink)" in badge
+    assert ".new-badge" not in css
     chip = re.search(r"\.chip\.c-new, \.pill\.pill-quote \{[^}]*\}",
                      css).group(0)
     assert "var(--accent-soft)" in chip
@@ -73,7 +73,10 @@ def test_accent_ink_class_renamed():
     for name in ("home.html", "market.html"):
         text = (TEMPLATES / name).read_text()
         assert "purple-ink" not in text, name
-        assert "accent-ink" in text, name
+    # Task 127: the v13 homepage uses the v13 hero band; the market
+    # basket keeps the accent-ink "under budget" line.
+    assert "accent-ink" in (TEMPLATES / "market.html").read_text()
+    assert 'class="hero"' in (TEMPLATES / "home.html").read_text()
 
 
 def test_inline_template_colours_are_blue():

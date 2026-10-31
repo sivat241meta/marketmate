@@ -26,10 +26,12 @@ HOME_JS = ROOT / "app" / "web" / "static" / "home.js"
 MOTION_JS = ROOT / "app" / "web" / "static" / "motion.js"
 MOTION_CSS = ROOT / "app" / "web" / "static" / "css" / "motion.css"
 HOME_CSS = ROOT / "app" / "web" / "static" / "css" / "home.css"
+V13_CSS = ROOT / "app" / "web" / "static" / "css" / "v13.css"
 BASE_HTML = ROOT / "app" / "web" / "templates" / "base.html"
 
-SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
-            "sell", "meta", "install", "footer")
+# Task 127: v13 homepage section order.
+SECTIONS = ("hero", "fresh", "cats", "shops", "lowest", "how", "app",
+            "markets")
 
 
 def _seeded(tmp_path):
@@ -58,18 +60,16 @@ def test_empty_sections_hide_with_one_combined_state(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    for section in ("mind", "top-shops", "shops", "best-prices"):
-        tag = re.search(rf'<section id="{section}"[^>]*>', html).group(0)
+    # Task 127: v13 data sections hide; one combined empty box shows.
+    for section in ("fresh", "cats", "shops", "lowest", "markets"):
+        tag = re.search(rf'<section[^>]*id="{section}"[^>]*>', html).group(0)
         assert "hidden" in tag, section
-    # Old empty-state strings stay in the hidden sections (Task 84 pins).
-    assert t("hp.picks_empty_t") in _section(html, "best-prices", "markets")
-    assert t("hp.shops_empty_t") in _section(html, "shops", "best-prices")
-    assert t("hp.areas_empty_t") in _section(html, "markets", "sell")
     # ...but only ONE visible empty box on the whole page.
     assert 'id="empty-all"' in html
-    assert html.count("hp-empty") == 3  # hidden picks/shops/areas only
-    assert 'class="pick-card"' not in html
-    assert 'class="shop-card"' not in html
+    assert html.count("hp-empty") == 1
+    assert t("hp.picks_empty_t") in html
+    assert 'class="shop"' not in html
+    assert 'class="deal"' not in html
 
 
 # --- 2. motion system files ----------------------------------------------------
@@ -146,40 +146,36 @@ def test_home_js_local_only_additions():
 
 
 def test_hero_counters_rotator_and_curve(tmp_path):
-    # Task 122: the hero is gone; counters live in their own slim
-    # strip and the mind row replaces the rotator + curve.
+    # Task 127: the counter strip is gone; the hero service card
+    # shows the real prices-today count (7 in the seed market).
     client = _seeded(tmp_path)
     html = _home(client, "en")
-    # 3 shops, 7 prices, 2 markets; server renders finals, JS counts up.
-    assert 'data-count="3"' in html
-    assert 'data-count="7"' in html
-    assert 'data-count="2"' in html
-    assert "Shops" in html and "Prices said today" in html
-    assert "Markets" in html
-    assert "data-words" not in html  # rotator deleted with the hero
-    # Zero counters hide: no counters at all without data.
+    assert "data-count" not in html
+    assert "data-words" not in html
+    assert "7 PRICES TODAY" in html
+    assert "Shops" in html and "Markets" in html
+    # Zero prices: the honest zero, still no counters.
     bare = _home(make_client(tmp_path / "fresh"), "en")
     assert "data-count" not in bare
+    assert "0 PRICES TODAY" in bare
 
 
 # --- 4. pick cards: photo, price, badges, heart, actions -----------------------
 
 
 def test_pick_cards_rich_markup(tmp_path):
+    # Task 127: v13 "Today's lowest prices" tiles — photo, name,
+    # unit + shop, price, ADD link to the shop page.
     client = _seeded(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "best-prices", "markets")
-    assert picks.count('class="pick-card"') == 6  # one card per item
+    picks = _section(html, "lowest", "how")
+    assert picks.count('class="deal"') == 6  # one tile per item
     assert 'loading="lazy"' in picks
     assert "₹40" in htmlmod.unescape(picks)
-    # Tomato is sold twice: best-prices keeps the cheaper card only.
+    # Tomato is sold twice: lowest keeps the cheaper tile only.
     assert "₹43" not in htmlmod.unescape(picks)
-    # Heart (My list), voice said-line, ADD to the shop page.
-    assert 'data-heart' in picks
-    assert 'aria-pressed="false"' in picks
-    assert "said today" in picks
-    assert "Add to bag" in picks
-    assert 'data-name-en="tomato"' in picks
+    assert ">Add<" in picks
+    assert "/s/" in picks
 
 
 def test_pick_cards_tamil_renders(tmp_path):
@@ -187,9 +183,9 @@ def test_pick_cards_tamil_renders(tmp_path):
 
     client = _seeded(tmp_path)
     html = _home(client, "ta")
-    picks = _section(html, "best-prices", "markets")
-    assert t_for("ta")("v12.best_t") in picks
-    assert "பையில் சேர்" in picks  # Add to bag
+    picks = _section(html, "lowest", "how")
+    assert t_for("ta")("v13.lowest_t") in picks
+    assert "சேர்" in picks  # Add
     assert "தக்காளி" in html
 
 
@@ -197,20 +193,18 @@ def test_pick_cards_tamil_renders(tmp_path):
 
 
 def test_category_tiles(tmp_path):
-    # Task 122: the category grid became the "mind" row of produce
-    # circles from today's lists; tapping one searches for it.
+    # Task 127: v13 grey category tiles with clustered item photos;
+    # tapping one browses the category.
     client = _seeded(tmp_path)
     for lang in ("en", "ta", "hi"):
         html = _home(client, lang)
-        mind = _section(html, "mind", "top-shops")
-        circles = re.findall(r'<a class="mind-circle"[^>]*href="([^"]+)"',
-                             mind)
-        assert 1 <= len(circles) <= 12, (lang, len(circles))
-        assert "/market?q=tomato" in circles, (lang, circles)
-        for href in circles:
-            assert href.startswith("/market?q="), (lang, href)
-    mind = _section(_home(client, "en"), "mind", "top-shops")
-    assert "<img" in mind  # real cut-outs where today's lists have them
+        cats = _section(html, "cats", "shops")
+        tiles = re.findall(r'<a class="cat"[^>]*href="([^"]+)"', cats)
+        assert 1 <= len(tiles) <= 12, (lang, len(tiles))
+        for href in tiles:
+            assert href.startswith("/market?cat="), (lang, href)
+    cats = _section(_home(client, "en"), "cats", "shops")
+    assert "<img" in cats  # real photos where today's lists have them
 
 
 # --- 6. shop cards: cover, avatar, voice badge ---------------------------------
@@ -221,15 +215,16 @@ def test_shop_cards_cover_and_badges(tmp_path):
 
     client = _seeded(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    shops = _section(html, "shops", "best-prices")
-    assert shops.count('class="shop-cover"') == 3
-    assert shops.count('class="shop-ava"') == 3
-    assert "Prices from the seller's voice" in shops
+    shops = _section(html, "shops", "lowest")
+    # Task 127: v13 photo cards — cover, name on the photo, meta,
+    # deal bar, voice bar, said line.
+    assert shops.count('class="shop"') == 3
+    assert "seller's voice" in shops
     t = t_for("en")
     assert t("hp.prices_today", n=4) in shops  # Kannan Veg
-    assert "said today" in shops
-    assert 'src="/m/tom_cut.jpg"' in shops  # collage of item cut-outs
-    assert "cover-line" in shops  # cheapest items over the gradient
+    assert t("v13.order_voice_lang") in shops
+    assert "shop-name" in shops
+    assert "bar-deal" in shops  # cheapest items
     assert "landing/" not in shops
 
 
@@ -275,15 +270,17 @@ def test_sellers_meta_install(tmp_path):
     assert "₹40 ✓ confirmed in your voice" in sellers
     assert 'href="/try"' in sellers
     assert "sell-phone" in sellers
-    meta = _section(html, "meta", "install")
+    # Task 127: v13 "How the prices get here" cards + dark app band.
+    meta = _section(html, "how", "app")
     assert meta.count("meta-card") == 4
     assert "muse-voice-transcribe-1.0" in meta
     assert "muse-spark-1.3" in meta
-    assert "meta-path" in meta
-    install = _section(html, "install", "footer")
-    assert "Add to home screen" in install
+    assert "sam-3.1" in meta
+    install = _section(html, "app", "markets")
+    assert "Add to Home Screen" in install
     assert "app-store" not in install.lower()
     assert "App Store" not in install
+    assert "/app-qr.png" in install
 
 
 # --- 9. rich footer ------------------------------------------------------------
@@ -294,28 +291,33 @@ def test_footer_columns_link_existing_routes(tmp_path):
 
     client = _seeded(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    footer = _section(html, "footer")
-    assert footer.count('class="rich-col"') == 4
+    # Task 127: the shared v13 footer on every public page.
+    footer = html.split('class="foot"')[1]
+    assert footer.count('class="foot-col"') == 4
     t = t_for("en")
-    for key in ("v12.col_market", "v12.col_sell", "v12.col_help",
-                "v12.col_areas"):
+    for key in ("v13.col_market", "v13.col_sell", "v13.col_help",
+                "v13.col_avail", "v13.col_lang"):
         assert t(key) in footer, key
     hrefs = re.findall(r'href="([^"]+)"', footer)
     assert hrefs, "footer has no links"
     for href in hrefs:
         if href.startswith("https://"):
             assert href.startswith(
-                "https://github.com/sivat241meta/marketmate"), href
+                ("https://github.com/sivat241meta/marketmate",
+                 "https://wa.me/")), href
             continue
-        path = href.split("#")[0] or "/"
+        path = href.split("#")[0].split("?")[0] or "/"
         resp = client.get(path)
         assert resp.status_code != 404, href
     t = t_for("en")
     assert t("land.photos_credit") in footer
     assert t("land.icons_credit") in footer
     assert t("land.honest") in footer
-    assert 'class="flang"' in footer
-    # Still exactly one header language switch (Task 93 pin).
+    # Task 127: footer language switch + exactly one header switch.
+    assert 'class="foot-lang"' in footer
+    assert footer.count('data-ui-lang="en"') == 1
+    assert footer.count('data-ui-lang="ta"') == 1
+    assert footer.count('data-ui-lang="hi"') == 1
     assert html.count('class="lang"') == 1
 
 
@@ -337,16 +339,20 @@ def _contrast(fore: str, back: str) -> float:
 
 
 def test_new_colour_pairs_pass_contrast():
-    css = HOME_CSS.read_text().lower()
-    assert "#0b2a33" in css and "#134e4a" in css  # footer gradient
+    # Task 127: v13 token pairs — teal/soft-blue on white and tile,
+    # white on the dark app band and teal fills.
+    css = V13_CSS.read_text().lower()
+    assert "#0f766e" in css  # teal
+    assert "#0b2a33" in css  # dark app band
+    assert "#e8f4fd" in css  # soft blue
     pairs = [
-        ("footer text", "#E2EAEE", "#0B2A33"),
-        ("footer credit", "#7DD3FC", "#0B2A33"),
-        ("footer heading", "#5EEAD4", "#0B2A33"),
-        ("coverage badge", "#FFFFFF", "#115E59"),
-        ("best badge", "#FFFFFF", "#0F7F3F"),
-        ("install band", "#FFFFFF", "#134E4A"),
-        ("avatar", "#FFFFFF", "#0F766E"),
+        ("teal on white", "#0F766E", "#FFFFFF"),
+        ("blue on white", "#0369A1", "#FFFFFF"),
+        ("ink on tile", "#0B2A33", "#EEF3F5"),
+        ("white on teal", "#FFFFFF", "#0F766E"),
+        ("white on dark", "#FFFFFF", "#0B2A33"),
+        ("blue on soft blue", "#0369A1", "#E8F4FD"),
+        ("white on blue", "#FFFFFF", "#0369A1"),
     ]
     for name, fore, back in pairs:
         assert _contrast(fore, back) >= 4.5, (name, fore, back)
@@ -356,18 +362,25 @@ def test_new_colour_pairs_pass_contrast():
 
 
 def test_home_css_small_phone_rules():
-    css = HOME_CSS.read_text()
-    assert "min-width: 0" in css
+    # Task 127: v13 phone rules — wrapping headlines, in-container
+    # scrollers, 44px targets, compact sticky bar.
+    css = V13_CSS.read_text()
+    assert "min-width:0" in css.replace(" ", "")
     assert "overflow-wrap" in css
-    assert "@media (max-width: 380px)" in css
-    assert "scroll-snap-type" in css  # picks row scrolls in-container
-    assert "white-space: nowrap" not in css  # Tamil/Hindi never cut
-    # Tap targets: heart, mind circles, footer links/switch.
-    assert ".heart" in css and "44px" in css
-    assert ".mind-circle" in css and "min-height: 44px" in css
+    assert "@media(max-width:380px)" in css.replace(" ", "")
+    assert "scroll-snap-type" in css  # scrollers snap in-container
+    assert "44px" in css  # tap targets: nav, buttons, menu, icons
+    phone = css.split("@media (max-width:700px)", 1)[1]
+    phone = phone.split("@media", 1)[0]
+    assert ".stickybar .topbar-in" in phone
+    assert ".loc-mini" in phone
+    # Tamil/Hindi titles wrap instead of cutting.
+    assert "overflow-wrap:break-word" in css.replace(" ", "")
 
 
 def test_homepage_images_sized_and_lazy(tmp_path):
+    # Task 127: content photos are sized + lazy; the decorative hero
+    # cut-outs are width-sized + eager (absolute, never shifting).
     client = _seeded(tmp_path)
     html = _home(client, "en")
     imgs = re.findall(r"<img\b[^>]*>", html)
@@ -375,12 +388,13 @@ def test_homepage_images_sized_and_lazy(tmp_path):
     for tag in imgs:
         if "/static/brand/" in tag:
             continue  # SVG logo: intrinsic ratio, height-only is shift-free
-        assert 'width="' in tag and 'height="' in tag, tag
-        if "landing/hero" in tag:
-            assert "fetchpriority" in tag
-            assert "loading=" not in tag
-        else:
-            assert 'loading="lazy"' in tag, tag
+        assert 'width="' in tag, tag
+        if re.search(r'class="(float|a\d|aa\d)\b', tag):
+            continue  # decorative cut-out, sized by width
+        assert 'height="' in tag, tag
+        if 'loading="eager"' in tag:
+            continue  # above-the-fold hero imagery
+        assert 'loading="lazy"' in tag, tag
 
 
 # --- 11. market + shop pages ---------------------------------------------------
@@ -418,11 +432,11 @@ def test_shop_hero_cover_and_contact_conditionals(tmp_path):
     ])
     client = make_client(tmp_path)
     html = client.get(f"/s/{slug}").text
-    assert 'class="hero-cover"' in html
-    assert 'class="hero-ava"' in html
-    assert 'src="/m/tom_cut.jpg"' in html
+    # Task 127: v13 info card with the cover photo on the right.
+    assert 'class="info-cover"' in html
+    assert 'src="/m/tom_cut.jpg"' in html or "/static/img/v13/" in html
     assert "wa.me/" in html and "tel:" in html
-    assert 'class="added"' not in html  # bounce is JS-added, not static
+    assert 'class="added"' not in html  # pop is JS-added, not static
     assert 'classList.add("added")' in html
     # Without a phone, WhatsApp/Call disappear (share + quote stay).
     conn = db.connect(tmp_path / "data")
@@ -439,11 +453,14 @@ def test_shop_hero_cover_and_contact_conditionals(tmp_path):
 
 
 def test_no_forbidden_files_touched():
-    status = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
-                            check=False, capture_output=True, text=True,
-                            timeout=30).stdout
-    changed = [line[3:].strip().split(" -> ")[-1]
-               for line in status.splitlines() if line.strip()]
+    # Task 127: the guard pins task 115's own commit, not the working
+    # tree — later tasks (116, 127, …) legitimately own these files.
+    names = subprocess.run(
+        ["git", "show", "--name-only", "--format=", "0f8127b"],
+        cwd=ROOT, check=False, capture_output=True, text=True,
+        timeout=30).stdout
+    changed = [line.strip().split(" -> ")[-1]
+               for line in names.splitlines() if line.strip()]
     # Task 116 owns these; Task 115 must not touch them.
     for path in changed:
         assert path not in ("app/db.py",

@@ -150,22 +150,102 @@
   /* ---- phone menu sheet ---- */
 
   function initMenu() {
-    var btn = document.querySelector("[data-menu-open]");
+    // Task 127: the homepage has two openers (hero topbar + the
+    // sticky bar) — every one of them drives the same sheet.
+    var btns = document.querySelectorAll("[data-menu-open]");
     var sheet = document.getElementById("mobile-nav");
-    if (!btn || !sheet || btn.dataset.mmBound) {
+    if (!btns.length || !sheet) {
       return;
     }
-    btn.dataset.mmBound = "1";
-    btn.addEventListener("click", function () {
-      var open = sheet.hidden;
-      sheet.hidden = !open;
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    function setExpanded(open) {
+      btns.forEach(function (btn) {
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
+    btns.forEach(function (btn) {
+      if (btn.dataset.mmBound) {
+        return;
+      }
+      btn.dataset.mmBound = "1";
+      btn.addEventListener("click", function () {
+        var open = sheet.hidden;
+        sheet.hidden = !open;
+        setExpanded(open);
+      });
     });
+    if (sheet.dataset.mmBound) {
+      return;
+    }
+    sheet.dataset.mmBound = "1";
     sheet.querySelectorAll("a").forEach(function (link) {
       link.addEventListener("click", function () {
         sheet.hidden = true;
-        btn.setAttribute("aria-expanded", "false");
+        setExpanded(false);
       });
+    });
+  }
+
+  /* ---- language dropdown ---- */
+
+  function initLangDrop() {
+    // Task 127: the EN button toggles its menu; Esc or an outside
+    // click closes it. The menu items are the same cookie buttons
+    // / ?lang= links as the v12 segment, so they keep working
+    // with no extra code.
+    var drops = document.querySelectorAll("[data-lang-drop]");
+    if (!drops.length) {
+      return;
+    }
+    function closeAll(except) {
+      drops.forEach(function (drop) {
+        if (drop === except) {
+          return;
+        }
+        var menu = drop.querySelector("[data-lang-menu]");
+        var btn = drop.querySelector("[data-lang-btn]");
+        if (menu) {
+          menu.hidden = true;
+        }
+        if (btn) {
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+    drops.forEach(function (drop) {
+      if (drop.dataset.mmBound) {
+        return;
+      }
+      drop.dataset.mmBound = "1";
+      var btn = drop.querySelector("[data-lang-btn]");
+      var menu = drop.querySelector("[data-lang-menu]");
+      if (!btn || !menu) {
+        return;
+      }
+      btn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var open = menu.hidden;
+        closeAll(drop);
+        menu.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      menu.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+      });
+      menu.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") {
+          menu.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+          btn.focus();
+        }
+      });
+    });
+    document.addEventListener("click", function () {
+      closeAll(null);
+    });
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") {
+        closeAll(null);
+      }
     });
   }
 
@@ -669,6 +749,7 @@
   function init() {
     initDialogs();
     initMenu();
+    initLangDrop();
     bindOpener("data-loc-open", "loc-drawer");
     bindOpener("data-search-open", "search-pop");
     bindOpener("data-filter-open", "filter-pop");

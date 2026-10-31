@@ -20,8 +20,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_DATA = ROOT / "scripts" / "sample_data"
 
 # Task 122: v12 marketplace sections.
-SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
-            "sell", "meta", "install", "footer")
+# Task 127: v13 homepage section order.
+SECTIONS = ("hero", "fresh", "cats", "shops", "lowest", "how", "app",
+            "markets")
 NAMES = ("Selvi Vegetable Stall", "Pandian Fruit Centre",
          "Amma Keerai Kadai", "Gupta Sabzi Wale", "Green Basket")
 

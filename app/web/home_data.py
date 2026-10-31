@@ -10,6 +10,7 @@ from pathlib import Path
 from app import db
 from app.config import sample_shops_enabled
 from app.market.hours import IST, shop_open_status
+from app.market.search import CATEGORIES, category_of
 from app.pipeline.photos import is_cutout_photo
 from app.web.i18n import SAMPLE_TIME, first_grapheme, tile_variety
 
@@ -17,6 +18,55 @@ MAX_PICKS = 8
 MAX_POPULAR = 6
 MAX_SHOPS = 4
 NEW_SHOP_DAYS = 7
+#: Hero floating cut-outs (v13): five left, four right.
+MAX_FLOATS = 9
+#: Item photos clustered inside one category tile (v13).
+MAX_CAT_PHOTOS = 3
+#: Cheapest prices on the FOR SELLERS service-card board (v13).
+BOARD_PRICES = 3
+#: Transparent v13 cut-outs (Task 127, static/img/v13/): normalised
+#: item name_en -> webp stem. Names not listed keep their own photo
+#: (shown as a circle on white, blended with multiply in grey
+#: tiles). Matching is on the FULL normalised name so "spring
+#: onion" and "banana leaf" never match "onion"/"banana".
+V13_CUTOUTS = {
+    "tomato": "tomato",
+    "onion": "onion",
+    "smallonion": "smallonion",
+    "shallot": "smallonion",
+    "capsicum": "capsicum",
+    "carrot": "carrot",
+    "brinjal": "brinjal",
+    "eggplant": "brinjal",
+    "cauliflower": "cauliflower",
+    "coconut": "coconut",
+    "chilli": "chilli",
+    "chili": "chilli",
+    "greenchilli": "chilli",
+    "redchilli": "chilli",
+    "pineapple": "pineapple",
+    "pomegranate": "pomegranate",
+    "apple": "apple",
+    "banana": "banana",
+    "guava": "guava",
+    "papaya": "papaya",
+    "potato": "potato",
+    "curry": "curry",
+    "curryleaf": "curry",
+    "curryleaves": "curry",
+    "ladiesfinger": "ladiesfinger",
+    "okra": "ladiesfinger",
+    "orange": "orange",
+}
+
+
+def v13_cutout_url(name_en: str | None) -> str | None:
+    """Transparent v13 cut-out URL for an item name, else None."""
+    if not name_en:
+        return None
+    key = "".join(ch for ch in name_en.strip().lower() if ch.isalnum())
+    stem = V13_CUTOUTS.get(key)
+    return f"/static/img/v13/{stem}.webp" if stem else None
 
 
 def _as_aware(moment: datetime) -> datetime:
@@ -185,6 +235,17 @@ def _popular(entries: list[dict]) -> list[dict]:
     return out
 
 
+def voice_checked(items) -> bool:
+    """True when every live item keeps the seller's own words as proof.
+
+    The v13 "Voice-checked" badge (homepage shop cards, shop info
+    card, seller board) shows only then — never invented.
+    """
+    return bool(items) and all(
+        ((item.proof.quote if item.proof else "") or "").strip()
+        for item in items)
+
+
 def _shop_card(entry: dict, now: datetime) -> dict:
     shop = entry["shop"]
     items = entry["items"]
@@ -201,11 +262,14 @@ def _shop_card(entry: dict, now: datetime) -> dict:
     cheapest = sorted(priced, key=lambda pair: pair[1].price)[:3]
     status = shop_open_status(shop)
     moment = _parse_moment(shop["created_at"])
+    is_sample = bool(shop["is_demo"])
+    cats = sorted({category_of(item.name_en) for item in items})
+    cats = [code for code in cats if code in CATEGORIES]
     return {
         "name": shop["name"],
         "slug": shop["slug"],
         "area": shop["area"] or "",
-        "is_demo": bool(shop["is_demo"]),
+        "is_demo": is_sample,
         "is_new": bool(moment is not None
                        and (_as_aware(now) - moment).days < NEW_SHOP_DAYS),
         "open_state": status["state"],
@@ -219,6 +283,12 @@ def _shop_card(entry: dict, now: datetime) -> dict:
                       "price": str(line.price),
                       "currency": shop["currency"] or "INR"}
                      for item, line in cheapest],
+        # v13 photo card: "said HH:MM" for real shops, the sample
+        # marker for samples; categories as i18n label keys.
+        "said": (SAMPLE_TIME if is_sample
+                 else entry["said"].astimezone(IST).strftime("%H:%M")),
+        "voice_checked": voice_checked(items),
+        "cat_labels": [CATEGORIES[code][0] for code in cats],
     }
 
 
@@ -231,6 +301,222 @@ def _shop_cards(entries: list[dict], now: datetime) -> list[dict]:
     ordered = sorted(entries, key=created, reverse=True)
     ordered.sort(key=lambda entry: bool(entry["shop"]["is_demo"]))
     return [_shop_card(entry, now) for entry in ordered[:MAX_SHOPS]]
+
+
+def _lowest_items(entries: list[dict]) -> list[dict]:
+    """One row per live item name with its real lowest price today.
+
+    Powers the v13 "What's fresh today" scroller and the "Today's
+    lowest prices" tiles: name, best photo (a cut-out wins), the
+    lowest price + per-unit text and the shop that says it.
+    """
+    best: dict[str, dict] = {}
+    for entry in entries:
+        shop = entry["shop"]
+        for item in entry["items"]:
+            key = (item.name_en or "").strip().lower()
+            if not key:
+                continue
+            line = _first_price(item)
+            if line is None:
+                continue
+            photo_url = _photo_url(item.photo)
+            cutout = is_cutout_photo(item.photo)
+            prev = best.get(key)
+            if prev is None:
+                best[key] = {
+                    "name_en": item.name_en.strip(),
+                    "name_local": item.name_local or "",
+                    "photo_url": photo_url,
+                    "photo_cutout": cutout,
+                    "price": str(line.price),
+                    "amount": line.price,
+                    "per": _per_text(line.per_amount, line.unit),
+                    "currency": shop["currency"] or "INR",
+                    "shop_name": shop["name"],
+                    "slug": shop["slug"],
+                    "is_demo": bool(shop["is_demo"]),
+                    "n_shops": 1,
+                    "seen": {shop["slug"]},
+                }
+                continue
+            prev["seen"].add(shop["slug"])
+            prev["n_shops"] = len(prev["seen"])
+            if photo_url and (not prev["photo_url"]
+                              or (cutout and not prev["photo_cutout"])):
+                prev["photo_url"] = photo_url
+                prev["photo_cutout"] = cutout
+            if line.price < prev["amount"]:
+                prev["price"] = str(line.price)
+                prev["amount"] = line.price
+                prev["per"] = _per_text(line.per_amount, line.unit)
+                prev["currency"] = shop["currency"] or "INR"
+                prev["shop_name"] = shop["name"]
+                prev["slug"] = shop["slug"]
+                prev["is_demo"] = bool(shop["is_demo"])
+    rows = list(best.values())
+    for row in rows:
+        del row["seen"]
+        del row["amount"]
+        cutout = v13_cutout_url(row["name_en"])
+        if cutout:
+            row["photo_url"] = cutout
+            row["photo_cutout"] = True
+    rows.sort(key=lambda row: (-row["n_shops"], row["name_en"].lower()))
+    return rows
+
+
+def _category_cards(entries: list[dict]) -> list[dict]:
+    """v13 "Shop by category" tiles from live items only.
+
+    Only categories with something said today get a tile. A tile
+    clusters up to three transparent cut-outs (v13 name cut-outs
+    first, then SAM cut-outs); with no cut-out at all it shows one
+    full-bleed photo instead — never stacked photo rectangles.
+    """
+    v13: dict[str, list[str]] = {}
+    cutouts: dict[str, list[str]] = {}
+    photos: dict[str, list[str]] = {}
+    counts: dict[str, int] = {}
+    for entry in entries:
+        for item in entry["items"]:
+            code = category_of(item.name_en)
+            if code not in CATEGORIES:
+                continue
+            counts[code] = counts.get(code, 0) + 1
+            named = v13_cutout_url(item.name_en)
+            if named:
+                v13.setdefault(code, []).append(named)
+            elif item.photo:
+                url = _photo_url(item.photo)
+                dest = (cutouts if is_cutout_photo(item.photo)
+                        else photos)
+                dest.setdefault(code, []).append(url)
+    cards = []
+    for code in CATEGORIES:
+        if code not in counts:
+            continue
+        seen = set()
+        clustered = []
+        for url in v13.get(code, []) + cutouts.get(code, []):
+            if url not in seen:
+                seen.add(url)
+                clustered.append(url)
+            if len(clustered) >= MAX_CAT_PHOTOS:
+                break
+        mode = "cluster"
+        if not clustered and photos.get(code):
+            clustered = [photos[code][0]]
+            mode = "photo"
+        cards.append({
+            "code": code,
+            "label_key": CATEGORIES[code][0],
+            "photos": clustered,
+            "mode": mode,
+            "n_items": counts[code],
+        })
+    return cards
+
+
+def _shop_cards_all(entries: list[dict], scoped: list[dict],
+                    picked: str | None, known: list[str],
+                    coords: dict[str, tuple],
+                    now: datetime) -> list[dict]:
+    """Every v13 shop photo card: area shops first, then nearby.
+
+    Unlike the capped ``top_shops`` row, the v13 scroller shows all
+    of the picked area's shops; a known area also borrows the other
+    areas' shops (closest first, samples last) under the "and nearby
+    markets" heading. Unknown areas stay empty.
+    """
+    def created(entry):
+        return _parse_moment(entry["shop"]["created_at"]) or _as_aware(now)
+
+    ordered = sorted(scoped, key=created, reverse=True)
+    ordered.sort(key=lambda entry: bool(entry["shop"]["is_demo"]))
+    cards = [_shop_card(entry, now) for entry in ordered]
+    if picked is None or picked not in known:
+        return cards
+    others = [entry for entry in entries
+              if (entry["shop"]["area"] or "") != picked]
+    center = coords.get(picked)
+
+    def distance(entry):
+        shop = entry["shop"]
+        if center is None or center[0] is None:
+            return None
+        lat, lng = shop["lat"], shop["lng"]
+        if lat is None or lng is None:
+            lat, lng = coords.get(shop["area"] or "", (None, None))
+        if lat is None or lng is None:
+            return None
+        return _haversine_km(center[0], center[1], lat, lng)
+
+    scored = sorted(
+        others,
+        key=lambda entry: (bool(entry["shop"]["is_demo"]),
+                           distance(entry) is None,
+                           distance(entry) or 0.0,
+                           -created(entry).timestamp()))
+    seen = {card["slug"] for card in cards}
+    for entry in scored:
+        if entry["shop"]["slug"] not in seen:
+            seen.add(entry["shop"]["slug"])
+            cards.append(_shop_card(entry, now))
+    return cards
+
+
+def _seller_board(entries: list[dict]) -> dict | None:
+    """A real shop's top 3 prices for the FOR SELLERS card art.
+
+    Newest real shop wins; a sample shop stands in only when no
+    real shop has prices today. None when nothing is live.
+    """
+    if not entries:
+        return None
+    real = [entry for entry in entries if not entry["shop"]["is_demo"]]
+    pool = real or entries
+
+    def created(entry):
+        return _parse_moment(
+            entry["shop"]["created_at"]) or datetime.min.replace(
+                tzinfo=UTC)
+
+    entry = max(pool, key=created)
+    shop = entry["shop"]
+    priced = [(item, _first_price(item)) for item in entry["items"]]
+    priced = [(item, line) for item, line in priced if line is not None]
+    cheapest = sorted(priced, key=lambda pair: pair[1].price)[:BOARD_PRICES]
+    return {
+        "shop_name": shop["name"],
+        "is_demo": bool(shop["is_demo"]),
+        "voice_checked": voice_checked(entry["items"]),
+        "prices": [{"name": item.name_en,
+                    "price": str(line.price),
+                    "currency": shop["currency"] or "INR"}
+                   for item, line in cheapest],
+    }
+
+
+def _floats(entries: list[dict]) -> list[str]:
+    """Hero floating cut-outs: real live item photos, cut-outs first."""
+    ranked = []
+    for entry in entries:
+        for item in entry["items"]:
+            if not item.photo:
+                continue
+            url = _photo_url(item.photo)
+            ranked.append((0 if is_cutout_photo(item.photo) else 1,
+                           entry["shop"]["slug"], item.name_en or "", url))
+    seen = set()
+    out = []
+    for _rank, _slug, _name, url in sorted(ranked):
+        if url not in seen:
+            seen.add(url)
+            out.append(url)
+        if len(out) >= MAX_FLOATS:
+            break
+    return out
 
 
 def _haversine_km(a_lat, a_lng, b_lat, b_lng) -> float:
@@ -389,6 +675,10 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
                                moment)
                if picked is not None and picked in known
                else [])
+    # v13 sections read the scoped entries (chosen area, else all
+    # areas); floats fall back to every area so the hero never sits
+    # empty over an unknown-area pick.
+    float_entries = scoped or entries
     return {
         "area": picked,
         "areas": areas,
@@ -412,4 +702,11 @@ def home_data(conn: sqlite3.Connection, area: str | None = None,
         "picks": _pick_cards(scoped),
         "popular": _popular(scoped),
         "shops": shops,
+        # v13 homepage sections (design v13, swiggy.com-style).
+        "lowest": _lowest_items(scoped),
+        "categories": _category_cards(scoped),
+        "shop_cards": _shop_cards_all(entries, scoped, picked, known,
+                                      coords, moment),
+        "seller_board": _seller_board(entries),
+        "floats": _floats(float_entries),
     }
