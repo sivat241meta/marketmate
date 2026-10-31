@@ -548,22 +548,29 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
     return flags
 
 
-def flag_same_name_two_prices(items: list[DraftItem]) -> None:
-    """Flag repeated lines: same name and variety, different prices.
+def flag_same_name_two_prices(items: list[DraftItem], *,
+                                language: str = "ta") -> None:
+    """Flag repeated lines: same final title, different prices.
 
-    Two lines headed for the same title with different headline prices
-    get a soft "Two prices for <name> — same item?" note on every line
-    after the first, so the seller confirms they are really two kinds.
-    Different varieties are different kinds and never flag.
+    Two lines headed for the same title (local + English, variety
+    included) with different headline prices are never merged: every
+    line gets a soft "Two prices for <name> — same item or different
+    kinds?" note, and the seller renames one kind with the review
+    card's rename box. Different titles are different kinds and never
+    flag, whatever the price.
     """
-    from app.pipeline.names import english_title
+    from app.pipeline.names import english_title, local_title
 
     groups: dict[tuple[str, str], list[DraftItem]] = {}
     for item in items or []:
         base = (item.name_en or "").strip().lower()
         if not base or base == "other":
             continue
-        key = (base, (item.variety or "").strip().lower())
+        key = (
+            local_title(item.name_local, item.variety, item.name_en,
+                        language).strip().lower(),
+            english_title(item.name_en, item.variety).strip().lower(),
+        )
         groups.setdefault(key, []).append(item)
     for members in groups.values():
         if len(members) < 2:
@@ -577,8 +584,9 @@ def flag_same_name_two_prices(items: list[DraftItem]) -> None:
             continue
         name = (english_title(members[0].name_en, members[0].variety)
                 or members[0].name_en)
-        for member in members[1:]:
+        for member in members:
             member.flags.append(Flag(
                 field="price", code="SAME_ITEM_TWO_PRICES",
-                message=f"Two prices for {name} — same item?",
+                message=(f"Two prices for {name}"
+                         " — same item or different kinds?"),
                 blocking=False))

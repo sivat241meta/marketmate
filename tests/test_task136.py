@@ -223,8 +223,9 @@ def test_extract_restores_spoken_qualifiers():
     assert got[3] == ("banana", "small", "சின்ன வாழைப்பழம்")
     assert got[4] == ("banana", "green", "பச்சை வாழைப்பழம்")
     assert got[5][0:2] == ("corn", "sweet")
-    assert "சோளம்" in got[5][2]
-    assert got[5][2] != "சோளம்"
+    # Task 139: the local name is the seller's own words, so the spoken
+    # "Sweet corn" wins over the canonical "சோளம்".
+    assert got[5][2] == "Sweet corn"
     assert got[6][0] == "muskmelon"
 
 
@@ -267,10 +268,12 @@ def test_same_name_two_prices_flagged():
     first = draft("potato", "உருளைக்கிழங்கு", "20")
     second = draft("potato", "உருளைக்கிழங்கு", "25")
     flag_same_name_two_prices([first, second])
-    assert first.flags == []
-    assert [flag.code for flag in second.flags] == ["SAME_ITEM_TWO_PRICES"]
-    assert second.flags[0].message == "Two prices for potato — same item?"
-    assert second.flags[0].blocking is False
+    # Task 139: both lines are flagged, never merged.
+    for item in (first, second):
+        assert [flag.code for flag in item.flags] == ["SAME_ITEM_TWO_PRICES"]
+        assert item.flags[0].message == (
+            "Two prices for potato — same item or different kinds?")
+        assert item.flags[0].blocking is False
 
 
 def test_different_varieties_or_same_price_not_flagged():
