@@ -101,8 +101,8 @@ body { font-family: "Inter", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanaga
   <div class="tag-band"><img class="brand" src="{{ brand_uri }}/mark.svg" alt="MarketMate">{{ shop["name"] }}</div>
   <div class="tag-body">
     <img class="tag-qr" src="{{ qr_data_uri }}" alt="shop QR code">
-    <div class="tag-local">{{ tag.name_local }}</div>
-    {% if tag.name_en != "other" %}<div class="tag-en">{{ tag.name_en }}{% if tag.variety %} ({{ tag.variety }}){% endif %}</div>{% endif %}
+    <div class="tag-local">{{ tag.title_local }}</div>
+    {% if tag.title_en %}<div class="tag-en">{{ tag.title_en }}</div>{% endif %}
     <div class="tag-price">{{ tag.price | money(shop["currency"]) }} <span class="tag-per">/ {{ tag.per }}</span></div>
   </div>
   <div class="tag-shop">{{ shop["name"] }}</div>

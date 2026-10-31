@@ -9,9 +9,11 @@ from app.pipeline.names import (
     CANONICAL_NAMES,
     VARIETY_ALIASES,
     canonical_local_name,
+    find_name_in_text,
     repair_local_name,
     repair_variety_local_name,
     resolve_name,
+    restore_spoken_local_name,
 )
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
@@ -31,7 +33,9 @@ _SYSTEM_PROMPT = (
     "name_local is the same item's name in the shop language's script; "
     "never estimate quantities; "
     "variety is written in English letters, lower case, as spoken "
-    "(for example bengaluru), never in a non-Latin script."
+    "(for example bengaluru), never in a non-Latin script; "
+    "a qualifier is the plain English word (new, small, big, red, "
+    "green, country, sweet), never a transliteration."
 )
 
 _CONTRACT = (
@@ -305,6 +309,10 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             hit = _alias_in_text(extra)
             if hit is not None:
                 name_en, variety = hit
+            else:
+                found_name = find_name_in_text(extra)
+                if found_name is not None:
+                    name_en = found_name
         if name_en == "banana" and extra:
             found = _banana_varieties_in_order(extra)
             if len(found) >= 2:
@@ -326,9 +334,17 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             normalize_price_line(line)
         qty_unit, qty = normalize_qty_unit(raw.get("qty_unit"),
                                            _decimal_or_none(raw.get("qty")))
+        local_name = _local_name(raw, name_en, name_spoken, language)
+        # Keep a qualifier the extracted name dropped (Task 136): the
+        # seller's own item words win over the bare canonical name.
+        repaired = restore_spoken_local_name(
+            local_name, name_spoken=name_spoken, quote=quote,
+            variety=variety, name_en=name_en, language=language)
+        if repaired:
+            local_name = repaired
         item = DraftItem(
             name_spoken=name_spoken,
-            name_local=_local_name(raw, name_en, name_spoken, language),
+            name_local=local_name,
             name_en=name_en,
             variety=variety,
             match_key=name_en,

@@ -22,7 +22,7 @@ WEIGHT_ITEMS: set[str] = {
     "cauliflower", "brinjal", "okra", "drumstick", "pumpkin", "bottle gourd",
     "bitter gourd", "snake gourd", "ridge gourd", "cucumber", "grapes",
     "green chilli", "ginger", "garlic", "coriander", "radish", "beetroot",
-    "peas", "capsicum", "spinach",
+    "peas", "capsicum", "spinach", "ivy gourd",
 }
 
 TAMIL_FIFTY_WORDS = frozenset({
@@ -546,3 +546,39 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
         flags.append(Flag(field="qty", code="QTY_MISSING",
                           message="no quantity", blocking=False))
     return flags
+
+
+def flag_same_name_two_prices(items: list[DraftItem]) -> None:
+    """Flag repeated lines: same name and variety, different prices.
+
+    Two lines headed for the same title with different headline prices
+    get a soft "Two prices for <name> — same item?" note on every line
+    after the first, so the seller confirms they are really two kinds.
+    Different varieties are different kinds and never flag.
+    """
+    from app.pipeline.names import english_title
+
+    groups: dict[tuple[str, str], list[DraftItem]] = {}
+    for item in items or []:
+        base = (item.name_en or "").strip().lower()
+        if not base or base == "other":
+            continue
+        key = (base, (item.variety or "").strip().lower())
+        groups.setdefault(key, []).append(item)
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        firsts = [
+            next((line.price for line in member.price_lines
+                  if line.price is not None), None)
+            for member in members
+        ]
+        if len({price for price in firsts if price is not None}) < 2:
+            continue
+        name = (english_title(members[0].name_en, members[0].variety)
+                or members[0].name_en)
+        for member in members[1:]:
+            member.flags.append(Flag(
+                field="price", code="SAME_ITEM_TWO_PRICES",
+                message=f"Two prices for {name} — same item?",
+                blocking=False))

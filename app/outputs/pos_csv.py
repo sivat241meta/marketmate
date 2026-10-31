@@ -58,7 +58,7 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
 
     from app import db as _db
     from app.dayclose import bills_for_range, item_code, local_day_of, shop_tz
-    from app.pipeline.names import display_name_en, qualified_name
+    from app.pipeline.names import english_title, qualified_name
 
     tz = shop_tz(shop)
     buf = io.StringIO()
@@ -111,7 +111,7 @@ def pos_csv(conn: sqlite3.Connection, shop, start: str, end: str) -> bytes:
             variety = str(line.get("variety") or "").strip() or None
             rate = per_unit_rate(line.get("unit_price"),
                                  line.get("per_amount"))
-            item_name = (display_name_en(name_en, variety) if variety
+            item_name = (english_title(name_en, variety) if variety
                          else name_en)
             writer.writerow([
                 day, clock, row["id"],
@@ -163,7 +163,7 @@ def pricelist_csv(conn: sqlite3.Connection, shop) -> bytes:
     """Today's published items in the general CSV style, BOM + UTF-8."""
     from app import db as _db
     from app.dayclose import item_code
-    from app.pipeline.names import display_name_en, qualified_name
+    from app.pipeline.names import english_title, qualified_name
 
     version_id = _db.latest_version(conn, shop["id"], published_only=True)
     items = _db.version_items(conn, version_id) if version_id else []
@@ -176,7 +176,7 @@ def pricelist_csv(conn: sqlite3.Connection, shop) -> bytes:
         if line is None:
             continue
         variety = (item.variety or "").strip() or None
-        item_name = (display_name_en(item.name_en, variety) if variety
+        item_name = (english_title(item.name_en, variety) if variety
                      else item.name_en)
         writer.writerow([
             item_code(qualified_name(item.name_en, variety)), item_name,

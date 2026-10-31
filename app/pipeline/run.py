@@ -10,7 +10,7 @@ from app.languages import get_language, language_bias, shop_bias
 from app.meta.spark import SparkError
 from app.meta.transcribe import TranscribeError, transcribe_wav
 from app.models import Flag, Frame, Transcript, Turn
-from app.pipeline.checks import check_item
+from app.pipeline.checks import check_item, flag_same_name_two_prices
 from app.pipeline.extract import extract_items, merge_repeated_prices
 from app.pipeline.frames import frames_for_window, item_window, pick_best_frame
 from app.pipeline.media import (
@@ -341,6 +341,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             item.flags.append(Flag(
                 field="photo", code="PICTURE_MISMATCH",
                 message=f"no frame clearly shows {item.name_en}"))
+    flag_same_name_two_prices(items)
     db.save_drafts(conn, session_id, items)
     db.set_stage(conn, session_id, "ready")
     db.ensure_session_base(conn, session_id)

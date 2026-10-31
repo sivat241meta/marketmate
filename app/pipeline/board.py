@@ -202,7 +202,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
     """Read one board photo into drafts; records stages, never raises."""
     from app import db
     from app.costs import BUDGET_EXHAUSTED_MESSAGE, CostCapExceeded
-    from app.pipeline.checks import check_item
+    from app.pipeline.checks import check_item, flag_same_name_two_prices
     from app.pipeline.run import friendly_error_message
 
     image = Path(image)
@@ -238,6 +238,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
                                   "RANGE", "NUMBER_CHECK", "UNCLEAR_NUMBER"):
                     continue
                 item.flags.append(flag)
+        flag_same_name_two_prices(items)
         db.save_drafts(conn, session_id, items)
         write_board_meta(Path(settings.data_dir), session_id,
                          {"image": str(image)})

@@ -70,6 +70,8 @@ _ITEMS: tuple[tuple[str, str, str], ...] = (
     ("banana stem", "வாழைத்தண்டு", "vazhaithandu"),
     ("banana flower", "வாழைப்பூ", "vazhaipoo"),
     ("sweet lime", "சாத்துக்குடி", "saathukudi"),
+    ("ivy gourd", "கோவக்காய்", "kovakkai"),
+    ("raw mango", "மாங்காய்", "maangaai"),
 )
 
 CANONICAL_NAMES: dict[str, str] = {name_en: name_ta for name_en, name_ta, _ in _ITEMS}
@@ -143,6 +145,8 @@ CANONICAL_NAMES_HI: dict[str, str] = {
     "banana stem": "केले का तना",
     "banana flower": "केले का फूल",
     "sweet lime": "मौसंबी",
+    "ivy gourd": "कुंदरू",
+    "raw mango": "कच्चा आम",
 }
 
 
@@ -332,13 +336,74 @@ def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
     return hit[1] if hit is not None else None
 
 
+def _key_in_text(lowered: str, raw: str, key: str) -> bool:
+    """True when key appears in the text: word bounds for Latin keys,
+    substring for Tamil script (market speech separates words)."""
+    if not key:
+        return False
+    if key.isascii():
+        start = 0
+        while True:
+            idx = lowered.find(key, start)
+            if idx < 0:
+                return False
+            before = lowered[idx - 1] if idx > 0 else " "
+            end = idx + len(key)
+            after = lowered[end] if end < len(lowered) else " "
+            if (not before.isalnum() and before != "_"
+                    and not after.isalnum() and after != "_"):
+                return True
+            start = idx + 1
+    return key in raw
+
+
+def find_name_in_text(text: str) -> str | None:
+    """Canonical name_en for an item named inside free text, else None.
+
+    Longest match wins over Tamil market synonyms, canonical Tamil
+    names and English synonyms, so "கிறன் கிறன் ஃப்ரூட்" finds
+    muskmelon and "எலுமிச்சை பழம்" finds lemon.
+    """
+    raw = text or ""
+    lowered = " ".join(raw.lower().split())
+    if not lowered:
+        return None
+    best: str | None = None
+    best_len = -1
+    for key, canon in TAMIL_SYNONYMS.items():
+        if len(key) > best_len and _key_in_text(lowered, raw, key):
+            best, best_len = canon, len(key)
+    for name_ta, canon in _TAMIL_TO_CANON.items():
+        if len(name_ta) > best_len and _key_in_text(lowered, raw, name_ta):
+            best, best_len = canon, len(name_ta)
+    for syn, canon in SYNONYMS.items():
+        if len(syn) > best_len and _key_in_text(lowered, raw, syn):
+            best, best_len = canon, len(syn)
+    return best
+
+
+def normalize_qualifier(variety: str | None) -> str | None:
+    """English qualifier for a said variety word, else None.
+
+    Transliterations (puthu, sinna) and Tamil/Hindi script qualifiers
+    map to English; anything else (cultivar names, origins, None)
+    returns None so the caller's own word is kept.
+    """
+    if variety is None:
+        return None
+    text = " ".join(str(variety).split()).lower()
+    if not text:
+        return None
+    return _VARIETY_WORDS.get(text) or QUALIFIER_EN.get(text)
+
+
 def _normalize_variety(variety: str | None) -> str | None:
     if variety is None:
         return None
     text = str(variety).strip().lower()
     if not text:
         return None
-    known = _VARIETY_WORDS.get(text)
+    known = normalize_qualifier(text)
     if known is not None:
         return known
     if text.isascii():
@@ -348,7 +413,16 @@ def _normalize_variety(variety: str | None) -> str | None:
     hit = _alias_hit_in_text(text)
     if hit is not None:
         return hit[1]
+    for token in text.split():
+        salvaged = QUALIFIER_EN.get(token)
+        if salvaged is not None:
+            return salvaged
     return None
+
+
+def normalize_variety(variety: str | None) -> str | None:
+    """Public normaliser: English variety word, else None when blank."""
+    return _normalize_variety(variety)
 
 
 def _variety_in_text(base: str, text: str) -> str | None:
@@ -402,6 +476,8 @@ def resolve_name(spoken: str, variety: str | None = None,
         base_name = _ROMAN_TO_CANON[raw]
     elif (spoken or "").strip() in _TAMIL_TO_CANON:
         base_name = _TAMIL_TO_CANON[(spoken or "").strip()]
+    elif (spoken or "").strip() in TAMIL_SYNONYMS:
+        base_name = TAMIL_SYNONYMS[(spoken or "").strip()]
     else:
         singular = raw[:-1] if raw.isascii() and raw.endswith("s") else raw
         if singular in CANONICAL_NAMES:
@@ -422,6 +498,9 @@ def resolve_name(spoken: str, variety: str | None = None,
                 if found and found != "ujala":
                     return (base, found)
             return (base, default)
+        found_name = find_name_in_text(spoken or "")
+        if found_name is not None:
+            return (found_name, _normalize_variety(variety))
         if not raw.isascii():
             # Unknown non-Latin name: "other" keeps Tamil out of name_en;
             # the spoken word stays in name_local via the caller.
@@ -457,6 +536,111 @@ SYNONYMS: dict[str, str] = {
     "red chilly": "red chilli",
     "red chili": "red chilli",
     "cauli": "cauliflower",
+    "sweet corn": "corn",
+    "kirni": "muskmelon",
+    "kiran": "muskmelon",
+    "thenga": "coconut",
+    "maanga": "raw mango",
+}
+
+# Tamil-script market spellings heard in real stall videos (Task 136):
+# truncated qualifiers (தேங்கா, வெள்ளரிக்கா), the pumpkin word sellers
+# actually say (பூசணிக்காய், not the textbook வெண்பூசணி), spoken raw
+# mango (மாங்கா) and muskmelon (கிர்ணி/கிறணி/கிறன்).
+TAMIL_SYNONYMS: dict[str, str] = {
+    "பூசணிக்காய்": "ash gourd",
+    "மாங்கா": "raw mango",
+    "கிர்ணி": "muskmelon",
+    "கிறணி": "muskmelon",
+    "கிறன்": "muskmelon",
+    "கிர்ணி பழம்": "muskmelon",
+    "தேங்கா": "coconut",
+    "வெள்ளரிக்கா": "cucumber",
+}
+
+# Spoken qualifier word -> English variety (Task 136). The model often
+# transliterates the seller's qualifier (puthu, sinna); the variety must
+# be the English word instead. Keys are lower-cased; Tamil and Hindi
+# script keys stay as-is.
+QUALIFIER_EN: dict[str, str] = {
+    "புது": "new",
+    "புதிய": "new",
+    "புதுசு": "new",
+    "puthu": "new",
+    "pudhu": "new",
+    "puthusu": "new",
+    "new": "new",
+    "नया": "new",
+    "naya": "new",
+    "சின்ன": "small",
+    "சிறிய": "small",
+    "sinna": "small",
+    "chinna": "small",
+    "small": "small",
+    "छोटा": "small",
+    "छोटी": "small",
+    "chhota": "small",
+    "chhoti": "small",
+    "பெரிய": "big",
+    "periya": "big",
+    "peria": "big",
+    "big": "big",
+    "बड़ा": "big",
+    "बड़ी": "big",
+    "bada": "big",
+    "badi": "big",
+    "பச்சை": "green",
+    "pachai": "green",
+    "pacha": "green",
+    "pachchai": "green",
+    "green": "green",
+    "हरा": "green",
+    "हरी": "green",
+    "hara": "green",
+    "hari": "green",
+    "சிவப்பு": "red",
+    "sivappu": "red",
+    "red": "red",
+    "लाल": "red",
+    "lal": "red",
+    "நாட்டு": "country",
+    "nattu": "country",
+    "naatu": "country",
+    "natu": "country",
+    "naati": "country",
+    "country": "country",
+    "देसी": "country",
+    "desi": "country",
+    "ஸ்வீட்": "sweet",
+    "sweet": "sweet",
+    "मीठा": "sweet",
+    "meetha": "sweet",
+}
+
+# English varieties that prefix the item in titles: "new potato".
+QUALIFIER_VARIETIES: frozenset[str] = frozenset(
+    {"new", "small", "big", "red", "green", "country", "sweet"})
+
+# English qualifier -> local display word for titles (Task 136).
+QUALIFIER_LOCAL: dict[str, dict[str, str]] = {
+    "ta": {
+        "new": "புது",
+        "small": "சின்ன",
+        "big": "பெரிய",
+        "green": "பச்சை",
+        "red": "சிவப்பு",
+        "country": "நாட்டு",
+        "sweet": "ஸ்வீட்",
+    },
+    "hi": {
+        "new": "नया",
+        "small": "छोटा",
+        "big": "बड़ा",
+        "green": "हरा",
+        "red": "लाल",
+        "country": "देसी",
+        "sweet": "मीठा",
+    },
 }
 
 
@@ -643,6 +827,11 @@ VARIETY_LOCAL: dict[str, str] = {
     "nendran": "நேந்திரன்",
     "rasthali": "ரஸ்தாளி",
     "ooty": "ஊட்டி",
+    "new": "புது",
+    "small": "சின்ன",
+    "big": "பெரிய",
+    "country": "நாட்டு",
+    "sweet": "ஸ்வீட்",
 }
 
 
@@ -711,6 +900,108 @@ def qualified_name(name_en: str | None, variety: str | None = None) -> str:
     text = str(variety or "").strip()
     if base and text:
         return f"{base} ({text})"
+    return base
+
+
+def english_title(name_en: str | None, variety: str | None = None) -> str:
+    """Item title in English with the variety: "new potato".
+
+    Qualifier varieties (new, small, big, red, green, country, sweet)
+    prefix the name so two kinds never read the same; every other
+    variety keeps the parenthetical display form ("Banana (Poovan)").
+    Unknown items ("other") show nothing.
+    """
+    base = (name_en or "").strip()
+    if not base or base.lower() == "other":
+        return ""
+    text = str(variety or "").strip()
+    if not text:
+        return base
+    if text.lower() in QUALIFIER_VARIETIES:
+        return f"{text.lower()} {base.lower()}"
+    return display_name_en(base, text)
+
+
+def local_title(name_local: str | None, variety: str | None = None,
+                name_en: str | None = None, language: str = "ta") -> str:
+    """Item title in the shop language with the variety.
+
+    Qualifier varieties prefix the local qualifier word ("புது
+    உருளைக்கிழங்கு"); a red banana is just "செவ்வாழை". Any other
+    variety falls back to the parenthetical display form.
+    """
+    base = (name_local or "").strip()
+    if not base:
+        return ""
+    text = str(variety or "").strip().lower()
+    if not text:
+        return base
+    words = QUALIFIER_LOCAL.get(language, {})
+    if text in QUALIFIER_VARIETIES and text in words:
+        if (text == "red" and language == "ta"
+                and (name_en or "").strip().lower() == "banana"):
+            return VARIETY_LOCAL["red"]
+        word = words[text]
+        if word in base:
+            return base
+        return f"{word} {base}"
+    return display_name_local(base, variety, language=language)
+
+
+def _qualifier_said(spoken: str, variety: str, name_en: str | None,
+                    language: str) -> bool:
+    """True when the spoken text holds the qualifier in any spelling."""
+    lowered = " ".join((spoken or "").lower().split())
+    if not lowered:
+        return False
+    word = QUALIFIER_LOCAL.get(language, {}).get(variety)
+    if word and word in spoken:
+        return True
+    base = (name_en or "").strip().lower()
+    for alias, (item, var) in VARIETY_ALIASES.items():
+        if var == variety and item == base and alias in lowered:
+            return True
+    for key, val in QUALIFIER_EN.items():
+        if val == variety and _key_in_text(lowered, spoken, key):
+            return True
+    return _key_in_text(lowered, spoken, variety)
+
+
+def restore_spoken_local_name(
+        name_local: str | None, *, name_spoken: str | None = None,
+        quote: str | None = None, variety: str | None = None,
+        name_en: str | None = None, language: str = "ta") -> str | None:
+    """Keep a qualifier the extracted local name dropped (Task 136).
+
+    When the seller's own item words hold a qualifier missing from
+    name_local ("புது உருளைக்கிழங்கு" heard, plain "உருளைக்கிழங்கு"
+    extracted), the spoken words become the local name. A spoken
+    variety nickname ("செவ்வாழை") is kept whole. Only words that were
+    actually said are ever used; anything else passes through.
+    """
+    base = (name_local or "").strip()
+    if not base:
+        return name_local
+    text = str(variety or "").strip().lower()
+    if text not in QUALIFIER_VARIETIES:
+        return base
+    words = QUALIFIER_LOCAL.get(language, {})
+    word = words.get(text)
+    if word and word in base:
+        return base
+    spoken = f"{name_spoken or ''} {quote or ''}"
+    if not _qualifier_said(spoken, text, name_en, language):
+        return base
+    cand = " ".join((name_spoken or "").split()).strip(
+        ".,;:!?\"'()[]{}।॥ ")
+    if cand:
+        base_key = (name_en or "").strip().lower()
+        if VARIETY_ALIASES.get(cand.lower()) == (base_key, text):
+            return cand
+        if word and word in cand and base in cand:
+            return cand
+    if word:
+        return f"{word} {base}"
     return base
 
 
