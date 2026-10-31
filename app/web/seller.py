@@ -480,14 +480,19 @@ def _per_text(per_amount, unit) -> str:
 
 
 def _price_summary(item, currency: str = "INR", lang: str = "en") -> str:
+    # Task 143: a price under a blocking flag is shown as uncertain; the
+    # card header pairs this with the "Needs you" pill, never the green tick.
+    uncertain = any(getattr(flag, "blocking", False)
+                    for flag in getattr(item, "flags", None) or [])
+    mark = " ?" if uncertain else ""
     for line in item.price_lines:
         if line.price is not None:
             price = format_money(line.price, currency)
             if line.per_amount is not None and line.unit:
-                return f"{price} / {line.per_amount} {line.unit}"
+                return f"{price} / {line.per_amount} {line.unit}{mark}"
             if line.unit:
-                return f"{price} / {line.unit}"
-            return price
+                return f"{price} / {line.unit}{mark}"
+            return f"{price}{mark}"
     return t_for(lang)("review.no_price")
 
 

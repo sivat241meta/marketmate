@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal, InvalidOperation
+from itertools import pairwise
 
 from app.languages import by_api_name, currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
 from app.pipeline.extract import merge_repeated_prices
 from app.pipeline.numbers import find_numbers, fold_tamil, parse_number
-from app.pipeline.units import CANONICAL_UNITS, normalise_unit, rate
+from app.pipeline.units import (
+    CANONICAL_UNITS,
+    convert,
+    normalise_unit,
+    rate,
+)
 
 SOUND_ALIKE_PAIRS = {13: 30, 14: 40, 15: 50, 16: 60, 17: 70, 18: 80, 19: 90}
 
@@ -255,6 +261,114 @@ def _api_name_for(language: str) -> str | None:
         return get_language(language).api_name
     except KeyError:
         return None
+
+
+# Task 143: a spoken quantity must never be accepted as a price. A real
+# Tamil stall said "5 pieces for Rs.20" (அஞ்சு ... five piece இருபது)
+# and one run invented a "Rs.5 / 1 kg" line from the quantity 5.
+_COUNT_UNIT_WORDS = frozenset({
+    "piece", "pieces", "pc", "pcs", "பீஸ்",
+    "dozen", "dozens", "டஜன்",
+    "bunch", "bunches", "கட்டு", "kattu", "kathu",
+    "kg", "kilo", "kilos", "கிலோ",
+})
+
+_UNIT_PLURAL = {
+    "piece": "pieces", "dozen": "dozen", "bunch": "bunches",
+    "packet": "packets", "kg": "kg", "g": "g", "l": "l", "ml": "ml",
+}
+
+
+def _fmt_amount(value: Decimal) -> str:
+    """Compact digits for flag text: Decimal(20) -> "20", not "20.00"."""
+    text = format(value, "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _unit_plural(unit: str, per_amount: Decimal) -> str:
+    if per_amount == 1:
+        return unit
+    return _UNIT_PLURAL.get(unit, unit)
+
+
+def _describe_line(line: PriceLine) -> str:
+    """One-line offer text, e.g. "Rs.20 for 5 pieces" / "Rs.5 per kg"."""
+    price = _fmt_amount(line.price) if line.price is not None else "?"
+    unit = line.unit
+    per = line.per_amount
+    if per is not None and unit:
+        if per == 1:
+            return f"₹{price} per {unit}"
+        return f"₹{price} for {_fmt_amount(per)} {_unit_plural(unit, per)}"
+    if unit:
+        return f"₹{price} per {unit}"
+    if per is not None:
+        return f"₹{price} for {_fmt_amount(per)}"
+    return f"₹{price}"
+
+
+def _qty_as_price_pair(lines: list[PriceLine]
+                       ) -> tuple[PriceLine, PriceLine] | None:
+    """(suspect, other) when suspect.price equals another line's per_amount."""
+    for index, suspect in enumerate(lines):
+        if suspect.price is None:
+            continue
+        for other_index, other in enumerate(lines):
+            if (other_index == index or other.per_amount is None
+                    or other.price is None):
+                continue
+            if suspect.price == other.per_amount:
+                return (suspect, other)
+    return None
+
+
+def _number_before_count_unit(tokens: list[str], value: Decimal) -> bool:
+    """True when the number stands right before a count unit in the quote."""
+    for index, token in enumerate(tokens):
+        if token not in _COUNT_UNIT_WORDS:
+            continue
+        if index >= 1 and parse_number(tokens[index - 1]) == value:
+            return True
+        if (index >= 2
+                and parse_number(tokens[index - 2] + " "
+                                 + tokens[index - 1]) == value):
+            return True
+    return False
+
+
+def _tier_base(unit: str) -> str | None:
+    """Shared base for convertible units: g counts as kg, dozen as piece."""
+    if unit in ("kg", "g"):
+        return "kg"
+    if unit in ("l", "ml"):
+        return "l"
+    if unit in ("piece", "dozen"):
+        return "piece"
+    if unit in ("bunch", "packet"):
+        return unit
+    return None
+
+
+def _is_clear_tier_list(priced: list[PriceLine]) -> bool:
+    """True for "1 kg 40, 2 kg 75": same unit, growing amounts in order."""
+    if len(priced) < 2:
+        return False
+    if any(line.unit is None or line.per_amount is None for line in priced):
+        return False
+    base = _tier_base(priced[0].unit or "")
+    if base is None:
+        return False
+    amounts: list[Decimal] = []
+    for line in priced:
+        if _tier_base(line.unit or "") != base:
+            return False
+        converted = convert(line.per_amount, line.unit or "", base)
+        if converted is None:
+            return False
+        amounts.append(converted)
+    return all(nxt > cur for cur, nxt in pairwise(amounts))
 
 
 def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
@@ -538,6 +652,39 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
             flags.append(Flag(field="price", code="TWO_PRICES",
                               message="two prices for the same amount",
                               options=[str(p) for p in prices]))
+
+    qty_as_price_fired = False
+    pair = _qty_as_price_pair(item.price_lines)
+    if pair is not None:
+        suspect, other = pair
+        assert suspect.price is not None and other.price is not None
+        kinds = {kind for value, kind in heard if value == suspect.price}
+        if (_number_before_count_unit(quote_tokens, suspect.price)
+                or len(kinds) >= 2):
+            number = _fmt_amount(suspect.price)
+            if other.unit:
+                assert other.per_amount is not None
+                quoted = (f"{number} "
+                          f"{_unit_plural(other.unit, other.per_amount)}"
+                          f" for ₹{_fmt_amount(other.price)}")
+            else:
+                quoted = f"{number} for ₹{_fmt_amount(other.price)}"
+            flags.append(Flag(
+                field="price_line", code="QTY_AS_PRICE",
+                message=(f"Is {number} a price, or the {number}"
+                         f" in '{quoted}'?"),
+                options=[_describe_line(other), _describe_line(suspect)]))
+            qty_as_price_fired = True
+
+    priced = [line for line in item.price_lines if line.price is not None]
+    units = {line.unit for line in priced if line.unit is not None}
+    if (len(priced) >= 2 and len(units) >= 2
+            and not _is_clear_tier_list(priced)
+            and not qty_as_price_fired):
+        flags.append(Flag(
+            field="price_line", code="MULTI_PRICE_UNCLEAR",
+            message="Two different prices — which one is right?",
+            options=[_describe_line(line) for line in priced]))
 
     if not any(line.price is not None for line in item.price_lines):
         flags.append(Flag(field="price", code="NO_PRICE", message="no price at all"))

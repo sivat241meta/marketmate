@@ -2,6 +2,8 @@
 /* Review cards: tapping an option fills the first price input and marks the
    flag resolved (chosen button gets a check). On TWO_PRICES the other
    duplicate lines are removed from the card, so approval keeps one line.
+   On QTY_AS_PRICE / MULTI_PRICE_UNCLEAR the tapped option ("Rs.20 for
+   5 pieces") keeps its line and drops the other lines the same way.
    Approve posts the edited cards as JSON.
    Option buttons carry data-target-field (never data-field) so input queries
    below only ever match real inputs and selects. */
@@ -134,8 +136,79 @@ function isConfirmBox(target) {
   return !!(target.dataset && ("cardConfirm" in target.dataset));
 }
 
+function isLineChoiceFlag(code) {
+  return code === "TWO_PRICES" || code === "QTY_AS_PRICE" ||
+    code === "MULTI_PRICE_UNCLEAR";
+}
+
 function isSelfConfirmFlag(code) {
-  return code === "SOUND_ALIKE" || code === "TWO_PRICES";
+  return code === "SOUND_ALIKE" || isLineChoiceFlag(code);
+}
+
+function singularUnit(word) {
+  const map = {
+    pieces: "piece", dozens: "dozen", bunches: "bunch",
+    packets: "packet",
+  };
+  const lower = String(word || "").toLowerCase();
+  return map[lower] || lower;
+}
+
+function parseLineOption(text) {
+  // "Rs.20 for 5 pieces" or "Rs.5 per kg" (see checks._describe_line).
+  // "per <unit>" implies a per-amount of 1 but also matches a blank one.
+  const m = String(text || "").match(
+    /^₹\s*([\d.]+)\s+(?:for\s+([\d.]+)\s+([A-Za-z]+)|per\s+([A-Za-z]+))$/);
+  if (!m) {
+    return null;
+  }
+  if (m[4]) {
+    return { price: m[1], per: "1", unit: singularUnit(m[4]), perImplied: true };
+  }
+  return {
+    price: m[1], per: m[2], unit: singularUnit(m[3]), perImplied: false,
+  };
+}
+
+function keepOptionLine(card, value) {
+  if (!card) {
+    return;
+  }
+  const want = parseLineOption(value);
+  if (!want) {
+    return;
+  }
+  const wraps = Array.from(card.querySelectorAll(".line"));
+  if (wraps.length < 2) {
+    return;
+  }
+  const read = (wrap, field) => {
+    const el = wrap.querySelector(
+      `input[data-field="${field}"], select[data-field="${field}"]`);
+    return el ? el.value : "";
+  };
+  let keep = null;
+  for (const wrap of wraps) {
+    const priceOk = read(wrap, "price") !== "" &&
+      Number(read(wrap, "price")) === Number(want.price);
+    const unit = String(read(wrap, "unit") || "").toLowerCase();
+    const per = read(wrap, "per_amount");
+    const perOk = want.perImplied
+      ? (per === "" || Number(per) === Number(want.per))
+      : (per !== "" && Number(per) === Number(want.per));
+    if (priceOk && unit === want.unit && perOk) {
+      keep = wrap;
+      break;
+    }
+  }
+  if (!keep) {
+    return;
+  }
+  wraps.forEach((wrap) => {
+    if (wrap !== keep) {
+      wrap.remove();
+    }
+  });
 }
 
 function cardEdited(card) {
@@ -514,11 +587,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (group.dataset.flag === "TWO_PRICES") {
         keepChosenLine(button.closest(".card"));
+      } else if (group.dataset.flag === "QTY_AS_PRICE" ||
+                 group.dataset.flag === "MULTI_PRICE_UNCLEAR") {
+        keepOptionLine(button.closest(".card"), button.dataset.value);
       }
       const card = button.closest(".card");
       if (card) {
-        if (group.dataset.flag === "TWO_PRICES") {
-          // Trimming duplicate lines is part of the choice, not an edit.
+        if (isLineChoiceFlag(group.dataset.flag)) {
+          // Trimming lines is part of the choice, not an edit.
           card.dataset.initialLines = String(
             card.querySelectorAll(".line").length);
         }
@@ -530,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.querySelectorAll(".flag-options")).every(
             (other) => other.querySelector(".opt-btn.chosen"));
           if (allResolved && !cardEdited(card)) {
-            // SOUND_ALIKE / TWO_PRICES choice (or a hidden board-price
+            // A line-choice / SOUND_ALIKE pick (or a hidden board-price
             // tap) doubles as the tick; the box stays as-is otherwise.
             box.checked = true;
             hideConfirmIfClean(card);
