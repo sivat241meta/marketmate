@@ -62,7 +62,7 @@
       <td>{{ row.opening }}</td>
       <td>{{ row.left }}</td>
       <td>
-        <input type="number" min="0" step="any" name="wastage_{{ row.slug }}" value="{{ row.wastage }}" aria-label="{{ t('close.wastage_aria', display=row.display) }}">
+        <input type="number" min="0" step="any" inputmode="decimal" name="wastage_{{ row.slug }}" value="{{ row.wastage }}" aria-label="{{ t('close.wastage_aria', display=row.display) }}">
         <input type="hidden" name="unit_{{ row.slug }}" value="{{ row.unit }}">
         <span class="muted">{{ row.unit }}</span>
       </td>

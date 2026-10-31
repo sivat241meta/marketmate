@@ -433,24 +433,21 @@
       });
     }
 
-    // First visit (no area chosen yet): on the homepage a remembered
-    // choice is applied as ?area=; an explicit ?area= wins and is kept.
-    // Everywhere else the remembered area only labels the header
-    // button — it never bounces the visitor home (Task 134). The
-    // first-visit drawer auto-open lives on "/" only.
+    // First visit (no area chosen yet): the page defaults to All
+    // areas — the drawer never auto-opens at any width (Task 150).
+    // On the homepage a remembered choice is applied as ?area=; an
+    // explicit ?area= wins and is kept. Everywhere else the remembered
+    // area only labels the header button — it never bounces the
+    // visitor home (Task 134).
     var param = currentAreaParam().trim();
     var path = window.location.pathname || "/";
     if (param) {
       store(STORE_KEY, param);
     } else {
       var known = load(STORE_KEY, null);
-      if (path === "/") {
-        if (known && known !== "all") {
-          window.location.assign("/?area=" + encodeURIComponent(known));
-        } else if (!known && tiles.length && !openPop) {
-          openPop2(pop, null);
-        }
-      } else if (known && known !== "all") {
+      if (path === "/" && known && known !== "all") {
+        window.location.assign("/?area=" + encodeURIComponent(known));
+      } else if (path !== "/" && known && known !== "all") {
         setLocLabel(known);
       }
     }

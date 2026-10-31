@@ -20,7 +20,7 @@
     {{ ui.field(t('set.name'), "name", value=shop["name"], required=True, autocomplete="organization", error=error if error_field == "name" else None, attrs={"id": "set-name", "maxlength": "60"}) }}
     {{ ui.field(t('set.area'), "area", value=shop["area"], required=True, autocomplete="address-level2", error=error if error_field == "area" else None, attrs={"id": "set-area", "maxlength": "60"}) }}
     {{ ui.field(t('set.pincode'), "pincode", value=shop["pincode"] or "", hint=t('set.pincode_help'), inputmode="numeric", autocomplete="postal-code", error=error if error_field == "pincode" else None, attrs={"id": "set-pincode", "maxlength": "6"}) }}
-    {{ ui.field(t('set.phone'), "phone", type="tel", value=shop["phone"], hint=t('set.phone_help'), required=True, autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "set-phone"}) }}
+    {{ ui.field(t('set.phone'), "phone", type="tel", value=shop["phone"], hint=t('set.phone_help'), required=True, inputmode="tel", autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "set-phone"}) }}
     {% call ui.select_field(t('set.type'), "type", required=True, error=error if error_field == "type" else None, attrs={"id": "set-type"}) %}
       {% for v in shop_types %}
       <option value="{{ v }}"{% if v == shop["type"] %} selected{% endif %}>{{ t('set.type_' + v) }}</option>
@@ -112,6 +112,15 @@
       <option value="{{ currency }}"{% if currency == shop["currency"] %} selected{% endif %}>{{ currency }}</option>
       {% endfor %}
     {% endcall %}
+    <div class="field">
+      <span class="field-label" id="set-ui-lang-label">{{ t('top.lang_label') }}</span>
+      <span class="lang set-lang" role="group" aria-labelledby="set-ui-lang-label" data-ui-toggle>
+        <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+        <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+        <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+      </span>
+      <p class="field-hint">{{ t('set.ui_lang_help') }}</p>
+    </div>
   {% endcall %}
 
   {% call ui.action_bar() %}

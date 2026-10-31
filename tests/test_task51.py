@@ -477,7 +477,7 @@ def test_shell_strings_translated(tmp_path):
 def test_manifest_and_theme_color(tmp_path):
     client = _client(tmp_path)
     body = client.get("/manifest.webmanifest").json()
-    assert body["theme_color"] == "#0B2A33"
+    assert body["theme_color"] == "#0F766E"
     assert body["background_color"] == "#F3F8FA"
     html = client.get("/").text
-    assert 'name="theme-color"' in html and "#0B2A33" in html
+    assert 'name="theme-color"' in html and "#0F766E" in html

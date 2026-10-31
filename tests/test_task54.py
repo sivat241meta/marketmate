@@ -449,8 +449,10 @@ def test_sw_js_check_and_offline_handlers():
     text = path.read_text()
     assert "mm-share" in text
     assert "/share" in text
-    assert "isPricesJson" in text
-    assert "isNewBillPage" in text
+    # Task 150: seller pages and API JSON are never cached; the
+    # worker caches the static shell and serves an offline page.
+    assert "/e/" not in text
+    assert "prices.json" not in text
     assert "offline" in text.lower()
     node = shutil.which("node")
     assert node, "node is required for --check"

@@ -37,7 +37,7 @@
 
   {% set _v13 = 'img/v13/' %}
   {% set _float_src = ["tomato", "capsicum", "carrot", "onion", "curry", "pineapple", "pomegranate", "banana", "coconut2"] %}
-  {% for name in _float_src %}<img class="hero-float {{ _float_cls[loop.index0] }}" src="{{ static_url(_v13 ~ name ~ '.webp') if static_url is defined else '/static/' ~ _v13 ~ name ~ '.webp' }}" alt="" aria-hidden="true" loading="eager" width="150">{% endfor %}
+  {% for name in _float_src %}<img class="hero-float {{ _float_cls[loop.index0] }}" src="{{ static_url(_v13 ~ name ~ '.webp') if static_url is defined else '/static/' ~ _v13 ~ name ~ '.webp' }}" alt="" aria-hidden="true" loading="{{ 'eager' if _float_cls[loop.index0] in ('f-l3', 'f-r2') else 'lazy' }}" width="150">{% endfor %}
 
   <div class="wrap hero-in">
     <h1>{{ t('v13.hero_a') }} <span class="h1-br"><br></span>{{ t('v13.hero_b') }} <span class="hl">{{ t('v13.hero_c') }}</span></h1>
@@ -56,6 +56,7 @@
         </span>
       </div>
     </div>
+    <p class="loc-hint" data-loc-hint hidden><span>{{ t('hp.all_hint') }}</span><button type="button" data-loc-hint-x aria-label="{{ t('hp.close') }}">×</button></p>
 
     <div class="svc-row">
       <a class="svc" href="/market{% if hp.area %}?area={{ hp.area | urlencode }}{% endif %}">
@@ -140,7 +141,7 @@
       {% for shop in hp.shop_cards %}
       <a class="shop" data-reveal href="/s/{{ shop.slug }}">
         <span class="shop-photo">
-          {% if shop.cover_url %}<img src="{{ shop.cover_url }}" alt="" loading="lazy" width="400" height="400">{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="400"{% if shop.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
+          {% if shop.cover_url %}{% set _c800 = cover_800(shop.cover_url) if cover_800 is defined else none %}<img src="{{ shop.cover_url }}"{% if _c800 %} srcset="{{ _c800 }} 800w, {{ shop.cover_url }} 1600w" sizes="(max-width: 700px) 300px, 400px"{% endif %} alt="" loading="lazy" width="400" height="400">{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="400"{% if shop.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
           {% if shop.is_demo %}<span class="tag-sample">{{ t('hp.demo') }}</span>{% endif %}
           <b class="shop-name">{{ shop.name }}</b>
           {% if shop.voice_checked %}<span class="badge-ok">{{ t('v13.voice_checked') }}</span>{% endif %}

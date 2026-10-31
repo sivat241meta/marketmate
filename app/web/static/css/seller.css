@@ -237,3 +237,41 @@ body.is-seller .chip.on small { color: #fff; }
 .live-columns,
 .today-wrap .with-side { min-width: 0; }
 .close-table input[type="number"] { max-width: 84px; }
+
+/* Task 150: the Settings language switch (the strip row hides on
+   phones, so the switch lives here and in the profile menu). Full
+   44px targets at every width. */
+.set-lang {
+  display: flex;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.set-lang button {
+  min-height: 44px;
+  min-width: 64px;
+  justify-content: center;
+  font-size: 14px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 10px;
+}
+.set-lang button.on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+/* Task 150: on phones the action bar docks directly above the bottom
+   nav (no 8px gap) with tighter padding, so header + bar + nav stay
+   within 25% of a 740px screen. The ≤999px padding-bottom rules above
+   still keep content clear of both bars. */
+@media (max-width: 700px) {
+  :where(body.is-seller) .action-bar { padding: 8px 12px; }
+  :where(body.is-seller) .action-bar .pill,
+  :where(body.is-seller) .action-bar .btn { min-height: 44px; }
+  body:has(.bnav) .action-bar { bottom: var(--bnav-h); }
+}

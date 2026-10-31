@@ -24,14 +24,14 @@
 {% set units = ["kg", "g", "l", "ml", "piece", "dozen", "bunch", "packet"] %}
 <section class="card review-card needs" data-card="{{ card.index }}">
   <div class="review-body">
-    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}">{% endif %}
+    {% if card.photo_url %}<img class="review-photo" src="{{ card.photo_url }}" alt="{{ card.name_en }}" loading="{{ 'eager' if loop.first else 'lazy' }}">{% endif %}
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ card.name_local }}</span> <span class="name-en">{{ card.name_en }}</span></h2>
     <p><strong>{{ card.action_label }}</strong></p>
     {% if card.action == "set_price" %}
     {% for line in card.lines %}
     <div class="line">
-      <label>{{ t('review.price') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
-      <label>{{ t('review.per') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>{{ t('review.price') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}"></label>
+      <label>{{ t('review.per') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}"></label>
       <label>{{ t('review.unit') }} <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit">
         {% for u in units %}
         <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
@@ -43,9 +43,9 @@
       <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
     {% elif card.action == "set_qty" %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-field="qty" value="{{ card.qty if card.qty is not none }}"></label>
     {% else %}
     <input type="hidden" data-item="{{ card.index }}" data-field="qty" value="">
     {% if card.action == "sold_out" %}

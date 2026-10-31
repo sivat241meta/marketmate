@@ -493,3 +493,22 @@ body.pub .mkt-add {
   flex: none;
   min-height: 44px;
 }
+
+/* Task 150: labels on phones use normal case with a small "Required"
+   hint instead of ALL CAPS with a squeezed-in star. */
+@media (max-width: 700px) {
+  body.pub .field-label {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+  }
+  body.pub .field-label .req { display: none; }
+  body.pub .field-label .req-hint {
+    display: inline;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: capitalize;
+    color: var(--muted);
+  }
+}

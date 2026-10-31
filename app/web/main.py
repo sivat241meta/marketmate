@@ -159,6 +159,27 @@ def create_app(settings: Settings) -> FastAPI:
     templates.env.globals["t"] = jinja_t
     templates.env.globals["t_flag"] = jinja_flag
     templates.env.globals["v13_cutout_url"] = home_data_mod.v13_cutout_url
+
+    def _cover_800(url: str | None) -> str | None:
+        """The 800px sibling of a shop cover URL (Task 150).
+
+        Covers are always stored as ``<stem>.jpg`` + ``<stem>-800.jpg``
+        (settings.save_cover, seed_samples.copy_photos), so phones can
+        take the smaller file through srcset. None for anything that
+        is not a cover-shaped JPEG URL.
+        """
+        if not url or not isinstance(url, str):
+            return None
+        base = url.split("?", 1)[0]
+        if not base.lower().endswith((".jpg", ".jpeg")):
+            return None
+        if base.lower().endswith("-800.jpg") or base.lower().endswith(
+                "-800.jpeg"):
+            return url
+        stem, dot, ext = base.rpartition(".")
+        return f"{stem}-800.{ext}" if stem and dot else None
+
+    templates.env.globals["cover_800"] = _cover_800
     # v13 shared footer data, available on every public page without
     # touching every route: real listed areas + the public base URL.
     templates.env.globals["site_url"] = settings.public_base_url
@@ -484,7 +505,7 @@ def create_app(settings: Settings) -> FastAPI:
             {
                 "name": "MarketMate",
                 "short_name": "MarketMate",
-                "theme_color": "#0B2A33",
+                "theme_color": "#0F766E",
                 "background_color": "#F3F8FA",
                 "display": "standalone",
                 "start_url": "/",

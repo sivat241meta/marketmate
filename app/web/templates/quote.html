@@ -62,7 +62,7 @@
     {% for line in lines if line.status == "priced" or line.status == "needs_qty" %}
     <div class="rl receipt-line" data-line data-rate="{{ line.unit_price }}" data-per="{{ line.per_amount }}">
       <div>
-        {% if line.photo_url %}<img class="line-thumb" src="{{ line.photo_url }}" alt="">{% endif %}
+        {% if line.photo_url %}<img class="line-thumb" src="{{ line.photo_url }}" alt="" loading="lazy">{% endif %}
         <b>{{ line.display }}{% if line.name_local %} <span lang="{{ shop_lang }}">{{ line.name_local }}</span>{% endif %}</b>
         <small>{{ line.unit_price | money(shop["currency"]) }} {{ t.per }} {{ line.per_amount }} {{ line.per_unit }}</small>
         {% if line.status == "needs_qty" %}<small>{{ ui.pill(t.check_quantity, "check") }} {{ line.note }}</small>

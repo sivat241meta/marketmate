@@ -56,7 +56,19 @@
   // browser offers an install prompt we use it; otherwise the
   // button shows the manual instructions (same hint the seller
   // shell documents) in a toast.
+  // Task 150: on iPhones (no install prompt) the button shows the
+  // short Share → Add to Home Screen instructions instead.
   var deferredPrompt = null;
+
+  function isIos() {
+    var ua = "";
+    try {
+      ua = window.navigator ? window.navigator.userAgent || "" : "";
+    } catch (err) {
+      ua = "";
+    }
+    return /iphone|ipad|ipod/i.test(ua);
+  }
 
   function initInstall() {
     window.addEventListener("beforeinstallprompt", function (ev) {
@@ -71,14 +83,22 @@
       btn.addEventListener("click", function () {
         if (deferredPrompt) {
           deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(function () {
+          if (deferredPrompt.userChoice
+              && deferredPrompt.userChoice.then) {
+            deferredPrompt.userChoice.then(function () {
+              deferredPrompt = null;
+            }).catch(function () {
+              deferredPrompt = null;
+            });
+          } else {
             deferredPrompt = null;
-          }).catch(function () {
-            deferredPrompt = null;
-          });
+          }
           return;
         }
         var hint = btn.getAttribute("data-hint") || "";
+        if (isIos()) {
+          hint = btn.getAttribute("data-ios-hint") || hint;
+        }
         if (hint && window.Motion && window.Motion.toast) {
           window.Motion.toast(hint);
         }

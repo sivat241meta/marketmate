@@ -61,6 +61,9 @@
   // Task 115: hearts (My list) + last search. Local only.
   var SAVE_KEY = "mm_saved_list";
   var LASTQ_KEY = "mm_last_q";
+  // Task 150: first-visit area hint (homepage only). Local only.
+  var AREA_KEY = "mm_home_area";
+  var HINT_KEY = "mm_area_hint_seen";
 
   function loadSaved() {
     try {
@@ -307,11 +310,73 @@
     });
   }
 
+  // Task 150: first visit shows All areas with no drawer. The
+  // location chip pulses once and a small hint under the hero
+  // fields explains the default; both go away forever once the
+  // hint is dismissed or an area is picked. Local only.
+  function initLocHint() {
+    var hint = document.querySelector("[data-loc-hint]");
+    if (!hint) {
+      return;
+    }
+    var area = "";
+    try {
+      area = new URLSearchParams(window.location.search || "").get("area")
+        || "";
+    } catch (err) {
+      area = "";
+    }
+    var known = null;
+    try {
+      var raw = window.localStorage
+        ? window.localStorage.getItem(AREA_KEY)
+        : null;
+      known = raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      known = null;
+    }
+    var seen = null;
+    try {
+      seen = window.localStorage
+        ? window.localStorage.getItem(HINT_KEY)
+        : "1";
+    } catch (err) {
+      seen = "1";
+    }
+    if (area.trim() || (known && known !== "all") || seen) {
+      return;
+    }
+    hint.hidden = false;
+    var chips = document.querySelectorAll("[data-loc-open]");
+    chips.forEach(function (chip) {
+      chip.classList.add("loc-pulse");
+    });
+    function dismiss() {
+      hint.hidden = true;
+      chips.forEach(function (chip) {
+        chip.classList.remove("loc-pulse");
+      });
+      try {
+        if (window.localStorage) {
+          window.localStorage.setItem(HINT_KEY, "1");
+        }
+      } catch (err) { /* private mode: hint shows again */ }
+    }
+    var closer = hint.querySelector("[data-loc-hint-x]");
+    if (closer) {
+      closer.addEventListener("click", dismiss);
+    }
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", dismiss, { once: true });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initHearts();
     initLastQ();
     initCarousels();
     initStickybar();
     initMarketsMore();
+    initLocHint();
   });
 })();

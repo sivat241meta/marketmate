@@ -179,13 +179,13 @@ for (const pathname of ["/new", "/sellers", "/how", "/market", "/s/x",
   assert.equal(world.store.mm_home_area, JSON.stringify("Anna Nagar"));
 }
 
-// First visit with no remembered area: the drawer auto-opens only
-// on the homepage, never on other pages.
+// First visit with no remembered area: Task 150 — the drawer never
+// auto-opens at any width; the page defaults to All areas.
 {
   const home = loadPopups({ pathname: "/", tiles: true });
-  assert.equal(home.calls.length, 0, "auto-open must not navigate");
-  assert.equal(home.pop.hidden, false,
-    "drawer must auto-open on first homepage visit");
+  assert.equal(home.calls.length, 0, "first visit must not navigate");
+  assert.equal(home.pop.hidden, true,
+    "drawer must not auto-open on first homepage visit");
   const other = loadPopups({ pathname: "/new", tiles: true });
   assert.equal(other.calls.length, 0, "no bounce for first-time /new");
   assert.equal(other.pop.hidden, true,

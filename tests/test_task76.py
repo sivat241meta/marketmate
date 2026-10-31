@@ -144,7 +144,9 @@ def test_service_worker_caches_inter():
     text = SW.read_text()
     assert "InterVariable.woff2" in text
     assert "InterVariable.ttf" in text
-    assert "PlusJakartaSans" not in text
+    # Task 150: Plus Jakarta Sans has been the main UI font since v13,
+    # so the static shell caches it too.
+    assert "PlusJakartaSans-Variable.ttf" in text
 
 
 def _pdf_font_names(pdf: bytes) -> list[str]:

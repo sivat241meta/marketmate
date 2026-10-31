@@ -69,7 +69,7 @@
     <div class="basket card" data-reveal data-plan data-orig="{{ loop.index }}" data-shop-lat="{{ plan.lat if plan.lat is not none else '' }}" data-shop-lng="{{ plan.lng if plan.lng is not none else '' }}">
       <div class="bd">
         <div class="res-top">
-          {% if plan.cover_url %}<img class="res-thumb" src="{{ plan.cover_url }}" alt="" loading="lazy" width="80" height="80">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
+          {% if plan.cover_url %}{% set _c800 = cover_800(plan.cover_url) if cover_800 is defined else none %}<img class="res-thumb" src="{{ plan.cover_url }}"{% if _c800 %} srcset="{{ _c800 }} 800w, {{ plan.cover_url }} 1600w" sizes="80px"{% endif %} alt="" loading="lazy" width="80" height="80">{% else %}<span class="res-ava">{{ ui.obj("store", 24) }}</span>{% endif %}
           <div class="res-tt">
             {% if plan.kind == "split" %}
             <span class="kk">{{ t('market.cheapest_split') }}</span>
@@ -134,7 +134,7 @@
       {% set live = live_cards.get(slug) %}
       <a class="shop" href="/s/{{ shop.slug }}" data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ shop.lat if shop.lat is not none else '' }}" data-shop-lng="{{ shop.lng if shop.lng is not none else '' }}">
         <span class="shop-photo">
-          {% if shop.cover %}<img src="{{ shop.cover }}" alt="" loading="lazy" width="400" height="400">{% else %}<span class="nophoto" aria-hidden="true">{{ shop.name[:1] }}</span>{% endif %}
+          {% if shop.cover %}{% set _c800 = cover_800(shop.cover) if cover_800 is defined else none %}<img src="{{ shop.cover }}"{% if _c800 %} srcset="{{ _c800 }} 800w, {{ shop.cover }} 1600w" sizes="(max-width: 700px) 300px, 400px"{% endif %} alt="" loading="lazy" width="400" height="400">{% else %}<span class="nophoto" aria-hidden="true">{{ shop.name[:1] }}</span>{% endif %}
           {% if shop.is_demo %}<span class="tag-sample">{{ t('hp.demo') }}</span>{% endif %}
           <b class="shop-name">{{ shop.name }}</b>
           {% if live and live.voice_checked %}<span class="badge-ok">{{ t('v13.voice_checked') }}</span>{% endif %}

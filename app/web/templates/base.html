@@ -5,6 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}MarketMate{% endblock %}</title>
+<link rel="preload" href="/static/fonts/PlusJakartaSans-Variable.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
 <link rel="stylesheet" href="{{ static_url('css/forms.css') if static_url is defined else '/static/css/forms.css' }}">
 <link rel="stylesheet" href="{{ static_url('css/public.css') if static_url is defined else '/static/css/public.css' }}">
@@ -18,7 +19,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/static/brand/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/static/brand/favicon-16.png">
 <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
-<meta name="theme-color" content="#0B2A33">
+<meta name="theme-color" content="#0F766E">
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% set _path = request.url.path if request is defined else "/" %}
@@ -88,6 +89,7 @@
 <header class="hdr">
   <a class="logo" href="{% if _is_seller %}/e/{{ token }}{% elif _shop_known %}/s/{{ shop["slug"] }}{% else %}/{% endif %}" aria-label="MarketMate home">
     {{ _brand_logo(28) }}
+    <img class="brand-mark" src="/static/brand/mark.svg" width="28" height="28" alt="MarketMate">
     <span class="wordmark">MarketMate</span>
   </a>
   {% if _is_seller %}
@@ -122,7 +124,17 @@
   {% endif %}
   {% if _is_seller %}
   <button class="iconbtn" type="button" data-sound-toggle data-sound-compact data-sound-on="{{ t('alert.sound_on') }}" data-sound-off="{{ t('alert.sound_off') }}" aria-label="{{ t('alert.sound_on') }}">♪</button>
-  <a class="circ" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</a>
+  <details class="prof" data-prof>
+    <summary class="circ" aria-label="{{ t('nav.settings') }}">{{ ui.icon("user") }}</summary>
+    <div class="prof-menu">
+      <a class="prof-link" href="{% if _staff %}/e/{{ token }}{% else %}/e/{{ token }}/settings{% endif %}">{{ ui.icon("settings") }}<span>{{ t('nav.settings') }}</span></a>
+      <span class="lang prof-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+        <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+        <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+        <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+      </span>
+    </div>
+  </details>
   {% elif _shop_known %}
   <a class="pill ghost sm" href="/my">{{ t('shell.bag') }}</a>
   <a class="circ" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket") }}</a>
@@ -226,6 +238,13 @@ try {
 <script src="{{ static_url('order-alert.js') if static_url is defined else '/static/order-alert.js' }}"></script>
 {% endif %}
 <script src="{{ static_url('motion.js') if static_url is defined else '/static/motion.js' }}"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () {});
+  });
+}
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
