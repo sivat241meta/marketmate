@@ -103,7 +103,7 @@
 <div id="board"></div>
 {% call ui.form_card(t('upd.board_title'), t('upd.board_desc')) %}
   <form method="post" action="/e/{{ token }}/board" enctype="multipart/form-data">
-    {{ ui.field(t('upd.board_choose'), "photo", type="file", required=True, attrs={"id": "board-photo", "accept": "image/*", "capture": "environment"}) }}
+    {{ ui.field(t('upd.board_choose'), "photo", type="file", required=True, attrs={"id": "board-photo", "accept": "image/*"}) }}
     <button class="btn btn-secondary" type="submit">{{ t('upd.board_upload') }}</button>
   </form>
 {% endcall %}

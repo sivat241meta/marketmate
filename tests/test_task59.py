@@ -321,7 +321,9 @@ def test_review_page_shows_candidates_and_retake(tmp_path):
     html = client.get(f"/e/{token}/s/{session_id}").text
     assert "Pick the best photo" in html
     assert "Take a new photo" in html
-    assert 'capture="environment"' in html
+    # Task 128: retake is the only picker on its card, so it must not
+    # force the camera — the phone chooser offers gallery/files instead.
+    assert 'capture="environment"' not in html
 
 
 # --- Part C: one CSV -----------------------------------------------------------

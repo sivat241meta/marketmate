@@ -49,7 +49,7 @@
     </div>
     {% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
-      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" capture="environment" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
+      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted" data-variety-line>{{ item.variety }}</p>{% endif %}
@@ -159,7 +159,7 @@
     </div>
     {% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
-      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" capture="environment" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
+      <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>
     <h2><span class="name-local" lang="{{ shop_lang }}">{{ item.name_local }}</span> <span class="name-en">{{ item.name_en }}</span></h2>
     {% if item.variety %}<p class="muted" data-variety-line>{{ item.variety }}</p>{% endif %}
