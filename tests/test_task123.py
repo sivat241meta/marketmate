@@ -1,4 +1,4 @@
-"""Task 123: ChatGPT-style voice/text composer instead of "upload".
+"""Task 123: chat-style voice/text composer instead of "upload".
 
 Pins the shared composer macro (voice and voice+text modes), its use on the
 five speak/type pages with unchanged form actions and field names, the

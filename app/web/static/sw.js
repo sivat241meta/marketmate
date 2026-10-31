@@ -6,15 +6,13 @@
  * marked "needs internet" by offline-bills.js when offline.
  */
 
-const CACHE = "mm-shell-v3";
+const CACHE = "mm-shell-v4";
 
 const SHELL = [
   "/static/app.css",
   "/static/methods.js",
   "/static/quote.js",
   "/static/tap-chips.js",
-  "/static/live-order.js",
-  "/static/recorder.js",
   "/static/upload.js",
   "/static/photo.js",
   "/static/pcm-worklet.js",
@@ -122,6 +120,13 @@ self.addEventListener("fetch", (event) => {
                 },
               }),
             );
+            return Response.redirect("/share?got=1", 303);
+          }
+          // Task 152: shared text or a link opens it as a market search.
+          const text = form.get("text") || form.get("url") || form.get("title");
+          if (text) {
+            return Response.redirect(
+              "/market?q=" + encodeURIComponent(text), 303);
           }
         } catch (err) {
           /* fall through to the share page empty state */

@@ -101,6 +101,19 @@ from app.web.photos import read_photo_meta, run_photo_job
 
 NOTICE = "Your voice recording is sent to Meta's AI service to be transcribed."
 
+TRY_LIMIT_MESSAGE = ("Too many demo shops from this address in the last"
+                     " hour — please wait a while and try again.")
+TRY_COOKIE = "mm_try"
+TRY_COOKIE_AGE = 24 * 3600
+
+
+def _try_redirect(token: str):
+    """303 to a judge shop, remembering it in a 24 h cookie."""
+    response = RedirectResponse(f"/e/{token}", status_code=303)
+    response.set_cookie(TRY_COOKIE, token, max_age=TRY_COOKIE_AGE,
+                        httponly=True, samesite="lax")
+    return response
+
 
 def _voice_notice(ui_lang: str) -> str:
     return t_for(ui_lang)("notice.voice")
@@ -1145,12 +1158,33 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         return Response(pdf, media_type="application/pdf")
 
     @app.get("/try")
-    def try_judge(conn: Conn):
+    def try_judge(request: Request, conn: Conn):
+        # Task 152: one demo shop per browser (cookie, 24 h) plus a
+        # 10/hour per-IP cap, so link previews and crawlers cannot
+        # mint junk shops. Judges still get in with one click.
+        from app.web.i18n import get_ui_lang, t_for
+
+        db.purge_expired(conn, data_dir, datetime.now(UTC))
+        remembered = request.cookies.get("mm_try")
+        if remembered:
+            shop = db.shop_by_token(conn, remembered)
+            if shop is not None and shop["is_judge"]:
+                return _try_redirect(remembered)
+        if not request.app.state.try_limiter.allow(client_ip(request),
+                                                  datetime.now(UTC)):
+            ui_lang = get_ui_lang(request, None)
+            t = t_for(ui_lang)
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": t("error.too_many_title"),
+                 "message": TRY_LIMIT_MESSAGE,
+                 "ui_lang": ui_lang},
+                status_code=429)
         _, _, token = db.create_shop(
             conn, name="Judge Test Shop", phone="+910000000000",
             area="Judge trial", language="en", currency="INR",
             shop_type="vegetable", is_judge=True, listed=False)
-        return RedirectResponse(f"/e/{token}", status_code=303)
+        return _try_redirect(token)
 
     @app.post("/e/{token}/upload")
     def upload(request: Request, token: str, video: UploadFile, conn: Conn,

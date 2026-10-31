@@ -1,4 +1,4 @@
-{# ChatGPT-style voice/text composer (Task 123).
+{# chat-style voice/text composer (Task 123).
    Usage: {% from "_composer.html" import composer with context %}
           {{ composer("/s/shop/quote", text_field="items", placeholder="…",
                       mode="voice+text", max_seconds=120,
@@ -51,7 +51,7 @@
       </div>
       {% endif %}
       {# Task 125: Cancel sits left of the waveform and Send right of
-         it, so the recording state reads ✕ | wave | ↑ like ChatGPT.
+         it, so the recording state reads ✕ | wave | ↑ like a chat app.
          (Cancel stays `hidden` until a recording starts.) #}
       <button class="composer-cancel" type="button" data-composer-cancel aria-label="{{ t('composer.cancel_aria') }}" hidden><span aria-hidden="true">✕</span></button>
       {% if has_text %}

@@ -516,8 +516,9 @@ def test_js_hooks_present_on_key_pages(tmp_path):
 
 def test_hooks_match_what_js_queries():
     pooled = ""
-    for name in ("live", "review", "methods", "live-order", "tap-chips",
-                 "offline-bills", "quote", "recorder", "composer", "my"):
+    # Task 152: live-order.js and recorder.js were deleted.
+    for name in ("live", "review", "methods", "tap-chips",
+                 "offline-bills", "quote", "composer", "my"):
         pooled += (ROOT / f"app/web/static/{name}.js").read_text()
     pooled += (ROOT / "app/web/templates/bill.html").read_text()
     pooled += (ROOT / "app/web/templates/shop.html").read_text()

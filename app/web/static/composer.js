@@ -1,5 +1,5 @@
 "use strict";
-/* Task 123: ChatGPT-style voice/text composer.
+/* Task 123: chat-style voice/text composer.
  *
  * One enhanced pill per [data-composer]: tap mic to record (live waveform +
  * timer, Cancel discards, Send stops and sends), type to morph mic into Send,

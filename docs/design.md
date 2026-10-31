@@ -147,7 +147,6 @@ Anti-project risk: "simple image analyzers", which is why quality is a minor, se
 
 ### Repo rules
 - Never commit `.env`; keep secrets in a Modal Secret.
-  GitHub identity (`sivat241meta`; set the repo-local git email to that account's address).
 
 ### Privacy
 - Audio goes to Meta's cloud API, and the app must say so.

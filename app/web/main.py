@@ -125,6 +125,9 @@ def create_app(settings: Settings) -> FastAPI:
     app.state.settings = settings
     app.state.limiter = RateLimiter(settings.uploads_per_ip_hour,
                                     settings.uploads_per_hour)
+    # Task 152: demo-shop creation is capped separately so crawlers
+    # hitting /try cannot fill the database with junk shops.
+    app.state.try_limiter = RateLimiter(10, 200)
 
     @app.middleware("http")
     async def _commit_volume_after_writes(request: Request, call_next):
@@ -498,6 +501,8 @@ def create_app(settings: Settings) -> FastAPI:
                     "action": "/share",
                     "method": "POST",
                     "enctype": "multipart/form-data",
+                    "params": {"title": "title", "text": "text",
+                               "url": "url"},
                     "files": [{
                         "name": "media",
                         "accept": ["audio/*", "video/*", ".opus", ".ogg",
@@ -564,9 +569,56 @@ def create_app(settings: Settings) -> FastAPI:
             request, "share.html",
             {"languages": LANGUAGES, "ui_lang": get_ui_lang(request)})
 
+    @app.post("/share")
+    async def share_target(request: Request):
+        # Task 152: the manifest share_target POSTs here. The service
+        # worker normally intercepts the POST (caching a shared file
+        # and routing shared text to /market?q=); this handler is the
+        # no-worker fallback with the same routing. A shared file
+        # renders the share page, whose script uploads it to the
+        # seller link remembered on that phone.
+        from urllib.parse import urlencode
+
+        from app.languages import LANGUAGES
+        from app.web.i18n import get_ui_lang
+
+        try:
+            form = await request.form()
+        except Exception:  # noqa: BLE001 - any unreadable body gets the page
+            form = None
+        if form is not None:
+            media = form.get("media")
+            has_file = bool(media) and not isinstance(media, str)
+            text = ""
+            for key in ("text", "url", "title"):
+                value = form.get(key)
+                if isinstance(value, str) and value.strip():
+                    text = value.strip()
+                    break
+            if text and not has_file:
+                return RedirectResponse(
+                    "/market?" + urlencode({"q": text}), status_code=303)
+        return templates.TemplateResponse(
+            request, "share.html",
+            {"languages": LANGUAGES, "ui_lang": get_ui_lang(request)})
+
     @app.post("/find")
-    def find_prices(slug: str = Form(...)):
-        return RedirectResponse(f"/p/{slug.strip()}", status_code=303)
+    def find_prices(conn: Conn, slug: str = Form(...)):
+        # Task 152: a known shop slug opens its page; any other text
+        # becomes a market search instead of a dead /p link.
+        from urllib.parse import urlencode
+
+        text = slug.strip()
+        if text and db.shop_by_slug(conn, text) is not None:
+            return RedirectResponse(f"/s/{text}", status_code=303)
+        return RedirectResponse("/market?" + urlencode({"q": text}),
+                                status_code=303)
+
+    @app.get("/p/{slug}")
+    def old_shop_link(slug: str):
+        # Task 152: /p/{slug} links from the old /find form now 301
+        # to the shop page.
+        return RedirectResponse(f"/s/{slug}", status_code=301)
 
     @app.get("/market")
     def market_page(request: Request, conn: Conn, q: str | None = None,
