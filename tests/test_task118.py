@@ -268,13 +268,15 @@ def test_sparkles_behind_copy_in_margins():
 
 
 def test_hero_credit_moves_above_card_on_phones():
-    css = HOME_CSS.read_text()
-    phone = css.split("@media (max-width: 600px)", 1)[1]
-    credit = _rule(phone.split("@media", 1)[0], ".hp-credit")
-    assert "left:" in credit
-    assert "right: auto" in credit
-    bottom = int(re.search(r"bottom:\s*(\d+)px", credit).group(1))
-    assert bottom >= 72  # clears the overlapping search card
+    # Task 144: the sellers band is a padded two-column card (text +
+    # square photo, stacked on phones), so the credit keeps its
+    # bottom-corner seat everywhere — the old bottom:80px dodge for
+    # the overlapping full-bleed hero card is gone.
+    credit = _rule(APP_CSS.read_text(), ".hp-credit")
+    flat = credit.replace(" ", "")
+    assert "position:absolute" in flat
+    assert "bottom:8px" in flat
+    assert "bottom:80px" not in HOME_CSS.read_text().replace(" ", "")
 
 
 # --- 8. area tiles: pin fallback until a real photo exists ---

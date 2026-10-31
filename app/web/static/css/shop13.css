@@ -14,7 +14,7 @@ body.v13 .crumbs span{color:#5B6E75}
 body.v13 .shop-title{margin:26px 0 0 16px;font-size:28px;font-weight:800;letter-spacing:-.6px;color:var(--ink-2);overflow-wrap:break-word}
 
 body.v13 .info-card{margin-top:18px;padding:0 16px 16px;border-radius:0 0 36px 36px;background:linear-gradient(#fff 0%,#DCEFF2 100%)}
-body.v13 .info-in{position:relative;padding:18px 170px 18px 18px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 8px 16px rgba(11,42,51,.12)}
+body.v13 .info-in{position:relative;padding:18px 154px 18px 18px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 8px 16px rgba(11,42,51,.12)}
 body.v13 .info-top{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;color:var(--ink-2);flex-wrap:wrap}
 body.v13 .ok-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;background:var(--teal);color:#fff;font-size:13px}
 body.v13 .info-top .dot{color:#93A4AA}
@@ -27,7 +27,7 @@ body.v13 .tl-dots i:first-child::after{content:"";display:block;width:1px;height
 body.v13 .tl-text{line-height:1.75;min-width:0;overflow-wrap:break-word}
 body.v13 .tl-text b{font-weight:800;color:var(--ink-2)}
 body.v13 .tl-text em{font-style:normal;color:var(--muted)}
-body.v13 .info-cover{position:absolute;right:16px;top:16px;width:138px;height:calc(100% - 32px);object-fit:cover;border-radius:14px}
+body.v13 .info-cover{position:absolute;right:16px;top:16px;width:120px;height:120px;aspect-ratio:1/1;object-fit:cover;border-radius:14px}
 body.v13 .info-cover.nophoto{display:grid;place-items:center;background:var(--tile);color:var(--teal);font-size:48px;font-weight:800}
 body.v13 .info-foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding:0 4px;font-size:13.5px;color:#3A4B51;font-weight:600}
 body.v13 .info-foot>svg{color:var(--teal);width:18px;flex:none}
@@ -104,7 +104,7 @@ body.v13 .bag-bar small{font-weight:600;font-size:12.5px;opacity:.9}
   body.v13 .info-card{padding:0 8px 12px;border-radius:0 0 28px 28px}
   body.v13 .info-in{padding:16px 108px 16px 14px}
   body.v13 .info-top{font-size:14px}
-  body.v13 .info-cover{width:88px;right:12px;top:12px;height:88px}
+  body.v13 .info-cover{width:88px;right:12px;top:12px;height:88px;aspect-ratio:1/1}
   body.v13 .info-foot{flex-wrap:wrap}
   body.v13 .info-actions{margin-left:0;width:100%}
   body.v13 .info-actions .chip-btn{flex:1;justify-content:center}

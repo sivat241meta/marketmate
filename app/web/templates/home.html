@@ -115,7 +115,7 @@
       {% for cat in hp.categories %}
       <a class="cat" data-reveal href="/market?cat={{ cat.code }}">
         {% if cat.mode == "photo" %}
-        <span class="tile photo"><img src="{{ cat.photos[0] }}" alt="" loading="lazy" width="144" height="150"></span>
+        <span class="tile photo"><img src="{{ cat.photos[0] }}" alt="" loading="lazy" width="144" height="144"></span>
         {% else %}
         <span class="tile{% if cat.photos|length == 1 %} one{% elif cat.photos|length == 2 %} two{% endif %}">
           {% for url in cat.photos %}<img class="c{{ loop.index }}" src="{{ url }}" alt="" loading="lazy" width="104" height="104">{% endfor %}
@@ -134,7 +134,7 @@
       {% for shop in hp.shop_cards %}
       <a class="shop" data-reveal href="/s/{{ shop.slug }}">
         <span class="shop-photo">
-          {% if shop.cover_url %}<img src="{{ shop.cover_url }}" alt="" loading="lazy" width="400" height="170">{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="170"{% if shop.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
+          {% if shop.cover_url %}<img src="{{ shop.cover_url }}" alt="" loading="lazy" width="400" height="400">{% elif shop.photo_url %}<img src="{{ shop.photo_url }}" alt="" loading="lazy" width="400" height="400"{% if shop.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ shop.tile }}</span>{% endif %}
           {% if shop.is_demo %}<span class="tag-sample">{{ t('hp.demo') }}</span>{% endif %}
           <b class="shop-name">{{ shop.name }}</b>
           {% if shop.voice_checked %}<span class="badge-ok">{{ t('v13.voice_checked') }}</span>{% endif %}

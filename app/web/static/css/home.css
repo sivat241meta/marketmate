@@ -21,30 +21,16 @@
   --teal-glow: #5EEAD4;
 }
 
-/* ---- sell-hero band: Ken Burns + teal shade ---- */
+/* ---- sell-hero band: Ken Burns inside the square frame ---- */
 .hp-band-img.kb {
   animation: kenburns 30s ease-in-out infinite alternate;
   transform-origin: center;
-}
-.hp-band::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(11, 42, 51, 0.5),
-    rgba(11, 42, 51, 0.12) 55%, rgba(11, 42, 51, 0.45));
-  pointer-events: none;
 }
 .hp-hero-in,
 .hp-credit {
   z-index: 1;
 }
-/* The photo credit sits bottom-left above any overlapping card. */
 @media (max-width: 600px) {
-  .hp-credit {
-    left: 12px;
-    right: auto;
-    bottom: 80px;
-  }
   .land-day {
     position: relative;
     padding-left: 30px;
@@ -108,7 +94,8 @@
 
 .tile-photo img {
   width: 100%;
-  height: 84px;
+  height: auto;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 10px;
   display: block;

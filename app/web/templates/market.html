@@ -134,7 +134,7 @@
       {% set live = live_cards.get(slug) %}
       <a class="shop" href="/s/{{ shop.slug }}" data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ shop.lat if shop.lat is not none else '' }}" data-shop-lng="{{ shop.lng if shop.lng is not none else '' }}">
         <span class="shop-photo">
-          {% if shop.cover %}<img src="{{ shop.cover }}" alt="" loading="lazy" width="400" height="170">{% else %}<span class="nophoto" aria-hidden="true">{{ shop.name[:1] }}</span>{% endif %}
+          {% if shop.cover %}<img src="{{ shop.cover }}" alt="" loading="lazy" width="400" height="400">{% else %}<span class="nophoto" aria-hidden="true">{{ shop.name[:1] }}</span>{% endif %}
           {% if shop.is_demo %}<span class="tag-sample">{{ t('hp.demo') }}</span>{% endif %}
           <b class="shop-name">{{ shop.name }}</b>
           {% if live and live.voice_checked %}<span class="badge-ok">{{ t('v13.voice_checked') }}</span>{% endif %}
