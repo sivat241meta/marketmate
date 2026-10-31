@@ -135,10 +135,11 @@ body.v13 .f-r4{width:130px;right:120px;top:360px;animation-delay:-.5s}
 /* 3 big service cards */
 body.v13 .svc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;max-width:1110px;margin:0 auto}
 body.v13 .svc{position:relative;display:block;text-align:left;background:#fff;border-radius:var(--r-card);height:300px;padding:34px 28px;overflow:hidden;box-shadow:0 20px 40px rgba(4,47,46,.22);transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
-/* appearance:none: native buttons vertically center their content, which
-   dropped the voice card's text ~58px; as a plain block it matches the
-   anchor cards row for row. */
-body.v13 button.svc{width:100%;cursor:pointer;border:0;font-family:inherit;-webkit-appearance:none;appearance:none}
+/* Task 138: appearance:none alone was not enough — browsers still
+   vertically centre a button's content (~62px too low at 1440px, and
+   the arrow overlapped the pill on phones). As a top-aligned flex
+   column the voice card matches the anchor cards row for row. */
+body.v13 button.svc{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;width:100%;cursor:pointer;border:0;font-family:inherit;-webkit-appearance:none;appearance:none}
 body.v13 .svc-t{display:block;margin:0;font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05;color:var(--ink-2);overflow-wrap:break-word}
 body.v13 button.svc .svc-sub{display:block}
 body.v13 .svc:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 28px 54px rgba(4,47,46,.3)}
@@ -179,6 +180,9 @@ body.v13 .board span{display:flex;justify-content:space-between;gap:6px;font-siz
 body.v13 .board em{font-style:normal;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.v13 .board strong{color:var(--teal);font-weight:800;flex:none}
 body.v13 .board .ok{font-size:11px;font-weight:800;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:3px 6px;align-self:flex-start}
+/* Task 138: v13 headings wrap whole words only — never a mid-word
+   hyphen at phone widths. (.svc-t is the voice card's h2 twin.) */
+body.v13 h1,body.v13 h2,body.v13 h3,body.v13 .svc-t{hyphens:manual}
 
 /* ---------- sticky white header ---------- */
 body.v13 .stickybar{position:fixed;inset:0 0 auto;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(11,42,51,.08);padding:10px 0;transform:translateY(-110%);visibility:hidden;transition:transform .35s var(--ease),visibility .35s}

@@ -46,6 +46,7 @@
   font-size: 15px;
   line-height: 1.45;
   overflow-wrap: break-word;
+  hyphens: manual;
 }
 
 .composer-bubble-user {
@@ -367,6 +368,7 @@
   margin: 8px 4px 0;
   font-size: 14px;
   color: var(--muted);
+  hyphens: manual;
 }
 
 @media (prefers-reduced-motion: reduce) {

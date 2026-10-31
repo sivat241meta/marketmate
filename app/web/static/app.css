@@ -169,6 +169,7 @@ h1, h2, h3 {
   color: var(--ink);
   letter-spacing: -0.01em;
   font-weight: 700;
+  hyphens: manual;
 }
 h1 { font-size: 1.5rem; margin: 0 0 var(--space-3); letter-spacing: -0.02em; }
 h2 { font-size: 1.2rem; margin: var(--space-5) 0 var(--space-2); }
@@ -2762,11 +2763,16 @@ svg.boxes text.box-badge {
 .vlabel,
 .review-summary-price,
 .list-name,
-.card h1, .card h2,
 .sticky-bar .btn,
 .pay-buttons .btn {
   overflow-wrap: anywhere;
   hyphens: auto;
+}
+/* Task 138: headings wrap whole words only — English and Tamil words
+   are never split with a hyphen on phones. */
+.card h1, .card h2 {
+  overflow-wrap: anywhere;
+  hyphens: manual;
 }
 .chip,
 .opt-btn,

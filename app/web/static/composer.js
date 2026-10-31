@@ -24,8 +24,13 @@
   var NEEDS_ACTION_STAGES = ["language_check"];
   var LANG_STORE_KEY = "mm_speak_lang";
   var WAVE_BARS = 24;
-  var POLL_MS = 1500;
-  var POLL_MAX = 40;
+  /* Task 138: a 106 s stall video needs ~3 minutes, so the bubble polls
+     for up to 8 minutes with a gentle back-off (2 s at first, then up
+     to 5 s) instead of giving up after ~60 s. */
+  var POLL_FIRST_MS = 2000;
+  var POLL_STEP_MS = 250;
+  var POLL_CEIL_MS = 5000;
+  var POLL_BUDGET_MS = 8 * 60 * 1000;
   var WARN_LEFT_S = 10;
   var DONE_REDIRECT_MS = 1600;
 
@@ -121,6 +126,48 @@
       return { kind: "done", step: 3 };
     }
     return { kind: "pending", step: stepForStage(stageOf(data)) };
+  }
+
+  /* Task 138: pure poll pacing. pollDelay backs off gently from 2 s to
+     5 s; pollElapsedMs sums the waits so far for the 8-minute budget. */
+  function pollDelay(count) {
+    return Math.min(POLL_FIRST_MS + Math.max(0, count) * POLL_STEP_MS,
+      POLL_CEIL_MS);
+  }
+
+  function pollElapsedMs(count) {
+    var total = 0;
+    for (var i = 0; i < Math.max(0, count); i++) {
+      total += pollDelay(i);
+    }
+    return total;
+  }
+
+  /* Task 138: the status JSON's per-step list carries {key, label,
+     state}; the bubble shows the label of the step whose state is
+     "active" (e.g. "Picking a photo for each item"). */
+  function activeStepLabel(data) {
+    var steps = data && data.steps;
+    if (!steps || !steps.length) {
+      return "";
+    }
+    for (var i = 0; i < steps.length; i++) {
+      if (steps[i] && steps[i].state === "active" && steps[i].label) {
+        return String(steps[i].label);
+      }
+    }
+    return "";
+  }
+
+  /* Task 138: the bubble lists only the current step plus the finished
+     ones, so "Done" (index 3) appears only once the server says done. */
+  function bubbleSteps(active, labels) {
+    var out = [];
+    var last = Math.max(0, Math.min(active, labels.length - 1));
+    for (var i = 0; i <= last; i++) {
+      out.push({ label: labels[i], state: i < last ? "done" : "active" });
+    }
+    return out;
   }
 
   function languagePostUrl(statusUrl) {
@@ -619,18 +666,18 @@
     return bubble;
   }
 
+  function stepLabels(ctx) {
+    return [ctx.str.sending, ctx.str.listening, ctx.str.understanding,
+      ctx.str.done];
+  }
+
   function addStatusBubble(ctx) {
     var bubble = makeEl("div", "composer-bubble composer-bubble-status");
     var steps = makeEl("ol", "composer-steps");
-    var labels = [ctx.str.sending, ctx.str.listening, ctx.str.understanding,
-      ctx.str.done];
-    labels.forEach(function (label, index) {
-      var li = makeEl("li", "composer-step");
-      li.dataset.step = String(index);
-      li.appendChild(makeEl("span", "composer-dot"));
-      li.appendChild(makeEl("span", "composer-step-label", label));
-      steps.appendChild(li);
-    });
+    /* The row labels ride on the list itself so later setStep calls —
+       and the resend transplant of this list into a fresh bubble —
+       need no extra argument. */
+    steps.dataset.labels = JSON.stringify(stepLabels(ctx));
     bubble.appendChild(steps);
     ctx.thread.appendChild(bubble);
     scrollTo(bubble);
@@ -639,13 +686,38 @@
   }
 
   function setStep(bubble, active) {
+    var steps = bubble.firstChild;
+    var labels = [];
+    try {
+      labels = JSON.parse(steps.dataset.labels || "[]");
+    } catch (err) {
+      labels = [];
+    }
+    var rows = bubbleSteps(active, labels);
+    for (var i = steps.children.length; i < rows.length; i++) {
+      var li = makeEl("li", "composer-step");
+      li.dataset.step = String(i);
+      li.appendChild(makeEl("span", "composer-dot"));
+      li.appendChild(makeEl("span", "composer-step-label", rows[i].label));
+      steps.appendChild(li);
+    }
     var items = bubble.querySelectorAll("[data-step]");
-    Array.prototype.forEach.call(items, function (li) {
-      var index = parseInt(li.dataset.step || "0", 10);
-      li.classList.toggle("is-done", index < active);
-      li.classList.toggle("is-active", index === active);
-      li.classList.toggle("is-todo", index > active);
+    Array.prototype.forEach.call(items, function (row) {
+      var index = parseInt(row.dataset.step || "0", 10);
+      row.classList.toggle("is-done", index < active);
+      row.classList.toggle("is-active", index === active);
+      row.classList.toggle("is-todo", index > active);
     });
+  }
+
+  /* Task 138: while waiting, the bubble's current step line shows the
+     server's own active-step label. */
+  function setActiveLabel(bubble, label) {
+    var el = bubble.querySelector(
+      ".composer-step.is-active .composer-step-label");
+    if (el) {
+      el.textContent = label;
+    }
   }
 
   function replaceBubble(bubble, nodes) {
@@ -839,7 +911,7 @@
   }
 
   function pollStatus(ctx, bubble, statusUrl, finalUrl, count) {
-    if (count >= POLL_MAX) {
+    if (pollElapsedMs(count) >= POLL_BUDGET_MS) {
       showOpenLink(ctx, bubble, finalUrl);
       return;
     }
@@ -864,9 +936,13 @@
         return;
       }
       setStep(bubble, view.step);
+      var label = activeStepLabel(data);
+      if (label) {
+        setActiveLabel(bubble, label);
+      }
       window.setTimeout(function () {
         pollStatus(ctx, bubble, statusUrl, finalUrl, count + 1);
-      }, POLL_MS);
+      }, pollDelay(count));
     }).catch(function () {
       /* Status endpoint gone (or finished page): continue where we landed. */
       window.location.href = finalUrl;
@@ -1344,5 +1420,10 @@
     languagePostUrl: languagePostUrl,
     collectFields: collectFields,
     fileTooBig: fileTooBig,
+    pollDelay: pollDelay,
+    pollElapsedMs: pollElapsedMs,
+    activeStepLabel: activeStepLabel,
+    bubbleSteps: bubbleSteps,
+    POLL_BUDGET_MS: POLL_BUDGET_MS,
   };
 })();
