@@ -123,10 +123,11 @@ def test_hero_uses_unclashed_classes(tmp_path):
 
 def test_voice_card_clearance_css():
     # Task 127 polish: one bubble above the mic, and the Tamil pill
-    # wraps left of it instead of running underneath.
+    # wraps left of it instead of running underneath. Task 133 moves
+    # the bubble's right edge onto the mic's (right:26px).
     css = V13_CSS.read_text()
     flat = css.replace(" ", "")
-    assert ".art-voice.b1{bottom:118px;right:20px}" in flat
+    assert ".art-voice.b1{bottom:118px;right:26px}" in flat
     assert ".svc-pill:lang(ta){max-width:160px}" in flat
 
 

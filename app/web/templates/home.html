@@ -34,7 +34,7 @@
   {% for name in _float_src %}<img class="hero-float {{ _float_cls[loop.index0] }}" src="{{ static_url(_v13 ~ name ~ '.webp') if static_url is defined else '/static/' ~ _v13 ~ name ~ '.webp' }}" alt="" aria-hidden="true" loading="eager" width="150">{% endfor %}
 
   <div class="wrap hero-in">
-    <h1>{{ t('v13.hero_a') }}<br>{{ t('v13.hero_b') }} <span class="hl">{{ t('v13.hero_c') }}</span></h1>
+    <h1>{{ t('v13.hero_a') }} <span class="h1-br"><br></span>{{ t('v13.hero_b') }} <span class="hl">{{ t('v13.hero_c') }}</span></h1>
 
     <div class="search-row">
       <button type="button" class="loc-input" data-loc-open aria-haspopup="dialog" aria-controls="loc-drawer" aria-label="{{ hp.area or t('hp.all_areas') }}">
