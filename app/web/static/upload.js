@@ -42,6 +42,26 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    /* Task 131: a 4xx/5xx answer renders the error page — pull its
+       message out so the failure is never silent or generic. */
+    function extractError(html, fallback) {
+      try {
+        const doc = new DOMParser().parseFromString(html || "", "text/html");
+        const el = doc.querySelector(
+          ".alert, .field-error, .error-summary, .form-error");
+        if (el && el.textContent.trim()) {
+          return el.textContent.trim().slice(0, 200);
+        }
+        const head = doc.querySelector("h1");
+        if (head && head.textContent.trim()) {
+          return head.textContent.trim().slice(0, 200);
+        }
+      } catch (err) {
+        /* fall through to the generic message */
+      }
+      return fallback;
+    }
+
     function clearError() {
       if (errorLine) {
         errorLine.textContent = "";
@@ -125,7 +145,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       xhr.addEventListener("load", () => {
         if (xhr.status < 200 || xhr.status >= 300) {
-          showError("Upload failed — try again.");
+          showError(extractError(xhr.responseText,
+            "Upload failed — try again."));
           reset(file);
           return;
         }

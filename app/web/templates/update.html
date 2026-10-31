@@ -97,7 +97,7 @@
 {% if error %}{{ ui.error_summary(error) }}{% endif %}
 {% call ui.form_card() %}
   {% if hint %}<div class="alert alert-info">{{ t('upd.say_price_for', hint=hint) }}</div>{% endif %}
-  {{ composer("/e/" ~ token ~ "/update", max_seconds=300, done_label=t('composer.check_prices')) }}
+  {{ composer("/e/" ~ token ~ "/update", max_seconds=300, done_label=t('composer.check_prices'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
   <p class="notice">{{ notice | safe }}</p>
 {% endcall %}
 <div id="board"></div>

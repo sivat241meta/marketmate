@@ -60,9 +60,69 @@
       </li>
     </ol>
   </div>
+  {# Task 131: first-run shops get the same upload card, so the step-2
+     "#say-prices" link lands on a real upload form. #}
+  <div class="card cta-card" id="say-prices">
+    <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.obj("mic", 20) }}{{ t('sh.say_prices') }}</a></p>
+    <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
+      <p>
+        <label class="pill ghost" for="clip">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+          <input id="clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" required>
+        </label>
+      </p>
+      <p class="field">
+        <label for="speak-lang">{{ t('speak.label') }}</label>
+        <select id="speak-lang" name="speak_lang">
+          {% for lang in languages %}
+          <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p class="help">{{ t('speak.help') }}</p>
+      <p class="help">{{ t('dash.upload_help') }}</p>
+      <p class="help">{{ t('wa.voice_hint') }}</p>
+      <p class="upload-file" data-upload-file hidden></p>
+      <p class="form-error" data-upload-error hidden></p>
+      <div class="upload-progress" data-upload-progress hidden>
+        <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
+        <p class="upload-meta" data-upload-meta></p>
+        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
+      </div>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button>
+    </form>
+    <p class="notice">{{ notice | safe }}</p>
+  </div>
   {% elif taps_total %}
   <p class="notice need">{{ ui.obj("warning", 20) }}<span><strong>{% if taps_total == 1 %}{{ t('sh.need_tap_one') }}{% else %}{{ t('sh.need_tap', n=taps_total) }}{% endif %}</strong></span></p>
   <p><a class="pill dark big" href="/e/{{ token }}/s/{{ taps_first }}">{{ t('sh.check_now') }}</a></p>
+  {# Task 131: an upload entry stays on the dashboard while items wait. #}
+  <div class="card compact" id="update-today">
+    <h2>{{ t('dash.update_today') }}</h2>
+    <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
+      <p>
+        <label class="pill ghost" for="clip-update">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+          <input id="clip-update" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" required>
+        </label>
+      </p>
+      <p class="field">
+        <label for="speak-lang-update">{{ t('speak.label') }}</label>
+        <select id="speak-lang-update" name="speak_lang">
+          {% for lang in languages %}
+          <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p class="help">{{ t('dash.upload_help') }}</p>
+      <p class="upload-file" data-upload-file hidden></p>
+      <p class="form-error" data-upload-error hidden></p>
+      <div class="upload-progress" data-upload-progress hidden>
+        <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
+        <p class="upload-meta" data-upload-meta></p>
+        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
+      </div>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button>
+    </form>
+  </div>
   {% elif not published_today %}
   <div class="card cta-card" id="say-prices">
     <p><a class="pill dark big" href="/e/{{ token }}/live">{{ ui.obj("mic", 20) }}{{ t('sh.say_prices') }}</a></p>
@@ -106,6 +166,36 @@
     <a href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
     {% if wa_url %}<button class="linklike" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>{% endif %}
   </p>
+  {# Task 131: after publishing, a compact upload card with the same
+     form (action, video field, speak_lang select, accept list,
+     data-upload-* hooks). A new upload makes a new session/version. #}
+  <div class="card compact" id="update-today">
+    <h2>{{ t('dash.update_today') }}</h2>
+    <form method="post" action="/e/{{ token }}/upload" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
+      <p>
+        <label class="pill ghost" for="clip-update">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+          <input id="clip-update" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" required>
+        </label>
+      </p>
+      <p class="field">
+        <label for="speak-lang-update">{{ t('speak.label') }}</label>
+        <select id="speak-lang-update" name="speak_lang">
+          {% for lang in languages %}
+          <option value="{{ lang.code }}"{% if lang.code == shop_lang %} selected{% endif %}>{{ lang.native_name }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p class="help">{{ t('dash.upload_help') }}</p>
+      <p class="upload-file" data-upload-file hidden></p>
+      <p class="form-error" data-upload-error hidden></p>
+      <div class="upload-progress" data-upload-progress hidden>
+        <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
+        <p class="upload-meta" data-upload-meta></p>
+        <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
+      </div>
+      <button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button>
+    </form>
+  </div>
   {% endif %}
 </section>
 {% endif %}

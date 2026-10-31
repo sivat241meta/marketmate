@@ -17,7 +17,7 @@
 {% call ui.form_card(t('pur.say_title'), t('pur.say_desc'), cls="rcpt") %}
 <div id="record"></div>
 <p class="muted">{{ t('pur.say_hint') }}</p>
-{{ composer("/e/" ~ token ~ "/purchases/voice", max_seconds=120, done_label=t('composer.check_purchases')) }}
+{{ composer("/e/" ~ token ~ "/purchases/voice", max_seconds=120, done_label=t('composer.check_purchases'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
 <p class="notice">{{ notice | safe }}</p>
 {% endcall %}
 
