@@ -322,7 +322,8 @@ def test_upload_card_accepts_audio(tmp_path, monkeypatch):
     html = client.get(f"/e/{token}").text
     assert 'accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr"' \
         in html
-    assert "Video or voice note" in html
+    assert "Choose a video or voice note " \
+        "(gallery, WhatsApp or record now)" in html
     assert "Forward a WhatsApp voice note" in html
 
 

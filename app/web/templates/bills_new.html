@@ -127,7 +127,7 @@
   <form method="post" action="/e/{{ token }}/bills/new" enctype="multipart/form-data">
     <div class="field">
       <label class="drop-zone" for="bill-photo">{{ ui.icon("photo") }}<span>{{ t('bn.photo_choose_label') }}</span><strong>{{ t('bn.photo_choose') }}</strong>
-        <input id="bill-photo" class="file-hidden" type="file" name="photo" accept="image/*" capture="environment" required>
+        <input id="bill-photo" class="file-hidden" type="file" name="photo" accept="image/*" required>
       </label>
     </div>
     <button class="btn btn-secondary" type="submit">{{ t('bn.photo_btn') }}</button>
