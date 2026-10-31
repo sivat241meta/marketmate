@@ -251,6 +251,59 @@
 
   /* ---- location drawer ---- */
 
+  /* Show a remembered/picked area on every header location button
+     without navigating (Task 134). The hero button carries one plain
+     span; the sticky-bar mini button shows "head" in bold with an
+     optional "tail" span. */
+  function setLocLabel(name) {
+    if (!name) {
+      return;
+    }
+    var parts = name.split(",").map(function (part) {
+      return part.trim();
+    }).filter(function (part) {
+      return part !== "";
+    });
+    var head = parts[0] || name;
+    var tail = parts.length > 1 ? parts[parts.length - 1] : "";
+    document.querySelectorAll("[data-loc-open]").forEach(function (btn) {
+      if (btn.setAttribute) {
+        btn.setAttribute("aria-label", name);
+      }
+      if (!btn.querySelector) {
+        return;
+      }
+      var bold = btn.querySelector("b");
+      if (!bold) {
+        var only = btn.querySelector("span");
+        if (only) {
+          only.textContent = name;
+        }
+        return;
+      }
+      bold.textContent = head;
+      var sub = btn.querySelector("span");
+      if (tail) {
+        if (sub) {
+          sub.hidden = false;
+          sub.textContent = tail;
+        } else if (document.createElement && btn.insertBefore) {
+          var el = document.createElement("span");
+          el.textContent = tail;
+          var chev = btn.querySelector(".chev");
+          if (chev) {
+            btn.insertBefore(el, chev);
+          } else if (btn.appendChild) {
+            btn.appendChild(el);
+          }
+        }
+      } else if (sub) {
+        sub.hidden = true;
+        sub.textContent = "";
+      }
+    });
+  }
+
   function goArea(name) {
     store(STORE_KEY, name);
     var path = window.location.pathname || "/";
@@ -262,11 +315,23 @@
         params.delete("area");
       }
       window.location.assign("/market?" + params.toString());
-    } else if (name) {
-      window.location.assign("/?area=" + encodeURIComponent(name));
-    } else {
-      window.location.assign("/");
+      return;
     }
+    if (path === "/") {
+      if (name) {
+        window.location.assign("/?area=" + encodeURIComponent(name));
+      } else {
+        window.location.assign("/");
+      }
+      return;
+    }
+    // Any other page (Task 134): stay put — the pick is remembered
+    // and shown on the header button, and the drawer closes.
+    // Picking a market on a shop page never navigates away.
+    if (name) {
+      setLocLabel(name);
+    }
+    closePop(null);
   }
 
   function currentAreaParam() {
@@ -368,17 +433,25 @@
       });
     }
 
-    // First visit (no area chosen yet): a remembered choice is applied
-    // as ?area=; an explicit ?area= wins and is kept.
+    // First visit (no area chosen yet): on the homepage a remembered
+    // choice is applied as ?area=; an explicit ?area= wins and is kept.
+    // Everywhere else the remembered area only labels the header
+    // button — it never bounces the visitor home (Task 134). The
+    // first-visit drawer auto-open lives on "/" only.
     var param = currentAreaParam().trim();
+    var path = window.location.pathname || "/";
     if (param) {
       store(STORE_KEY, param);
     } else {
       var known = load(STORE_KEY, null);
-      if (known && known !== "all") {
-        window.location.assign("/?area=" + encodeURIComponent(known));
-      } else if (!known && tiles.length && !openPop) {
-        openPop2(pop, null);
+      if (path === "/") {
+        if (known && known !== "all") {
+          window.location.assign("/?area=" + encodeURIComponent(known));
+        } else if (!known && tiles.length && !openPop) {
+          openPop2(pop, null);
+        }
+      } else if (known && known !== "all") {
+        setLocLabel(known);
       }
     }
   }
@@ -759,6 +832,15 @@
     initFilter();
     initVoice();
     initMore();
+  }
+
+  // Task 134: the shared area-pick handler, so the GPS pick in
+  // locate.js behaves exactly like a drawer tile (plus a hook for
+  // the node test, mirroring window.MarketHome).
+  if (typeof window !== "undefined" && window) {
+    window.MarketPopups = {
+      goArea: goArea,
+    };
   }
 
   if (typeof document !== "undefined" && document) {
