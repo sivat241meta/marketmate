@@ -46,6 +46,13 @@
   }
 
   function goArea(name) {
+    // One shared pick handler (Task 134): popups.js owns the
+    // stay-or-go rules, so the GPS pick behaves exactly like a tile.
+    if (window.MarketPopups
+        && typeof window.MarketPopups.goArea === "function") {
+      window.MarketPopups.goArea(name);
+      return;
+    }
     try {
       if (window.localStorage) {
         window.localStorage.setItem(STORE_KEY, JSON.stringify(name));
@@ -60,10 +67,21 @@
         params.delete("area");
       }
       window.location.assign("/market?" + params.toString());
-    } else if (name) {
-      window.location.assign("/?area=" + encodeURIComponent(name));
-    } else {
-      window.location.assign("/");
+    } else if (path === "/") {
+      if (name) {
+        window.location.assign("/?area=" + encodeURIComponent(name));
+      } else {
+        window.location.assign("/");
+      }
+    } else if (name && typeof document !== "undefined" && document) {
+      // Off-homepage without popups.js: remember the pick and label
+      // the header button; never navigate away.
+      document.querySelectorAll("[data-loc-open]").forEach(
+        function (btn) {
+          if (btn.setAttribute) {
+            btn.setAttribute("aria-label", name);
+          }
+        });
     }
   }
 
@@ -115,6 +133,13 @@
         { timeout: 8000, maximumAge: 600000 },
       );
     });
+  }
+
+  // Task 134: hook for the node test, mirroring window.MarketHome.
+  if (typeof window !== "undefined" && window) {
+    window.MarketLocate = {
+      goArea: goArea,
+    };
   }
 
   if (typeof document !== "undefined" && document) {
