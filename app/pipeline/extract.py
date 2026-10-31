@@ -15,6 +15,7 @@ from app.pipeline.names import (
     resolve_name,
     restore_spoken_local_name,
 )
+from app.pipeline.spoken import apply_spoken_name
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
@@ -356,6 +357,9 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             range_said=bool(raw.get("range_said", False)),
             flags=flags,
         )
+        # Names come from the seller's own span (Task 139), before price
+        # merging appends other lines' words to the quote.
+        apply_spoken_name(item, language=language)
         merge_repeated_prices(item)
         items.append(item)
     return items

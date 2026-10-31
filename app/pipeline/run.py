@@ -341,7 +341,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             item.flags.append(Flag(
                 field="photo", code="PICTURE_MISMATCH",
                 message=f"no frame clearly shows {item.name_en}"))
-    flag_same_name_two_prices(items)
+    flag_same_name_two_prices(items, language=language)
     db.save_drafts(conn, session_id, items)
     db.set_stage(conn, session_id, "ready")
     db.ensure_session_base(conn, session_id)

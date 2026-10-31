@@ -1,0 +1,466 @@
+{
+ "items": [
+  {
+   "name_en": "potato",
+   "name_local": "உருளைக்கிழங்கு",
+   "name_spoken": "உருளைக்கிழங்கு",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 20,
+     "said": "கிலோ இருவது ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "உருளைக்கிழங்கு,உருளைக்கிழங்கு, கிலோ இருவது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "potato",
+   "name_local": "உருளைக்கிழங்கு",
+   "name_spoken": "புது உருளைக்கிழங்கு",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 25,
+     "said": "கிலோ இருபத்தைந்து ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "புது உருளைக்கிழங்கு, கிலோ இருபத்தைந்து ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "small onion",
+   "name_local": "சின்ன வெங்காயம்",
+   "name_spoken": "சின்ன வெங்காயம்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 30,
+     "said": "கிலோ முப்பது",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "சின்ன வெங்காயம், கிலோ முப்பது",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "beetroot",
+   "name_local": "பீட்ரூட்",
+   "name_spoken": "Beetroot",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 25,
+     "said": "கிலோ இருபத்தைந்து",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "Beetroot, கிலோ இருபத்தைந்து",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "other",
+   "name_local": "சுரக்காய்",
+   "name_spoken": "சுரக்காய்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 40,
+     "said": "கிலோ நாற்பது",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "சுரக்காய் கிலோ நாற்பது",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "corn",
+   "name_local": "சோளம்",
+   "name_spoken": "Sweet corn",
+   "prices": [
+    {
+     "per_amount": 5,
+     "price": 20,
+     "said": "அஞ்சு பீஸ் இருபது",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "Sweet corn கிலோ அஞ்சு பீஸ் இருபது",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "cucumber",
+   "name_local": "வெள்ளரிக்காய்",
+   "name_spoken": "வெள்ளரிக்கா",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 15,
+     "said": "கிலோ பதினைந்து ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "வெள்ளரிக்கா கிலோ பதினைந்து ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "bottle gourd",
+   "name_local": "சுரைக்காய்",
+   "name_spoken": "சுரைக்காய்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 20,
+     "said": "கிலோ இருபது ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "சுரைக்காய் கிலோ இருபது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "colocasia",
+   "name_local": "சேப்பங்கிழங்கு",
+   "name_spoken": "சேப்பங்கிழங்கு",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 30,
+     "said": "கிலோ முப்பது ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "சேப்பங்கிழங்கு கிலோ முப்பது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "coconut",
+   "name_local": "தேங்காய்",
+   "name_spoken": "தேங்கா",
+   "prices": [
+    {
+     "per_amount": 5,
+     "price": 100,
+     "said": "அஞ்சு பீஸ் நூறு ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "தேங்கா அஞ்சு பீஸ் நூறு ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "ash gourd",
+   "name_local": "பூசணிக்காய்",
+   "name_spoken": "பூசணிக்காய்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 180,
+     "said": "கிலோ நூற்று எண்பது",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "பூசணிக்காய் கிலோ நூற்று எண்பது",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "banana",
+   "name_local": "செவ்வாழ வாழை",
+   "name_spoken": "செவ்வாழை",
+   "prices": [
+    {
+     "per_amount": 5,
+     "price": 100,
+     "said": "அஞ்சு பீஸ் நூறு ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "செவ்வாழை அஞ்சு பீஸ் நூறு ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": "Sevvazh"
+  },
+  {
+   "name_en": "banana",
+   "name_local": "பச்சை வாழைப்பழம்",
+   "name_spoken": "பச்சை வாழைப்பழம்",
+   "prices": [
+    {
+     "per_amount": 3,
+     "price": 20,
+     "said": "மூணு பீஸ் இருபது ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "பச்சை வாழைப்பழம் மூணு பீஸ் இருபது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "green fruit",
+   "name_local": "கிறன் ஃப்ரூட்",
+   "name_spoken": "கிறன் ஃப்ரூட்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 50,
+     "said": "ஒரு பீஸ் அம்பது ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "கிறன் கிறன் ஃப்ரூட் ஒரு பீஸ் அம்பது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "banana",
+   "name_local": "சின்ன வாழைப்பழம்",
+   "name_spoken": "சின்ன வாழைப்பழம்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 100,
+     "said": "ஒரு டஜன் நூறு ரூபா",
+     "unit": "dozen"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "சின்ன வாழைப்பழம் ஒரு டஜன் நூறு ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "raw banana",
+   "name_local": "வாழைக்காய்",
+   "name_spoken": "வாழைக்காய்",
+   "prices": [
+    {
+     "per_amount": 5,
+     "price": 50,
+     "said": "அஞ்சு பீஸ் அம்பது ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "வாழைக்காய் அஞ்சு பீஸ் அம்பது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "radish",
+   "name_local": "முள்ளங்கி",
+   "name_spoken": "முள்ளங்கி",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 40,
+     "said": "ஒரு கிலோ நாற்பது ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "முள்ளங்கி ஒரு கிலோ நாற்பது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "ivy gourd",
+   "name_local": "கோவக்காய்",
+   "name_spoken": "கோவக்காய்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 20,
+     "said": "இருபது ரூபா ஒரு கிலோ",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "கோவக்காய் இருபது ரூபா ஒரு ஒரு கிலோ",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "bitter gourd",
+   "name_local": "பாகற்காய்",
+   "name_spoken": "பாகற்காய்",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 50,
+     "said": "கிலோ அம்பது ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "பாகற்காய் கிலோ அம்பது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "raw mango",
+   "name_local": "மாங்காய்",
+   "name_spoken": "மாங்கா",
+   "prices": [
+    {
+     "per_amount": 1,
+     "price": 37,
+     "said": "கிலோ முப்பத்தி ஏழு ரூபா",
+     "unit": "kg"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "மாங்கா கிலோ முப்பத்தி ஏழு ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  },
+  {
+   "name_en": "lemon",
+   "name_local": "எலுமிச்சை",
+   "name_spoken": "எலுமிச்சை பழம்",
+   "prices": [
+    {
+     "per_amount": 5,
+     "price": 20,
+     "said": "அஞ்சு அஞ்சு இருபது ரூபா",
+     "unit": "piece"
+    }
+   ],
+   "qty": null,
+   "qty_said": null,
+   "qty_unit": null,
+   "quote": "எலுமிச்சை பழம் அஞ்சு அஞ்சு இருபது ரூபா",
+   "range_said": false,
+   "turn_ids": [
+    1
+   ],
+   "variety": null
+  }
+ ]
+}

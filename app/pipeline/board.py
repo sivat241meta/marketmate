@@ -238,7 +238,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
                                   "RANGE", "NUMBER_CHECK", "UNCLEAR_NUMBER"):
                     continue
                 item.flags.append(flag)
-        flag_same_name_two_prices(items)
+        flag_same_name_two_prices(items, language=language)
         db.save_drafts(conn, session_id, items)
         write_board_meta(Path(settings.data_dir), session_id,
                          {"image": str(image)})

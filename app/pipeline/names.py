@@ -336,6 +336,11 @@ def _alias_hit_in_text(text: str) -> tuple[str, str] | None:
     return hit[1] if hit is not None else None
 
 
+def alias_hit_in_text(text: str) -> tuple[str, str] | None:
+    """Longest variety-nickname (name_en, variety) named in text, else None."""
+    return _alias_hit_in_text(text)
+
+
 def _key_in_text(lowered: str, raw: str, key: str) -> bool:
     """True when key appears in the text: word bounds for Latin keys,
     substring for Tamil script (market speech separates words)."""
@@ -539,6 +544,10 @@ SYNONYMS: dict[str, str] = {
     "sweet corn": "corn",
     "kirni": "muskmelon",
     "kiran": "muskmelon",
+    "kirni fruit": "muskmelon",
+    "kiran fruit": "muskmelon",
+    "kiran kiran fruit": "muskmelon",
+    "kirni kirni fruit": "muskmelon",
     "thenga": "coconut",
     "maanga": "raw mango",
 }
@@ -554,6 +563,14 @@ TAMIL_SYNONYMS: dict[str, str] = {
     "கிறணி": "muskmelon",
     "கிறன்": "muskmelon",
     "கிர்ணி பழம்": "muskmelon",
+    "கிர்ணி ஃப்ரூட்": "muskmelon",
+    "கிறணி பழம்": "muskmelon",
+    "கிறணி ஃப்ரூட்": "muskmelon",
+    "கிறன் பழம்": "muskmelon",
+    "கிறன் ஃப்ரூட்": "muskmelon",
+    "கிறன் கிறன்": "muskmelon",
+    "கிறன் கிறன் பழம்": "muskmelon",
+    "கிறன் கிறன் ஃப்ரூட்": "muskmelon",
     "தேங்கா": "coconut",
     "வெள்ளரிக்கா": "cucumber",
 }
@@ -599,6 +616,8 @@ QUALIFIER_EN: dict[str, str] = {
     "hara": "green",
     "hari": "green",
     "சிவப்பு": "red",
+    "செவ்": "red",
+    "செவ்வாழ": "red",
     "sivappu": "red",
     "red": "red",
     "लाल": "red",
@@ -943,6 +962,12 @@ def local_title(name_local: str | None, variety: str | None = None,
             return VARIETY_LOCAL["red"]
         word = words[text]
         if word in base:
+            return base
+        base_words = [chunk.strip(".,;:!?\"'()[]{}")
+                      for chunk in base.lower().split()]
+        if text in base_words:
+            # The seller's own local name already holds the qualifier in
+            # English ("Sweet corn"): never prefix it again.
             return base
         return f"{word} {base}"
     return display_name_local(base, variety, language=language)
