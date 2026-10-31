@@ -121,7 +121,7 @@
 
 {% call ui.form_card(t('set.cover'), t('set.cover_sub'), cls="rcpt") %}
   {% if shop["cover_photo"] %}
-  <p><img src="/m/{{ shop["cover_photo"] }}" alt="{{ t('set.cover_current') }}" loading="lazy" width="400"></p>
+  <p><img class="cover-now" src="/m/{{ shop["cover_photo"] }}" alt="{{ t('set.cover_current') }}" loading="lazy" width="400" height="400"></p>
   {% endif %}
   <form method="post" action="/e/{{ token }}/settings/cover" enctype="multipart/form-data">
     <div class="field">
