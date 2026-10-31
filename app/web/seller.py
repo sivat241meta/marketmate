@@ -66,7 +66,7 @@ from app.pipeline.numbers import parse_number
 from app.pipeline.photos import (
     BadPhotoUpload,
     is_cutout_photo,
-    photo_kind,
+    prefer_original,
     save_retake,
 )
 from app.pipeline.run import (
@@ -174,7 +174,7 @@ def _retry_language_job(settings, session_id: int, speak_lang: str) -> None:
 def _photo_url(photo: str | None) -> str | None:
     if not photo:
         return None
-    return "/m/" + Path(photo).name
+    return "/m/" + Path(prefer_original(photo)).name
 
 
 def _draft_from_client(raw: dict, stored=None):
@@ -944,7 +944,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
                     "photo_url": _photo_url(item.photo),
-                    "photo_cutout": is_cutout_photo(item.photo),
+                    "photo_cutout": is_cutout_photo(
+                        prefer_original(item.photo)),
                     "sold_out": item.sold_out,
                     "stock_line": stock_line,
                     "lines": [{"price": str(line.price),
@@ -1376,16 +1377,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "title_en": english_title(base.name_en,
                                                   base.variety),
                         "photo_url": _photo_url(base.photo),
-                        "photo_cutout": is_cutout_photo(base.photo),
+                        "photo_cutout": is_cutout_photo(
+                            prefer_original(base.photo)),
                         "sold_out": base.sold_out,
                         "price_summary": _price_summary(
                             base, shop["currency"] or "INR", ui_lang),
                     })
             context["carried"] = carried
             context["base_version_id"] = base_id
-            page_t = t_for(ui_lang)
-            kind_labels = {"cutout": page_t("review.cutout"),
-                           "original": page_t("review.original")}
             cards = []
             for index, item in enumerate(items):
                 proof = {
@@ -1398,17 +1397,6 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "source": item.proof.source,
                 }
                 is_board = item.proof.source == "board_photo"
-                candidates = []
-                for path in item.photo_candidates or []:
-                    url = _photo_url(path)
-                    if not url:
-                        continue
-                    kind = photo_kind(path)
-                    candidates.append({
-                        "url": url,
-                        "label": kind_labels.get(kind),
-                        "cutout": kind == "cutout",
-                    })
                 cards.append(
                     {
                         "index": index,
@@ -1419,8 +1407,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                         "title_en": english_title(item.name_en,
                                                   item.variety),
                         "photo_url": _photo_url(item.photo),
-                        "photo_cutout": is_cutout_photo(item.photo),
-                        "candidates": candidates,
+                        "photo_cutout": is_cutout_photo(
+                            prefer_original(item.photo)),
                         "board_thumb_url": (
                             _photo_url(item.proof.frame) if is_board else None
                         ),
@@ -1541,7 +1529,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/s/{session_id}/photo/{index}")
     def pick_candidate(token: str, session_id: int, index: int, body: dict,
                        conn: Conn):
-        """Make candidate ``index`` the draft photo. Index only, never a path."""
+        """Make candidate ``index`` the draft photo. Index only, never a path.
+
+        Task 147: the review page no longer shows the picker; the
+        endpoint stays for stored drafts and returns the picked file.
+        """
         shop = _owner_or_403_exc(conn, token)
         _session_of_shop(conn, shop["id"], session_id)
         items = db.load_drafts(conn, session_id)
@@ -2177,7 +2169,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 name = item.name_local if language == shop_lang else item.name_en
                 named_cutout = v13_cutout_url(item.name_en)
                 photo_url = named_cutout or _photo_url(item.photo)
-                photo_cutout = bool(named_cutout) or is_cutout_photo(item.photo)
+                photo_cutout = (bool(named_cutout)
+                                or is_cutout_photo(
+                                    prefer_original(item.photo)))
                 if photo_url and hero_photo is None and not item.sold_out:
                     hero_photo = photo_url
                 first = item.price_lines[0] if item.price_lines else None

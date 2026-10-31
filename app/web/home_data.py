@@ -11,7 +11,7 @@ from app import db
 from app.config import sample_shops_enabled
 from app.market.hours import IST, shop_open_status
 from app.market.search import CATEGORIES, category_of
-from app.pipeline.photos import is_cutout_photo
+from app.pipeline.photos import is_cutout_photo, prefer_original
 from app.web.i18n import SAMPLE_TIME, first_grapheme, tile_variety
 
 MAX_PICKS = 8
@@ -98,7 +98,7 @@ def _as_aware(moment: datetime) -> datetime:
 def _photo_url(photo: str | None) -> str | None:
     if not photo:
         return None
-    return "/m/" + Path(photo).name
+    return "/m/" + Path(prefer_original(photo)).name
 
 
 def _per_text(per_amount, unit) -> str:
@@ -192,7 +192,7 @@ def _pick_cards(entries: list[dict]) -> list[dict]:
             line = _first_price(item)
             if line is None:
                 continue
-            cutout = is_cutout_photo(item.photo)
+            cutout = is_cutout_photo(prefer_original(item.photo))
             cards.append({
                 "photo_url": _photo_url(item.photo),
                 "photo_cutout": cutout,
@@ -241,7 +241,7 @@ def _popular(entries: list[dict]) -> list[dict]:
             shops_per_name.setdefault(key, set()).add(slug)
             display.setdefault(key, item.name_en.strip())
             if item.photo:
-                cutout = is_cutout_photo(item.photo)
+                cutout = is_cutout_photo(prefer_original(item.photo))
                 prev = photos.get(key)
                 if prev is None or (cutout and not prev[1]):
                     photos[key] = (_photo_url(item.photo), cutout)
@@ -275,11 +275,12 @@ def _shop_card(entry: dict, now: datetime) -> dict:
     priced = [(item, line) for item, line in priced if line is not None]
     photo = photo_cutout = None
     for item in sorted(items,
-                       key=lambda it: (0 if is_cutout_photo(it.photo)
-                                       else 1 if it.photo else 2)):
+                       key=lambda it: (0 if is_cutout_photo(
+                           prefer_original(it.photo))
+                           else 1 if it.photo else 2)):
         if item.photo:
             photo, photo_cutout = _photo_url(item.photo), \
-                is_cutout_photo(item.photo)
+                is_cutout_photo(prefer_original(item.photo))
             break
     cheapest = sorted(priced, key=lambda pair: pair[1].price)[:3]
     status = shop_open_status(shop)
@@ -343,7 +344,7 @@ def _lowest_items(entries: list[dict]) -> list[dict]:
             if line is None:
                 continue
             photo_url = _photo_url(item.photo)
-            cutout = is_cutout_photo(item.photo)
+            cutout = is_cutout_photo(prefer_original(item.photo))
             prev = best.get(key)
             if prev is None:
                 best[key] = {
@@ -411,7 +412,7 @@ def _category_cards(entries: list[dict]) -> list[dict]:
                 v13.setdefault(code, []).append(named)
             elif item.photo:
                 url = _photo_url(item.photo)
-                dest = (cutouts if is_cutout_photo(item.photo)
+                dest = (cutouts if is_cutout_photo(prefer_original(item.photo))
                         else photos)
                 dest.setdefault(code, []).append(url)
     cards = []
@@ -538,7 +539,8 @@ def _floats(entries: list[dict]) -> list[str]:
             if not item.photo:
                 continue
             url = _photo_url(item.photo)
-            ranked.append((0 if is_cutout_photo(item.photo) else 1,
+            ranked.append((0 if is_cutout_photo(prefer_original(item.photo))
+                           else 1,
                            entry["shop"]["slug"], item.name_en or "", url))
     seen = set()
     out = []
@@ -635,9 +637,11 @@ def _area_tiles(entries: list[dict]) -> list[dict]:
             for item in entry["items"]:
                 if not item.photo:
                     continue
-                if photo is None or is_cutout_photo(item.photo):
+                if photo is None or is_cutout_photo(
+                        prefer_original(item.photo)):
                     photo = _photo_url(item.photo)
-                    photo_cutout = is_cutout_photo(item.photo)
+                    photo_cutout = is_cutout_photo(
+                        prefer_original(item.photo))
                 if photo_cutout:
                     break
         tiles.append({

@@ -400,7 +400,7 @@ def create_app(settings: Settings) -> FastAPI:
         """
         from app.costs import IST
         from app.market.search import CATEGORIES, category_of
-        from app.pipeline.photos import is_cutout_photo
+        from app.pipeline.photos import is_cutout_photo, prefer_original
         from app.web.i18n import SAMPLE_TIME
 
         now = datetime.now(UTC)
@@ -439,10 +439,11 @@ def create_app(settings: Settings) -> FastAPI:
                 if not item.photo:
                     continue
                 key = (item.name_en or "").strip().lower()
-                cutout = is_cutout_photo(item.photo)
+                photo = prefer_original(item.photo)
+                cutout = is_cutout_photo(photo)
                 prev = per_shop.get(key)
                 if prev is None or (cutout and not prev[1]):
-                    per_shop[key] = ("/m/" + Path(item.photo).name, cutout)
+                    per_shop[key] = ("/m/" + Path(photo).name, cutout)
         nested = {slug: {name: {"url": url, "cut": cut}
                         for name, (url, cut) in by_name.items()}
                   for slug, by_name in photos.items()}

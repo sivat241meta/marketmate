@@ -11,6 +11,7 @@ from app.models import Item
 from app.outputs.money import format_money
 from app.outputs.qr import qr_png
 from app.pipeline.names import english_title, local_title
+from app.pipeline.photos import prefer_original
 
 _FONTS_URI = (Path(__file__).resolve().parent.parent
               / "web" / "static" / "fonts").as_uri()
@@ -28,10 +29,10 @@ _PHOTO_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}
 
 
 def _photo_data_uri(path) -> str | None:
-    """Embed the SAM cut-out thumbnail; None when the item has no photo."""
+    """Embed the square original photo; None when the item has no photo."""
     if not path:
         return None
-    file = Path(path)
+    file = Path(prefer_original(path))
     if not file.is_file():
         return None
     mime = _PHOTO_MIME.get(file.suffix.lower(), "image/jpeg")

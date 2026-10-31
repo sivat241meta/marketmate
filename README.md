@@ -14,7 +14,7 @@ Seller:
 - A check page where every price keeps its voice-clip proof. The seller taps unclear ones, then approves.
 - Approve publishes a version: shop page, WhatsApp price message, price board PDF, shelf tags, CSV and Excel.
 - Edit names on the check page or later. Names are remembered for the next list and for billing.
-- Cut-out photos: whole objects only (a shape test rejects half fruit), cross-checked against the other items' masks and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
+- Square item photos: each item is found in the video — sam-3.1 finds its box, and we keep a square photo from the seller's own video. Whole objects only (a shape test rejects half fruit), cross-checked against the other items and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
 
 Billing:
 
@@ -34,7 +34,7 @@ Example of the printed board (demo data): [docs/img/board.png](docs/img/board.pn
 
 ## Honesty by design
 
-Prices only come from the seller's speech. Every price keeps its voice clip. The check page asks the seller when something is unclear (50 vs 80 sound alike in Tamil). Nothing is guessed. Photos are the seller's own frames with the background removed, never stock or generated, never a face. A script guard catches a wrong-language transcript before any price step runs. One exception: a photo of the seller's own price board can seed prices, but each one stays blocked until the seller taps it.
+Prices only come from the seller's speech. Every price keeps its voice clip. The check page asks the seller when something is unclear (50 vs 80 sound alike in Tamil). Nothing is guessed. Photos are square crops from the seller's own video, never stock or generated, never a face. A script guard catches a wrong-language transcript before any price step runs. One exception: a photo of the seller's own price board can seed prices, but each one stays blocked until the seller taps it.
 
 ## Meta models used
 

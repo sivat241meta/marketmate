@@ -625,36 +625,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateApprove(form);
     });
   });
-  form.querySelectorAll("[data-photo-pick]").forEach((row) => {
-    row.addEventListener("click", async (event) => {
-      const picked = event.target.closest("[data-photo-index]");
-      if (!picked) {
-        return;
-      }
-      const response = await fetch(row.dataset.pickUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ index: Number(picked.dataset.photoIndex) }),
-      });
-      if (!response.ok) {
-        return;
-      }
-      const data = await response.json().catch(() => ({}));
-      const card = row.closest(".card");
-      const main = card ? card.querySelector("[data-photo-main]") : null;
-      if (main && data.photo_url) {
-        main.src = data.photo_url;
-        if (data.cutout) {
-          main.setAttribute("data-cutout", "");
-        } else {
-          main.removeAttribute("data-cutout");
-        }
-      }
-      row.querySelectorAll("[data-photo-index]").forEach((other) => {
-        other.classList.toggle("is-on", other === picked);
-      });
-    });
-  });
+  // Task 147: no photo picker any more — one square original photo
+  // per card plus the retake upload below.
   form.querySelectorAll("[data-photo-retake]").forEach((input) => {
     input.addEventListener("change", async () => {
       if (!input.files || !input.files[0]) {

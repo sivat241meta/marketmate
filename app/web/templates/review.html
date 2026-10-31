@@ -40,14 +40,6 @@
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
     {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
-    {% if card.candidates %}
-    <p class="muted">{{ t('review.pick_photo') }}</p>
-    <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
-      {% for cand in card.candidates %}
-      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ cand.label or t('review.pick_photo') }} {{ loop.index }}"><img src="{{ cand.url }}" alt="" loading="lazy"{% if cand.cutout %} data-cutout{% endif %}>{% if cand.label %}<span class="photo-kind">{{ cand.label }}</span>{% endif %}</button>
-      {% endfor %}
-    </div>
-    {% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
       <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>
@@ -150,14 +142,6 @@
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
     {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
-    {% if card.candidates %}
-    <p class="muted">{{ t('review.pick_photo') }}</p>
-    <div class="photo-pick photo-strip" data-photo-pick data-pick-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}">
-      {% for cand in card.candidates %}
-      <button type="button" class="photo-thumb{% if loop.first %} is-on{% endif %}" data-photo-index="{{ loop.index0 }}" aria-label="{{ cand.label or t('review.pick_photo') }} {{ loop.index }}"><img src="{{ cand.url }}" alt="" loading="lazy"{% if cand.cutout %} data-cutout{% endif %}>{% if cand.label %}<span class="photo-kind">{{ cand.label }}</span>{% endif %}</button>
-      {% endfor %}
-    </div>
-    {% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
       <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>

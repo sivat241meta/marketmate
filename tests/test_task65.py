@@ -405,7 +405,9 @@ def test_toggle_sends_index_only(tmp_path):
     assert resp.json()["cutout"] is True
 
 
-def test_check_page_shows_cutout_toggle(tmp_path):
+def test_check_page_shows_original_photo_no_picker(tmp_path):
+    # Task 147: the stored cut-out renders as its original sibling, with
+    # no Cut-out/Original picker — one photo plus the retake upload.
     client = make_client(tmp_path)
     token = create_shop(client)
     session_id = seed_session(tmp_path, token, [draft()])
@@ -413,9 +415,16 @@ def test_check_page_shows_cutout_toggle(tmp_path):
     resp = client.get(f"/e/{token}/s/{session_id}")
     assert resp.status_code == 200
     html = resp.text
-    assert "Cut-out" in html and "Original" in html
-    assert "data-cutout" in html
-    assert 'data-photo-index="1"' in html
+    assert "/m/s9_0_orig.jpg" in html
+    assert "s9_0_cut.jpg" not in html
+    assert "Pick the best photo" not in html
+    assert "photo-thumb" not in html
+    assert "data-photo-pick" not in html
+    assert 'data-photo-index="' not in html
+    assert "data-cutout" not in html
+    assert "data-photo-main" in html
+    assert "Take a new photo" in html
+    assert "data-photo-retake" in html
 
 
 def test_shop_card_uses_contain_for_cutout(tmp_path):
