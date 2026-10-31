@@ -61,6 +61,15 @@
         </ol>
       </div>
       <p class="live-offline" data-live-offline hidden><a class="btn btn-secondary" href="/e/{{ token }}">{{ t('live.upload_instead') }}</a></p>
+      {# Task 131: sellers can always upload a saved video, even when the
+         browser can record (the fallback composer below stays hidden
+         then). Hidden with the recorder when live mode is unsupported,
+         where the fallback composer takes over. #}
+      <section class="card live-upload" data-live-upload aria-label="{{ t('live.upload_section') }}">
+        <h2 class="h2s">{{ t('live.upload_section') }}</h2>
+        <p class="muted">{{ t('live.video_help') }}</p>
+        {{ composer("/e/" ~ token ~ "/upload", field="video", accept_upload="video", max_seconds=300, done_label=t('composer.check_prices'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
+      </section>
     </div>
     <div class="live-cards" data-live-cards>
       <h2 class="h2s heard-title">{{ t('live.heard_pre') }} <span data-live-count>0</span> {{ t('live.heard_post') }}</h2>
@@ -70,7 +79,7 @@
   <div class="live-fallback" data-live-fallback hidden>
     <div class="alert alert-info">{{ t('live.no_support') }}</div>
     <p class="muted">{{ t('live.video_help') }}</p>
-    {{ composer("/e/" ~ token ~ "/upload", field="video", accept_upload="video", max_seconds=300, done_label=t('composer.check_prices')) }}
+    {{ composer("/e/" ~ token ~ "/upload", field="video", accept_upload="video", max_seconds=300, done_label=t('composer.check_prices'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
   </div>
   <p class="notice">{{ notice | safe }}</p>
   <p><a href="/e/{{ token }}">{{ t('live.back') }}</a></p>

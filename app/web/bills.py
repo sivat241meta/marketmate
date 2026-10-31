@@ -28,7 +28,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
-from app.languages import shop_bias
+from app.languages import LANGUAGES, shop_bias
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.market.order_parse import wanted_local_first
 from app.market.quote import (
@@ -1165,6 +1165,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
             "shop_lang": shop["language"] or "en",
+            "languages": LANGUAGES,
+            "max_upload_bytes": settings.max_upload_bytes,
             "error": None, "ui_lang": ui_lang,
             "is_staff": _is_staff(conn, token)})
 
@@ -1186,7 +1188,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         has_photo = photo is not None and hasattr(photo, "file")
         if has_audio:
             return _start_voice_bill(request, shop, token, audio, conn,
-                                     made_by)
+                                     made_by,
+                                     str(form.get("speak_lang") or ""))
         if has_photo:
             return _start_photo_bill(request, shop, token, photo, conn,
                                      made_by)
@@ -1226,11 +1229,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "prices_version_id": db.latest_version(
                 conn, shop["id"], published_only=True),
             "shop_lang": shop["language"] or "en",
+            "languages": LANGUAGES,
+            "max_upload_bytes": settings.max_upload_bytes,
             "error": message, "ui_lang": ui_lang,
             "is_staff": _is_staff(conn, token)},
             status_code=status_code)
 
-    def _start_voice_bill(request, shop, token, audio, conn, made_by="owner"):
+    def _start_voice_bill(request, shop, token, audio, conn, made_by="owner",
+                            speak_lang=""):
         denied = _guarded(request, shop, token)
         if denied is not None:
             return denied
@@ -1239,6 +1245,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             return _new_error(request, shop, token, conn,
                               "That recording was empty.")
         session_id = db.create_session(conn, shop["id"], "bill_voice")
+        if speak_lang in {lang.code for lang in LANGUAGES}:
+            db.set_session_speak_lang(conn, session_id, speak_lang)
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         safe_name = Path(getattr(audio, "filename", "") or "order.webm").name

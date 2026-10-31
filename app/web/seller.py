@@ -1239,16 +1239,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         jobs.submit(run_board_job, settings, session_id, str(saved))
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
+    def _transcript_snippet(session_id: int) -> str:
+        """First 120 chars of a session transcript, else "" (never raises)."""
+        try:
+            saved = json.loads((data_dir / "sessions" / str(session_id)
+                                / "transcript.json").read_text())
+            return str(saved.get("text", ""))[:120]
+        except (OSError, ValueError):
+            return ""
+
     def _language_check_page(request, conn, token, shop, session,
                              ui_lang):
         """Task 53: ask which language was spoken after a script mismatch."""
         t = t_for(ui_lang)
-        try:
-            saved = json.loads((data_dir / "sessions" / str(session["id"])
-                                / "transcript.json").read_text())
-            quote = str(saved.get("text", ""))[:120]
-        except (OSError, ValueError):
-            quote = ""
+        quote = _transcript_snippet(session["id"])
         script = session["stage_detail"] or "other"
         try:
             set_name = get_language(
@@ -1408,12 +1412,20 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         session = _session_of_shop(conn, shop["id"], session_id)
         ui_lang = get_ui_lang(request, shop)
         progress, friendly = _translated_progress(session, ui_lang)
+        needs_action = session["stage"] == "language_check"
         return JSONResponse({
             "status": session["status"], "message": session["message"],
             "stage": progress["stage"], "step": progress["step"],
             "steps": progress["steps"], "detail": progress["detail"],
             "elapsed_s": progress["elapsed_s"],
             "friendly": friendly,
+            # Task 131: the composer stops polling on needs_action and
+            # shows the question with this transcript snippet inline.
+            "needs_action": needs_action,
+            "quote": (_transcript_snippet(session_id)
+                      if needs_action else ""),
+            "language_url": (f"/e/{token}/s/{session_id}/language"
+                             if needs_action else None),
         })
 
     @app.get("/e/{token}/ai")
@@ -1733,6 +1745,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         db.set_session_status(conn, session_id, "processing",
                               "Trying your language...")
         jobs.submit(_retry_language_job, settings, session_id, speak_lang)
+        if "application/json" in request.headers.get("accept", ""):
+            # Task 131: the composer's inline language buttons resume
+            # polling off this answer instead of following a redirect.
+            return JSONResponse({"status": "processing",
+                                 "stage": "listening",
+                                 "speak_lang": speak_lang})
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
 
     def _update_cards(token: str, changes, current_map: dict,
@@ -1787,6 +1805,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "notice": _voice_notice(ui_lang), "error": None,
             "hint": (hint or "").strip(),
             "shop_lang": shop["language"], "ui_lang": ui_lang,
+            "languages": LANGUAGES,
             "max_upload_bytes": app.state.settings.max_upload_bytes})
 
     @app.post("/e/{token}/update")
@@ -1819,8 +1838,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "notice": _voice_notice(ui_lang),
                 "error": _too_big_message(len(payload), limit),
                 "shop_lang": shop["language"], "ui_lang": ui_lang,
+                "languages": LANGUAGES,
                 "max_upload_bytes": limit})
         session_id = db.create_session(conn, shop["id"], "voice_update")
+        speak_lang = str(form.get("speak_lang") or "")
+        if speak_lang in _LANGUAGES:
+            db.set_session_speak_lang(conn, session_id, speak_lang)
         session_dir = data_dir / "sessions" / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
         uploads = data_dir / "uploads"
@@ -1855,6 +1878,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "shop": shop, "token": token, "mode": "record", "items": items,
                 "notice": _voice_notice(ui_lang), "error": message,
                 "shop_lang": shop["language"], "ui_lang": ui_lang,
+                "languages": LANGUAGES,
                 "max_upload_bytes": limit})
         finally:
             saved.unlink(missing_ok=True)

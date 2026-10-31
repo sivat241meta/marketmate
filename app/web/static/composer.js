@@ -17,6 +17,12 @@
   var UNDERSTAND_STAGES = ["matching", "items", "counting", "checking",
     "suggesting", "ready"];
   var DONE_STATUSES = ["review", "approved", "done", "complete", "completed"];
+  /* Task 131: stages where the seller must answer a question before the
+     pipeline can continue (see seller.py + language_check.html). While a
+     session sits in one of these the composer stops polling and shows the
+     question instead of "Listening…" forever. */
+  var NEEDS_ACTION_STAGES = ["language_check"];
+  var LANG_STORE_KEY = "mm_speak_lang";
   var WAVE_BARS = 24;
   var POLL_MS = 1500;
   var POLL_MAX = 40;
@@ -63,6 +69,66 @@
       return path + "/status";
     }
     return null;
+  }
+
+  /* Task 131: pure read of one status poll. "done" only for done
+     statuses (or the page's own done marker: a created bill/quote).
+     Steps follow the real stage: listening step 1, understanding 2. */
+  function statusOf(data) {
+    return String((data && data.status) || "").toLowerCase();
+  }
+
+  function stageOf(data) {
+    return String((data && data.stage) || "").toLowerCase();
+  }
+
+  function isDoneData(data) {
+    if (!data) {
+      return false;
+    }
+    return DONE_STATUSES.indexOf(statusOf(data)) >= 0 ||
+      !!(data.bill_id || data.quote_token);
+  }
+
+  function isFailedData(data) {
+    var status = statusOf(data);
+    return status === "failed" || status === "error";
+  }
+
+  function isNeedsAction(data) {
+    if (!data) {
+      return false;
+    }
+    if (data.needs_action === true || data.needsAction === true) {
+      return true;
+    }
+    return NEEDS_ACTION_STAGES.indexOf(stageOf(data)) >= 0;
+  }
+
+  function stepForStage(stage) {
+    return UNDERSTAND_STAGES.indexOf(
+      String(stage || "").toLowerCase()) >= 0 ? 2 : 1;
+  }
+
+  function statusView(data) {
+    if (isFailedData(data)) {
+      return { kind: "failed", step: 1 };
+    }
+    if (isNeedsAction(data)) {
+      return { kind: "needs_action", step: 1 };
+    }
+    if (isDoneData(data)) {
+      return { kind: "done", step: 3 };
+    }
+    return { kind: "pending", step: stepForStage(stageOf(data)) };
+  }
+
+  function languagePostUrl(statusUrl) {
+    var url = String(statusUrl || "");
+    if (!/\/status\/?$/.test(url)) {
+      return "";
+    }
+    return url.replace(/\/status\/?$/, "/language");
   }
 
   function extractError(html, fallback) {
@@ -152,6 +218,12 @@
     }
     if (ctx.plus) {
       ctx.plus.disabled = busy;
+    }
+    if (ctx.langMenu) {
+      closeLangMenu(ctx);
+    }
+    if (ctx.langChip) {
+      ctx.langChip.disabled = busy;
     }
   }
 
@@ -597,10 +669,106 @@
   }
 
   function showOpenLink(ctx, bubble, finalUrl) {
-    var line = makeEl("p", "composer-result", ctx.str.done);
+    /* Task 131: polling gave up, but the session is not done — never
+       print "Done" here, just link to the result page. */
+    var line = makeEl("p", "composer-result", ctx.str.stillWorking);
     var cta = makeEl("a", "composer-cta", ctx.doneLabel);
     cta.href = finalUrl;
     replaceBubble(bubble, [line, cta]);
+    announce(ctx, ctx.str.stillWorking);
+    setState(ctx, "idle");
+    updateSendToggle(ctx);
+  }
+
+  function langOptions(ctx) {
+    var out = [];
+    if (!ctx.langMenu || !ctx.langMenu.querySelectorAll) {
+      return out;
+    }
+    var opts = ctx.langMenu.querySelectorAll("[data-composer-lang-option]");
+    Array.prototype.forEach.call(opts, function (el) {
+      var code = el.getAttribute ? el.getAttribute("data-code")
+        : (el.dataset && el.dataset.code);
+      if (code) {
+        out.push({ code: code, label: el.textContent || code });
+      }
+    });
+    return out;
+  }
+
+  /* Task 131: the session paused with a question for the seller
+     (language_check). Polling STOPS here; the bubble shows the server's
+     message, the transcript snippet when present, and the language
+     buttons inline (or a "Choose language" link to the session page). */
+  function showNeedsAction(ctx, bubble, data, finalUrl, statusUrl) {
+    var msg = (data && (data.message || data.friendly)) || ctx.str.failed;
+    var nodes = [makeEl("p", "composer-result", msg)];
+    var quote = data && (data.quote || data.transcript);
+    if (quote) {
+      if (ctx.str.heard) {
+        nodes.push(makeEl("p", "composer-heard-label", ctx.str.heard));
+      }
+      nodes.push(makeEl("blockquote", "composer-quote",
+        String(quote).slice(0, 160)));
+    }
+    var postUrl = languagePostUrl(statusUrl);
+    var options = postUrl ? langOptions(ctx) : [];
+    if (options.length) {
+      var row = makeEl("div", "composer-lang-row");
+      options.forEach(function (opt) {
+        var btn = makeEl("button", "composer-lang-pick", opt.label);
+        btn.type = "button";
+        btn.addEventListener("click", function () {
+          answerLanguage(ctx, bubble, row, postUrl, statusUrl, finalUrl,
+            opt.code);
+        });
+        row.appendChild(btn);
+      });
+      nodes.push(row);
+    }
+    var open = makeEl("a", "composer-cta", ctx.str.chooseLanguage);
+    open.href = finalUrl;
+    nodes.push(open);
+    replaceBubble(bubble, nodes);
+    announce(ctx, msg);
+    setState(ctx, "idle");
+    updateSendToggle(ctx);
+  }
+
+  function answerLanguage(ctx, bubble, row, postUrl, statusUrl, finalUrl,
+      code) {
+    var btns = row.querySelectorAll ? row.querySelectorAll("button") : [];
+    Array.prototype.forEach.call(btns, function (btn) {
+      btn.disabled = true;
+    });
+    applyLang(ctx, code);
+    var form = new FormData();
+    form.append("speak_lang", code);
+    fetch(postUrl, {
+      method: "POST",
+      body: form,
+      headers: { Accept: "application/json" },
+      credentials: "same-origin",
+    }).then(function (response) {
+      if (!response.ok) {
+        throw new Error("language post failed");
+      }
+    }).then(function () {
+      showHint(ctx, "");
+      var fresh = addStatusBubble(ctx);
+      var steps = fresh.firstChild;
+      fresh.parentNode.removeChild(fresh);
+      bubble.textContent = "";
+      bubble.appendChild(steps);
+      setState(ctx, "sending");
+      pollStatus(ctx, bubble, statusUrl, finalUrl, 0);
+    }).catch(function () {
+      Array.prototype.forEach.call(btns, function (btn) {
+        btn.disabled = false;
+      });
+      showHint(ctx, ctx.str.failed);
+      announce(ctx, ctx.str.failed);
+    });
   }
 
   function showFailed(ctx, bubble, message) {
@@ -682,18 +850,20 @@
       }
       return response.json();
     }).then(function (data) {
-      var status = String((data && data.status) || "").toLowerCase();
-      if (status === "failed" || status === "error") {
+      var view = statusView(data);
+      if (view.kind === "failed") {
         showFailed(ctx, bubble, (data && data.message) || ctx.str.failed);
         return;
       }
-      if (DONE_STATUSES.indexOf(status) >= 0 || (data && data.bill_id) ||
-          (data && data.quote_token)) {
+      if (view.kind === "needs_action") {
+        showNeedsAction(ctx, bubble, data, finalUrl, statusUrl);
+        return;
+      }
+      if (view.kind === "done") {
         showDone(ctx, bubble, data, finalUrl);
         return;
       }
-      var stage = String((data && data.stage) || "").toLowerCase();
-      setStep(bubble, UNDERSTAND_STAGES.indexOf(stage) >= 0 ? 2 : 1);
+      setStep(bubble, view.step);
       window.setTimeout(function () {
         pollStatus(ctx, bubble, statusUrl, finalUrl, count + 1);
       }, POLL_MS);
@@ -729,7 +899,8 @@
       if (out.json) {
         var data = out.json || {};
         var target = data.url || data.redirect || out.response.url;
-        if (data.status === "failed" || data.status === "error") {
+        var view = statusView(data);
+        if (view.kind === "failed") {
           showFailed(ctx, bubble, data.message || ctx.str.failed);
         } else if (target && target !== window.location.href) {
           var statusUrl = statusUrlFor(target);
@@ -738,8 +909,20 @@
           } else {
             window.location.href = target;
           }
-        } else {
+        } else if (view.kind === "done") {
           showDone(ctx, bubble, data, out.response.url);
+        } else if (view.kind === "needs_action") {
+          showNeedsAction(ctx, bubble, data, target || out.response.url,
+            null);
+        } else {
+          /* Same-page JSON answer that is still working: poll it when
+             possible, else link out — never print "Done" for it. */
+          var sameUrl = statusUrlFor(target || out.response.url);
+          if (sameUrl) {
+            pollStatus(ctx, bubble, sameUrl, target || out.response.url, 0);
+          } else {
+            showOpenLink(ctx, bubble, target || out.response.url);
+          }
         }
         return;
       }
@@ -815,8 +998,39 @@
     postForm(ctx, form, bubble);
   }
 
+  function fileTooBig(ctx, file) {
+    return !!file && ctx.maxBytes > 0 && file.size > ctx.maxBytes;
+  }
+
+  /* Task 131: a blocked file (over data-max-bytes) shows its message in
+     the thread with a way to pick another file — never fails silently. */
+  function showBlocked(ctx, message) {
+    var bubble = makeEl("div", "composer-bubble composer-bubble-status");
+    bubble.appendChild(makeEl("p", "composer-result",
+      "⚠ " + (message || ctx.str.failed)));
+    var row = makeEl("div", "composer-retry-row");
+    var again = makeEl("button", "composer-retry", ctx.str.tryAgain);
+    again.type = "button";
+    again.addEventListener("click", function () {
+      bubble.parentNode.removeChild(bubble);
+      openMenu(ctx);
+    });
+    row.appendChild(again);
+    bubble.appendChild(row);
+    ctx.thread.appendChild(bubble);
+    scrollTo(bubble);
+    announce(ctx, message || ctx.str.failed);
+    setState(ctx, "idle");
+    updateSendToggle(ctx);
+  }
+
   function sendFile(ctx, file) {
     if (!file || !file.size) {
+      return;
+    }
+    if (fileTooBig(ctx, file)) {
+      closeMenu(ctx);
+      showBlocked(ctx, ctx.str.tooBig);
       return;
     }
     if (!ctx.form.checkValidity()) {
@@ -839,6 +1053,67 @@
     postForm(ctx, form, bubble);
   }
 
+  /* Task 131: spoken-language chip (seller pages). The hidden input
+     carries speak_lang into every FormData via collectFields; the chip
+     defaults to the shop language, else the last one used. */
+  function storedLang() {
+    try {
+      if (window.localStorage) {
+        return window.localStorage.getItem(LANG_STORE_KEY) || "";
+      }
+    } catch (err) {
+      /* private mode: fall back to the shop default */
+    }
+    return "";
+  }
+
+  function rememberLang(code) {
+    try {
+      if (window.localStorage && code) {
+        window.localStorage.setItem(LANG_STORE_KEY, code);
+      }
+    } catch (err) {
+      /* private mode */
+    }
+  }
+
+  function syncLangChip(ctx, code) {
+    if (!ctx.langMenu || !ctx.langMenu.querySelectorAll) {
+      return;
+    }
+    var opts = ctx.langMenu.querySelectorAll("[data-composer-lang-option]");
+    Array.prototype.forEach.call(opts, function (el) {
+      var elCode = el.getAttribute ? el.getAttribute("data-code")
+        : (el.dataset && el.dataset.code);
+      var on = elCode === code;
+      if (el.setAttribute) {
+        el.setAttribute("aria-selected", on ? "true" : "false");
+      }
+      if (on && ctx.langLabel) {
+        ctx.langLabel.textContent = el.textContent;
+      }
+    });
+  }
+
+  function applyLang(ctx, code) {
+    if (!code) {
+      return;
+    }
+    if (ctx.langInput) {
+      ctx.langInput.value = code;
+    }
+    syncLangChip(ctx, code);
+    rememberLang(code);
+  }
+
+  function closeLangMenu(ctx) {
+    if (!ctx.langMenu || !ctx.langChip) {
+      return;
+    }
+    ctx.langMenu.hidden = true;
+    ctx.langChip.setAttribute("aria-expanded", "false");
+  }
+
   function initComposer(root) {
     if (!root || root.dataset.composerInit === "true") {
       return;
@@ -856,6 +1131,11 @@
       pill: root.querySelector("[data-composer-pill]"),
       plus: root.querySelector("[data-composer-plus]"),
       menu: root.querySelector("[data-composer-menu]"),
+      langWrap: root.querySelector("[data-composer-lang]"),
+      langChip: root.querySelector("[data-composer-lang-chip]"),
+      langMenu: root.querySelector("[data-composer-lang-menu]"),
+      langLabel: root.querySelector("[data-composer-lang-label]"),
+      langInput: root.querySelector("[data-composer-lang-input]"),
       textarea: root.querySelector("[data-composer-text]"),
       wave: root.querySelector("[data-composer-wave]"),
       timer: root.querySelector("[data-composer-timer]"),
@@ -868,6 +1148,7 @@
       field: data.field || "audio",
       textField: data.textField || "",
       maxSeconds: parseInt(data.maxSeconds || "120", 10) || 120,
+      maxBytes: parseInt(data.maxBytes || "0", 10) || 0,
       doneLabel: data.doneLabel || "",
       str: {
         recording: data.strRecording || "Recording…",
@@ -885,6 +1166,10 @@
         sent: data.strSent || "Sent",
         play: data.strPlay || "Play",
         pause: data.strPause || "Pause",
+        chooseLanguage: data.strChooseLanguage || "Choose language",
+        tooBig: data.strTooBig || "That file is too big to upload.",
+        stillWorking: data.strStillWorking || "Still working.",
+        heard: data.strHeard || "",
       },
       state: "idle",
       hasText: false,
@@ -937,6 +1222,7 @@
     if (ctx.plus) {
       ctx.plus.addEventListener("click", function (event) {
         event.stopPropagation();
+        closeLangMenu(ctx);
         toggleMenu(ctx);
       });
     }
@@ -944,12 +1230,48 @@
       if (ctx.menu && !ctx.menu.hidden && !root.contains(event.target)) {
         closeMenu(ctx);
       }
+      if (ctx.langMenu && !ctx.langMenu.hidden && ctx.langWrap &&
+          !ctx.langWrap.contains(event.target)) {
+        closeLangMenu(ctx);
+      }
     });
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
         closeMenu(ctx);
+        closeLangMenu(ctx);
       }
     });
+
+    if (ctx.langChip && ctx.langMenu && ctx.langInput) {
+      var saved = storedLang();
+      if (saved) {
+        var validCodes = langOptions(ctx).map(function (opt) {
+          return opt.code;
+        });
+        if (validCodes.indexOf(saved) >= 0) {
+          ctx.langInput.value = saved;
+          syncLangChip(ctx, saved);
+        }
+      }
+      ctx.langChip.addEventListener("click", function (event) {
+        event.stopPropagation();
+        closeMenu(ctx);
+        var open = ctx.langMenu.hidden;
+        ctx.langMenu.hidden = !open;
+        ctx.langChip.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      var langOpts = ctx.langMenu.querySelectorAll(
+        "[data-composer-lang-option]");
+      Array.prototype.forEach.call(langOpts, function (el) {
+        el.addEventListener("click", function (event) {
+          event.stopPropagation();
+          var code = el.getAttribute ? el.getAttribute("data-code")
+            : (el.dataset && el.dataset.code);
+          applyLang(ctx, code);
+          closeLangMenu(ctx);
+        });
+      });
+    }
 
     if (ctx.textarea) {
       autogrow(ctx);
@@ -1013,4 +1335,14 @@
   }
 
   window.initComposer = initComposer;
+  /* Task 131: pure helpers for the node unit tests (still one global). */
+  initComposer.testHooks = {
+    statusView: statusView,
+    stepForStage: stepForStage,
+    isDoneData: isDoneData,
+    isNeedsAction: isNeedsAction,
+    languagePostUrl: languagePostUrl,
+    collectFields: collectFields,
+    fileTooBig: fileTooBig,
+  };
 })();

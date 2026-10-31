@@ -125,7 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       return;
     }
-    if (data.status === "review" || data.status === "approved" || data.status === "failed") {
+    if (data.status === "review" || data.status === "approved" || data.status === "failed" || data.stage === "language_check" || data.needs_action) {
+      // Task 131: language_check renders a different template (the
+      // question), so reload instead of spinning the stepper forever.
       window.location.reload();
       return;
     }

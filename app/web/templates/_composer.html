@@ -8,12 +8,15 @@
    customer name/phone) can be injected inside the form with
    {% call composer(...) %}…{% endcall %}.
 #}
-{% macro composer(action, field="audio", text_field=None, placeholder="", mode="voice", extra_fields={}, accept_upload=True, max_seconds=120, done_label=None) %}
+{% macro composer(action, field="audio", text_field=None, placeholder="", mode="voice", extra_fields={}, accept_upload=True, max_seconds=120, done_label=None, speak_lang=None, speak_languages=None, max_bytes=0) %}
 {% set has_text = (mode == "voice+text") and text_field %}
 {% set video_menu = (accept_upload == "video") %}
 {% set _done = done_label if done_label else t('composer.open_result') %}
+{% set _speak_default = speak_lang or (speak_languages[0].code if speak_languages else "") %}
+{% set _ns = namespace(native=_speak_default) %}
+{% for _lang in speak_languages or [] %}{% if _lang.code == _speak_default %}{% set _ns.native = _lang.native_name %}{% endif %}{% endfor %}
 <link rel="stylesheet" href="{{ static_url('css/composer.css') if static_url is defined else '/static/css/composer.css' }}">
-<div class="composer" data-composer data-field="{{ field }}" data-text-field="{{ text_field or '' }}" data-max-seconds="{{ max_seconds }}" data-done-label="{{ _done }}" data-accept-video="{{ 'true' if video_menu else 'false' }}" data-str-recording="{{ t('composer.recording') }}" data-str-sending="{{ t('composer.sending') }}" data-str-listening="{{ t('composer.listening') }}" data-str-understanding="{{ t('composer.understanding') }}" data-str-done="{{ t('composer.done') }}" data-str-try-again="{{ t('composer.try_again') }}" data-str-record-again="{{ t('composer.record_again') }}" data-str-https-hint="{{ t('composer.https_hint') }}" data-str-seconds-left="{{ t('composer.seconds_left') }}" data-str-limit-reached="{{ t('composer.limit_reached') }}" data-str-type-first="{{ t('composer.type_first') }}" data-str-failed="{{ t('composer.failed') }}" data-str-sent="{{ t('composer.sent') }}" data-str-play="{{ t('composer.play_aria') }}" data-str-pause="{{ t('composer.pause_aria') }}">
+<div class="composer" data-composer data-field="{{ field }}" data-text-field="{{ text_field or '' }}" data-max-seconds="{{ max_seconds }}" data-max-bytes="{{ max_bytes or 0 }}" data-done-label="{{ _done }}" data-accept-video="{{ 'true' if video_menu else 'false' }}" data-str-recording="{{ t('composer.recording') }}" data-str-sending="{{ t('composer.sending') }}" data-str-listening="{{ t('composer.listening') }}" data-str-understanding="{{ t('composer.understanding') }}" data-str-done="{{ t('composer.done') }}" data-str-try-again="{{ t('composer.try_again') }}" data-str-record-again="{{ t('composer.record_again') }}" data-str-https-hint="{{ t('composer.https_hint') }}" data-str-seconds-left="{{ t('composer.seconds_left') }}" data-str-limit-reached="{{ t('composer.limit_reached') }}" data-str-type-first="{{ t('composer.type_first') }}" data-str-failed="{{ t('composer.failed') }}" data-str-sent="{{ t('composer.sent') }}" data-str-play="{{ t('composer.play_aria') }}" data-str-pause="{{ t('composer.pause_aria') }}" data-str-choose-language="{{ t('composer.choose_language') }}" data-str-too-big="{{ t('composer.too_big') }}" data-str-still-working="{{ t('composer.still_working') }}" data-str-heard="{{ t('langcheck.heard_label') }}">
   <div class="composer-thread" data-composer-thread role="log" aria-live="polite"></div>
   <form class="composer-form" method="post" action="{{ action }}" enctype="multipart/form-data" data-composer-form>
     {% for _name, _value in (extra_fields or {}).items() %}
@@ -31,6 +34,20 @@
           <label class="composer-menu-item" role="menuitem" data-composer-video-only hidden><input class="composer-file" type="file" name="{{ field }}" accept="video/*" capture="environment" data-composer-file disabled><span>{{ t('composer.take_video') }}</span></label>
           {% endif %}
         </div>
+      </div>
+      {% endif %}
+      {# Task 131: seller-side spoken-language chip. The hidden input
+         posts the shop default without JS; JS swaps in the last-used
+         language and lets the seller pick from the dashboard list. #}
+      {% if speak_languages %}
+      <div class="composer-lang" data-composer-lang>
+        <button class="composer-lang-chip" type="button" data-composer-lang-chip aria-label="{{ t('composer.lang_aria') }}" aria-haspopup="listbox" aria-expanded="false"><span data-composer-lang-label>{{ _ns.native }}</span><span aria-hidden="true"> ▾</span></button>
+        <div class="composer-lang-menu" role="listbox" data-composer-lang-menu aria-label="{{ t('composer.lang_aria') }}" hidden>
+          {% for lang in speak_languages %}
+          <button type="button" role="option" data-composer-lang-option data-code="{{ lang.code }}" aria-selected="{{ 'true' if lang.code == _speak_default else 'false' }}">{{ lang.native_name }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="speak_lang" value="{{ _speak_default }}" data-composer-lang-input>
       </div>
       {% endif %}
       {# Task 125: Cancel sits left of the waveform and Send right of

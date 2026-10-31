@@ -116,7 +116,7 @@
   <p class="muted">{{ t('bn.speak_desc') }}</p>
   {# Task 125: the composer is the only recorder here — the old
      live-order mic block is gone. #}
-  {{ composer("/e/" ~ token ~ "/bills/new", text_field="items", placeholder=t('bn.type_placeholder'), mode="voice+text", max_seconds=120, done_label=t('composer.view_bill')) }}
+  {{ composer("/e/" ~ token ~ "/bills/new", text_field="items", placeholder=t('bn.type_placeholder'), mode="voice+text", max_seconds=120, done_label=t('composer.view_bill'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
   <p class="notice">{{ t('notice.voice') }}</p>
 </section>
 

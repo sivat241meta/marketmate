@@ -193,7 +193,8 @@ def test_step1_taps_state_one_primary(tmp_path):
     assert "Check now" in morning
     assert f"/e/{token}/s/{session_id}" in morning
     assert morning.count("pill dark") == 1
-    assert "data-upload-form" not in morning
+    # Task 131: an upload entry stays on the dashboard while items wait.
+    assert "data-upload-form" in morning
     assert "Send today&#39;s prices on WhatsApp" not in morning
     assert "Send today's prices on WhatsApp" not in morning
 
@@ -214,7 +215,8 @@ def test_step1_live_state_one_primary(tmp_path):
     for label in ("Print board", "Print price tags", "Shop QR"):
         assert label in morning, label
     assert "Check now" not in morning
-    assert "data-upload-form" not in morning
+    # Task 131: after publishing, the compact "Update today's prices" card.
+    assert "data-upload-form" in morning
 
 
 def test_step1_first_run_get_started_takes_its_place(tmp_path):
@@ -228,7 +230,8 @@ def test_step1_first_run_get_started_takes_its_place(tmp_path):
     assert "Check now" not in html
     assert "Send today&#39;s prices on WhatsApp" not in html
     assert "Send today's prices on WhatsApp" not in html
-    assert "data-upload-form" not in html
+    # Task 131: first-run shops get the upload card (step 2 links to it).
+    assert "data-upload-form" in html
 
 
 # --- 2. step 2 counts match the database ------------------------------------

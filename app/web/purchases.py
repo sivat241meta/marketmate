@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -17,6 +17,7 @@ from app.costs import (
     CostCapExceeded,
     CostLedger,
 )
+from app.languages import LANGUAGES
 from app.limits import RATE_LIMIT_MESSAGE, client_ip
 from app.models import UNITS
 from app.outputs.money import format_money
@@ -27,6 +28,8 @@ from app.pipeline.purchase import (
 )
 from app.web.auth import owner_or_403, resolve_or_404
 from app.web.i18n import get_ui_lang, t_for
+
+_LANG_CODES = {lang.code for lang in LANGUAGES}
 
 
 def _today_ist() -> str:
@@ -166,6 +169,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "units": list(UNITS),
             "notice": t_for(ui_lang)("notice.voice"),
             "ui_lang": ui_lang,
+            "shop_lang": shop["language"] or "en",
+            "languages": LANGUAGES,
+            "max_upload_bytes": settings.max_upload_bytes,
         }, status_code=status_code)
 
     @app.get("/e/{token}/purchases")
@@ -180,7 +186,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/purchases/voice")
     def purchases_voice(request: Request, token: str, audio: UploadFile,
-                        conn: Conn):
+                        conn: Conn, speak_lang: str = Form("")):
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -215,6 +221,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                  "token": token, "ui_lang": ui_lang},
                 status_code=400)
         session_id = db.create_session(conn, shop["id"], "purchase")
+        if speak_lang in _LANG_CODES:
+            db.set_session_speak_lang(conn, session_id, speak_lang)
         uploads = data_dir / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         safe_name = Path(getattr(audio, "filename", "") or "buy.webm").name
