@@ -93,7 +93,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1832 tests pass. `.venv/bin/ruff check .` is clean.
+1851 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Sample shops
 
