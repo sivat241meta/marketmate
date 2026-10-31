@@ -8,20 +8,15 @@ Street and market sellers change prices daily and say them out loud. They do not
 
 ## What it does
 
+The core story: the seller films the stall or speaks today's prices, checks the proof-backed list, and publishes — a shop page, a WhatsApp price message and a printed price board. Customers compare shops and order by voice.
+
 Seller:
 
 - Morning prices from a stall video, a voice note, a board photo, or live mode.
 - A check page where every price keeps its voice-clip proof. The seller taps unclear ones, then approves.
 - Approve publishes a version: shop page, WhatsApp price message, price board PDF, shelf tags, CSV and Excel.
 - Edit names on the check page or later. Names are remembered for the next list and for billing.
-- Square item photos: each item is found in the video — sam-3.1 finds its box, and we keep a square photo from the seller's own video. Whole objects only (a shape test rejects half fruit), cross-checked against the other items and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
-
-Billing:
-
-- Voice or typed bills from today's list. Tap items for the fastest no-AI path.
-- UPI QR on the bill and a cash change helper.
-- Credit (udhaar) with customer balances and WhatsApp reminders.
-- Orders board: quotes waiting, bills, paid. Day close with wastage and a summary PDF.
+- Square item photos: each item is found in the video — sam-3.1 finds its box, and we keep a square original crop from the seller's own video. Whole objects only (a shape test rejects half fruit), cross-checked against the other items and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
 
 Customer:
 
@@ -29,6 +24,8 @@ Customer:
 - Shop page with product tiles and today's prices.
 - Order by voice, text or photo. "My orders" shows status.
 - Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in MarketMate's Find a shop", on for new shops, switch in Settings). The market page has an honest empty state.
+
+Also built: voice and typed billing with UPI QR, credit (udhaar) with WhatsApp reminders, an orders board, and a day close with wastage and a summary PDF.
 
 Example of the printed board (demo data): [docs/img/board.png](docs/img/board.png).
 
@@ -44,7 +41,7 @@ Prices only come from the seller's speech. Every price keeps its voice clip. The
 | `muse-voice-transcribe-1.0` | Live transcription over websocket: live prices, live billing, live ordering | `app/meta/realtime.py` |
 | `muse-spark-1.3` | Text: price extraction, voice updates, purchases, number cross-check, search parse, basket explanation | `app/pipeline/extract.py`, `app/pipeline/update.py`, `app/pipeline/purchase.py`, `app/pipeline/checks.py`, `app/market/search.py`, `app/market/basket.py` |
 | `muse-spark-1.3` | Vision: product list, best frame per item, board reading, photo quotes | `app/pipeline/vision.py`, `app/pipeline/frames.py`, `app/pipeline/board.py`, `app/market/quote.py` |
-| `sam-3.1` | Cut-out masks, face gate, counting boxes (parsed with `meta-sam-parser`) | `app/pipeline/photos.py`, `app/pipeline/vision.py`, `app/meta/sam.py` |
+| `sam-3.1` | Item boxes for the square crops, face gate, counting boxes (parsed with `meta-sam-parser`) | `app/pipeline/photos.py`, `app/pipeline/vision.py`, `app/meta/sam.py` |
 | `meta-models/muse-spark-open-1026` | Optional: the text steps above via Baseten when `TEXT_PROVIDER=baseten` | `app/meta/spark.py`, `app/config.py` |
 
 One Spark id (`muse-spark-1.3`) serves every text and vision step. Image steps always use Meta. The number cross-check uses Baseten whenever a key is set, else Meta. No runtime model from any other company is used.
@@ -93,7 +90,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1965 tests pass. `.venv/bin/ruff check .` is clean.
+1986 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Sample shops
 
@@ -109,7 +106,7 @@ tests nobody will pack.
 Their prices really went through the Meta pipeline: each list was
 spoken as a voice note and processed by Muse Voice Transcribe, Muse
 Spark and the same checks as an uploaded voice note, and each item
-photo went through the same SAM 3.1 cut-out + Spark photo check.
+photo went through the same SAM 3.1 square crop + Spark photo check.
 Re-seeding costs nothing and makes no API calls — the pipeline output
 is committed in `scripts/sample_data/`.
 
@@ -134,11 +131,11 @@ Stored on disk: the SQLite database, item photos, voice clips and the cost ledge
 
 ## How it was built
 
-Every commit in this repository was made by Muse Code, Meta's coding agent. 92 of 93 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
+Every commit in this repository was made by Muse Code, Meta's coding agent. 199 of 200 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
 
 Logo: the MarketMate "Mm leaves" mark (teal green + soft blue) and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
 
-Design: v12 teal green + soft blue marketplace (#0F766E, #0369A1) — see [docs/ui/v11-meta-blue-accent.md](docs/ui/v11-meta-blue-accent.md) for the previous theme.
+Design: v13 teal green + soft blue marketplace (#0F766E, #0369A1) — [docs/ui/v11-meta-blue-accent.md](docs/ui/v11-meta-blue-accent.md) is an earlier theme note.
 
 Icons: Fluent Emoji (Flat) by Microsoft, MIT licence.
 
@@ -149,7 +146,7 @@ Font: Inter (SIL Open Font License 1.1, OFL) for English text; Noto keeps Tamil 
 ## Limits and next steps
 
 - Spark results vary between runs, so the check page exists and every price needs proof.
-- SAM can confuse similar fruit, so each cut-out is verified before it ships.
+- SAM can confuse similar fruit, so each crop is verified before it ships.
 - Tamil and Hindi strings are complete but still await native-speaker review.
 - The language benchmark uses synthetic clips, not real market recordings.
 - One container owns the SQLite database; scaling past that needs a real database.

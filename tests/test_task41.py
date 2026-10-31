@@ -6,11 +6,9 @@ import json
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path
 from urllib.parse import quote as url_quote
 
 from fastapi.testclient import TestClient
-from PIL import Image
 
 from app import db
 from app.config import load_settings
@@ -116,14 +114,8 @@ def test_base_links_manifest_and_icons(tmp_path):
     assert 'name="theme-color"' in html and "#0B2A33" in html
 
 
-def test_icons_exist_with_right_sizes():
-    root = Path(__file__).resolve().parent.parent
-    for name, size in (("icon-192.png", (192, 192)),
-                       ("icon-512.png", (512, 512))):
-        path = root / "app" / "web" / "static" / "icons" / name
-        assert path.is_file(), f"missing {path}"
-        with Image.open(path) as img:
-            assert img.size == size, f"{name} is {img.size}"
+# Task 152: the unreferenced static/icons/icon-*.png files were deleted;
+# the served brand icons are pinned by test_task80/test_task95 instead.
 
 
 def test_dashboard_has_install_hint(tmp_path):

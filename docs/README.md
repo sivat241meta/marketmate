@@ -15,4 +15,4 @@
 - `ui/fresh-market.html`: Fresh Market UI reference mockup (design history).
 - `ui/meta-blue.html`: v4 quick-commerce study mockup (design history).
 - `ui/v9-clickup-workspace.html`: v9 workspace and shop grid mockup (design history).
-- `ui/v11-meta-blue-accent.md`: v11 Meta blue accent note (current theme).
+- `ui/v11-meta-blue-accent.md`: v11 Meta blue accent note (design history).

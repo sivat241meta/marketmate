@@ -245,7 +245,8 @@ def test_every_seller_page_renders_all_langs(tmp_path):
 # --- 3. JS hooks still present ----------------------------------------------
 
 # Hooks collected from the JS each page loads (live.js, review.js,
-# methods.js, live-order.js, tap-chips.js, offline-bills.js, quote.js).
+# methods.js, tap-chips.js, offline-bills.js, quote.js). Task 152:
+# live-order.js and recorder.js were deleted (nothing loads them).
 
 LIVE_HOOKS = ["data-live", "data-token", "data-worklet", "data-live-video",
               "data-live-canvas", "data-live-mic", "data-live-hint",
@@ -315,8 +316,8 @@ def test_js_hooks_present_on_seller_pages(tmp_path):
 def test_hooks_match_what_js_queries():
     """Every data-*/id/class hook asserted above is really queried by JS."""
     js = {}
-    for name in ("live", "review", "methods", "live-order", "tap-chips",
-                 "offline-bills", "quote", "recorder", "composer"):
+    for name in ("live", "review", "methods", "tap-chips",
+                 "offline-bills", "quote", "composer"):
         js[name] = (ROOT / f"app/web/static/{name}.js").read_text()
     # bill.html carries its own cash-helper script inline.
     js["bill-inline"] = (ROOT / "app/web/templates/bill.html").read_text()

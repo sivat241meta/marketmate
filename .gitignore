@@ -5,5 +5,9 @@ eval/out/
 .venv/
 __pycache__/
 *.egg-info/
+*.mp4
+*.mov
+*.m4a
+Real shop data/
 docs/ideas-ranking.html
 docs/product-flow.html
