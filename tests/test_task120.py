@@ -259,9 +259,12 @@ def test_grid_css_full_width_when_bag_empty():
 
 def test_grid_phone_columns_unchanged():
     css = APP_CSS.read_text()
+    # Task 146: same column counts (3, then 2 under 360px), but
+    # minmax(0, 1fr) tracks so Tamil names wrap instead of forcing
+    # the grid wider than 320/390px phones.
     assert (".grid-products { display: grid; "
-            "grid-template-columns: repeat(3, 1fr);") in css
-    assert (".grid-products { grid-template-columns: repeat(2, 1fr); }"
+            "grid-template-columns: repeat(3, minmax(0, 1fr));") in css
+    assert (".grid-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }"
             in css)
 
 

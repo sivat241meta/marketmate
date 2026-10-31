@@ -204,8 +204,12 @@ body.v13 .arr{width:44px;height:44px;border-radius:50%;background:#E2E8EB;color:
 body.v13 .arr:hover:not(:disabled){background:var(--teal-soft);color:var(--teal);transform:scale(1.08)}
 body.v13 .arr:disabled{opacity:.45;cursor:default}
 body.v13 .link-teal{color:var(--teal);font-weight:800;font-size:15px;display:flex;align-items:center;min-height:44px;white-space:nowrap}
-body.v13 .scroller{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+body.v13 .scroller{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;min-width:0;max-width:100%}
 body.v13 .scroller::-webkit-scrollbar{display:none}
+/* Task 146: every horizontal scroller — and each parent link above it —
+   shrinks inside 320/390px phones instead of growing to its Tamil/Hindi
+   content (flex/grid min-width:auto blowout). */
+body.v13 .fresh-grid,body.v13 .cat-row,body.v13 .shop-row,body.v13 .deal-row,body.v13 .meta-row,body.v13 .mkt-chips,body.v13 .mkt-tabs,body.v13 .filter-row,body.v13 .wrap,body.v13 .sec,body.v13 .sec-head,body.v13 .mkt-main,body.v13 .mkt-sec,body.v13 .mkt-groups{min-width:0;max-width:100%}
 
 /* what's fresh: 2 rows, image without a frame */
 body.v13 .fresh-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:144px;gap:18px 12px}
@@ -224,7 +228,9 @@ body.v13 .cat .tile{position:relative;display:block;height:150px;border-radius:1
 body.v13 .cat:hover .tile{transform:translateY(-4px);box-shadow:var(--shadow)}
 body.v13 .cat .tile img{position:absolute;filter:drop-shadow(0 6px 8px rgba(0,0,0,.16));mix-blend-mode:multiply}
 body.v13 .cat .tile.photo img{position:static;width:100%;height:100%;object-fit:cover;filter:none;mix-blend-mode:normal}
-body.v13 .cat .tile.photo{height:auto;aspect-ratio:1/1}
+/* Task 146: the full-bleed photo tile (Greens) is exactly as tall as
+   every other category tile, so all labels share one baseline. */
+body.v13 .cat .tile.photo{height:150px}
 body.v13 .cat .c1{width:84px;left:12px;top:26px}
 body.v13 .cat .c2{width:70px;right:10px;top:38px}
 body.v13 .cat .c3{width:60px;left:44px;bottom:8px}
@@ -325,7 +331,8 @@ body.v13 .foot-brand .brand-word{font-size:26px}
 body.v13 .foot-brand .brand{min-height:0}
 body.v13 .foot-brand p{margin-top:8px;color:#5B6E75;font-size:15px;overflow-wrap:break-word}
 body.v13 .foot-brand .honest{max-width:240px;font-size:13px;color:var(--muted)}
-body.v13 .foot-col{display:flex;flex-direction:column;gap:4px;min-width:0}
+body.v13 .foot-col{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+body.v13 .foot-col>*{min-width:0;max-width:100%}
 body.v13 .foot-col b{font-size:17px;font-weight:700;color:var(--ink-2)}
 body.v13 .foot-col b.mt{margin-top:14px}
 body.v13 .foot-col a,body.v13 .foot-col .foot-lang button{display:flex;align-items:center;min-height:44px;font-size:15px;color:#5B6E75;transition:color .2s;text-align:left}
@@ -458,6 +465,7 @@ body.v13 .my-card{border:1px solid var(--line);border-radius:16px}
   body.v13 .fresh span{font-size:12px}
   body.v13 .cat-row{grid-auto-columns:104px;gap:12px}
   body.v13 .cat .tile{height:112px}
+  body.v13 .cat .tile.photo{height:112px}
   body.v13 .cat .c1{width:62px}
   body.v13 .cat .c2{width:52px}
   body.v13 .cat .c3{width:46px;left:30px}

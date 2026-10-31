@@ -1746,10 +1746,13 @@ input[type="file"] { padding: var(--space-2); }
 .row-main { flex: 1; min-width: 0; }
 .inline-form { display: inline; margin: 0; }
 
-/* ---- Customer grid: 3 columns on phones, 2 under 360px ---- */
-.grid-products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+/* ---- Customer grid: 3 columns on phones, 2 under 360px ----
+   Task 146: minmax(0, 1fr) columns (+ min-width:0 cards) so Tamil names
+   and chip rows wrap inside 320/390px screens instead of forcing the
+   grid wider than the phone. */
+.grid-products { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; max-width: 100%; }
 @media (max-width: 359.98px) {
-  .grid-products { grid-template-columns: repeat(2, 1fr); }
+  .grid-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* Horizontally scrolling tile rows for sections with many items. */
 .hs { display: flex; gap: 10px; overflow-x: auto; padding: 0 0 4px; }
@@ -2871,7 +2874,7 @@ svg.boxes text.box-badge {
   .sheet { border-radius: 26px; }
   .entry-grid { grid-template-columns: repeat(3, 1fr); }
   .steps { grid-template-columns: repeat(3, 1fr); }
-  .grid-products { grid-template-columns: repeat(5, 1fr); }
+  .grid-products { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .tiles-four { grid-template-columns: repeat(4, 1fr); }
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
   .band .gcards { grid-template-columns: repeat(4, 1fr); }
@@ -2957,7 +2960,7 @@ button.pill { font: inherit; cursor: pointer; }
 .segmented.chips .chip { border: 1.5px solid var(--line-2); background: #fff; border-radius: 999px; flex: 0 1 auto; color: var(--ink); box-shadow: none; }
 .segmented.chips .chip.is-active { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff; }
 .tap-panel h2 { margin-top: 0; }
-.bill-split { display: grid; gap: var(--space-4); }
+.bill-split { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
 .tap-grid { align-content: start; }
 /* Tap-billing tiles use steppers + chips, not the photo-corner ADD: the
    ADD button is an in-flow first-tap target, never absolutely placed. */
@@ -2967,10 +2970,10 @@ button.pill { font: inherit; cursor: pointer; }
   justify-content: center;
   min-height: 44px;
 }
-.tap-grid .card { margin: 0; }
+.tap-grid .card { margin: 0; min-width: 0; max-width: 100%; }
 .tap-grid .bd h3 { overflow-wrap: anywhere; }
 .tap-grid .bd h3 .tname { display: block; -webkit-line-clamp: unset; overflow: visible; }
-.grid-products .card { margin: 0; }
+.grid-products .card { margin: 0; min-width: 0; max-width: 100%; }
 .tap-grid .stepper { margin: 0; }
 .tap-grid .stepper.is-compact { width: 100%; }
 .tap-grid .stepper.is-compact input[type="number"] { flex: 1 1 3rem; width: 3rem; min-width: 0; }
@@ -2997,12 +3000,12 @@ h1.big, h2.h2s { overflow-wrap: anywhere; }
 
 @media (min-width: 900px) {
   .bill-split { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
-  .bill-split .grid-products { grid-template-columns: repeat(4, 1fr); }
+  .bill-split .grid-products { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .tap-rcpt { position: sticky; top: 76px; }
 }
 @media (min-width: 1200px) {
-  .grid-products { grid-template-columns: repeat(6, 1fr); }
-  .bill-split .grid-products { grid-template-columns: repeat(4, 1fr); }
+  .grid-products { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .bill-split .grid-products { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 /* Seller bottom nav hides where the laptop rail takes over (1000px). */
 @media (min-width: 1000px) {
