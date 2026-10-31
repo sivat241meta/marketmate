@@ -81,6 +81,7 @@ from app.pipeline.update import (
     parse_update,
 )
 from app.web.auth import owner_or_403, resolve_or_404
+from app.web.home_data import v13_cutout_url
 from app.web.i18n import (
     SAMPLE_TIME,
     first_grapheme,
@@ -2102,10 +2103,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         hero_photo = None
         min_price: Decimal | None = None
         max_price: Decimal | None = None
+        quotes_ok = True
         if version_id is not None:
             for item in db.version_items(conn, version_id):
                 name = item.name_local if language == shop_lang else item.name_en
-                photo_url = _photo_url(item.photo)
+                named_cutout = v13_cutout_url(item.name_en)
+                photo_url = named_cutout or _photo_url(item.photo)
+                photo_cutout = bool(named_cutout) or is_cutout_photo(item.photo)
                 if photo_url and hero_photo is None and not item.sold_out:
                     hero_photo = photo_url
                 first = item.price_lines[0] if item.price_lines else None
@@ -2120,6 +2124,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 clip_file = (db.media_path(data_dir, item.proof.audio_clip)
                              if item.proof else None)
                 has_clip = bool(clip_file is not None and clip_file.is_file())
+                quote = (item.proof.quote if item.proof else "") or ""
+                if not quote.strip():
+                    quotes_ok = False
                 rows.append({
                     "name": f"{name} ({item.variety})" if item.variety else name,
                     "name_local": item.name_local,
@@ -2127,12 +2134,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     "has_clip": has_clip,
                     "clip_url": (f"/s/{shop['slug']}/voice/{item.id}"
                                  if has_clip else ""),
+                    # The price's own transcript span ("said" words);
+                    # the full proof quote never leaves the server.
+                    "said": (first.said or "") if first else "",
                     "cat": category_of(item.name_en),
                     "tile": first_grapheme(item.name_local or name),
                     "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
                     "photo_url": photo_url,
-                    "photo_cutout": is_cutout_photo(item.photo),
+                    "photo_cutout": photo_cutout,
                     "sold_out": item.sold_out,
                     "unit": unit,
                     "price": str(price) if price is not None else "",
@@ -2215,8 +2225,104 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 priced, key=lambda row: Decimal(row["price"]))[:5]
         except (InvalidOperation, ValueError):
             best_rows = [row for row in rows if row["price"]][:5]
+        # --- v13 shop page facts (Task 127): every caption below is
+        # computed, never invented. "Lowest in <market>" compares the
+        # same item + unit across today's live lists in this area;
+        # "less than yesterday" needs the previous published version
+        # from yesterday with a higher price for the same item.
+        from app.web import home_data as home_data_mod
+
+        now_utc = datetime.now(UTC)
+        today_ist = now_utc.astimezone(IST).date()
+        area_min: dict[tuple[str, str], Decimal] = {}
+        for live in home_data_mod.live_shops(conn, now_utc,
+                                             settings=app.state.settings):
+            if (live["shop"]["area"] or "") != (shop["area"] or ""):
+                continue
+            for live_item in live["items"]:
+                for live_line in live_item.price_lines:
+                    if live_line.price is None:
+                        continue
+                    key = ((live_item.name_en or "").strip().lower(),
+                           (live_line.unit or "").strip().lower())
+                    prev = area_min.get(key)
+                    if prev is None or live_line.price < prev:
+                        area_min[key] = live_line.price
+        prev_prices: dict[tuple[str, str], Decimal] = {}
+        prev_yesterday = False
+        if version_id is not None:
+            prev_row = conn.execute(
+                "SELECT id FROM versions WHERE shop_id = ?"
+                " AND published = 1 AND id < ?"
+                " ORDER BY id DESC LIMIT 1",
+                (shop["id"], version_id)).fetchone()
+            if prev_row is not None:
+                prev_when = db.version_time(conn, prev_row["id"])
+                if prev_when.tzinfo is None:
+                    prev_when = prev_when.replace(tzinfo=UTC)
+                prev_yesterday = (
+                    (today_ist - prev_when.astimezone(IST).date()).days
+                    == 1)
+                for prev_item in db.version_items(conn, prev_row["id"]):
+                    if prev_item.sold_out or not prev_item.price_lines:
+                        continue
+                    first_prev = prev_item.price_lines[0]
+                    if first_prev.price is None:
+                        continue
+                    prev_prices[((prev_item.name_en or "").strip().lower(),
+                                 (prev_item.variety or "").strip().lower())] \
+                        = first_prev.price
+        best_cards = []
+        for row in best_rows:
+            caption = ""
+            try:
+                amount = Decimal(row["price"])
+            except (InvalidOperation, ValueError):
+                amount = None
+            if amount is not None:
+                floor = area_min.get(
+                    ((row["name_en"] or "").strip().lower(),
+                     (row["unit"] or "").strip().lower()))
+                if floor is not None and amount <= floor:
+                    caption = strings("v13.lowest_in",
+                                      market=(shop["area"] or ""))
+            if not caption and amount is not None and prev_yesterday:
+                was = prev_prices.get(
+                    ((row["name_en"] or "").strip().lower(),
+                     (row["variety"] or "").strip().lower()))
+                if was is not None and was > amount:
+                    diff = format((was - amount).normalize(), "f")
+                    caption = strings("v13.less_yday", n=diff)
+            if not caption:
+                caption = (strings("hp.said_sample") if shop["is_demo"]
+                           else strings("v13.said_today"))
+            best_cards.append({
+                "name": row["name_local"],
+                "price": format_money(amount, currency)
+                if amount is not None else "",
+                "per": (row["lines"][0]["per"] if row["lines"] else ""),
+                "photo_url": row["photo_url"],
+                "caption": caption,
+            })
+        area_parts = [(part.strip()) for part in
+                      (shop["area"] or "").split(",") if part.strip()]
+        if len(area_parts) > 1:
+            crumb_market, crumb_city = area_parts[0], area_parts[-1]
+        elif area_parts:
+            crumb_market, crumb_city = area_parts[0], ""
+        else:
+            crumb_market, crumb_city = "", ""
+        first_clip = next((row["clip_url"] for row in rows
+                           if row["has_clip"]), "")
+        said_today = False
+        if version_id is not None and not shop["is_demo"]:
+            said_when = db.version_time(conn, version_id)
+            if said_when.tzinfo is None:
+                said_when = said_when.replace(tzinfo=UTC)
+            said_today = said_when.astimezone(IST).date() == today_ist
         return templates.TemplateResponse(request, "shop.html", {
             "shop": shop, "rows": rows, "best_rows": best_rows,
+            "best_cards": best_cards,
             "rel": rel, "digits": digits,
             "share_url": share_url,
             "lang": language, "shop_lang": shop_lang,
@@ -2230,6 +2336,11 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "open_time": open_info["time"],
             "has_hours": has_hours(hours_raw),
             "nearby": nearby,
+            "voice_checked": bool(rows) and quotes_ok,
+            "said_today": said_today,
+            "n_prices": len(priced),
+            "crumb_market": crumb_market, "crumb_city": crumb_city,
+            "first_clip_url": first_clip,
             "ui_lang": language if language in ("ta", "hi", "en") else "en"})
 
     @app.get("/s/{slug}/voice/{item_id}")

@@ -1,0 +1,26 @@
+{# v13 EN language dropdown (Task 127): the button reads the
+   current language + chevron; the menu holds either the cookie
+   switch buttons (lang_buttons) or the ?lang= links for shop
+   content pages (lang_links). base.html binds
+   [data-ui-toggle] [data-ui-lang] anywhere; popups.js toggles
+   [data-lang-btn]/[data-lang-menu]. #}
+{% import "_ui.html" as ui %}
+{% macro lang_links(exact, label, active, native_lang, native_name) %}
+  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle data-lang-drop>
+    <button type="button" class="lang-btn" data-lang-btn aria-haspopup="true" aria-expanded="false">{{ {"en": "EN", "ta": "தமிழ்", "hi": "हिन्दी"}.get(active, "EN") }} {{ ui.icon("chev") }}</button>
+    <span class="lang-menu" data-lang-menu hidden>
+      <a href="?lang=en" lang="en" class="{% if active == 'en' %}on{% endif %}">EN</a>
+      {% if native_lang != "en" %}<a href="?lang={{ native_lang }}" lang="{{ native_lang }}" class="{% if active == native_lang %}on{% endif %}">{{ native_name }}</a>{% endif %}
+    </span>
+  </span>
+{% endmacro %}
+{% macro lang_buttons(exact, label, active) %}
+  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle data-lang-drop>
+    <button type="button" class="lang-btn" data-lang-btn aria-haspopup="true" aria-expanded="false">{{ {"en": "EN", "ta": "தமிழ்", "hi": "हिन्दी"}.get(active, "EN") }} {{ ui.icon("chev") }}</button>
+    <span class="lang-menu" data-lang-menu hidden>
+      <button type="button" data-ui-lang="en" class="{% if active == 'en' %}on{% endif %}">EN</button>
+      <button type="button" data-ui-lang="ta" lang="ta" class="{% if active == 'ta' %}on{% endif %}">தமிழ்</button>
+      <button type="button" data-ui-lang="hi" lang="hi" class="{% if active == 'hi' %}on{% endif %}">हिन्दी</button>
+    </span>
+  </span>
+{% endmacro %}

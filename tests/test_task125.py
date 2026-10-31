@@ -67,52 +67,48 @@ def _media_block(css, query, occurrence=1):
 
 
 def test_nav_labels_nowrap_and_location_ellipsis_css():
-    css = APP_CSS.read_text()
-    # Above the Task 84 marker (which forbids nowrap below it).
-    base = css.split("/* Task 84 homepage */")[0]
-    assert ".hp-nav a > span" in base
-    assert "white-space: nowrap" in base.split(
-        ".hp-nav a > span")[1].split("}")[0]
-    assert ".loc-txt" in base
-    loc = re.search(r"\.loc-txt \{\s*display: block;([^}]*)\}", css)
-    assert loc, ".loc-txt ellipsis rule"
-    assert "text-overflow: ellipsis" in loc.group(1)
-    assert "overflow: hidden" in loc.group(1)
-    btn = css.split(".loc-btn {")[1].split("}")[0]
+    # Task 127: v13 nav links never wrap; the location mini button
+    # ellipsizes instead of pushing the header wide.
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    nav = css.split("body.v13 .nav a{")[1].split("}")[0]
+    assert "white-space:nowrap" in nav.replace(" ", "")
+    loc = css.split("body.v13 .loc-mini b{")[1].split("}")[0]
+    assert "text-overflow:ellipsis" in loc.replace(" ", "")
+    assert "overflow:hidden" in loc.replace(" ", "")
+    btn = css.split("body.v13 .loc-mini{")[1].split("}")[0]
     assert "max-width" in btn
 
 
 def test_nav_icons_hide_below_1360_and_more_below_1180():
-    css = APP_CSS.read_text()
-    small = _media_block(css, "@media (max-width: 1360px)")
-    assert ".hp-nav > a > .obj" in small
-    assert "display: none" in small
-    more = _media_block(css, "@media (max-width: 1180px)")
-    assert ".hp-nav a.nav-extra" in more
-    assert "display: none" in more
-    assert ".hp-nav .nav-more" in more
-    assert "display: block" in more
-    # The dropdown animates like the rest of the nav.
-    menu = css.split(".nav-more-menu {")[1].split("}")[0]
-    assert "transition" in menu
-    assert "transform" in menu
+    # Task 127: v13 narrows in two steps — the outline button goes
+    # below 1280px, the nav links collapse into the menu at 1100px.
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    narrow = _media_block(css, "@media (max-width:1280px)")
+    assert ".btn-outline-w" in narrow
+    assert "display:none" in narrow.replace(" ", "")
+    menu = _media_block(css, "@media (max-width:1100px)")
+    assert ".topbar .nav" in menu
+    assert "display:none" in menu.replace(" ", "")
+    assert ".menu-btn" in menu
+    assert "display:grid" in menu.replace(" ", "")
 
 
 def test_header_more_dropdown_markup_and_pill(tmp_path):
+    # Task 127: no More dropdown — narrow screens get the menu
+    # sheet with the same five links plus language + selling.
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en")
     head = _header(html)
-    assert "data-nav-more-btn" in head
+    assert "data-menu-open" in head
     assert 'aria-expanded="false"' in head
-    assert t_for("en")("nav.more") in head
-    assert head.count("data-nav-more-link") == 2
-    assert head.count("nav-pill") == 1
-    js = MOTION_JS.read_text()
-    assert "data-nav-more-btn" in js
-    assert "slidePill" in js
-    assert "nav-pill" in js
+    sheet = html.split('id="mobile-nav"')[1].split("</nav>")[0]
+    for href in ("/market", "#lowest", "#markets", "/sellers", "/how",
+                 "/new"):
+        assert f'href="{href}"' in sheet, href
+    assert "data-ui-toggle" in sheet
     popups = POPUPS_JS.read_text()
-    assert "data-nav-more-btn" in popups
+    assert "data-menu-open" in popups
+    assert "mobile-nav" in popups
     assert "aria-expanded" in popups
 
 
@@ -120,102 +116,96 @@ def test_header_more_dropdown_markup_and_pill(tmp_path):
 
 
 def test_phone_header_one_row_markup_and_css(tmp_path):
+    # Task 127: one row — mark, flexing location, search, bag,
+    # menu; the wordmark drops under 430px, EN into the menu.
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en")
     head = _header(html)
-    assert "brand-mark-sm" in head
-    assert "brand-logo" in head
-    order = ["class=\"logo\"", "loc-btn", "hp-search-btn", "hp-bag",
+    assert 'class="mk"' in head
+    assert "brand-word" in head
+    order = ["brand dark", "loc-mini", "hp-search-btn", "hp-bag",
              "hp-menu-btn"]
     positions = [head.index(needle) for needle in order]
     assert positions == sorted(positions)
-    css = APP_CSS.read_text()
-    phone = _media_block(css, "@media (max-width: 430px)", occurrence=2)
-    assert ".hp-header .brand-logo" in phone
-    assert ".hp-header .brand-mark-sm" in phone
-    assert "display: none" in phone
-    assert "display: block" in phone
-    assert "flex-wrap: nowrap" in phone
-    assert "flex-wrap: wrap" not in phone
-    assert ".hp-header .hp-bag" in phone
-    assert "min-height: 44px" in phone
-    pub = PUBLIC_CSS.read_text()
-    pub_phone = _media_block(pub, "@media (max-width: 420px)")
-    assert "flex-wrap: nowrap" in pub_phone
-    assert "flex-wrap: wrap" not in pub_phone
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    phone = _media_block(css, "@media (max-width:700px)")
+    assert ".stickybar .top-actions .lang" in phone
+    assert "display:none" in phone.replace(" ", "")
+    flat = phone.replace(" ", "")
+    assert ".loc-mini" in phone and "flex:1" in flat
+    assert "min-width:0" in flat
+    narrow = _media_block(css, "@media (max-width:430px)")
+    assert ".stickybar .brand-word" in narrow
 
 
 # --- 3. promo banner + slim counts -------------------------------------------
 
 
 def _promo(html):
-    return html.split('id="promo"')[1].split('id="mind"')[0]
+    # Task 127: the promo carousel is gone; the hero service cards
+    # are its replacement (find / voice / sell).
+    return html.split('class="svc-row"')[1].split("</section>")[0]
 
 
 def test_banner_slides_links_and_photos(tmp_path):
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en")
-    assert html.index('id="promo"') < html.index('id="mind"')
+    assert 'id="promo"' not in html
+    assert "promo-slide" not in html
+    assert html.index('class="svc-row"') < html.index('id="fresh"')
     promo = _promo(html)
-    assert promo.count("promo-slide") >= 3
     t = t_for("en")
-    assert t("v12.banner_prices_near") in promo
-    assert t("v12.banner_voice") in promo
-    assert t("v12.banner_sell") in promo
+    assert t("v13.svc_find_t") in promo
+    assert t("v13.svc_voice_t") in promo
+    assert t("v13.svc_sell_t") in promo
     assert 'href="/market"' in promo
     assert 'href="/new"' in promo
     assert "data-search-open" in promo
     assert "data-search-voice" in promo
-    for photo in ("street-market-800.jpg", "customer-phone-800.jpg",
-                  "seller-phone-800.jpg"):
-        assert photo in promo, photo
-        assert (ROOT / "app" / "web" / "static" / "landing"
-                / photo).exists()
-    assert "data-prev" in promo and "data-next" in promo
-    assert "data-dots" in promo
-    assert "data-carousel" in promo
+    # Decorative art is transparent cut-outs, never photo squares.
+    assert "/static/img/v13/" in promo
+    assert "landing/" not in promo
 
 
 def test_banner_area_slide_names_area(tmp_path):
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en", "?area=Koyambedu")
-    promo = _promo(html)
-    assert t_for("en")("v12.banner_prices", area="Koyambedu") in promo
-    assert 'href="/market?area=Koyambedu"' in promo
+    assert "Koyambedu" in html.split('class="loc-input"')[1].split(
+        "</button>")[0]
+    assert 'href="/market?area=Koyambedu"' in html
 
 
 def test_banner_autoadvance_js_and_reduced_motion():
+    # Task 127: no auto-advancing carousel — the hero floats bob
+    # via CSS, frozen under reduced motion.
     src = HOME_JS.read_text()
-    assert "initBanner" in src
-    assert "data-banner" in src
-    assert "setInterval" in src and "5000" in src
-    for event in ("mouseenter", "mouseleave", "focusin", "focusout"):
-        assert event in src, event
-    assert "prefers-reduced-motion" in src
-    css = HOME_CSS.read_text()
-    assert ".promo-1" in css and "linear-gradient" in css
-    assert ".promo-2" in css and ".promo-3" in css
-    reduced = css.split("prefers-reduced-motion: reduce", 1)[1]
-    assert "promo-track" in reduced
-    # White slide text passes 4.5:1 on every gradient stop.
-    stops = re.findall(r"\.promo-[123]\s*\{[^}]*?\}", css)
-    assert len(stops) == 3
-    for stop in stops:
-        for code in re.findall(r"#[0-9a-fA-F]{6}", stop):
-            assert _contrast("#FFFFFF", code) >= 4.5, code
+    assert "initBanner" not in src
+    assert "setInterval" not in src
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    assert "@keyframes bob13" in css
+    assert ".hero-float" in css and "animation:bob13" in css.replace(" ", "")
+    assert "prefers-reduced-motion" in css
+    motion = (ROOT / "app" / "web" / "static" / "css"
+              / "motion.css").read_text()
+    reduced = motion.split("prefers-reduced-motion", 1)[1]
+    assert "animation:none" in reduced.replace(" ", "")
+    # White 46px/800 display type passes the 3:1 large-text
+    # floor on every gradient stop (body text keeps 4.5:1).
+    hero = re.search(r"--hero:linear-gradient\(([^;]+);", css).group(1)
+    stops = re.findall(r"#[0-9a-fA-F]{6}", hero)
+    assert len(stops) >= 2
+    for code in stops:
+        assert _contrast("#FFFFFF", code) >= 3.0, code
 
 
 def test_count_slim_line_keeps_numbers(tmp_path):
+    # Task 127: the count line is gone; the find-a-shop card pill
+    # carries the real total (7 price lines in the seed market).
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en")
-    assert "hp-count-line" in html
+    assert "hp-count-line" not in html
     assert "hp-counter" not in html
-    assert 'data-count="3"' in html
-    assert 'data-count="7"' in html
-    assert 'data-count="2"' in html
-    css = HOME_CSS.read_text()
-    assert ".hp-count-line > span + span::before" in css
-    assert 'content: "·"' in css
+    assert "7 PRICES TODAY" in html
 
 
 def test_banner_and_counts_all_langs(tmp_path):
@@ -226,9 +216,10 @@ def test_banner_and_counts_all_langs(tmp_path):
         html = _home(client, lang)
         t = t_for(lang)
         promo = _promo(html)
-        for key in ("v12.banner_prices_near", "v12.banner_voice",
-                    "v12.banner_sell"):
+        for key in ("v13.svc_find_t", "v13.svc_voice_t",
+                    "v13.svc_sell_t"):
             assert t(key) in promo, (lang, key)
+        assert t("v13.svc_find_p", n=7) in promo, lang
 
 
 # --- 4. top-shops fallback ----------------------------------------------------
@@ -247,7 +238,8 @@ def _seed_sparse(tmp_path):
 
 
 def _top(html):
-    return html.split('id="top-shops"')[1].split('id="shops"')[0]
+    # Task 127: one shops row borrows nearby shops when sparse.
+    return html.split('id="shops"')[1].split('id="lowest"')[0]
 
 
 def test_top_shops_borrow_nearby_when_sparse(tmp_path):
@@ -255,25 +247,23 @@ def test_top_shops_borrow_nearby_when_sparse(tmp_path):
     html = _home(make_client(tmp_path), "en", "?area=Koyambedu")
     top = _top(html)
     t = t_for("en")
-    assert t("v12.top_t_near", area="Koyambedu") in top
-    assert top.count('class="shop-cover"') == 3
+    assert t("v13.shops_t_area", area="Koyambedu") in top
+    assert top.count('class="shop-photo"') == 3
     for name in ("Koyam Veg", "Near Fresh", "Far Fresh"):
         assert name in top, name
     # Area shops first, then closest borrowed shop first.
     assert top.index("Koyam Veg") < top.index("Near Fresh")
     assert top.index("Near Fresh") < top.index("Far Fresh")
-    # The grid below stays scoped to the picked area.
-    grid = html.split('id="shops"')[1].split('id="best-prices"')[0]
-    assert "Koyam Veg" in grid
-    assert "Near Fresh" not in grid
 
 
 def test_top_shops_plain_heading_when_full(tmp_path):
+    import html as htmlmod
+
     seed_market(tmp_path)
-    html = _home(make_client(tmp_path), "en")
+    html = htmlmod.unescape(_home(make_client(tmp_path), "en"))
     top = _top(html)
     assert "and nearby markets" not in top
-    assert t_for("en")("v12.top_t_all") in top
+    assert t_for("en")("v13.shops_t_all") in top
 
 
 def test_top_shops_hidden_when_empty(tmp_path):
@@ -289,23 +279,25 @@ def test_top_shops_hidden_when_empty(tmp_path):
 
 
 def test_shop_avatar_below_photo():
-    css = HOME_CSS.read_text()
-    rule = css.split(".shop-ava {")[1].split("}")[0]
-    margin = re.search(r"margin:\s*([^;]+);", rule)
-    assert margin, rule
-    assert "-" not in margin.group(1), margin.group(1)
-    top = re.search(r"([-\d.]+)px", margin.group(1))
-    assert top and float(top.group(1)) >= 0
+    # Task 127: no avatar — the shop name sits on the photo bottom
+    # and can never cover the meta rows below it.
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    rule = css.split("body.v13 .shop-name{")[1].split("}")[0]
+    flat = rule.replace(" ", "")
+    assert "position:absolute" in flat
+    assert "bottom:10px" in flat
+    assert "left:12px" in flat and "right:12px" in flat
 
 
 def test_sell_band_has_no_strike_through(tmp_path):
+    # Task 127: the sell band left the homepage; v13 links carry
+    # no underline or strike-through anywhere.
     seed_market(tmp_path)
     html = _home(make_client(tmp_path), "en")
-    sell = html.split('id="sell"')[1].split('id="meta"')[0]
-    assert "hlshine" not in sell
-    t = t_for("en")
-    assert t("v12.sell_t") in sell
-    assert t("v12.sell_d") in sell
+    assert 'id="sell"' not in html
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    assert "line-through" not in css
+    assert "a{color:inherit;text-decoration:none}" in css.replace(" ", "")
 
 
 # --- 7. popular photos ----------------------------------------------------------
@@ -344,19 +336,22 @@ def test_popular_chip_letter_fallback_without_photo(tmp_path):
 
 
 def test_selected_chip_white_on_teal():
-    css = PUBLIC_CSS.read_text()
-    rule = css.split("body.pub .shop-rows .card .sz.on {")[1].split(
-        "}")[0]
-    assert "background: #0f766e" in rule
-    assert "color: #fff" in rule
-    assert _contrast("#FFFFFF", "#0F766E") >= 4.5
+    # Task 127: selected quantity chips are teal-ink on teal-soft
+    # (legible at 4.5:1, same as the old white-on-teal).
+    css = (ROOT / "app" / "web" / "static" / "css"
+           / "shop13.css").read_text()
+    rule = css.split("body.v13 .q.on{")[1].split("}")[0]
+    flat = rule.replace(" ", "")
+    assert "background:var(--teal-soft)" in flat
+    assert "color:var(--teal-ink)" in flat
+    assert _contrast("#115E59", "#E6FAF6") >= 4.5
 
 
 def test_shop_page_renders_selected_chip(tmp_path):
     slug, _token = seed_shop(tmp_path, "Kannan Veg", "Koyambedu",
                              [draft("tomato", "தக்காளி", "40")])
     html = make_client(tmp_path).get(f"/s/{slug}").text
-    assert 'class="sz on"' in html
+    assert 'class="q sz on"' in html
 
 
 # --- 9. one search on Find-a-shop -------------------------------------------------
@@ -398,7 +393,8 @@ def test_market_tabs_and_area_chips_after_search(tmp_path, monkeypatch):
     assert "mkt-pill" in html and "tomato" in html
     assert html.count("data-mtab=") == 3
     assert "data-filter-open" in html
-    assert "filter-row" in html  # area quick filters stay
+    assert "mkt-chips" in html  # area quick filters stay
+    assert "data-open-all" in html
     assert 'id="market-voice"' in html
     assert "data-composer" in html
 

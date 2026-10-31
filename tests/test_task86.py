@@ -17,10 +17,15 @@ from test_task84 import (
 
 ROOT = Path(__file__).resolve().parent.parent
 APP_CSS = ROOT / "app" / "web" / "static" / "app.css"
+V13_CSS = ROOT / "app" / "web" / "static" / "css" / "v13.css"
 
 
 def _home_css():
     return APP_CSS.read_text().split("/* Task 84 homepage */")[1]
+
+
+def _v13_css():
+    return V13_CSS.read_text()
 
 
 def _rule(css, selector):
@@ -34,79 +39,79 @@ def _rule(css, selector):
 
 
 def test_section_rhythm_css():
-    css = _home_css()
-    assert ".home-mkt .content > section + section" in css
-    assert "margin-top: 64px" in css
-    phone = [block for block in
-             re.split(r"@media\s*\(max-width:\s*600px\)", css)[1:]]
-    joined = "\n".join(block.split("@media")[0] for block in phone)
-    assert ".home-mkt .content > section + section" in joined
-    assert "margin-top: 40px" in joined
-    head = _rule(css, ".hp-sec-head")
-    assert "margin-bottom: 16px" in head
-    assert "flex-start" in head  # "… →" link sits on the title line
-    assert "font-size: 26px" in _rule(css, ".hp-sec-head h2")
-    assert "font-weight: 800" in _rule(css, ".hp-sec-head h2")
+    # Task 127: v13 section rhythm — 64px gaps, 40px on phones,
+    # shared 24px/800 section headings with top-right arrows.
+    css = _v13_css()
+    flat = css.replace(" ", "")
+    assert "body.v13.sec{padding-top:64px}" in flat
+    phone = css.split("@media (max-width:700px)", 1)[1].split("@media")[0]
+    assert ".sec" in phone and "padding-top:40px" in phone.replace(" ", "")
+    head = _rule(css, "body.v13 .sec-head h3")
+    assert "font-size:24px" in head.replace(" ", "")
+    assert "font-weight:800" in head.replace(" ", "")
 
 
 def test_sections_share_heading_block(tmp_path):
+    # Task 127: every v13 scroller section shares the sec-head
+    # block (title + top-right arrows).
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     t = t_for("en")
     html = _home(client, "en")
-    for section, nxt, title, sub in (
-            ("best-prices", "markets", "v12.best_t", "v12.best_sub"),
-            ("markets", "sell", "v12.markets_t", "v12.markets_sub"),
-            ("shops", "best-prices", "v12.grid_t", "v12.grid_sub")):
+    for section, nxt, title in (
+            ("fresh", "cats", "v13.fresh_t"),
+            ("cats", "shops", "v13.cats_t"),
+            ("shops", "lowest", "v13.shops_t_all"),
+            ("lowest", "how", "v13.lowest_t")):
         body = _section(html, section, nxt)
-        assert 'hp-sec-head' in body, section
+        assert "sec-head" in body, section
         assert t(title) in htmlmod.unescape(body), section
-        assert t(sub) in htmlmod.unescape(body), section
-    shops = _section(html, "shops", "best-prices")
-    assert t("hp.compare") in htmlmod.unescape(shops)
+        assert 'class="arrows"' in body, section
 
 
 # --- 2. explore-by-market cards -----------------------------------------------
 
 
-def test_all_areas_is_a_normal_card(tmp_path):
+def test_markets_link_grid_and_all_areas_chip(tmp_path):
+    # Task 127: the homepage markets section is a bordered link
+    # grid (one link per market with prices); area picking lives
+    # on /market quick chips with All areas selected by default.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
-    html = htmlmod.unescape(_home(client, "en"))
-    areas = _section(html, "markets", "sell")
     t = t_for("en")
-    assert "hp-reset" not in areas
-    tiles = re.findall(r'<a class="area-tile( on)?" href="([^"]*)">(.*?)</a>',
-                       areas, re.DOTALL)
-    assert len(tiles) == 3, len(tiles)  # All areas + 2 markets
-    all_cls, all_href, all_body = tiles[0]
-    assert all_cls == " on"  # nothing picked: All areas is selected
-    assert all_href == "/"
-    assert t("hp.all_areas") in all_body
-    assert "tile-ic" in all_body
-    assert t("hp.area_counts", n=3, m=7) in all_body
-    css = _home_css()
-    grid = _rule(css, ".hp-area-grid")
-    assert "repeat(auto-fill, minmax(200px, 1fr))" in grid
+    html = htmlmod.unescape(_home(client, "en"))
+    markets = _section(html, "markets")
+    assert "link-grid" in markets
+    assert t("v13.fresh_in", market="Koyambedu") in markets
+    assert t("v13.fresh_in", market="Anna Nagar") in markets
+    chips = client.get("/market").text
+    all_chip = re.search(r'<a class="chip( on)?" href="/market[^"]*"'
+                         r" data-open-all>", chips)
+    assert all_chip and all_chip.group(1) == " on"
+    css = _v13_css()
+    assert "repeat(4,1fr)" in _rule(
+        css, "body.v13 .link-grid").replace(" ", "")
 
 
 def test_selected_area_keeps_accent_border(tmp_path):
+    # Task 127: the picked market chip stays teal-selected.
     seed_market(tmp_path)
     client = make_client(tmp_path)
-    html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
-    areas = _section(html, "markets", "sell")
-    tiles = re.findall(r'<a class="area-tile( on)?" href="([^"]*)">(.*?)</a>',
-                       areas, re.DOTALL)
-    by_href = {href: (cls, body) for cls, href, body in tiles}
-    assert by_href["/"][0] == ""  # All areas not selected now
-    koy = [cls for cls, href, body in tiles if "Koyambedu" in body]
-    assert koy == [" on"]
-    css = _home_css()
-    assert "border-color: var(--accent)" in _rule(css, ".area-tile.on")
+    html = htmlmod.unescape(client.get("/market?area=Koyambedu").text)
+    chips = re.findall(r'<a class="chip( on)?" href="[^"]*"'
+                       r" data-open-(?:all|area)>", html)
+    assert chips, "no area chips"
+    koy = re.search(r'<a class="chip( on)?" href="/market\?[^"]*'
+                    r"area=Koyambedu", html)
+    assert koy and koy.group(1) == " on"
+    css = _v13_css()
+    on = _rule(css, "body.v13 .chip.on").replace(" ", "")
+    assert "background:var(--teal-soft)" in on
+    assert "border-color:var(--teal)" in on
 
 
 # --- 3. plurals ---------------------------------------------------------------
@@ -133,6 +138,7 @@ def test_plural_forms_zero_one_two():
 
 
 def test_rendered_counts_use_plurals(tmp_path):
+    # Task 127: the v13 shop cards pluralize "N prices today".
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
@@ -140,10 +146,7 @@ def test_rendered_counts_use_plurals(tmp_path):
     for lang in ("en", "ta", "hi"):
         t = t_for(lang)
         html = htmlmod.unescape(_home(client, lang))
-        areas = _section(html, "markets", "sell")
-        assert t("hp.area_counts", n=1, m=1) in areas, lang
-        assert t("hp.area_counts", n=2, m=6) in areas, lang
-        shops = _section(html, "shops", "best-prices")
+        shops = _section(html, "shops", "lowest")
         assert t("hp.prices_today", n=1) in shops, lang  # Anna Fresh
         assert t("hp.prices_today", n=4) in shops, lang  # Kannan Veg
     assert "1 shops" not in htmlmod.unescape(_home(client, "en"))
@@ -154,89 +157,84 @@ def test_rendered_counts_use_plurals(tmp_path):
 
 
 def test_shop_line_splits_name_and_area(tmp_path):
+    # Task 127: the v13 photo card keeps the shop name on the photo
+    # and the area in its own meta row below.
     seed_market(tmp_path)
     seed_shop(tmp_path, "Malar மலர் Veg", "Koyambedu", [
         draft("carrot", "கேரட்", "50")])
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "best-prices", "markets")
-    assert "shop-line" not in picks
-    names = re.findall(r'<p class="shop-name" lang="(\w+)">(.*?)</p>',
-                       picks)
-    assert names, "no shop-name lines"
-    langs = {text: lang for lang, text in names}
-    assert langs.get("Malar மலர் Veg") == "ta"
-    assert langs.get("Kannan Veg") == "en"
-    areas = re.findall(r'<p class="muted shop-area" lang="\w+">(.*?)</p>',
-                       picks, re.DOTALL)
-    assert areas, "no shop-area lines"
-    assert "Koyambedu" in areas[0]
+    shops = _section(html, "shops", "lowest")
+    assert "shop-line" not in shops
+    assert '<b class="shop-name">Malar மலர் Veg</b>' in shops
+    assert '<b class="shop-name">Kannan Veg</b>' in shops
+    metas = re.findall(r'<span class="shop-meta">(.*?)</span>', shops,
+                       re.DOTALL)
+    assert metas, "no shop-meta rows"
+    assert any("Koyambedu" in meta for meta in metas)
 
 
 def test_shop_name_clamp_css():
-    css = _home_css()
-    assert "white-space: nowrap" not in css  # Tamil/Hindi never cut
-    name = _rule(css, ".pick-card .shop-name")
-    assert "-webkit-line-clamp: 1" in name
-    assert "line-clamp: 1" in name
-    assert "-webkit-line-clamp: 2" in css
-    assert ".pick-card .shop-name:lang(ta)" in css
-    assert ".pick-card .shop-name:lang(hi)" in css
-    assert "margin-top: auto" in css  # actions pinned: even card heights
-    assert "flex: 1" in _rule(css, ".pick-body,\n.shop-body")
+    # Task 127: card body text wraps (Tamil/Hindi never cut); only
+    # the photo-overlay shop name ellipsizes.
+    css = _v13_css()
+    assert "overflow-wrap:break-word" in css.replace(" ", "")
+    name = _rule(css, "body.v13 .shop-name").replace(" ", "")
+    assert "text-overflow:ellipsis" in name
+    assert "white-space:nowrap" in name
 
 
 # --- 5. empty-slot cards -------------------------------------------------------
 
 
-def test_single_shop_gets_dashed_slot(tmp_path):
-    from app.web.i18n import t_for
-
+def test_single_shop_renders_without_filler(tmp_path):
+    # Task 127: v13 scrollers show real shops only — no filler slot.
     seed_shop(tmp_path, "Solo Veg", "Koyambedu", [
         draft("tomato", "தக்காளி", "40")])
     client = make_client(tmp_path)
     for lang in ("en", "ta", "hi"):
-        t = t_for(lang)
         html = htmlmod.unescape(_home(client, lang))
-        shops = _section(html, "shops", "best-prices")
-        assert shops.count('class="shop-card"') == 1, lang
-        assert shops.count('class="shop-card hp-slot"') == 1, lang
-        assert t("hp.slot_t") in shops, lang
-        assert t("hp.start_selling") in shops, lang
-        assert 'class="shop-card hp-slot" href="/new"' in shops, lang
-        picks = _section(html, "best-prices", "markets")
-        assert picks.count('class="pick-card hp-slot"') == 1, lang
+        shops = _section(html, "shops", "lowest")
+        assert shops.count('class="shop"') == 1, lang
+        assert "hp-slot" not in shops, lang
+        lowest = _section(html, "lowest", "how")
+        assert "hp-slot" not in lowest, lang
 
 
 def test_full_grids_and_empty_states_have_no_slot(tmp_path):
-    seed_market(tmp_path)  # 7 picks, 3 shops
+    seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    assert "hp-slot" not in _section(html, "best-prices", "markets")
-    shops = _section(html, "shops", "best-prices")
-    assert shops.count('class="shop-card hp-slot"') == 1
+    assert "hp-slot" not in _section(html, "lowest", "how")
+    shops = _section(html, "shops", "lowest")
+    assert 'class="shop"' in shops
+    assert "hp-slot" not in shops
     client2 = make_client(tmp_path)
     html = _home(client2, "en", "?area=Nowhere")
-    assert "hp-slot" not in _section(html, "best-prices", "markets")
-    assert "hp-slot" not in _section(html, "shops", "best-prices")
+    assert "hp-slot" not in _section(html, "lowest", "how")
+    assert "hp-slot" not in _section(html, "shops", "lowest")
 
 
-def test_slot_css_is_dashed():
-    css = _home_css()
-    slot = _rule(css, ".hp-slot")
-    assert "dashed" in slot
+def test_scroller_css_scrolls_x():
+    # Task 127: v13 rows scroll horizontally with snap + no bar.
+    css = _v13_css()
+    slot = _rule(css, "body.v13 .scroller").replace(" ", "")
+    assert "overflow-x:auto" in slot
+    assert "scroll-snap-type:xmandatory" in slot
+    assert "scrollbar-width:none" in slot
 
 
 # --- 6. hero overlay -----------------------------------------------------------
 
 
-def test_hero_overlay_strengthened():
-    css = _home_css()
-    shade = _rule(css, ".hp-band-shade")
-    assert "radial-gradient" in shade
-    alphas = [float(a) for a in
-              re.findall(r"rgba\(17,\s*17,\s*28,\s*([\d.]+)\)", shade)]
-    assert alphas, "no overlay alpha values"
-    assert max(alphas) >= 0.6, alphas
-    assert "#fff" in _rule(css, ".hp-headline")
-    assert "#fff" in _rule(css, ".hp-sub")
+def test_hero_gradient_band():
+    # Task 127: the v13 hero is a teal→blue gradient band with a
+    # white headline (no photo overlay anymore).
+    css = _v13_css()
+    flat = css.replace(" ", "")
+    assert "--hero:linear-gradient(118deg,#0B6F67" in flat
+    assert "background:var(--hero)" in _rule(
+        css, "body.v13 .v13-hero").replace(" ", "")
+    head = _rule(css, "body.v13 .v13-hero h1").replace(" ", "")
+    assert "color:#fff" in head
+    assert "font-weight:800" in head

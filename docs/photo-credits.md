@@ -32,6 +32,17 @@ customer-phone.jpg is quality 75, the rest are quality 80 — each kept
 at the highest quality that stays under 350 KB at 1600px.
 Every file's caption on the page reads "Photo: <name> / Unsplash".
 
+# v13 decorative cut-outs (Task 127)
+
+The 20 transparent produce cut-outs in `app/web/static/img/v13/`
+(tomato, onion, smallonion, capsicum, carrot, brinjal,
+cauliflower, coconut, coconut2, chilli, pineapple, pomegranate,
+apple, banana, guava, papaya, potato, curry, ladiesfinger,
+orange) are derived from the sample item photos credited above
+(max 360px, WebP with alpha, quality 80). They are decorative
+only (hero floats, service-card and app-band art, item
+thumbnails) — never product photos.
+
 # Sample shop photo credits (Task 116)
 
 The five sample shops ship with Unsplash photos so the site is

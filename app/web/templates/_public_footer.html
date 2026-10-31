@@ -1,0 +1,56 @@
+{# Shared public footer — v13 (Task 127): light grey band with
+   brand + honesty line, link columns, home-screen/WhatsApp
+   actions and the credits line. Same footer on every public page
+   (each public template overrides the base footer block with this
+   include). Areas and the site URL are real app data passed as
+   template globals; "Available in" falls back gracefully when a
+   bare render has no globals (error page test). #}
+{% set _places = footer_places() if footer_places is defined else [] %}
+{% set _site = site_url if site_url is defined else "" %}
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="foot-brand">
+      <span class="brand dark"><img class="mk" src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="34" height="34" alt="MarketMate"><span class="brand-word">MarketMate</span></span>
+      <p>© 2026 MarketMate</p>
+      <p class="honest">{{ t('land.honest') }}</p>
+    </div>
+    <div class="foot-col">
+      <b>{{ t('v13.col_market') }}</b>
+      <a href="/how">{{ t('hp.nav_how') }}</a>
+      <a href="/market">{{ t('hp.nav_find') }}</a>
+      <a href="/#lowest">{{ t('hp.nav_picks') }}</a>
+      <a href="https://github.com/sivat241meta/marketmate">{{ t('land.github') }}</a>
+    </div>
+    <div class="foot-col">
+      <b>{{ t('v13.col_sell') }}</b>
+      <a href="/new">{{ t('hp.start_selling') }}</a>
+      <a href="/try">{{ t('land.demo') }}</a>
+      <a href="/sellers#lost-link">{{ t('home.lost_title') }}</a>
+      <b class="mt">{{ t('v13.col_help') }}</b>
+      <a href="/my">{{ t('hp.my_orders') }}</a>
+      <a href="/privacy">{{ t('v13.privacy') }}</a>
+    </div>
+    <div class="foot-col">
+      <b>{{ t('v13.col_avail') }}</b>
+      {% for name in _places[:5] %}<a href="/?area={{ name | urlencode }}">{{ name }}</a>{% endfor %}
+      {% if _places|length > 5 %}<span class="sel">{{ t('v13.n_markets', n=_places|length) }} ⌄</span>
+      {% elif _places %}<a class="sel" href="/#markets">{{ t('v13.n_markets', n=_places|length) }} ⌄</a>{% endif %}
+    </div>
+    <div class="foot-col">
+      <b>{{ t('v13.col_lang') }}</b>
+      <span class="foot-lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+        <button type="button" data-ui-lang="en">English</button>
+        <button type="button" data-ui-lang="ta" lang="ta">தமிழ்</button>
+        <button type="button" data-ui-lang="hi" lang="hi">हिन्दी</button>
+      </span>
+      <b class="mt">{{ t('v13.col_built') }}</b>
+      <a href="/how">{{ t('v13.built_models') }}</a>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">
+    <span>{{ t('v13.better') }}</span>
+    <button type="button" class="store-btn" data-install data-hint="{{ t('v13.install_hint') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span><small>{{ t('v13.on_phone') }}</small>{{ t('v13.add_home') }}</span></button>
+    <a class="store-btn" href="https://wa.me/?text={{ _site | urlencode }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7h16v-7M12 3v12M8 7l4-4 4 4"/></svg><span><small>{{ t('v13.send_friend') }}</small>{{ t('v13.share_wa') }}</span></a>
+  </div>
+  <p class="wrap credits">{{ t('land.photos_credit') }}. {{ t('land.icons_credit') }}. {{ t('notice.voice') }}</p>
+</footer>

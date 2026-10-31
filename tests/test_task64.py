@@ -367,7 +367,9 @@ def test_customer_pages_have_no_seller_nav(tmp_path):
         html = client.get(url).text
         assert 'class="bnav"' not in html, f"{url} leaks seller bnav"
         assert 'class="rail"' not in html, f"{url} leaks seller rail"
-        assert 'class="topbar"' not in html, f"{url} leaks seller topbar"
+        # Task 127: .topbar is the v13 public header now; the seller
+        # topbar is pinned by its shell search instead.
+        assert "shell-q" not in html, f"{url} leaks seller topbar"
         assert "data-orders-badge" not in html, f"{url} leaks badge hook"
 
 
@@ -379,14 +381,18 @@ def test_product_tile_structure(tmp_path):
     slug = _slug(tmp_path, token)
     _publish(tmp_path, token, [_draft("tomato", 40, local="தக்காளி")])
     html = client.get(f"/s/{slug}").text
-    card = re.search(r'<article class="card".*?</article>', html,
+    # Task 127: v13 item rows — text left, grey photo tile right with
+    # the ADD pill overlapping its bottom edge.
+    card = re.search(r'<article class="row.*?</article>', html,
                      re.DOTALL).group(0)
-    assert '<div class="pw">' in card, "tile needs a photo wrapper"
-    assert 'class="add"' in card, "ADD must sit on the photo"
-    assert card.index('class="pw"') < card.index('class="add"'), \
+    assert 'class="row-pic"' in card, "row needs a photo column"
+    assert 'class="pic"' in card, "tile needs a photo wrapper"
+    assert "data-add" in card, "ADD must sit on the photo"
+    assert card.index('class="pic"') < card.index("data-add"), \
         "ADD must be inside the photo wrapper"
-    assert 'class="step"' in card, "ADD needs its stepper"
-    assert '<span class="pp">' in card, "tile needs the price label"
+    assert "data-step" in card, "ADD needs its stepper"
+    assert "data-step-qty" in card, "stepper needs a quantity slot"
+    assert "data-inc" in card and "data-dec" in card
     assert "₹40" in card
     assert "தக்காளி" in card
 

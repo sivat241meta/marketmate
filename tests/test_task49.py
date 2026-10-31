@@ -7,6 +7,7 @@ stay: only published, seller-confirmed prices; photos give counts only.
 
 from __future__ import annotations
 
+import html as htmlmod
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -120,15 +121,16 @@ def test_shop_renders_cards_with_add_and_time(tmp_path):
     slug, version_id = _seed_published(tmp_path, token)
     html = client.get(f"/s/{slug}").text
     expected = _prices_hhmm(tmp_path, version_id)
-    # Kick with shop name, headline, trio, search, notice, grid.
-    assert 'class="kick"' in html
+    # Task 127: v13 info card, notice, rows with ADD, HH:MM.
+    assert 'class="info-card"' in html
     assert "T49 Store" in html
     assert "said by the seller" in html.lower() or "சொன்ன" in html
     assert "4" in html  # price count in trio/summary
     assert expected in html  # published HH:MM, never invented
-    assert 'class="search' in html
-    assert 'class="notice"' in html or 'class="notice ' in html
-    assert html.count('class="card') >= 4
+    assert "data-shopsearch-open" in html
+    # Task 127 polish: the green notice box is gone from the shop page.
+    assert 'class="notice"' not in html and 'class="notice ' not in html
+    assert html.count('<article class="row') >= 4
     assert ">Add<" in html
     # Summary from real data: N items, min to max.
     assert "₹30" in html or "₹40" in html
@@ -146,7 +148,8 @@ def test_shop_sold_out_has_no_add(tmp_path):
     slug, _version_id = _seed_published(tmp_path, token)
     html = client.get(f"/s/{slug}").text
     # Find the coconut card block; it must be dimmed with no Add.
-    blocks = re.findall(r'<article class="card[^"]*".*?</article>',
+    # Task 127: v13 item rows.
+    blocks = re.findall(r'<article class="row[^"]*".*?</article>',
                         html, re.DOTALL)
     assert blocks, "shop must render product cards"
     coconut = [b for b in blocks if "coconut" in b.lower() or "தேங்காய்" in b]
@@ -216,10 +219,11 @@ def test_home_renders_all_langs(tmp_path):
 
     client = _client(tmp_path)
     t = t_for("en")
-    en = client.get("/").text
-    assert t("v12.mind_t") in en
+    en = htmlmod.unescape(client.get("/").text)
+    # Task 127: v13 hero + footer credit.
+    assert t("v13.hero_a") in en
     assert "Start selling" in en
-    assert "Built with Muse Code" in en
+    assert t("v13.built_models") in en
     sellers = client.get("/sellers").text
     assert "Say today&#39;s prices." in sellers or "Say today's prices." in sellers
     assert "Sell more." in sellers

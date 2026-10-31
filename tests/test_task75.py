@@ -42,7 +42,9 @@ def test_no_old_gradient_logo_square():
     for hay in haystacks:
         assert "logo-sq" not in hay
         assert "_mark()" not in hay
-        assert 'class="mk"' not in hay
+        # Task 127: v13 reuses .mk for the plain brand mark image
+        # (no gradient) in the public header and footer.
+        assert "mk-grad" not in hay
     css = CSS.read_text()
     assert ".bnav .mic span" in css
     # Task 122: the gradient lives on the voice mic and the search

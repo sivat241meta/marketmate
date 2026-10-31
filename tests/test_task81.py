@@ -33,8 +33,10 @@ PHOTOS = (
 
 # Task 122: the homepage is the v12 marketplace; sellers/how content
 # moved to /sellers and /how.
-SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
-            "sell", "meta", "install", "footer")
+# Task 127: v13 homepage section order (hero band, scrollers, dark
+# app band, markets grid, shared footer).
+SECTIONS = ("hero", "fresh", "cats", "shops", "lowest", "how", "app",
+            "markets")
 
 
 def make_client(tmp_path):
@@ -111,7 +113,8 @@ def test_landing_headline_and_honesty_all_langs(tmp_path):
         html = htmlmod.unescape(_home(client, lang))
         t = t_for(lang)
         assert t("land.honest") in html, lang
-        assert t("land.meta_code") in html, lang
+        # Task 127: the v13 footer credits the Meta AI models.
+        assert t("v13.built_models") in html, lang
         assert "github.com/sivat241meta/marketmate" in html, lang
         assert t("land.photos_credit") in html, lang
         assert t("land.icons_credit") in html, lang
@@ -141,7 +144,10 @@ def test_landing_ctas_hit_existing_routes(tmp_path):
 def test_meta_section_model_ids_exist_in_code(tmp_path):
     client = make_client(tmp_path)
     html = _home(client, "en")
-    meta = html.split('id="meta"')[1].split('id="install"')[0]
+    # Task 127: the v13 "How the prices get here" cards name the Meta
+    # models; the optional Spark Open provider is mentioned only when
+    # configured, so it is not required here.
+    meta = html.split('id="how"')[1].split('id="app"')[0]
     text = re.sub(r"<[^>]+>", " ", meta)
     # Task 118: compare rendered text, not markup — entities like &#39;
     # (apostrophe) contain digits that are not model ids.
@@ -150,9 +156,11 @@ def test_meta_section_model_ids_exist_in_code(tmp_path):
         path.read_text()
         for path in sorted((ROOT / "app").rglob("*.py")))
     for known in ("muse-voice-transcribe-1.0", "muse-spark-1.3",
-                  "sam-3.1", "meta_sam_parser",
-                  "meta-models/muse-spark-open-1026"):
+                  "sam-3.1"):
         assert known in text, known
+        assert known in app_source, known
+    for known in ("meta_sam_parser",
+                  "meta-models/muse-spark-open-1026"):
         assert known in app_source, known
     chunks = [chunk.strip(".,;:!?()\"'")
               for chunk in re.split(r"\s+", text)
@@ -167,19 +175,13 @@ def test_meta_section_model_ids_exist_in_code(tmp_path):
 
 def test_no_shop_template_uses_landing_photos():
     # Task 122: landing photos live on /sellers + /how now, never on
-    # product/shop cards. Task 125: the homepage promo banner is the
-    # one exception — landing photos only inside #promo there.
+    # product/shop cards. Task 127: the v13 homepage uses transparent
+    # cut-outs, so it is no exception anymore.
     allowed = {"sellers.html", "how.html"}
     offenders = [path.name for path in sorted(TEMPLATES.glob("*.html"))
                  if path.name not in allowed
-                 and path.name != "home.html"
                  and "landing/" in path.read_text()]
     assert offenders == []
-    home = (TEMPLATES / "home.html").read_text()
-    promo = home.split('id="promo"')[1].split('id="mind"')[0]
-    rest = home.split('id="promo"')[0] + home.split('id="mind"')[1]
-    assert "landing/" in promo
-    assert "landing/" not in rest
 
 
 # --- 7. images: lazy, sized, srcset -------------------------------------------

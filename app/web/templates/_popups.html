@@ -105,7 +105,7 @@
     {% set _f_budget = budget|default("") %}
     {% set _f_cat = request.query_params.get("cat", "") if request is defined else "" %}
     {% set _f_areas = hp.areas if hp is defined and hp and hp.areas is defined else _mkt_areas %}
-    <form method="get" action="/market" data-filter-form>
+    <form method="get" action="/market" data-filter-form data-filters>
       {% if q is defined and q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
       <input type="hidden" name="open_now" value="0">
       <fieldset class="mm-f-group">
@@ -118,7 +118,7 @@
       </fieldset>
       <fieldset class="mm-f-group">
         <legend>{{ t('v12.open_now') }}</legend>
-        <label class="chip chip-check{% if _f_open %} on{% endif %}"><input type="checkbox" name="open_now" value="1"{% if _f_open %} checked{% endif %}> {{ t('v12.open_now') }}</label>
+        <label class="chip chip-check{% if _f_open %} on{% endif %}" for="market-open"><input id="market-open" type="checkbox" name="open_now" value="1"{% if _f_open %} checked{% endif %}> {{ t('v12.open_now') }}</label>
       </fieldset>
       <fieldset class="mm-f-group">
         <legend>{{ t('hp.area') }}</legend>
@@ -126,6 +126,17 @@
           <label class="chip{% if not _f_area %} on{% endif %}"><input type="radio" name="area" value=""{% if not _f_area %} checked{% endif %}> {{ t('v12.any') }}</label>
           {% for a in _f_areas %}{% set _an = a.name if a is mapping else a %}<label class="chip{% if _f_area == _an %} on{% endif %}"><input type="radio" name="area" value="{{ _an }}"{% if _f_area == _an %} checked{% endif %}> {{ _an }}</label>{% endfor %}
         </div>
+        <div class="chip-row">
+          <button class="chip" type="button" id="near-me">{{ ui.obj("pin", 20) }}{{ t('market.near_me') }}</button>
+          <span class="muted" id="near-me-status" role="status"></span>
+        </div>
+      </fieldset>
+      <fieldset class="mm-f-group">
+        <legend>{{ t('market.pincode') }}</legend>
+        <span class="pin-wrap">
+          <label class="visually-hidden" for="market-pincode">{{ t('market.pincode') }}</label>
+          <input type="search" id="market-pincode" name="pincode" value="{{ pincode|default('') }}" inputmode="numeric" maxlength="6" size="6" placeholder="{{ t('market.pincode') }}">
+        </span>
       </fieldset>
       <fieldset class="mm-f-group">
         <legend>{{ t('v12.max_spend') }}</legend>

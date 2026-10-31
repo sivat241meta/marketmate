@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}Working on your quote — {{ shop["name"] }}{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 {% if session["status"] == "failed" %}
 <div class="ph-head">
   <div>
@@ -59,7 +60,9 @@
   </noscript>
 </section>
 {% endif %}
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 {% if session["status"] not in ("failed", "review", "approved") %}

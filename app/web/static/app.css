@@ -3759,14 +3759,6 @@ body.land .pill.big { max-width: 100%; }
 
 #lost-link { margin-bottom: var(--space-6); }
 
-.land-footer {
-  text-align: center;
-  padding: var(--space-4) 0 var(--space-5);
-  border-top: 1px solid var(--line-2);
-}
-.land-footer p { margin-bottom: 8px; }
-.land-footer .muted { font-size: 13px; }
-
 @media (min-width: 700px) {
   .land-grid { grid-template-columns: 1fr 1fr; }
 }
@@ -3779,273 +3771,11 @@ body.land .pill.big { max-width: 100%; }
   .land-day { grid-template-columns: 1fr 1fr 1fr; }
 }
 
-/* Task 118: the "Start selling FREE" pill never wraps and never
-   breaks inside a word (logo + pill + menu must fit 320-430px
-   phones). Placed before the Task 84 section, which forbids
-   white-space: nowrap below its marker. */
-.hp-sell,
-.hp-sell .free-badge { white-space: nowrap; }
-/* Task 125: header chrome never wraps — nav labels stay one line at
-   every width and the location button ellipsizes. Placed before the
-   Task 84 section, which forbids white-space: nowrap below its
-   marker. */
-.hp-nav a > span,
-.nav-more-btn > span,
-.nav-more-menu a > span,
-.loc-txt { white-space: nowrap; }
-@media (max-width: 430px) {
-  .hp-sell .free-badge { display: none; }
-  .home-mkt .hp-header {
-    gap: 8px;
-    padding: 8px 12px;
-    flex-wrap: nowrap;
-  }
-  .home-mkt .hp-menu-btn { margin-left: auto; }
-  .home-mkt .hp-sell { font-size: 13px; padding: 8px 10px; }
-}
-
 /* Task 84 homepage */
 body.home-mkt { overflow-x: hidden; }
 body.home-mkt > .ann,
 body.home-mkt > .hdr { display: none; }
-.home-mkt .hp-strip,
-.home-mkt .hp-header,
-.home-mkt .hp-hero,
-.home-mkt .hp-sheet { overflow-wrap: break-word; }
-.home-mkt .pick-card,
-.home-mkt .shop-card,
-.home-mkt .area-tile,
-.home-mkt .hp-search,
-.home-mkt .choose-tile,
-.home-mkt .hp-meta-card { overflow-wrap: break-word; }
 
-.hp-strip {
-  background: #fff;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12.5px;
-  color: var(--muted);
-  margin: calc(-1 * var(--space-4)) calc(50% - 50vw) 0;
-  padding: 4px 16px;
-}
-.hp-explore {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 0;
-  padding: 4px 0;
-  font: inherit;
-  color: var(--ink);
-  font-weight: 600;
-  cursor: pointer;
-  min-height: 32px;
-}
-.hp-today { display: inline-flex; align-items: center; gap: 6px; }
-.dot-live {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  flex: none;
-}
-
-/* Task 122 (v12): white 72px bar, compacting to 60px on scroll
-   down (motion.js toggles .compact/.scrolled). */
-.hp-header {
-  background: #fff;
-  min-height: 72px;
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 12px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--line-2);
-  margin: 0 calc(50% - 50vw);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  transition: min-height 0.2s ease-out, box-shadow 0.2s ease-out;
-}
-.hp-header.compact { min-height: 60px; }
-.hp-header .logo { flex: none; }
-/* Task 125: the small mark shows only on narrow phones (logo wordmark
-   hidden there); everywhere else the full logo shows. */
-.hp-header .brand-mark-sm { display: none; }
-/* Location button: area + chevron, opens the drawer. */
-.loc-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 0;
-  padding: 6px 8px;
-  margin: 0;
-  font: inherit;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--ink);
-  cursor: pointer;
-  border-radius: 10px;
-  min-height: 44px;
-  min-width: 0;
-  max-width: 220px;
-}
-.loc-txt {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.loc-chev { color: var(--accent-ink); font-size: 12px; }
-.loc-btn:hover { background: var(--accent-soft); }
-/* Nav: icon + label, centre-grow underline, one sliding pill. */
-.hp-nav { display: none; gap: 2px; margin-left: 4px; position: relative; }
-.hp-nav a {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 600;
-  font-size: 14.5px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  color: var(--ink);
-  text-decoration: none;
-  min-height: 44px;
-  z-index: 1;
-}
-.hp-nav a .obj { transition: transform 0.18s ease-out; }
-.hp-nav a:hover .obj,
-.hp-nav a:focus-visible .obj { transform: translateY(-2px); }
-.hp-nav a::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 5px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 0.22s ease-out;
-}
-.hp-nav a:hover::after,
-.hp-nav a:focus-visible::after,
-.hp-nav a.on::after { transform: scaleX(1); }
-.hp-nav a.on { color: var(--accent-ink); }
-.nav-pill {
-  position: absolute;
-  top: 2px;
-  left: 0;
-  height: calc(100% - 4px);
-  width: 0;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  transition: transform 0.25s ease-out, width 0.25s ease-out;
-  z-index: 0;
-}
-.nav-pill[hidden] { display: none; }
-/* Task 125: "More ▾" dropdown — hidden on wide laptops where all five
-   nav links fit; below ~1180px it replaces For sellers + How it works.
-   Same underline + timing as the nav links; the sliding pill targets
-   the button (motion.js) while the menu links keep it parked there. */
-.nav-more { display: none; position: relative; z-index: 1; }
-.nav-more-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font: inherit;
-  font-weight: 600;
-  font-size: 14.5px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  color: var(--ink);
-  cursor: pointer;
-  min-height: 44px;
-  z-index: 1;
-}
-.nav-more-btn::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 5px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 0.22s ease-out;
-}
-.nav-more-btn:hover::after,
-.nav-more-btn:focus-visible::after,
-.nav-more-btn[aria-expanded="true"]::after { transform: scaleX(1); }
-.nav-more-btn[aria-expanded="true"] { color: var(--accent-ink); }
-.nav-more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 200px;
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 14px;
-  box-shadow: var(--shadow-lift);
-  padding: 6px;
-  display: grid;
-  gap: 2px;
-  opacity: 0;
-  transform: translateY(-6px);
-  transform-origin: top center;
-  transition: opacity 0.22s ease-out, transform 0.22s ease-out;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 30;
-}
-.nav-more:hover .nav-more-menu,
-.nav-more:focus-within .nav-more-menu,
-.nav-more.open .nav-more-menu {
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-  pointer-events: auto;
-}
-.nav-more-menu a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  font-size: 14.5px;
-  padding: 10px 12px;
-  min-height: 44px;
-  border-radius: 10px;
-  color: var(--ink);
-  text-decoration: none;
-  transition: background 0.18s ease-out;
-}
-.nav-more-menu a:hover,
-.nav-more-menu a:focus-visible { background: var(--accent-soft); }
-.nav-more-menu a.on { color: var(--accent-ink); }
-.hp-header .sp { flex: 1; }
-.hp-sell { position: relative; }
-.free-badge {
-  background: var(--green);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  border-radius: 6px;
-  padding: 1px 5px;
-  margin-left: 6px;
-  letter-spacing: 0.04em;
-}
-.hp-search-btn { flex: none; }
-.hp-orders { display: none; }
-.hp-header > .lang { display: none; }
 .hp-menu-btn {
   display: inline-grid;
   place-items: center;
@@ -4156,15 +3886,6 @@ body.home-mkt > .hdr { display: none; }
   text-shadow: 0 1px 12px rgba(17, 17, 28, 0.6);
   overflow-wrap: break-word;
 }
-.hp-place { position: relative; display: inline-block; }
-.hp-curve {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  width: 100%;
-  height: 10px;
-}
 .hp-sub {
   color: #fff;
   font-size: 16px;
@@ -4181,97 +3902,6 @@ body.home-mkt > .hdr { display: none; }
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 4px rgba(17, 17, 28, 0.8);
 }
-
-.hp-search {
-  position: relative;
-  z-index: 2;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(20, 20, 40, 0.16);
-  max-width: 880px;
-  margin: -72px auto 0;
-  overflow: hidden;
-}
-.hp-hero .hp-search { margin-left: 16px; margin-right: 16px; }
-.hp-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--accent);
-  padding: 8px 10px;
-  overflow-x: auto;
-}
-.hp-tab {
-  border: 0;
-  background: transparent;
-  color: #fff;
-  font-weight: 700;
-  font-size: 13.5px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  text-decoration: none;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.hp-tab.on { background: #fff; color: var(--accent-ink); }
-.hp-tab-voice { border: 1.5px dashed rgba(255, 255, 255, 0.7); }
-.new-badge {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-size: 10px;
-  font-weight: 800;
-  border-radius: 6px;
-  padding: 1px 5px;
-}
-.hp-fields {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-}
-.hp-field label {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-.hp-field input,
-.hp-field select {
-  width: 100%;
-  min-height: var(--tap);
-  border: 1.5px solid var(--line-2);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font: inherit;
-  background: #fff;
-  color: var(--ink);
-}
-.hp-what { position: relative; }
-.hp-what input { padding-right: 48px; }
-.hp-mic {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
-.hp-go { min-height: var(--tap); justify-content: center; }
-
-.hp-popular {
-  text-align: center;
-  margin: 14px 16px 0;
-  font-size: 14px;
-  color: var(--muted);
-}
-.hp-popular .chip { margin: 4px; text-decoration: none; }
-.hp-seller-line { text-align: center; margin: 10px 16px 0; font-weight: 600; }
 
 .hp-banner {
   background: #fff;
@@ -4296,11 +3926,6 @@ body.home-mkt > .hdr { display: none; }
 .hp-banner-txt h2 { font-size: 20px; margin: 0 0 4px; }
 .hp-banner-txt p { margin: 0; }
 
-/* Task 86: section rhythm — same gap between every homepage section. */
-.home-mkt .content > section + section { margin-top: 64px; }
-/* One heading block everywhere: 26px/800 title, muted subtitle, 16px below. */
-.home-mkt section > h2.h2s { font-size: 26px; }
-.home-mkt section > .lead { margin-bottom: 16px; }
 .hp-sec-head {
   display: flex;
   align-items: flex-start;
@@ -4322,154 +3947,6 @@ body.home-mkt > .hdr { display: none; }
   min-width: 0;
 }
 
-.hp-pick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 12px;
-}
-.pick-card,
-.shop-card {
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.pick-photo,
-.shop-photo {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  background: #fff;
-  border-bottom: 1px solid var(--line-2);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-.pick-photo img,
-.shop-photo img { width: 100%; height: 100%; object-fit: cover; }
-.pick-photo img.cut,
-.shop-photo img.cut { object-fit: contain; }
-.pick-photo.letter,
-.shop-photo.letter { background: var(--accent-soft); }
-.pick-photo .nophoto,
-.shop-photo .nophoto {
-  display: grid;
-  place-items: center;
-  color: var(--accent-ink);
-  font-size: 44px;
-  font-weight: 800;
-}
-.pick-tag {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  font-size: 11.5px;
-  padding: 4px 10px;
-  white-space: normal;
-}
-.pick-open,
-.shop-open {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  font-size: 11.5px;
-}
-.shop-new {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  font-size: 11.5px;
-  padding: 4px 10px;
-  white-space: normal;
-}
-.pick-body,
-.shop-body { padding: 12px; display: grid; gap: 4px; align-content: start; flex: 1; }
-.pick-body p,
-.shop-body p,
-.shop-body h3 { margin: 0; }
-.pick-card .pp,
-.shop-card .pp {
-  color: var(--green);
-  font-weight: 800;
-  font-size: 20px;
-}
-.pick-card .per,
-.shop-card .per { color: var(--muted); font-size: 12.5px; }
-.pick-card .nm small { display: block; font-weight: 500; color: var(--muted); }
-.pick-card .shop-name {
-  font-weight: 700;
-  font-size: 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pick-card .shop-name:lang(ta),
-.pick-card .shop-name:lang(hi) {
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  word-break: keep-all;
-}
-.shop-area { display: flex; align-items: center; gap: 4px; font-size: 13px; }
-.shop-area span {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.shop-area span:lang(ta),
-.shop-area span:lang(hi) {
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  word-break: keep-all;
-}
-.said-line { font-size: 12.5px; }
-.demo-tag { font-size: 12px; color: var(--muted); font-style: italic; }
-.prices-line { font-weight: 700; font-size: 13.5px; }
-.cheap-line { font-size: 13px; }
-.card-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-.pick-card .card-actions,
-.shop-card .card-actions { margin-top: auto; padding-top: 6px; }
-
-.hp-slot {
-  border: 1.5px dashed var(--accent);
-  background: var(--accent-soft);
-  display: grid;
-  place-content: center;
-  gap: 6px;
-  text-align: center;
-  text-decoration: none;
-  padding: 24px 16px;
-  min-height: 200px;
-}
-.hp-slot-t { font-weight: 800; font-size: 16px; color: var(--ink); }
-.hp-slot-cta { font-weight: 700; color: var(--accent-ink); }
-
-.hp-area-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-.area-tile {
-  background: #fff;
-  border: 1.5px solid var(--line-2);
-  border-radius: 14px;
-  padding: 16px 12px;
-  display: grid;
-  gap: 6px;
-  justify-items: center;
-  text-align: center;
-  text-decoration: none;
-  color: var(--ink);
-}
-.area-tile.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.area-tile .tile-ic,
 .choose-tile .tile-ic {
   background: var(--accent-soft);
   border-radius: 12px;
@@ -4478,13 +3955,6 @@ body.home-mkt > .hdr { display: none; }
   display: grid;
   place-items: center;
 }
-.hp-shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 14px;
-  margin-top: 12px;
-}
-.shop-body h3 { font-size: 16px; }
 
 .hp-empty { text-align: center; margin-top: 12px; }
 
@@ -4494,39 +3964,6 @@ body.home-mkt > .hdr { display: none; }
 
 .hp-sellers { margin-top: 8px; }
 
-.hp-meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.hp-meta-card { display: flex; gap: 10px; align-items: flex-start; }
-.hp-meta-log { display: flex; gap: 8px; align-items: flex-start; }
-
-.hp-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(17, 17, 28, 0.55);
-  display: grid;
-  place-items: center;
-  padding: 16px;
-}
-.hp-modal[hidden] { display: none; }
-.hp-modal-card {
-  background: #fff;
-  border-radius: 16px;
-  max-width: 560px;
-  width: 100%;
-  max-height: 85vh;
-  overflow: auto;
-  padding: 20px;
-}
-.hp-choose-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-}
 .choose-tile {
   border: 1.5px solid var(--line-2);
   border-radius: 12px;
@@ -4546,7 +3983,6 @@ body.home-mkt > .hdr { display: none; }
   object-fit: cover;
   border-radius: 8px;
 }
-.hp-modal-actions { display: flex; gap: 10px; margin-bottom: 0; }
 
 /* Task 122 (v12): one shared dialog pattern for the location drawer,
    the search pop-up and the filter pop-up. popups.js toggles [hidden],
@@ -4728,90 +4164,8 @@ body.mm-locked { overflow: hidden; }
   .mm-loc-grid { grid-template-columns: 1fr 1fr; }
 }
 
-@media (min-width: 700px) {
-  .hp-fields { grid-template-columns: 2fr 1fr 1fr auto; align-items: end; }
-}
-@media (min-width: 900px) {
-  .hp-nav { display: flex; }
-  .hp-orders { display: inline-flex; }
-  .hp-header > .lang { display: inline-flex; }
-  .hp-menu-btn { display: none; }
-  .hp-sheet { display: none; }
-}
-/* Task 122: icon-only bag + tighter location on small phones so
-   logo + location + search + bag + menu fit 320px. */
-@media (max-width: 899.98px) {
-  .hp-bag .bag-label { display: none; }
-  .hp-bag { padding-left: 10px; padding-right: 10px; }
-}
-/* Task 125: laptop header fit — below ~1360px the nav drops its
-   icons (labels stay, never wrapping); below ~1180px For sellers +
-   How it works move into the More dropdown. */
-@media (max-width: 1360px) {
-  .hp-nav > a > .obj,
-  .hp-nav > a > .obj-tint { display: none; }
-  .loc-btn { max-width: 160px; }
-}
-@media (max-width: 1180px) {
-  .hp-nav a.nav-extra { display: none; }
-  .hp-nav .nav-more { display: block; }
-}
-/* Task 125: one-row phone header — mark only (no wordmark under
-   430px), ellipsis location, search, bag, menu, each 40–44px tall
-   and never wrapping to a second row. */
-@media (max-width: 430px) {
-  .loc-btn { max-width: 30vw; flex: 0 1 auto; }
-  .hp-header { gap: 6px; padding: 8px 10px; flex-wrap: nowrap; }
-  .hp-header .brand-logo { display: none; }
-  .hp-header .brand-mark-sm { display: block; }
-  .hp-header .logo {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    min-height: 44px;
-  }
-  .hp-header .hp-bag { min-height: 44px; justify-content: center; }
-}
-@media (min-width: 912px) {
-  .home-mkt .hp-search { margin-left: auto; margin-right: auto; }
-}
-@media (max-width: 899.98px) {
-  .hp-pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 600px) {
-  .home-mkt .content > section + section { margin-top: 40px; }
   .hp-band { min-height: 360px; }
   .hp-headline { font-size: 30px; }
   .hp-banner { flex-direction: column; text-align: center; }
-  .hp-meta-grid { grid-template-columns: 1fr; }
-}
-@media (max-width: 380px) {
-  .hp-pick-grid {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 72%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 8px;
-  }
-  .hp-pick-grid .pick-card { scroll-snap-align: start; }
-}
-
-/* Task 84 fix A: customer shop header wraps to two rows on phones. */
-@media (max-width: 600px) {
-  body.is-shop .hdr { flex-wrap: wrap; }
-  body.is-shop .hdr .shop-id {
-    flex: 1 1 100%;
-    flex-basis: 100%;
-    order: 10;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
-  body.is-shop .hdr .shop-name {
-    overflow-wrap: break-word;
-    min-width: 0;
-    line-height: 1.3;
-  }
 }

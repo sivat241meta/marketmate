@@ -178,8 +178,11 @@ def _seed_shop(tmp_path, name="Kannan Store"):
 def test_shop_trust_line_and_no_seller_info(tmp_path):
     slug = _seed_shop(tmp_path)
     html = _client(tmp_path).get(f"/s/{slug}").text
-    assert "Prices set by the seller" in html
-    assert "spoken and checked" in html
+    # Task 127 polish: the green trust box is gone; the info card
+    # with time + contact pills carries the honesty instead.
+    assert "Prices set by the seller" not in html
+    assert "spoken and checked" not in html
+    assert 'class="info-card"' in html
     assert "Call" in html and "WhatsApp" in html
     assert "?lang=ta" in html and "?lang=en" in html
     assert QUOTE not in html

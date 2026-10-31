@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('order.kick', id=order_id) }} — {{ shop["name"] }}{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 {% set ns = namespace(label="") %}
 {% for step in order_steps %}{% if step.current %}{% set ns.label = step.label %}{% endif %}{% endfor %}
 <div class="ph-head">
@@ -114,7 +115,9 @@
 {% endif %}
 <p><a class="pill ghost sm" href="/q/{{ token }}/pdf">{{ ui.icon("download") }}{{ t.pdf }}</a></p>
 <p><a href="/s/{{ shop["slug"] }}{% if lang != "en" %}?lang={{ lang }}{% endif %}">{{ t.back_to }} {{ shop["name"] }}</a></p>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('quote.js') if static_url is defined else '/static/quote.js' }}"></script>
 <script src="{{ static_url('order-status.js') if static_url is defined else '/static/order-status.js' }}"></script>

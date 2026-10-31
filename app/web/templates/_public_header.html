@@ -1,83 +1,79 @@
-{# Shared public header — v12 (Task 122): white 72px bar with a
-   location button, five animated nav links with one sliding pill,
-   a search button, My orders, Bag, and the language switch. Phones
-   get a bottom-sheet menu. Included by every public/customer page. #}
+{# Shared public header — v13 (Task 127): white bar with brand,
+   location mini button, five nav links with a grow-from-left
+   underline, search + bag icons, Start selling, the EN language
+   dropdown and the phone menu button. On the homepage this bar
+   starts hidden and slides down once the hero scrolls away (the
+   hero carries its own white-on-teal topbar); on every other
+   public page it is always shown (sticky). Every id, data-* hook
+   and aria attribute the popups/bag/menu/language JS uses is
+   kept: data-loc-open, data-search-open, data-bag-count,
+   data-menu-open, data-ui-toggle. #}
 {% import "_ui.html" as ui %}
+{% import "_lang.html" as _lang %}
 {% set _ph_root = "" if (request is defined and request.url.path == "/") else "/" %}
 {% set _ph_path = request.url.path if request is defined else "/" %}
+{% set _ph_home = _ph_path == "/" %}
 {% set _ph_ann = request.state.shell_ann if request is defined else none %}
 {% set _ph_shop_known = shop is defined and shop is not none %}
 {# Shop content pages drive UI + item names from ?lang=, so the switch
    there is links, not cookie buttons. Everywhere else it sets the
    ui_lang cookie. #}
 {% set _ph_content_lang = _ph_shop_known and _ph_ann and (_ph_path.startswith("/s/") or _ph_path.startswith("/q/")) %}
-{% macro _ph_links(exact, label, active, native_lang, native_name) %}
-  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle>
-    <a href="?lang=en" lang="en" class="{% if active == 'en' %}on{% endif %}">EN</a>
-    {% if native_lang != "en" %}<a href="?lang={{ native_lang }}" lang="{{ native_lang }}" class="{% if active == native_lang %}on{% endif %}">{{ native_name }}</a>{% endif %}
-  </span>
-{% endmacro %}
-{% macro _ph_buttons(exact, label, active) %}
-  <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle>
-    <button type="button" data-ui-lang="en" class="{% if active == 'en' %}on{% endif %}">EN</button>
-    <button type="button" data-ui-lang="ta" lang="ta" class="{% if active == 'ta' %}on{% endif %}">தமிழ்</button>
-    <button type="button" data-ui-lang="hi" lang="hi" class="{% if active == 'hi' %}on{% endif %}">हिन्दी</button>
-  </span>
-{% endmacro %}
+{% set _ph_lang = lang|default(ui_lang|default('en')) %}
 {# The location button shows the picked area when the page knows one. #}
 {% set _ph_ns = namespace(loc="") %}
 {% if hp is defined and hp and hp.area %}{% set _ph_ns.loc = hp.area %}
 {% elif area is defined and area %}{% set _ph_ns.loc = area %}
 {% elif _ph_shop_known and shop["area"] %}{% set _ph_ns.loc = shop["area"] %}
 {% endif %}
+{% set _ph_pns = namespace(parts=[]) %}
+{% for _p in _ph_ns.loc.split(",") %}{% if _p.strip() %}{% set _ = _ph_pns.parts.append(_p.strip()) %}{% endif %}{% endfor %}
+{% set _ph_parts = _ph_pns.parts %}
 {# Pages that must stay form-free (the public bill receipt) opt out
    of every pop-up; the openers hide with them. #}
 {% set _ph_pop = _ph_popups|default("loc,search") %}
-<header id="site-header" class="hp-header" data-public-header>
-  <a class="logo" href="/" aria-label="MarketMate home">
-    <img class="brand-logo" src="{{ static_url('brand/logo.svg') if static_url is defined else '/static/brand/logo.svg' }}" height="28" alt="MarketMate">
-    <img class="brand-mark-sm" src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="30" height="30" alt="MarketMate">
-  </a>
-  {% if "loc" in _ph_pop %}
-  <button type="button" class="loc-btn" data-loc-open aria-haspopup="dialog" aria-controls="loc-drawer">
-    {{ ui.obj("pin", 20) }}
-    <span class="loc-txt">{{ _ph_ns.loc or t('hp.all_areas') }}</span>
-    <span class="loc-chev" aria-hidden="true">▾</span>
-  </button>
-  {% endif %}
-  <nav class="hp-nav" aria-label="{{ t('top.main_nav') }}">
-    <a href="/market" data-nav class="{% if _ph_path == '/market' %}on{% endif %}"{% if _ph_path == '/market' %} aria-current="page"{% endif %}>{{ ui.obj("store", 20) }}<span>{{ t('hp.nav_find') }}</span></a>
-    <a href="{{ _ph_root }}#best-prices" data-nav>{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
-    <a href="{{ _ph_root }}#markets" data-nav>{{ ui.obj("pin", 20) }}<span>{{ t('hp.nav_areas') }}</span></a>
-    <a href="/sellers" data-nav class="nav-extra{% if _ph_path == '/sellers' %} on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
-    <a href="/how" data-nav class="nav-extra{% if _ph_path == '/how' %} on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
-    <div class="nav-more" data-nav-more>
-      <button type="button" class="nav-more-btn" data-nav data-nav-more-btn aria-haspopup="true" aria-expanded="false" aria-controls="nav-more-menu"><span>{{ t('nav.more') }} ▾</span></button>
-      <div class="nav-more-menu" id="nav-more-menu" role="menu">
-        <a href="/sellers" role="menuitem" data-nav-more-link class="{% if _ph_path == '/sellers' %}on{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
-        <a href="/how" role="menuitem" data-nav-more-link class="{% if _ph_path == '/how' %}on{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
-      </div>
+<header id="site-header" class="stickybar{% if not _ph_home %} solid{% endif %}" data-public-header{% if _ph_home %} aria-hidden="true"{% endif %}>
+  <div class="wrap topbar-in">
+    <a class="brand dark" href="/" aria-label="MarketMate home">
+      <img class="mk" src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="34" height="34" alt="MarketMate">
+      <span class="brand-word">MarketMate</span>
+    </a>
+    {% if "loc" in _ph_pop %}
+    <button type="button" class="loc-mini" data-loc-open aria-haspopup="dialog" aria-controls="loc-drawer" aria-label="{{ _ph_ns.loc or t('hp.all_areas') }}">
+      <svg width="20" height="20" class="icon pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      {% if _ph_parts|length > 1 %}<b>{{ _ph_parts[0] }}</b><span>{{ _ph_parts[-1] }}</span>
+      {% elif _ph_parts %}<b>{{ _ph_parts[0] }}</b>
+      {% else %}<b>{{ t('hp.all_areas') }}</b>{% endif %}
+      <svg width="20" height="20" class="icon chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    {% endif %}
+    <nav class="nav dark" aria-label="{{ t('top.main_nav') }}">
+      <a href="/market" data-nav class="{% if _ph_path == '/market' %}is-active{% endif %}"{% if _ph_path == '/market' %} aria-current="page"{% endif %}>{{ t('hp.nav_find') }}</a>
+      <a href="{{ _ph_root }}#lowest" data-nav>{{ t('hp.nav_picks') }}</a>
+      <a href="{{ _ph_root }}#markets" data-nav>{{ t('hp.nav_areas') }}</a>
+      <a href="/sellers" data-nav class="{% if _ph_path == '/sellers' %}is-active{% endif %}"{% if _ph_path == '/sellers' %} aria-current="page"{% endif %}>{{ t('hp.nav_sellers') }}</a>
+      <a href="/how" data-nav class="{% if _ph_path == '/how' %}is-active{% endif %}"{% if _ph_path == '/how' %} aria-current="page"{% endif %}>{{ t('hp.nav_how') }}</a>
+    </nav>
+    <div class="top-actions">
+      {% if "search" in _ph_pop %}
+      <button type="button" class="icon-btn hp-search-btn" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{{ t('hp.search') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+      {% endif %}
+      <a class="icon-btn bag hp-bag" href="/my" aria-label="{{ t('shell.bag') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg><span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
+      <a class="btn-teal" href="/new">{{ t('hp.start_selling') }}</a>
+      {% if not _ph_home %}{% if _ph_content_lang %}{{ _lang.lang_links("lang", t('top.lang_label'), _ph_lang, _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _lang.lang_buttons("lang", t('top.lang_label'), _ph_lang) }}{% endif %}{% endif %}
+      <button type="button" class="iconbtn hp-menu-btn menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
-    <span class="nav-pill" aria-hidden="true"></span>
-  </nav>
-  <span class="sp" aria-hidden="true"></span>
-  {% if "search" in _ph_pop %}
-  <button type="button" class="iconbtn hp-search-btn" data-search-open aria-haspopup="dialog" aria-controls="search-pop" aria-label="{{ t('hp.search') }}">{{ ui.obj("search", 24) }}<span class="visually-hidden">{{ t('hp.search') }}</span></button>
-  {% endif %}
-  <a class="pill ghost sm hp-orders" href="/my">{{ t('hp.my_orders') }}</a>
-  <a class="pill ghost sm hp-bag" href="/my" aria-label="{{ t('shell.bag') }}">{{ ui.obj("basket", 20) }}<span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
-  {% if _ph_content_lang %}{{ _ph_links("lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
-  <button type="button" class="iconbtn hp-menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}">☰</button>
+  </div>
 </header>
 <nav id="mobile-nav" class="hp-sheet" aria-label="{{ t('top.main_nav') }}" hidden>
   <a href="/market">{{ ui.obj("store", 20) }}<span>{{ t('hp.nav_find') }}</span></a>
-  <a href="{{ _ph_root }}#best-prices">{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
+  <a href="{{ _ph_root }}#lowest">{{ ui.obj("tag", 20) }}<span>{{ t('hp.nav_picks') }}</span></a>
   <a href="{{ _ph_root }}#markets">{{ ui.obj("pin", 20) }}<span>{{ t('hp.nav_areas') }}</span></a>
   <a href="/sellers">{{ ui.obj("basket", 20) }}<span>{{ t('hp.nav_sellers') }}</span></a>
   <a href="/how">{{ ui.obj("video", 20) }}<span>{{ t('hp.nav_how') }}</span></a>
   <a href="/my">{{ ui.obj("bags", 20) }}<span>{{ t('hp.my_orders') }}</span></a>
   <a href="/new" class="hp-sell-link">{{ t('hp.start_selling') }}</a>
-  {% if _ph_content_lang %}{{ _ph_links("lang hp-sheet-lang", t('top.lang_label'), lang|default('en'), _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _ph_buttons("lang hp-sheet-lang", t('top.lang_label'), ui_lang|default('en')) }}{% endif %}
+  {% if _ph_content_lang %}{{ _lang.lang_links("lang hp-sheet-lang", t('top.lang_label'), _ph_lang, _ph_ann.shop_lang, _ph_ann.shop_native) }}{% else %}{{ _lang.lang_buttons("lang hp-sheet-lang", t('top.lang_label'), _ph_lang) }}{% endif %}
 </nav>
 {% include "_popups.html" %}
 <script src="{{ static_url('popups.js') if static_url is defined else '/static/popups.js' }}"></script>

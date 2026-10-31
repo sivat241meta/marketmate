@@ -27,10 +27,10 @@ ROOT = Path(__file__).resolve().parent.parent
 HOME_JS = ROOT / "app" / "web" / "static" / "home.js"
 APP_CSS = ROOT / "app" / "web" / "static" / "app.css"
 
-# Task 122: v12 marketplace sections in order (marketing moved to
+# Task 127: v13 homepage sections in order (marketing stays on
 # /sellers and /how; "empty-all" only renders with no shop data).
-SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
-            "sell", "meta", "install", "footer")
+SECTIONS = ("hero", "fresh", "cats", "shops", "lowest", "how", "app",
+            "markets")
 
 
 def make_client(tmp_path):
@@ -206,7 +206,11 @@ def test_unlisted_shop_never_appears(tmp_path):
         html = _home(client, lang)
         assert "Hidden Store" not in html, lang
         assert "Silent Shop" not in html, lang
-        assert "papaya" not in html.lower(), lang
+        # Task 127 polish: the Fruits tile art is a fixed cluster
+        # (papaya/apple/guava cut-outs), so the hidden item is
+        # matched as content — never the asset filename.
+        assert "/market?q=papaya" not in html.lower(), lang
+        assert ">papaya<" not in html.lower(), lang
     html = _home(client, "en")
     assert "Kannan Veg" in html
     assert "Malar Greens" in html
@@ -223,9 +227,9 @@ def test_stale_list_excluded_from_today(tmp_path):
         conn.close()
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "best-prices", "markets")
-    assert "Kannan Veg" not in picks
-    assert "Anna Fresh" not in picks
+    lowest = _section(html, "lowest", "how")
+    assert "Kannan Veg" not in lowest
+    assert "Anna Fresh" not in lowest
 
 
 def test_demo_shop_labelled_on_cards(tmp_path):
@@ -242,17 +246,19 @@ def test_demo_shop_labelled_on_cards(tmp_path):
 # --- 4. counts, popular chips, cheapest items ----------------------------------
 
 
-def test_area_counts_are_correct(tmp_path):
+def test_markets_cover_every_area_once(tmp_path):
+    # Task 127: the v13 markets grid links every market with shops
+    # (no counts on the links anymore).
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    areas = _section(html, "markets", "sell")
+    areas = _section(html, "markets")
     t = t_for("en")
-    # Koyambedu: 2 shops, 6 priced items. Anna Nagar: 1 shop, 1 item.
-    assert t("hp.area_counts", n=2, m=6) in areas
-    assert t("hp.area_counts", n=1, m=1) in areas
+    assert t("v13.fresh_in", market="Koyambedu") in areas
+    assert t("v13.fresh_in", market="Anna Nagar") in areas
+    assert areas.count("Fresh prices in") == 2
 
 
 def test_popular_chips_use_real_item_names(tmp_path):
@@ -271,34 +277,44 @@ def test_popular_chips_use_real_item_names(tmp_path):
 
 
 def test_recent_shops_show_cheapest_three(tmp_path):
+    # Task 127: the v13 photo card's teal bar names the two
+    # cheapest prices plus a "+N" remainder.
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
-    shops = _section(html, "shops", "best-prices")
+    shops = _section(html, "shops", "lowest")
     assert "Kannan Veg" in shops
-    for name in ("potato", "onion", "tomato"):
-        assert name in shops.lower(), name
-    # Banana (₹60) is the 4th cheapest: not in the short list.
-    assert "banana" not in shops.lower()
+    kannan = shops.split("Kannan Veg", 1)[1].split('class="shop"', 1)[0]
+    bar = re.search(r'class="bar-deal".*', kannan, re.DOTALL).group(0)
+    for name in ("potato", "onion"):
+        assert name in bar.lower(), name
+    assert "+2" in bar  # tomato + banana beyond the first two
+    assert "Banana" not in shops  # 4th cheapest item stays out
 
 
-def test_picks_max_eight_cutout_first(tmp_path):
+def test_lowest_photos_prefer_cutouts(tmp_path):
+    # Task 127: name-matched items use the transparent v13 cut-out;
+    # the rest keep their own photo in the lowest tiles.
     items = [draft(f"item{i}", f"பொருள்{i}", str(10 + i),
                    photo=(f"data/photos/it{i}_cut.jpg" if i == 9 else None))
              for i in range(10)]
+    items.append(draft("tomato", "தக்காளி", "40",
+                       photo="data/photos/tom_orig.jpg"))
     seed_shop(tmp_path, "Big Veg", "Koyambedu", items)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    picks = _section(html, "best-prices", "markets")
-    cards = re.findall(r'class="pick-card"', picks)
-    assert len(cards) == 8, len(cards)
-    assert picks.index("it9_cut.jpg") < picks.index("item0")
+    lowest = _section(html, "lowest", "how")
+    assert "/static/img/v13/tomato.webp" in lowest
+    assert "/m/it9_cut.jpg" in lowest
+    assert "tom_orig.jpg" not in lowest
 
 
 # --- 5. ?area= filters by area name --------------------------------------------
 
 
 def test_area_param_filters_homepage(tmp_path):
+    # Task 127: the v13 shops row borrows other areas' shops under
+    # an "and nearby markets" heading; fresh/lowest stay scoped.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
@@ -306,40 +322,35 @@ def test_area_param_filters_homepage(tmp_path):
     html = htmlmod.unescape(_home(client, "en", "?area=Anna+Nagar"))
     assert "Anna Nagar" in html
     assert "Anna Fresh" in html
-    # Task 125: only the top-shops carousel borrows other areas'
-    # shops (under an "and nearby markets" heading) so its row is
-    # never near-empty; every other section stays area-scoped.
-    top = _section(html, "top-shops", "shops")
-    assert "and nearby markets" in top
-    assert "Kannan Veg" in top
-    grid = _section(html, "shops", "best-prices")
-    assert "Kannan Veg" not in grid
-    assert "Malar Greens" not in grid
-    picks = _section(html, "best-prices", "markets")
-    assert "tomato" not in picks.lower()
-    assert "mango" in picks.lower()
+    shops = _section(html, "shops", "lowest")
+    assert "and nearby markets" in shops
+    assert "Kannan Veg" in shops
+    lowest = _section(html, "lowest", "how")
+    assert "tomato" not in lowest.lower()
+    assert "mango" in lowest.lower()
     # Unknown areas show honest empty states, not other areas' shops.
     html = htmlmod.unescape(_home(client, "en", "?area=Nowhere"))
-    picks = _section(html, "best-prices", "markets")
-    assert "Anna Fresh" not in picks
-    assert t_for("en")("hp.picks_empty_t") in picks
+    empty = _section(html, "empty-all")
+    assert "Anna Fresh" not in empty
+    assert t_for("en")("hp.picks_empty_t") in empty
 
 
 # --- 6. empty states with no data ----------------------------------------------
 
 
 def test_empty_homepage_has_honest_empty_states(tmp_path):
+    # Task 127: empty sections hide; one combined empty state with
+    # a Start-selling link renders instead.
     from app.web.i18n import t_for
 
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    assert t("hp.picks_empty_t") in _section(html, "best-prices", "markets")
-    assert t("hp.shops_empty_t") in _section(html, "shops", "best-prices")
-    assert t("hp.areas_empty_t") in _section(html, "markets", "sell")
-    assert 'href="/new"' in _section(html, "best-prices", "markets")
+    assert t("hp.picks_empty_t") in _section(html, "empty-all")
+    assert 'href="/new"' in _section(html, "empty-all")
     assert 'class="pick-card"' not in html
     assert 'class="shop-card"' not in html
+    assert 'class="shop"' not in _section(html, "shops", "lowest")
 
 
 # --- 7. no stock photos inside product or shop cards ----------------------------
@@ -349,8 +360,8 @@ def test_no_landing_photos_in_product_or_shop_cards(tmp_path):
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = _home(client, "en")
-    for section, nxt in (("best-prices", "markets"), ("shops", "best-prices"),
-                         ("top-shops", "shops"), ("markets", "sell")):
+    for section, nxt in (("fresh", "cats"), ("cats", "shops"),
+                         ("shops", "lowest"), ("lowest", "how")):
         body = _section(html, section, nxt)
         assert "landing/" not in body, section
         assert "Unsplash" not in body, section
@@ -360,27 +371,31 @@ def test_no_landing_photos_in_product_or_shop_cards(tmp_path):
 
 
 def test_strip_and_header(tmp_path):
-    # Task 122: the strip is gone; the header carries a location
-    # button, five nav links, search, orders, bag and the switch.
+    # Task 127: the header sits on the hero (white logo, five white
+    # nav links, EN switch, app + selling buttons, menu on phones);
+    # the white sticky bar slides in after the hero.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en", "?area=Koyambedu"))
     t = t_for("en")
+    hero = re.search(r'<header class="topbar".*?</header>', html,
+                     re.DOTALL).group(0)
+    for href in ("/market", "#lowest", "#markets", "/sellers", "/how"):
+        assert f'href="{href}"' in hero, href
+    assert "data-ui-toggle" in hero
+    assert "data-menu-open" in hero
+    assert 'href="#app"' in hero
+    assert 'href="/new"' in hero
     head = re.search(r'<header id="site-header".*?</header>', html,
                      re.DOTALL).group(0)
     assert "data-loc-open" in head
     assert "Koyambedu" in head
-    for href in ("/market", "#best-prices", "#markets", "/sellers",
-                 "/how"):
-        assert f'href="{href}"' in head, href
     assert "data-search-open" in head
     assert 'href="/my"' in head
     assert "data-bag-count" in head
-    assert "data-ui-toggle" in head
     assert "data-menu-open" in head
-    assert head.count("nav-pill") == 1
     html = htmlmod.unescape(_home(client, "en"))
     head = re.search(r'<header id="site-header".*?</header>', html,
                      re.DOTALL).group(0)
@@ -408,18 +423,21 @@ def test_hero_headline_names_area_or_default(tmp_path):
 
 
 def test_banner_and_meta_mention(tmp_path):
+    # Task 127: long marketing lives on /sellers and /how, not the
+    # homepage; the homepage keeps the Meta model cards instead.
     from app.web.i18n import t_for
 
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    sell = _section(html, "sell", "meta")
-    assert t("v12.sell_t") in sell
-    assert t("v12.sell_d") in sell
-    assert 'href="/new"' in sell
-    assert 'href="/try"' in sell
-    meta = _section(html, "meta", "install")
-    assert "/e/<token>/ai" in meta
+    assert 'id="sell"' not in html
+    assert 'id="meta"' not in html
+    sellers = htmlmod.unescape(client.get("/sellers").text)
+    assert t("v12.sell_t") in sellers
+    assert 'href="/new"' in sellers
+    assert 'href="/try"' in sellers
+    how = htmlmod.unescape(client.get("/how").text)
+    assert t("land.how_t") in how
 
 
 # --- 9. area chooser: modal + privacy-safe JS ----------------------------------
@@ -480,16 +498,15 @@ def test_shop_header_two_row_structure(tmp_path):
 
 
 def test_shop_header_css_two_rows_under_600px():
-    css = APP_CSS.read_text()
-    blocks = [block for block in
-              re.split(r"@media\s*\(max-width:\s*600px\)", css)[1:]]
-    assert blocks, "missing <=600px media query"
-    joined = "\n".join(block.split("@media")[0] for block in blocks)
-    assert ".hdr .shop-id" in joined
-    assert "flex-basis: 100%" in joined
-    assert "order:" in joined
-    assert ".hdr .shop-name" in joined
-    assert "overflow-wrap: break-word" in joined
+    # Task 127: the v13 inner header stays ONE row on phones — logo
+    # mark, flexing location button, icons, menu (EN in the menu).
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    phone = css.split("@media (max-width:700px)", 1)[1].split("@media")[0]
+    assert ".stickybar .top-actions .lang" in phone
+    assert "display:none" in phone.replace(" ", "")
+    assert ".loc-mini" in phone and "min-width:0" in phone.replace(" ", "")
+    narrow = css.split("@media (max-width:430px)", 1)[1]
+    assert ".stickybar .brand-word" in narrow
 
 
 # --- 11. fix B: one header style on Seller Today ---------------------------------
@@ -533,12 +550,10 @@ def test_tamil_homepage_renders_translated_strings(tmp_path):
     html = htmlmod.unescape(_home(client, "ta"))
     t = t_for("ta")
     assert t("hp.search") in html
-    assert t("v12.mind_t") in html
-    assert t("v12.best_t") in html
-    assert t("v12.markets_t") in html
-    assert t("v12.grid_t") in html
-    # Tamil text must wrap, never be cut: no nowrap on homepage text.
-    css = APP_CSS.read_text()
-    home_css = css.split("/* Task 84 homepage */")[1]
-    assert "overflow-wrap" in home_css
-    assert "white-space: nowrap" not in home_css
+    assert t("v13.fresh_t") in html
+    assert t("v13.cats_t") in html
+    assert t("v13.lowest_t") in html
+    assert t("v13.markets_t") in html
+    # Tamil text must wrap, never overflow the screen.
+    css = (ROOT / "app" / "web" / "static" / "css" / "v13.css").read_text()
+    assert "overflow-wrap" in css

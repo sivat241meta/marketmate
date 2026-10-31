@@ -52,8 +52,43 @@
     }
   }
 
+  // Task 127: the footer "Add to Home Screen" button. When the
+  // browser offers an install prompt we use it; otherwise the
+  // button shows the manual instructions (same hint the seller
+  // shell documents) in a toast.
+  var deferredPrompt = null;
+
+  function initInstall() {
+    window.addEventListener("beforeinstallprompt", function (ev) {
+      ev.preventDefault();
+      deferredPrompt = ev;
+    });
+    document.querySelectorAll("[data-install]").forEach(function (btn) {
+      if (btn.dataset.mmBound) {
+        return;
+      }
+      btn.dataset.mmBound = "1";
+      btn.addEventListener("click", function () {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function () {
+            deferredPrompt = null;
+          }).catch(function () {
+            deferredPrompt = null;
+          });
+          return;
+        }
+        var hint = btn.getAttribute("data-hint") || "";
+        if (hint && window.Motion && window.Motion.toast) {
+          window.Motion.toast(hint);
+        }
+      });
+    });
+  }
+
   function init() {
     initMarketTabs();
+    initInstall();
   }
 
   if (typeof document !== "undefined" && document) {

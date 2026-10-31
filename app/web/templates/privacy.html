@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ t('v13.privacy_t') }} — MarketMate{% endblock %}
+{% block body_class %}pub v13{% endblock %}
+{% block content %}
+{% include "_public_header.html" %}
+<div class="wrap">
+  <div class="ph-head">
+    <div>
+      <h1>{{ t('v13.privacy_h') }}</h1>
+    </div>
+  </div>
+  <section class="pub-sec" aria-label="{{ t('v13.privacy_t') }}">
+    <div class="card">
+      <p>{{ t('notice.voice') }}</p>
+      <p>{{ t('v13.privacy_p1') }}</p>
+      <p>{{ t('v13.privacy_p2') }}</p>
+      <p>{{ t('v13.privacy_p3') }}</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
+{% block scripts %}
+<script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
+{% endblock %}

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% import "_ui.html" as ui %}
 {% block title %}{{ t('share.title') }}{% endblock %}
-{% block body_class %}pub{% endblock %}
+{% block body_class %}pub v13{% endblock %}
 {% block content %}
 {% include "_public_header.html" %}
+<div class="wrap">
 <div class="ph-head">
   <div>
     <p class="kick">{{ t('share.heading') }}</p>
@@ -40,7 +41,9 @@
   <p class="muted">{{ t('share.no_file') }}</p>
   <p><a class="pill cta" href="/">{{ t('error.back_home') }}</a></p>
 </section>
+</div>
 {% endblock %}
+{% block footer %}{% include "_public_footer.html" %}{% endblock %}
 {% block scripts %}
 <script src="{{ static_url('public.js') if static_url is defined else '/static/public.js' }}"></script>
 <script>

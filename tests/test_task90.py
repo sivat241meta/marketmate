@@ -141,13 +141,13 @@ def test_every_public_page_includes_shared_header(tmp_path):
 def test_header_anchors_stay_on_home_but_point_home_elsewhere(tmp_path):
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     home = client.get("/").text
-    for anchor in ("#best-prices", "#markets"):
+    for anchor in ("#lowest", "#markets"):
         assert f'href="{anchor}"' in home, anchor
     for href in ("/market", "/sellers", "/how"):
         assert f'href="{href}"' in home, href
     assert home.count('id="site-header"') == 1
     shop = client.get(f"/s/{slug}").text
-    for anchor in ("#best-prices", "#markets"):
+    for anchor in ("#lowest", "#markets"):
         assert f'href="/{anchor}"' in shop, anchor
 
 
@@ -182,7 +182,10 @@ def test_no_seller_navigation_on_public_pages(tmp_path):
         html = client.get(url).text
         assert 'class="bnav"' not in html, f"{url} leaks seller bnav"
         assert 'class="rail"' not in html, f"{url} leaks seller rail"
-        assert 'class="topbar"' not in html, f"{url} leaks seller topbar"
+        # Task 127: the v13 hero topbar is a <header>; the seller
+        # topbar is a <div> and must stay out of public pages.
+        assert '<div class="topbar">' not in html, \
+            f"{url} leaks seller topbar"
         assert "data-orders-badge" not in html, f"{url} leaks badge hook"
         assert 'href="/e/' not in html, f"{url} links into seller pages"
 
@@ -190,17 +193,18 @@ def test_no_seller_navigation_on_public_pages(tmp_path):
 # --- 2. shop page ---------------------------------------------------------------
 
 def test_shop_band_tools_and_hooks(tmp_path):
+    # Task 127: v13 info card + price list + in-shop search + chips.
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     html = client.get(f"/s/{slug}").text
-    assert 'class="hero2"' in html
-    assert html.index('class="hero2"') < html.index("data-shop-grid")
+    assert 'class="info-card"' in html
+    assert html.index('class="info-card"') < html.index("data-shop-grid")
     assert "Koyambedu" in html
     assert "Order by voice" in html
-    assert "btn-primary" in html
+    assert "chip-btn" in html
     assert "wa.me/" in html and "tel:" in html
     assert "said today" in html.lower() or "said_today" not in html
     assert 'id="shop-q"' in html
-    assert "chip-row" in html
+    assert "fchip" in html
     for hook in SHOP_HOOKS:
         assert hook in html, f"shop page missing {hook}"
 
@@ -216,7 +220,16 @@ def test_shop_empty_state_with_next_step(tmp_path):
     assert "wa.me/914400000091" in html
 
 
-def test_shop_more_shops_near_you(tmp_path):
+def test_shop_more_shops_near_you(tmp_path, monkeypatch):
+    # Task 127: the v13 shop page carries no cross-shop block (the
+    # reference has none); area discovery lives on /market instead.
+    from app.market.search import Query, Want
+    from app.web import main as main_mod
+
+    def fake_parse(text, **_kw):
+        return Query([Want(text, None, None, None)], None, None)
+
+    monkeypatch.setattr(main_mod, "parse_query", fake_parse)
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
     other = _create_shop(client, name="T90 Nearby", phone="+914400000092")
     other_slug = _slug(tmp_path, other)
@@ -225,9 +238,12 @@ def test_shop_more_shops_near_you(tmp_path):
                           area="Anna Nagar")
     _publish(tmp_path, hidden, [_draft("tomato", 20)])
     html = client.get(f"/s/{slug}").text
-    assert "More shops near you" in html
-    assert f"/s/{other_slug}" in html
-    assert "T90 Far" not in html
+    assert "More shops near you" not in html
+    koy = client.get("/market?q=tomato&area=Koyambedu").text
+    assert f"/s/{other_slug}" in koy
+    assert f"/s/{_slug(tmp_path, hidden)}" not in koy
+    anna = client.get("/market?q=tomato&area=Anna%20Nagar").text
+    assert f"/s/{_slug(tmp_path, hidden)}" in anna
 
 
 # --- 3. order flow ---------------------------------------------------------------
@@ -349,9 +365,11 @@ def test_my_orders_boxes_and_card_js(tmp_path):
 # --- 5. find a shop ---------------------------------------------------------------
 
 # Task 124: the voice panel's recorder hooks became the composer hooks.
+# Task 127: sort/open/pincode moved into the Filters pop-up (sort is
+# radios now, so the in-place sort-value/data-sort hooks are gone).
 MARKET_HOOKS = ["data-composer", "data-composer-form", "data-composer-mic",
-                "data-voice-panel", "data-filters", "sort-value",
-                "market-open", "near-me", "near-me-status", "data-sort",
+                "data-voice-panel", "data-filters",
+                "market-open", "near-me", "near-me-status",
                 "market-pincode", "composer.js", "near-me.js"]
 
 MARKET_RESULT_HOOKS = ["data-shop-list", "data-shop-row", "data-distance",
@@ -371,6 +389,10 @@ def test_market_search_card_prefilled_and_hooks(tmp_path):
     assert 'value="Koyambedu" checked' in filt
     assert 'name="budget"' in filt
     assert 'value="200" checked' in filt
+    assert 'name="sort"' in filt
+    assert 'name="open_now"' in filt
+    assert 'name="pincode"' in filt
+    assert 'id="near-me"' in filt
     for hook in MARKET_HOOKS:
         assert hook in html, f"market page missing {hook}"
 
@@ -451,7 +473,7 @@ def test_error_page_renders_with_header(tmp_path):
     body = response.body.decode()
     assert "data-public-header" in body
     assert "empty-state" in body
-    assert "/#best-prices" in body
+    assert "/#lowest" in body
 
 
 # --- 7. languages, CSS, JS ------------------------------------------------------------
@@ -482,11 +504,12 @@ def test_public_css_linked_and_scoped():
     assert "css/public.css" in base
     assert CSS.exists()
     css = CSS.read_text()
+    # Task 127: .shop-compact-line (v10 band) is gone with the
+    # rest of the removed public.css.
     for selector in ("body.pub > .hdr", ".hp-bag", ".ph-head",
                      ".form-card", ".field-input", ".field-error",
                      ".action-bar", "details.more", ".next-step",
-                     ".my-card", ".chip-row", ".shop-compact-line",
-                     ".obj-tint"):
+                     ".my-card", ".chip-row", ".obj-tint"):
         assert selector in css, selector
     assert "position: sticky" in css
     assert "safe-area-inset-bottom" in css
@@ -520,4 +543,4 @@ def test_homepage_header_unchanged(tmp_path):
     html = client.get("/").text
     assert html.count('id="site-header"') == 1
     assert "data-public-header" in html
-    assert 'href="#best-prices"' in html
+    assert 'href="#lowest"' in html

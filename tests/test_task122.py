@@ -28,8 +28,9 @@ POPUPS_JS = ROOT / "app" / "web" / "static" / "popups.js"
 LOCATE_JS = ROOT / "app" / "web" / "static" / "locate.js"
 PUBLIC_JS = ROOT / "app" / "web" / "static" / "public.js"
 
-SECTIONS = ("mind", "top-shops", "shops", "best-prices", "markets",
-            "sell", "meta", "install", "footer")
+# Task 127: v13 homepage section order.
+SECTIONS = ("hero", "fresh", "cats", "shops", "lowest", "how", "app",
+            "markets")
 
 
 def _luminance(code: str) -> float:
@@ -123,23 +124,25 @@ def test_header_has_five_links_search_and_location(tmp_path):
     assert 'href="/my"' in head  # My orders + Bag
     assert "data-bag-count" in head
     assert "data-menu-open" in head
-    # One shared sliding indicator, moved with transform by motion.js.
-    assert head.count("nav-pill") == 1
-    assert "nav-pill" in MOTION_JS.read_text()
-    assert "compact" in MOTION_JS.read_text()
+    # Task 127: v13 drops the sliding nav-pill for a grow-from-left
+    # underline; the sticky bar slides in via an .on class.
+    v13 = (CSS_DIR / "v13.css").read_text()
+    assert ".nav a::after" in v13
+    assert ".stickybar.on" in v13.replace(" ", "")
+    assert 'toggle("on"' in HOME_JS.read_text()
 
 
 def test_header_animation_css_and_reduced_motion():
-    css = CSS.read_text()
-    assert ".hp-nav a::after" in css  # centre-grow underline
-    assert ".nav-pill" in css  # one shared indicator, moved by JS
-    assert ".hp-header.compact" in css  # 60px on scroll down
-    assert "min-height: 72px" in css
+    # Task 127: grow-from-left nav underline, sliding sticky bar,
+    # hero bob + card pops — all off under reduced motion.
+    v13 = (CSS_DIR / "v13.css").read_text()
+    assert ".nav a::after" in v13  # grow-from-left underline
+    assert ".stickybar" in v13 and "translateY(-110%)" in v13
+    assert "@keyframes bob13" in v13
+    assert "@keyframes pop13" in v13
+    assert "prefers-reduced-motion" in v13
     motion = (CSS_DIR / "motion.css").read_text()
     assert "prefers-reduced-motion: reduce" in motion
-    assert "@keyframes drawerleft" in motion
-    assert "@keyframes popin" in motion
-    assert "@keyframes sheetlink" in motion
 
 
 # --- 3. pop-ups ----------------------------------------------------------------
@@ -156,11 +159,13 @@ def test_three_popups_are_dialogs_with_close_buttons(tmp_path):
         assert 'role="dialog"' in pop, pop_id
         assert 'aria-modal="true"' in pop, pop_id
         assert "data-close" in pop, pop_id
-    # Openers live in the header / page.
+    # Openers live in the header / page (the Filters opener
+    # lives on /market, which also carries the count badge).
     assert "data-loc-open" in html
     assert "data-search-open" in html
-    assert "data-filter-open" in html
-    assert "data-filter-count" in html
+    market = client.get("/market").text
+    assert "data-filter-open" in market
+    assert "data-filter-count" in market
     # One shared dialog manager: trap, Esc, scroll lock.
     src = POPUPS_JS.read_text()
     assert "aria-modal" in src or "role" in src
@@ -244,31 +249,31 @@ def test_homepage_section_ids_all_langs(tmp_path):
 
 
 def test_mind_row_top_shops_and_best_prices(tmp_path):
+    # Task 127: v13 fresh/categories/shops/lowest scrollers with
+    # real links, carousel arrows and honest badges.
     from app.web.i18n import t_for
 
     seed_market(tmp_path)
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    mind = _section(html, "mind", "top-shops")
-    assert t("v12.mind_t") in mind
-    assert "mind-circle" in mind
-    assert "/market?q=tomato" in mind
-    assert "data-carousel" in mind and "data-prev" in mind
-    assert "data-dots" in mind  # progress dots
-    top = _section(html, "top-shops", "shops")
-    assert "Top shops" in top
-    assert top.count('class="shop-cover"') == 3
-    assert "cover-line" in top  # overlay line over the gradient
-    assert "data-dots" in top
-    best = _section(html, "best-prices", "markets")
-    assert t("v12.best_t") in best
-    assert "pick-add" in best  # ADD on every item card
-    assert best.count('class="pick-card"') == 6  # one card per item
-    markets = _section(html, "markets", "sell")
-    assert t("v12.markets_t") in markets
-    assert t("v12.pop_items") in markets
-    assert 'class="area-tile' in markets
+    fresh = _section(html, "fresh", "cats")
+    assert t("v13.fresh_t") in fresh
+    assert "/market?q=tomato" in fresh
+    assert "data-carousel" in fresh and "data-prev" in fresh
+    cats = _section(html, "cats", "shops")
+    assert t("v13.cats_t") in cats
+    assert "/market?cat=" in cats
+    shops = _section(html, "shops", "lowest")
+    assert "Kannan Veg" in shops
+    assert 'class="shop-photo"' in shops
+    lowest = _section(html, "lowest", "how")
+    assert t("v13.lowest_t") in lowest
+    # ADD on every item tile links into the shop page row.
+    assert 'class="add" href="/s/kannan-veg"' in lowest
+    markets = _section(html, "markets")
+    assert t("v13.markets_t") in markets
+    assert "link-grid" in markets
 
 
 def test_sell_meta_install_bands_and_footer(tmp_path):
@@ -278,20 +283,20 @@ def test_sell_meta_install_bands_and_footer(tmp_path):
     client = make_client(tmp_path)
     html = htmlmod.unescape(_home(client, "en"))
     t = t_for("en")
-    sell = _section(html, "sell", "meta")
-    assert t("v12.sell_t") in sell and t("v12.sell_d") in sell
-    assert 'href="/new"' in sell and 'href="/try"' in sell
-    meta = _section(html, "meta", "install")
+    # Task 127: the sell bands moved to /sellers; the homepage
+    # keeps the Meta model cards, the QR app band and the footer.
+    assert 'id="sell"' not in html
+    how = _section(html, "how", "app")
     for model in ("muse-voice-transcribe-1.0", "muse-spark-1.3",
-                  "sam-3.1", "meta-models/muse-spark-open-1026"):
-        assert model in meta, model
-    assert 'href="/how"' in meta
-    install = _section(html, "install", "footer")
-    assert "Add to home screen" in install
-    assert "App Store" not in install
-    footer = _section(html, "footer")
-    for key in ("v12.col_market", "v12.col_sell", "v12.col_help",
-                "v12.col_areas"):
+                  "sam-3.1"):
+        assert model in how, model
+    assert 'href="/how"' in how
+    app = _section(html, "app", "markets")
+    assert 'src="/app-qr.png"' in app
+    assert "App Store" not in app
+    footer = html.split('class="foot"')[1]
+    for key in ("v13.col_market", "v13.col_sell", "v13.col_help",
+                "v13.col_avail", "v13.col_lang"):
         assert t(key) in footer, key
     assert t("land.honest") in footer
 
@@ -335,9 +340,11 @@ def test_shop_page_item_rows_have_photo_add_and_hooks(tmp_path):
     ])
     html = make_client(tmp_path).get(f"/s/{slug}").text
     assert html.count("<article") == 2
-    assert html.count('class="ph') == 2
-    assert html.count("data-add>") == 2
-    assert 'src="/m/tom_cut.jpg"' in html
+    assert html.count('class="pic"') == 2
+    assert html.count('class="add-pill" data-add') == 2
+    # Task 127: tomato matches a v13 cut-out, so the row shows the
+    # transparent cut-out instead of its own photo.
+    assert 'src="/static/img/v13/tomato.webp"' in html
     assert "data-step" in html and "data-sizes" in html
     assert "cat-acc" in html  # category accordion, open by default
     assert "data-cart-bar" in html and "data-cart-view" in html

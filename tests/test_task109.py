@@ -10,6 +10,7 @@ rules themselves are pinned and the pages are rendered in Tamil.
 
 from __future__ import annotations
 
+import html as htmlmod
 from decimal import Decimal
 from pathlib import Path
 
@@ -115,10 +116,16 @@ def test_seller_today_tamil_renders_compact_header_nav_and_strip(tmp_path):
 
 
 def test_homepage_tamil_renders_compare_link(tmp_path):
+    # Task 127: the v13 Tamil homepage links /market from the nav,
+    # the hero service card and the footer.
+    from app.web.i18n import t_for
+
     client = make_client(tmp_path)
+    client.cookies.set("ui_lang", "ta")
     html = client.get("/").text
-    assert 'class="hp-more"' in html
-    assert "அனைத்து விலைகளையும் ஒப்பிடுக" in html
+    assert 'href="/market"' in html
+    assert t_for("ta")("hp.nav_find") in html
+    assert t_for("ta")("v13.hero_a") in htmlmod.unescape(html)
 
 
 # --- Narrow-width CSS rules ---
