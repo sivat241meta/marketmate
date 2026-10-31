@@ -13,12 +13,18 @@
   <header class="topbar">
     <div class="wrap topbar-in">
       <a class="brand" href="/" aria-label="MarketMate home"><span class="brand-tile"><img src="{{ static_url('brand/mark.svg') if static_url is defined else '/static/brand/mark.svg' }}" width="30" height="30" alt="MarketMate"></span><span class="brand-word">MarketMate</span></a>
-      <nav class="nav" aria-label="{{ t('top.main_nav') }}">
+      <nav class="nav" aria-label="{{ t('top.main_nav') }}" data-pnav>
         <a href="/market" data-nav>{{ t('hp.nav_find') }}</a>
         <a href="#lowest" data-nav>{{ t('hp.nav_picks') }}</a>
         <a href="#markets" data-nav>{{ t('hp.nav_areas') }}</a>
         <a href="/sellers" data-nav>{{ t('hp.nav_sellers') }}</a>
         <a href="/how" data-nav>{{ t('hp.nav_how') }}</a>
+        <span class="nav-more" data-nav-more hidden>
+          <button type="button" class="nav-more-btn" data-nav-more-btn aria-haspopup="true" aria-expanded="false">{{ t('nav.more') }} <span aria-hidden="true">▾</span></button>
+          <span class="nav-more-menu" data-nav-more-menu>
+            <span class="nav-more-list" data-nav-more-list></span>
+          </span>
+        </span>
       </nav>
       <div class="top-actions">
         {{ _lang.lang_buttons("lang", t('top.lang_label'), _L) }}

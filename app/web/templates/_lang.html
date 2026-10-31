@@ -14,6 +14,23 @@
     </span>
   </span>
 {% endmacro %}
+{# Task 149: flat options for the header "More" menu (no nested
+   dropdown button) — same cookie buttons / ?lang= links, so the base
+   [data-ui-toggle] binding keeps working. The wrapper stays exactly
+   class="lang": the one-switch-per-page tests count it. #}
+{% macro lang_inline_links(label, active, native_lang, native_name) %}
+  <span class="lang" role="group" aria-label="{{ label }}" data-ui-toggle>
+    <a href="?lang=en" lang="en" class="{% if active == 'en' %}on{% endif %}">EN</a>
+    {% if native_lang != "en" %}<a href="?lang={{ native_lang }}" lang="{{ native_lang }}" class="{% if active == native_lang %}on{% endif %}">{{ native_name }}</a>{% endif %}
+  </span>
+{% endmacro %}
+{% macro lang_inline_buttons(label, active) %}
+  <span class="lang" role="group" aria-label="{{ label }}" data-ui-toggle>
+    <button type="button" data-ui-lang="en" class="{% if active == 'en' %}on{% endif %}">EN</button>
+    <button type="button" data-ui-lang="ta" lang="ta" class="{% if active == 'ta' %}on{% endif %}">தமிழ்</button>
+    <button type="button" data-ui-lang="hi" lang="hi" class="{% if active == 'hi' %}on{% endif %}">हिन्दी</button>
+  </span>
+{% endmacro %}
 {% macro lang_buttons(exact, label, active) %}
   <span class="{{ exact }}" role="group" aria-label="{{ label }}" data-ui-toggle data-lang-drop>
     <button type="button" class="lang-btn" data-lang-btn aria-haspopup="true" aria-expanded="false">{{ {"en": "EN", "ta": "தமிழ்", "hi": "हिन्दी"}.get(active, "EN") }} {{ ui.icon("chev") }}</button>

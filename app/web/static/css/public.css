@@ -191,6 +191,8 @@ body.pub .chip-row {
   overflow-x: auto;
   padding: 10px 2px 4px;
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 body.pub .chip-row .chip { flex: none; text-decoration: none; }
 body.pub .chip-row .chip.on {

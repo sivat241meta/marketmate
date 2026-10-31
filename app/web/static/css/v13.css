@@ -61,6 +61,30 @@ body.v13 .nav a:hover{background:rgba(255,255,255,.1)}
 body.v13 .nav.dark a{color:var(--ink-2)}
 body.v13 .nav.dark a:hover{background:var(--teal-soft);color:var(--teal-ink)}
 body.v13 .nav.dark a.is-active{color:var(--teal)}
+/* Task 149: priority+ "More" dropdown. pnav.js moves nav links into
+   the list until the header row fits; the button carries the same
+   grow-from-left underline, and the menu holds the moved links plus
+   the language switch (flat options, never a nested dropdown). */
+body.v13 .nav-more{position:relative;display:flex;align-items:stretch}
+body.v13 .nav-more[hidden]{display:none}
+body.v13 .nav .nav-more-btn{position:relative;display:flex;align-items:center;gap:4px;min-height:44px;padding:10px 12px;font-weight:600;font-size:15px;color:#fff;white-space:nowrap;border:0;background:none;border-radius:10px}
+body.v13 .nav .nav-more-btn::after{content:"";position:absolute;left:12px;right:12px;bottom:4px;height:2px;border-radius:2px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+body.v13 .nav .nav-more-btn:hover::after,body.v13 .nav .nav-more-btn:focus-visible::after,body.v13 .nav .nav-more-btn.is-active::after{transform:scaleX(1)}
+body.v13 .nav .nav-more-btn:hover{background:rgba(255,255,255,.1)}
+body.v13 .nav.dark .nav-more-btn{color:var(--ink-2)}
+body.v13 .nav.dark .nav-more-btn:hover{background:var(--teal-soft);color:var(--teal-ink)}
+body.v13 .nav.dark .nav-more-btn.is-active{color:var(--teal)}
+body.v13 .nav-more-menu{position:absolute;right:0;top:calc(100% + 6px);display:none;flex-direction:column;min-width:200px;padding:6px;border-radius:12px;background:#fff;box-shadow:var(--shadow);border:1px solid var(--line);z-index:60}
+body.v13 .nav-more:hover .nav-more-menu,body.v13 .nav-more:focus-within .nav-more-menu,body.v13 .nav-more.open .nav-more-menu{display:flex}
+body.v13 .nav-more-list{display:flex;flex-direction:column}
+body.v13 .nav-more-list:empty{display:none}
+body.v13 .nav .nav-more-menu a{position:relative;display:flex;align-items:center;width:100%;min-height:44px;padding:10px 14px;font-weight:600;font-size:15px;color:var(--ink-2);white-space:nowrap;border-radius:8px}
+body.v13 .nav .nav-more-menu a:hover{background:var(--teal-soft);color:var(--teal-ink)}
+body.v13 .nav .nav-more-menu a.is-active{color:var(--teal)}
+body.v13 .nav-more-menu .lang{display:flex;flex-direction:column;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+body.v13 .nav-more-menu .lang button{display:flex;align-items:center;width:100%;min-height:44px;padding:10px 14px;border:0;background:none;border-radius:8px;font-weight:700;font-size:14px;color:var(--ink-2);text-align:left;cursor:pointer;white-space:nowrap}
+body.v13 .nav-more-menu .lang button:hover{background:var(--teal-soft);color:var(--teal-ink)}
+body.v13 .nav-more-menu .lang .on{color:var(--teal)}
 body.v13 .top-actions{display:flex;align-items:center;gap:12px;margin-left:auto}
 body.v13 .topbar .top-actions{margin-left:0}
 /* EN language dropdown: the button reads EN + chevron; the menu
@@ -87,6 +111,9 @@ body.v13 .btn-dark{display:flex;align-items:center;height:46px;padding:0 26px;bo
 body.v13 .btn-dark:hover{transform:translateY(-2px)}
 body.v13 .btn-teal{display:flex;align-items:center;white-space:nowrap;min-height:44px;padding:8px 20px;border-radius:12px;background:var(--teal);color:#fff;font-weight:700;font-size:14px}
 body.v13 .btn-teal:hover{background:var(--teal-ink)}
+/* Task 149: the short sell label + icon below 1440px (the full
+   label stays in aria-label). */
+body.v13 .btn-teal .sell-short,body.v13 .btn-teal .sell-ic{display:none}
 body.v13 .menu-btn{display:none;color:#fff;width:44px;height:44px;place-items:center;border-radius:12px}
 body.v13 .menu-btn:hover{background:rgba(255,255,255,.1)}
 body.v13 .stickybar .menu-btn{color:var(--ink-2)}
@@ -209,7 +236,7 @@ body.v13 .scroller::-webkit-scrollbar{display:none}
 /* Task 146: every horizontal scroller — and each parent link above it —
    shrinks inside 320/390px phones instead of growing to its Tamil/Hindi
    content (flex/grid min-width:auto blowout). */
-body.v13 .fresh-grid,body.v13 .cat-row,body.v13 .shop-row,body.v13 .deal-row,body.v13 .meta-row,body.v13 .mkt-chips,body.v13 .mkt-tabs,body.v13 .filter-row,body.v13 .wrap,body.v13 .sec,body.v13 .sec-head,body.v13 .mkt-main,body.v13 .mkt-sec,body.v13 .mkt-groups{min-width:0;max-width:100%}
+body.v13 .fresh-grid,body.v13 .cat-row,body.v13 .shop-row,body.v13 .deal-row,body.v13 .meta-row,body.v13 .mkt-chips,body.v13 .mkt-tabs,body.v13 .filter-row,body.v13 .results-grid,body.v13 .mkt-shop-grid,body.v13 .wrap,body.v13 .sec,body.v13 .sec-head,body.v13 .mkt-main,body.v13 .mkt-sec,body.v13 .mkt-groups{min-width:0;max-width:100%}
 
 /* what's fresh: 2 rows, image without a frame */
 body.v13 .fresh-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:144px;gap:18px 12px}
@@ -408,8 +435,17 @@ body.v13 .land-grid .card{border-radius:16px}
 body.v13 .my-card{border:1px solid var(--line);border-radius:16px}
 
 /* ---------- laptop narrower ---------- */
+@media (max-width:1440px){
+  body.v13 .stickybar .btn-teal .sell-full{display:none}
+  body.v13 .stickybar .btn-teal .sell-short{display:inline}
+  body.v13 .stickybar .btn-teal .sell-ic{display:inline-flex;margin-right:6px}
+  body.v13 .stickybar .btn-teal .sell-ic svg{width:18px;height:18px}
+}
 @media (max-width:1280px){
   body.v13 .nav a{padding:10px 9px;font-size:14px}
+  /* Task 149 no-JS fallback: with JS, pnav.js moves links into More
+     as needed; without JS the last two links hide instead. */
+  html:not(.js) body.v13 .topbar-in .nav>a[data-nav]:nth-of-type(4),html:not(.js) body.v13 .topbar-in .nav>a[data-nav]:nth-of-type(5){display:none}
   body.v13 .btn-outline-w{display:none}
   body.v13 .svc-row{gap:24px}
   body.v13 .app-band{padding:0 60px}

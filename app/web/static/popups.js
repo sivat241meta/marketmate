@@ -792,30 +792,37 @@
   }
 
   /* Task 125: the header More dropdown toggles on click for touch
-     users (CSS also opens it on hover/focus-within). */
+     users (CSS also opens it on hover/focus-within). Task 149: the
+     homepage carries two (hero topbar + sticky bar), so every one
+     of them is bound. */
   function initMore() {
-    var btn = document.querySelector("[data-nav-more-btn]");
-    var wrap = document.querySelector("[data-nav-more]");
-    if (!btn || !wrap || btn.dataset.mmBound) {
+    var wraps = document.querySelectorAll("[data-nav-more]");
+    if (!wraps.length) {
       return;
     }
-    btn.dataset.mmBound = "1";
-    function set(open) {
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      wrap.classList.toggle("open", open);
-    }
-    btn.addEventListener("click", function () {
-      set(btn.getAttribute("aria-expanded") !== "true");
-    });
-    document.addEventListener("keydown", function (ev) {
-      if (ev.key === "Escape") {
-        set(false);
+    wraps.forEach(function (wrap) {
+      var btn = wrap.querySelector("[data-nav-more-btn]");
+      if (!btn || btn.dataset.mmBound) {
+        return;
       }
-    });
-    document.addEventListener("click", function (ev) {
-      if (!wrap.contains(ev.target)) {
-        set(false);
+      btn.dataset.mmBound = "1";
+      function set(open) {
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        wrap.classList.toggle("open", open);
       }
+      btn.addEventListener("click", function () {
+        set(btn.getAttribute("aria-expanded") !== "true");
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") {
+          set(false);
+        }
+      });
+      document.addEventListener("click", function (ev) {
+        if (!wrap.contains(ev.target)) {
+          set(false);
+        }
+      });
     });
   }
 
