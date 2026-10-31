@@ -25,7 +25,7 @@
     {% call ui.form_card(t('newshop.step1'), t('newshop.step1_sub')) %}
       {{ ui.field(t('set.name'), "name", value=values.get('name', ''), hint=t('newshop.name_hint'), required=True, autocomplete="organization", error=error if error_field == "name" else None, attrs={"id": "shop-name", "maxlength": "60"}) }}
       {{ ui.field(t('set.area'), "area", value=values.get('area', ''), hint=t('newshop.area_hint'), required=True, autocomplete="address-level2", error=error if error_field == "area" else None, attrs={"id": "shop-area", "maxlength": "60", "placeholder": t('newshop.area_ph')}) }}
-      {{ ui.field(t('set.phone'), "phone", type="tel", value=values.get('phone', ''), hint=t('set.phone_help'), required=True, autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "shop-phone", "placeholder": "+91..."}) }}
+      {{ ui.field(t('set.phone'), "phone", type="tel", value=values.get('phone', ''), hint=t('set.phone_help'), required=True, inputmode="tel", autocomplete="tel", error=error if error_field == "phone" else None, attrs={"id": "shop-phone", "placeholder": "+91..."}) }}
       <div class="step-nav">
         <span></span>
         <button class="btn btn-primary" type="button" data-next>{{ t('form.next') }}</button>

@@ -47,7 +47,7 @@
               <button type="button" class="add" data-add hidden>{{ t('shop.add') }}</button>
               <span class="stepper is-compact" data-stepper>
                 <button class="btn btn-small btn-secondary" type="button" data-step="-1" aria-label="{{ t('bill.less_aria', display=item.display) }}">−</button>
-                <input type="number" min="0" step="any" name="qty_{{ item.index }}" value="0" aria-label="{{ t('bill.qty_aria', display=item.display) }}">
+                <input type="number" min="0" step="any" inputmode="decimal" name="qty_{{ item.index }}" value="0" aria-label="{{ t('bill.qty_aria', display=item.display) }}">
                 <button class="btn btn-small btn-secondary" type="button" data-step="1" aria-label="{{ t('bill.more_aria', display=item.display) }}">+</button>
               </span>
             </div>

@@ -72,7 +72,7 @@
 {% macro field(label, name, type="text", value="", hint="", required=False, icon=None, inputmode=None, autocomplete=None, error=None, attrs={}, lang=None) -%}
 {% set _id = attrs.get("id", "field-" ~ name) %}
 <div class="field">
-  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span><small class="req-hint">{{ t('form.required') }}</small>{% endif %}</label>
   <input class="field-input" type="{{ type }}" id="{{ _id }}" name="{{ name }}"{% if lang %} lang="{{ lang }}"{% endif %} value="{{ value }}"{% if required %} required{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>
   {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
   {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
@@ -82,7 +82,7 @@
 {% macro select_field(label, name, hint="", required=False, icon=None, error=None, attrs={}, options=None, value="") -%}
 {% set _id = attrs.get("id", "field-" ~ name) %}
 <div class="field">
-  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <label class="field-label" for="{{ _id }}">{% if icon %}{{ icon(icon) }}{% endif %}<span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span><small class="req-hint">{{ t('form.required') }}</small>{% endif %}</label>
   <select class="field-input" id="{{ _id }}" name="{{ name }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{% if options is not none %}{% for opt in options %}{% if opt is string %}<option value="{{ opt }}"{% if opt == value %} selected{% endif %}>{{ opt }}</option>{% else %}<option value="{{ opt[0] }}"{% if opt[0] == value %} selected{% endif %}>{{ opt[1] }}</option>{% endif %}{% endfor %}{% else %}{{ caller() if caller is defined }}{% endif %}</select>
   {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
   {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}
@@ -92,7 +92,7 @@
 {% macro textarea_field(label, name, value="", hint="", required=False, rows=3, error=None, attrs={}) -%}
 {% set _id = attrs.get("id", "field-" ~ name) %}
 <div class="field">
-  <label class="field-label" for="{{ _id }}"><span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span>{% endif %}</label>
+  <label class="field-label" for="{{ _id }}"><span>{{ label }}</span>{% if required %} <span class="req" aria-hidden="true">*</span><span class="visually-hidden">({{ t('form.required') }})</span><small class="req-hint">{{ t('form.required') }}</small>{% endif %}</label>
   <textarea class="field-input" id="{{ _id }}" name="{{ name }}" rows="{{ rows }}"{% if required %} required{% endif %}{% if error %} aria-invalid="true" aria-describedby="{{ _id }}-error"{% elif hint %} aria-describedby="{{ _id }}-hint"{% endif %} {{ _attrs(attrs) }}>{{ value }}</textarea>
   {% if hint %}<p class="field-hint" id="{{ _id }}-hint">{{ hint }}</p>{% endif %}
   {% if error %}<p class="field-error" id="{{ _id }}-error">{{ error }}</p>{% endif %}

@@ -31,7 +31,7 @@
 {% set item = card.item %}
 <section class="card review-card needs form-card" data-card="{{ card.index }}" data-needs="1" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="true" aria-controls="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt="" loading="lazy"{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
       <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ card.title_local }}</span>{% if card.title_en %} · {{ card.title_en }}{% endif %}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
@@ -39,7 +39,7 @@
     {{ ui.pill(t('review.needs_you'), "check") }}
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" loading="{{ 'eager' if loop.first else 'lazy' }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
       <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>
@@ -80,7 +80,7 @@
       {% endif %}
     {% endfor %}
     {% if card.is_board and card.board_thumb_url %}
-    <img class="review-photo" src="{{ card.board_thumb_url }}" alt="{{ t('review.board_photo_alt') }}">
+    <img class="review-photo" src="{{ card.board_thumb_url }}" loading="lazy" alt="{{ t('review.board_photo_alt') }}">
     <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
     <div class="clip"><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a><span class="wave" aria-hidden="true"></span></div>
@@ -88,8 +88,8 @@
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>
     {% for line in item.price_lines %}
     <div class="line">
-      <label>{{ t('review.price') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
-      <label>{{ t('review.per') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>{{ t('review.price') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
+      <label>{{ t('review.per') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
       <label>{{ t('review.unit') }} <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" data-original="{{ line.unit if line.unit is not none }}">
         {% for u in units %}
         <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
@@ -101,7 +101,7 @@
       <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
     {% set ns = namespace(need_confirm=false) %}
     {% for flag in item.flags %}
       {% if flag.blocking %}
@@ -133,7 +133,7 @@
 {% set item = card.item %}
 <section class="card review-card is-collapsed form-card" data-card="{{ card.index }}" data-needs="0" data-variety="{{ item.variety or '' }}">
   <button type="button" class="review-summary" data-card-toggle aria-expanded="false" aria-controls="card-body-{{ card.index }}">
-    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt=""{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if card.photo_url %}<img class="list-thumb" src="{{ card.photo_url }}" alt="" loading="lazy"{% if card.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="review-summary-main">
       <span class="review-summary-name"><span class="name-local" lang="{{ shop_lang }}">{{ card.title_local }}</span>{% if card.title_en %} · {{ card.title_en }}{% endif %}</span>
       <span class="review-summary-price">{{ card.price_summary }}</span>
@@ -141,7 +141,7 @@
     <span class="tick" aria-label="{{ t('review.looks_right') }}">✓</span>
   </button>
   <div class="review-body" id="card-body-{{ card.index }}">
-    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
+    {% if card.photo_url %}<div class="im"><img class="review-photo" src="{{ card.photo_url }}" alt="{{ item.name_en }}" loading="{{ 'eager' if loop.first else 'lazy' }}" data-photo-main{% if card.photo_cutout %} data-cutout{% endif %}></div>{% endif %}
     <p><label class="pill ghost" for="retake-{{ card.index }}">{{ t('review.retake') }}
       <input id="retake-{{ card.index }}" class="file-hidden" type="file" accept="image/*" data-photo-retake data-upload-url="/e/{{ token }}/s/{{ session['id'] }}/photo/{{ card.index }}/upload">
     </label></p>
@@ -182,7 +182,7 @@
       {% endif %}
     {% endfor %}
     {% if card.is_board and card.board_thumb_url %}
-    <img class="review-photo" src="{{ card.board_thumb_url }}" alt="{{ t('review.board_photo_alt') }}">
+    <img class="review-photo" src="{{ card.board_thumb_url }}" loading="lazy" alt="{{ t('review.board_photo_alt') }}">
     <p class="muted">{{ ui.icon("photo") }}{{ t('review.read_from_board') }}</p>
     {% elif card.clip_url %}
     <div class="clip"><a class="play-btn" href="{{ card.clip_url }}">{{ ui.icon("mic") }}{{ t('review.play') }}</a><span class="wave" aria-hidden="true"></span></div>
@@ -190,8 +190,8 @@
     <blockquote class="quote">{{ card.quote_html | safe }}</blockquote>
     {% for line in item.price_lines %}
     <div class="line">
-      <label>{{ t('review.price') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
-      <label>{{ t('review.per') }} <input type="number" step="any" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
+      <label>{{ t('review.price') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="price" value="{{ line.price if line.price is not none }}" data-original="{{ line.price if line.price is not none }}"></label>
+      <label>{{ t('review.per') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="per_amount" value="{{ line.per_amount if line.per_amount is not none }}" data-original="{{ line.per_amount if line.per_amount is not none }}"></label>
       <label>{{ t('review.unit') }} <select data-item="{{ card.index }}" data-line="{{ loop.index0 }}" data-field="unit" data-original="{{ line.unit if line.unit is not none }}">
         {% for u in units %}
         <option value="{{ u }}"{% if line.unit == u %} selected{% endif %}>{{ u }}</option>
@@ -203,7 +203,7 @@
       <button type="button" class="line-remove" data-item="{{ card.index }}" data-line="{{ loop.index0 }}" aria-label="{{ t('review.remove_aria') }}">{{ t('review.remove') }}</button>
     </div>
     {% endfor %}
-    <label>{{ t('review.quantity') }} <input type="number" step="any" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
+    <label>{{ t('review.quantity') }} <input type="number" step="any" inputmode="decimal" data-item="{{ card.index }}" data-field="qty" value="{{ item.qty if item.qty is not none }}" data-original="{{ item.qty if item.qty is not none }}"></label>
     <div data-confirm-wrap hidden>
       <p data-edit-note hidden>{{ t('review.edit_note') }}</p>
       <label class="card-confirm"><input type="checkbox" data-card-confirm data-item="{{ card.index }}"> {{ t('review.confirm') }}</label>
@@ -220,7 +220,7 @@
   {% for item in carried %}
   <label class="card-confirm">
     <input type="checkbox" data-carried data-id="{{ item.id }}" checked>
-    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% endif %}
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% endif %}
     <span class="name-local" lang="{{ shop_lang }}">{{ item.title_local }}</span>{% if item.title_en %} · {{ item.title_en }}{% endif %} — {{ item.price_summary }}{% if item.sold_out %} ({{ t('review.sold_out') }}){% endif %}
   </label>
   {% endfor %}

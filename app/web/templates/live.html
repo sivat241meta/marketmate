@@ -82,7 +82,7 @@
     {{ composer("/e/" ~ token ~ "/upload", field="video", accept_upload="video", max_seconds=300, done_label=t('composer.check_prices'), speak_lang=shop_lang, speak_languages=languages, max_bytes=max_upload_bytes) }}
   </div>
   <p class="notice">{{ notice | safe }}</p>
-  <p><a href="/e/{{ token }}">{{ t('live.back') }}</a></p>
+  <p class="back-link"><a href="/e/{{ token }}">{{ t('live.back') }}</a></p>
 </div>
 {% endblock %}
 {% block scripts %}

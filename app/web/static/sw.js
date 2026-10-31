@@ -1,33 +1,65 @@
-/* MarketMate service worker: offline tap-billing shell.
+/* MarketMate service worker (Task 150).
  *
- * Caches the app shell (CSS, JS, fonts, icons) on install, and per seller
- * the New bill page plus today's published price list JSON
- * (/e/{token}/prices.json). Live/voice features need the network and are
- * marked "needs internet" by offline-bills.js when offline.
+ * Caches the static app shell (CSS, JS, fonts, icons) on install for
+ * fast repeat loads. Seller pages and API JSON are never cached:
+ * every non-static request goes to the network, and a navigation
+ * that fails (the phone is offline) falls back to a small inline
+ * offline page. Queued offline bills still sync from localStorage
+ * through offline-bills.js once the phone is back online.
  */
 
-const CACHE = "mm-shell-v3";
+const CACHE = "mm-shell-v4";
 
 const SHELL = [
   "/static/app.css",
-  "/static/methods.js",
-  "/static/quote.js",
-  "/static/tap-chips.js",
+  "/static/css/composer.css",
+  "/static/css/forms.css",
+  "/static/css/home.css",
+  "/static/css/motion.css",
+  "/static/css/public.css",
+  "/static/css/seller.css",
+  "/static/css/shop13.css",
+  "/static/css/v13.css",
+  "/static/ai.js",
+  "/static/cash.js",
+  "/static/composer.js",
+  "/static/customer-contact.js",
+  "/static/home.js",
   "/static/live-order.js",
-  "/static/recorder.js",
-  "/static/upload.js",
-  "/static/photo.js",
-  "/static/pcm-worklet.js",
   "/static/live.js",
+  "/static/locate.js",
+  "/static/methods.js",
+  "/static/motion.js",
+  "/static/my.js",
+  "/static/near-me.js",
   "/static/offline-bills.js",
+  "/static/order-alert.js",
+  "/static/order-status.js",
+  "/static/pcm-worklet.js",
+  "/static/photo.js",
+  "/static/pnav.js",
+  "/static/popups.js",
+  "/static/public.js",
+  "/static/quote.js",
+  "/static/recorder.js",
+  "/static/rename-dialog.js",
+  "/static/review.js",
+  "/static/tap-chips.js",
+  "/static/upload.js",
+  "/static/fonts/PlusJakartaSans-Variable.ttf",
   "/static/fonts/InterVariable.woff2",
   "/static/fonts/InterVariable.ttf",
   "/static/fonts/NotoSansTamil-Regular.ttf",
   "/static/fonts/NotoSansTamil-Bold.ttf",
+  "/static/fonts/NotoSansDevanagari-Regular.ttf",
+  "/static/fonts/NotoSansDevanagari-Bold.ttf",
   "/static/brand/icon-192.png",
   "/static/brand/icon-512.png",
+  "/static/brand/icon-maskable-512.png",
+  "/static/brand/apple-touch-icon.png",
   "/static/brand/logo.svg",
   "/static/brand/mark.svg",
+  "/static/brand/mark-dark.svg",
   "/static/icons/fluent/house.svg",
   "/static/icons/fluent/mic.svg",
   "/static/icons/fluent/bags.svg",
@@ -64,6 +96,24 @@ const SHELL = [
   "/static/icons/fluent/robot.svg",
 ];
 
+const OFFLINE_HTML = "<!doctype html><html lang=\"en\"><head>"
+  + "<meta charset=\"utf-8\">"
+  + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+  + "<title>MarketMate — offline</title>"
+  + "<style>body{font-family:system-ui,sans-serif;background:#F3F8FA;"
+  + "color:#102A33;margin:0;display:grid;place-items:center;"
+  + "min-height:100vh;text-align:center;padding:24px}"
+  + "h1{font-size:22px}a{color:#0F766E;font-weight:700}</style>"
+  + "</head><body><main><h1>You are offline</h1>"
+  + "<p>MarketMate needs the internet for fresh prices.</p>"
+  + "<p><a href=\"/\">Try again</a></p></main></body></html>";
+
+function offlineResponse() {
+  return new Response(OFFLINE_HTML, {
+    headers: { "Content-Type": "text/html" },
+  });
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()),
@@ -77,26 +127,6 @@ self.addEventListener("activate", (event) => {
       .then(() => self.clients.claim()),
   );
 });
-
-function isPricesJson(url) {
-  return /\/e\/[^/]+\/prices\.json$/.test(url.pathname);
-}
-
-function isNewBillPage(url) {
-  return /\/e\/[^/]+\/bills\/new$/.test(url.pathname);
-}
-
-function networkFirst(request) {
-  return fetch(request)
-    .then((response) => {
-      if (response && response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(request, copy));
-      }
-      return response;
-    })
-    .catch(() => caches.match(request));
-}
 
 function cacheFirst(request) {
   return caches.match(request).then((hit) => hit || fetch(request));
@@ -137,11 +167,11 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) {
     return;
   }
-  if (isPricesJson(url) || isNewBillPage(url)) {
-    event.respondWith(networkFirst(request));
-    return;
-  }
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(cacheFirst(request));
+    return;
+  }
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request).catch(() => offlineResponse()));
   }
 });

@@ -33,6 +33,9 @@
 }
 .field > .field-label .icon { width: 16px; height: 16px; }
 .field > .field-label .req { color: var(--red); }
+/* Task 150: the "Required" hint shows on phones only (labels go
+   normal-case there); laptops keep the uppercase label + star. */
+.req-hint { display: none; }
 .field-input { max-width: 100%; }
 .field-input[aria-invalid="true"] { border-color: var(--red); }
 .field-input[aria-invalid="true"]:focus {
@@ -300,4 +303,23 @@
 }
 @media (max-width: 359.98px) {
   .slot-grid { grid-template-columns: 1fr; }
+}
+
+/* Task 150: labels on phones use normal case with a small "Required"
+   hint instead of ALL CAPS with a squeezed-in star. */
+@media (max-width: 700px) {
+  .field > .field-label {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+  }
+  .field > .field-label .req { display: none; }
+  .field > .field-label .req-hint {
+    display: inline;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: capitalize;
+    color: var(--muted);
+  }
 }

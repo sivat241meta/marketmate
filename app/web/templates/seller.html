@@ -275,7 +275,7 @@
   {% if items %}
   {% for item in items %}
   <div class="list-row" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
-    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt=""{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb letter" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb letter" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
     <div class="list-main">
       <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
       <span class="list-sub">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ item.lines[0].per }}{% endif %}</span>

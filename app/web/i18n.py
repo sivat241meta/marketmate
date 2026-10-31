@@ -697,6 +697,7 @@ _ENGLISH: dict[str, str] = {
     "set.phone_help": "7–15 digits, optional leading +.",
     "set.language": "Language",
     "set.lang_help": "The language you speak your prices in.",
+    "set.ui_lang_help": "Language for buttons and menus on this phone.",
     "set.currency": "Currency",
     "set.type": "Shop type",
     "set.type_vegetable": "Vegetables",
@@ -1224,6 +1225,7 @@ _ENGLISH: dict[str, str] = {
     # --- marketplace homepage (Task 84) ---
     "hp.strip_exploring": "Exploring {area}",
     "hp.all_areas": "All areas",
+    "hp.all_hint": "Showing all markets — tap to choose yours",
     "hp.strip_today": "Prices said by sellers today",
     "hp.nav_find": "Find a shop",
     "hp.nav_picks": "Today's prices",
@@ -2194,6 +2196,7 @@ _TAMIL: dict[str, str] = {
     "set.phone_help": "7–15 எண், + போடலாம்.",
     "set.language": "மொழி",
     "set.lang_help": "எந்த மொழியில் விலை சொல்வீங்க.",
+    "set.ui_lang_help": "இந்த போனில் பொத்தான்கள், மெனுக்களின் மொழி.",
     "set.currency": "நாணயம்",
     "set.type": "கடை வகை",
     "set.type_vegetable": "காய்கறிகள்",
@@ -2719,6 +2722,7 @@ _TAMIL: dict[str, str] = {
     # --- marketplace homepage (Task 84) ---
     "hp.strip_exploring": "பகுதி: {area}",
     "hp.all_areas": "அனைத்து பகுதிகள்",
+    "hp.all_hint": "எல்லா சந்தைகளும் — உங்கள் பகுதியைத் தேர்வு செய்யத் தட்டுங்கள்",
     "hp.strip_today": "இன்று விற்பனையாளர்கள் சொன்ன விலைகள்",
     "hp.nav_find": "கடையைத் தேடு",
     "hp.nav_picks": "இன்றைய விலைகள்",
@@ -3690,6 +3694,7 @@ _HINDI: dict[str, str] = {
     "set.phone_help": "7–15 अंक, + लगा सकते हैं।",
     "set.language": "भाषा",
     "set.lang_help": "किस भाषा में दाम बोलते हैं।",
+    "set.ui_lang_help": "इस फ़ोन पर बटन और मेनू की भाषा।",
     "set.currency": "मुद्रा",
     "set.type": "दुकान कैसी",
     "set.type_vegetable": "सब्ज़ियाँ",
@@ -4214,6 +4219,7 @@ _HINDI: dict[str, str] = {
     # --- marketplace homepage (Task 84) ---
     "hp.strip_exploring": "क्षेत्र: {area}",
     "hp.all_areas": "सभी क्षेत्र",
+    "hp.all_hint": "सभी बाज़ार दिख रहे हैं — अपना चुनने के लिए टैप करें",
     "hp.strip_today": "विक्रेताओं ने आज बताई कीमतें",
     "hp.nav_find": "दुकान खोजें",
     "hp.nav_picks": "आज की कीमतें",

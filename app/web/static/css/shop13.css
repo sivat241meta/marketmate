@@ -100,6 +100,11 @@ body.v13 .bag-bar small{font-weight:600;font-size:12.5px;opacity:.9}
 @keyframes up13{from{transform:translate(-50%,120%)}}
 
 @media (max-width:700px){
+  /* Task 150: breadcrumb links keep their look but gain a 44px
+     tap area via an invisible hit box; tiny labels floor at 12px. */
+  body.v13 .crumbs a{position:relative}
+  body.v13 .crumbs a::after{content:"";position:absolute;left:-8px;right:-8px;top:50%;height:44px;margin-top:-22px}
+  body.v13 .veg-tag{font-size:12px}
   body.v13 .shop-title{font-size:23px;margin-left:4px}
   body.v13 .info-card{padding:0 8px 12px;border-radius:0 0 28px 28px}
   body.v13 .info-in{padding:16px 108px 16px 14px}

@@ -39,7 +39,7 @@
        gone. #}
     {% call composer("/s/" ~ shop["slug"] ~ "/quote" ~ ("?lang=" ~ lang if lang != "en" else ""), text_field="items", placeholder=t.speak_help, mode="voice+text", max_seconds=120, done_label=t('composer.review_order')) %}
       <div class="field">
-        <label class="field-label" for="quote-name-speak">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <label class="field-label" for="quote-name-speak">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span> <small class="req-hint">{{ t('form.required') }}</small></label>
         <input class="field-input" id="quote-name-speak" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true" aria-describedby="quote-name-speak-err"{% endif %}>
         {% if error and error_field == "customer_name" %}<p class="field-error" id="quote-name-speak-err">{{ error }}</p>{% endif %}
       </div>
@@ -57,12 +57,12 @@
     <h2 class="h2s">{{ ui.icon("tag") }} {{ t.type_list }}</h2>
     <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}">
       <div class="field">
-        <label class="field-label" for="quote-items">{{ t.what_need }} <span class="req" aria-hidden="true">*</span></label>
+        <label class="field-label" for="quote-items">{{ t.what_need }} <span class="req" aria-hidden="true">*</span> <small class="req-hint">{{ t('form.required') }}</small></label>
         <input class="field-input" id="quote-items" type="text" name="items" placeholder="2 kg tomato, 1 dozen banana, 3 coconut" required autocomplete="off"{% if error and error_field == "items" %} aria-invalid="true" aria-describedby="quote-items-err"{% endif %}>
         {% if error and error_field == "items" %}<p class="field-error" id="quote-items-err">{{ error }}</p>{% endif %}
       </div>
       <div class="field">
-        <label class="field-label" for="quote-name-type">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <label class="field-label" for="quote-name-type">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span> <small class="req-hint">{{ t('form.required') }}</small></label>
         <input class="field-input" id="quote-name-type" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true"{% endif %}>
         {% if error and error_field == "customer_name" %}<p class="field-error">{{ error }}</p>{% endif %}
       </div>
@@ -81,7 +81,7 @@
     <p class="muted">{{ t.photo_help }}</p>
     <form method="post" action="/s/{{ shop["slug"] }}/quote{% if lang != "en" %}?lang={{ lang }}{% endif %}" enctype="multipart/form-data">
       <div class="field">
-        <label class="field-label" for="quote-name-photo">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span></label>
+        <label class="field-label" for="quote-name-photo">{{ t('order.name_label') }} <span class="req" aria-hidden="true">*</span> <small class="req-hint">{{ t('form.required') }}</small></label>
         <input class="field-input" id="quote-name-photo" type="text" name="customer_name" data-customer-name maxlength="40" required autocomplete="name"{% if error and error_field == "customer_name" %} aria-invalid="true"{% endif %}>
         {% if error and error_field == "customer_name" %}<p class="field-error">{{ error }}</p>{% endif %}
       </div>

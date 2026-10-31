@@ -270,6 +270,9 @@ img { max-width: 100%; }
   display: block;
   flex: none;
 }
+/* Task 150: the tile mark shows only on seller phones (≤700px), where
+   the header is one 56px row and the full logo gives way to the mark. */
+.hdr .brand-mark { display: none; }
 .logo .wordmark {
   position: absolute;
   width: 1px;
@@ -331,6 +334,64 @@ img { max-width: 100%; }
   border-radius: 999px;
   padding: 1px 6px;
   font-style: normal;
+}
+/* Task 150: seller profile menu. The round button is a <details>
+   disclosure; its menu holds the Settings link plus the language
+   switch, so phones need no separate language row. */
+.hdr .prof { position: relative; flex: none; margin: 0; }
+.hdr .prof > summary { list-style: none; cursor: pointer; }
+.hdr .prof > summary::-webkit-details-marker { display: none; }
+.hdr .prof > summary::marker { content: ""; }
+.hdr .prof-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  min-width: 220px;
+  max-width: min(78vw, 280px);
+  background: #fff;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lift);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hdr .prof-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.hdr .prof-link:hover { background: var(--accent-soft); }
+.hdr .prof-lang {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 4px 0 0;
+  gap: 2px;
+}
+.hdr .prof-lang button {
+  min-height: 44px;
+  justify-content: flex-start;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+.hdr .prof-lang button.on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: none;
 }
 /* Seller laptop shell (v9 workspace): dark top bar across the full width,
    dark icon rail under it on the left. Hidden below 1000px, where the
@@ -4223,4 +4284,61 @@ body.mm-locked { overflow: hidden; }
 @media (max-width: 600px) {
   .hp-headline { font-size: 30px; }
   .hp-banner { flex-direction: column; text-align: center; }
+}
+
+/* ---- Task 150: phone polish (≤700px). Laptop look unchanged. ---- */
+@media (max-width: 700px) {
+  /* Seller chrome: one 56px header row (mark, one status pill with
+     ellipsis, sound, profile). The status strip hides — the pill
+     carries the key state — and its language row moves into the
+     profile menu + Settings. 56 + ~60 action bar + ~66 bottom nav
+     stays within 25% of a 740px screen. */
+  body.is-seller .ann { display: none; }
+  body.is-seller .hdr {
+    height: 56px;
+    min-height: 56px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    gap: 8px;
+  }
+  body.is-seller .hdr .brand-logo { display: none; }
+  body.is-seller .hdr .brand-mark { display: block; }
+  /* Compact bottom nav: tighter paddings, 44px rows, smaller mic
+     tile. Labels keep wrapping at word boundaries (Tasks 109-113). */
+  .bnav { padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .bnav a { min-height: 44px; padding: 0 2px; gap: 2px; }
+  .bnav .mic span {
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+    border-width: 3px;
+  }
+  .bnav .mic .obj { width: 22px; height: 22px; }
+  /* Sticky bars dock directly above the bottom nav (no 8px gap). */
+  body:has(.bnav) .float,
+  body:has(.bnav) .sticky-bar { bottom: var(--bnav-h); }
+  /* Tap targets ≥ 44px: language options, back links, AI session
+     chips. (Chips, pills and linklikes are 44px+ already.) */
+  .lang a, .lang button, .lang b {
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 12px;
+  }
+  .back-link a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .ai-group-head a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* No text below 12px on phones (badges + laptop rails excluded). */
+  .land-photo figcaption { font-size: 12px; }
+  /* iOS focuses zoom when inputs are under 16px: floor every form
+     control at 16px on phones without shrinking larger text. */
+  input, select, textarea { font-size: max(16px, 1em); }
 }

@@ -47,7 +47,7 @@
 {% else %}
 <p><a class="pill dark big" href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>
 {% endif %}
-{% if wa_url %}<p><a href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>{% endif %}
+{% if wa_url %}<p class="back-link"><a href="/e/{{ token }}">{{ t('sess.back_shop') }}</a></p>{% endif %}
 {% elif session["kind"] == "voice_update" and session["status"] == "review" %}
 <div class="page-head">
   <div>
@@ -88,7 +88,7 @@
 <p class="muted">{{ t('sess.refresh_note') }}</p>
 </noscript>
 {% endif %}
-<p class="muted"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
+<p class="muted back-link"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
 {% endblock %}
 {% block scripts %}
 {% if session["status"] not in ("failed", "approved", "review") %}

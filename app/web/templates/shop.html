@@ -42,7 +42,7 @@
         {% if open_state == "open" %}<b data-open-chip>{% if open_time %}{{ t('hours.open_now', time=open_time) }}{% else %}{{ t('hours.open_plain') }}{% endif %}</b>
         {% elif open_state == "closed" %}<b data-open-chip>{% if open_time %}{{ t('hours.closed', time=open_time) }}{% else %}{{ t('hours.closed_plain') }}{% endif %}</b>{% endif %}</span>
       </div>
-      {% if shop_cover_url %}<img class="info-cover" src="{{ shop_cover_url }}" alt="" width="120" height="120">{% elif hero_photo %}<img class="info-cover" src="{{ hero_photo }}" alt="" width="120" height="120">{% else %}<span class="info-cover nophoto" aria-hidden="true">{{ shop["name"][:1] }}</span>{% endif %}
+      {% if shop_cover_url %}{% set _c800 = cover_800(shop_cover_url) if cover_800 is defined else none %}<img class="info-cover" src="{{ shop_cover_url }}"{% if _c800 %} srcset="{{ _c800 }} 800w, {{ shop_cover_url }} 1600w" sizes="120px"{% endif %} alt="" width="120" height="120">{% elif hero_photo %}<img class="info-cover" src="{{ hero_photo }}" alt="" width="120" height="120">{% else %}<span class="info-cover nophoto" aria-hidden="true">{{ shop["name"][:1] }}</span>{% endif %}
     </div>
     <div class="info-foot">
       <svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>

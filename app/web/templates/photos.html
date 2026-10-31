@@ -38,7 +38,7 @@
 <div class="check-grid">
   {% for check in checks %}
   <a class="check-card" href="/e/{{ token }}/photos/{{ check.id }}">
-    {% if check.thumb_url %}<img class="check-thumb" src="{{ check.thumb_url }}" alt="">{% else %}<span class="check-thumb">{{ ui.icon("photo") }}</span>{% endif %}
+    {% if check.thumb_url %}<img class="check-thumb" src="{{ check.thumb_url }}" alt="" loading="lazy">{% else %}<span class="check-thumb">{{ ui.icon("photo") }}</span>{% endif %}
     <span class="check-meta">
       <span class="check-chips">
         {% for chip in check.chips %}<span class="chip">{{ chip }}</span>{% endfor %}

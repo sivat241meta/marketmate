@@ -91,7 +91,7 @@ def test_manifest_served_with_json(tmp_path):
     body = resp.json()
     assert body["name"] == "MarketMate"
     assert body["short_name"] == "MarketMate"
-    assert body["theme_color"] == "#0B2A33"
+    assert body["theme_color"] == "#0F766E"
     assert body["background_color"] == "#F3F8FA"
     assert body["display"] == "standalone"
     assert body["start_url"] == "/"
@@ -105,7 +105,10 @@ def test_sw_served_with_js_content_type(tmp_path):
     assert resp.status_code == 200, resp.text
     assert "javascript" in resp.headers["content-type"]
     assert resp.headers.get("Service-Worker-Allowed") == "/"
-    assert "prices.json" in resp.text
+    # Task 150: static shell only — seller pages and API JSON are
+    # never cached, and offline navigations get an offline page.
+    assert "/e/" not in resp.text
+    assert "offline" in resp.text.lower()
 
 
 def test_base_links_manifest_and_icons(tmp_path):
@@ -113,7 +116,7 @@ def test_base_links_manifest_and_icons(tmp_path):
     html = client.get("/").text
     assert 'href="/manifest.webmanifest"' in html
     assert 'rel="apple-touch-icon"' in html
-    assert 'name="theme-color"' in html and "#0B2A33" in html
+    assert 'name="theme-color"' in html and "#0F766E" in html
 
 
 def test_icons_exist_with_right_sizes():
