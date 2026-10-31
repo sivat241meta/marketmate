@@ -242,6 +242,11 @@ def test_each_card_shows_its_id_once_mono_only(tmp_path):
         body = re.sub(r"<[^>]+>", " ", body)
         for model_id in ids:
             assert meta.count(model_id) >= 1, model_id
+            if model_id == "sam-3.1":
+                # Task 147: card 3's sentence names sam-3.1 as the
+                # finder ("sam-3.1 finds it, and we keep a square
+                # photo ..."), so the id is in the body too.
+                continue
             assert model_id not in body, model_id
 
 

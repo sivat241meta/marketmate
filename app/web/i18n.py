@@ -1206,7 +1206,8 @@ _ENGLISH: dict[str, str] = {
     "land.meta_t": "Built with Meta",
     "land.meta_voice": "Turns speech into text in Tamil, Hindi and English.",
     "land.meta_spark": "Reads prices with proof, and double-checks them from video.",
-    "land.meta_sam": "Cuts out product photos, leaving faces out.",
+    "land.meta_sam": ("Finds each item in the video and keeps a square "
+                        "photo from it, leaving faces out."),
     "land.meta_open": "the same text steps can run on Meta's open-weight Muse Spark Open via Baseten when a key is set.",
     "land.meta_log": "Every call is logged with its model and cost.",
     "land.meta_code": "Built with Muse Code",
@@ -1463,8 +1464,9 @@ _ENGLISH: dict[str, str] = {
     "v13.how_1d": "A voice note or a short video of the stall, in Tamil, Hindi or English.",
     "v13.how_2t": "Prices are read and checked",
     "v13.how_2d": "Every price is matched to the seller's own words. Nothing is guessed.",
-    "v13.how_3t": "Photos are cut out",
-    "v13.how_3d": "Each item gets a clean photo from the stall video. Faces are left out.",
+    "v13.how_3t": "Each item is found in the video",
+    "v13.how_3d": ("sam-3.1 finds it, and we keep a square photo from the "
+                   "seller's own video. Faces are left out."),
     "v13.how_4t": "The shop page is live",
     "v13.how_4d": "Customers compare prices and order by voice. Sellers share it on WhatsApp.",
     "v13.app_t": "Get MarketMate on your phone!",
@@ -2697,7 +2699,9 @@ _TAMIL: dict[str, str] = {
     "land.meta_t": "Meta உதவியுடன் உருவானது",
     "land.meta_voice": "பேச்சை தமிழ், இந்தி, ஆங்கிலத்தில் எழுத்தாக மாற்றும்.",
     "land.meta_spark": "விலைகளை ஆதாரத்துடன் படிக்கும், வீடியோவில் இருந்து மீண்டும் சரிபார்க்கும்.",
-    "land.meta_sam": "பொருட்களின் படங்களை வெட்டி எடுக்கும், முகங்கள் வராது.",
+    "land.meta_sam": ("வீடியோவில் ஒவ்வொரு பொருளையும் கண்டுபிடித்து "
+                        "அதிலிருந்து சதுர புகைப்படம் வைத்துக்கொள்ளும், "
+                        "முகங்கள் வராது."),
     "land.meta_open": "அதே உரை படிகள் key இருந்தால் Baseten வழியாக Meta-வின் open-weight Muse Spark Open-இல் இயங்கும்.",
     "land.meta_log": "ஒவ்வொரு அழைப்பும் மாடல், செலவுடன் பதிவாகும்.",
     "land.meta_code": "Muse Code கொண்டு உருவாக்கப்பட்டது",
@@ -2954,8 +2958,10 @@ _TAMIL: dict[str, str] = {
     "v13.how_1d": "கடையின் குரல் பதிவு அல்லது சிறு வீடியோ — தமிழ், இந்தி அல்லது ஆங்கிலத்தில்.",
     "v13.how_2t": "விலைகள் படித்துச் சரிபார்க்கப்படும்",
     "v13.how_2d": "ஒவ்வொரு விலையும் விற்பனையாளரின் சொந்த வார்த்தைகளுடன் பொருத்தப்படும். எதுவும் யூகமில்லை.",
-    "v13.how_3t": "புகைப்படங்கள் வெட்டப்படும்",
-    "v13.how_3d": "ஒவ்வொரு பொருளுக்கும் கடை வீடியோவிலிருந்து தெளிவான புகைப்படம். முகங்கள் விடப்படும்.",
+    "v13.how_3t": "ஒவ்வொரு பொருளும் வீடியோவில் கண்டறியப்படும்",
+    "v13.how_3d": ("sam-3.1 அதைக் கண்டுபிடித்து, விற்பனையாளரின் சொந்த "
+                   "வீடியோவிலிருந்து ஒரு சதுர புகைப்படத்தை "
+                   "வைத்துக்கொள்கிறோம். முகங்கள் விடப்படும்."),
     "v13.how_4t": "கடைப் பக்கம் நேரலையில்",
     "v13.how_4d": "வாடிக்கையாளர்கள் விலைகளை ஒப்பிட்டு குரலில் ஆர்டர் செய்வர். விற்பனையாளர்கள் WhatsApp-இல் பகிர்வர்.",
     "v13.app_t": "MarketMate-ஐ உங்கள் போனில் பெறுங்கள்!",
@@ -4188,7 +4194,8 @@ _HINDI: dict[str, str] = {
     "land.meta_t": "Meta के साथ बनाया गया",
     "land.meta_voice": "बोली को तमिल, हिंदी और अंग्रेज़ी में लिखावट में बदलता है।",
     "land.meta_spark": "कीमतें सबूत के साथ पढ़ता है, और वीडियो से दोबारा जाँचता है।",
-    "land.meta_sam": "सामान की फ़ोटो काटकर निकालता है, चेहरे नहीं आते।",
+    "land.meta_sam": ("वीडियो में हर चीज़ ढूँढकर उससे चौकोर फ़ोटो रखता है, "
+                        "चेहरे नहीं आते।"),
     "land.meta_open": "वही टेक्स्ट चरण key होने पर Baseten से Meta के ओपन-वेट Muse Spark Open पर चल सकते हैं।",
     "land.meta_log": "हर कॉल मॉडल और लागत के साथ दर्ज होती है।",
     "land.meta_code": "Muse Code से बनाया गया",
@@ -4445,8 +4452,9 @@ _HINDI: dict[str, str] = {
     "v13.how_1d": "दुकान का वॉइस नोट या छोटा वीडियो — तमिल, हिंदी या अंग्रेज़ी में।",
     "v13.how_2t": "कीमतें पढ़ी और जाँची जाती हैं",
     "v13.how_2d": "हर कीमत विक्रेता के अपने शब्दों से मिलाई जाती है। कुछ अंदाज़ा नहीं।",
-    "v13.how_3t": "फ़ोटो काटे जाते हैं",
-    "v13.how_3d": "हर चीज़ की दुकान वीडियो से साफ़ फ़ोटो। चेहरे छोड़ दिए जाते हैं।",
+    "v13.how_3t": "हर चीज़ वीडियो में मिल जाती है",
+    "v13.how_3d": ("sam-3.1 उसे ढूँढता है, और हम विक्रेता के अपने वीडियो से "
+                   "एक चौकोर फ़ोटो रखते हैं। चेहरे छोड़ दिए जाते हैं।"),
     "v13.how_4t": "दुकान पेज लाइव है",
     "v13.how_4d": "ग्राहक भाव तुलना करते हैं और बोलकर ऑर्डर करते हैं। विक्रेता WhatsApp पर साझा करते हैं।",
     "v13.app_t": "MarketMate अपने फ़ोन में पाएँ!",

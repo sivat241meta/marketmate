@@ -39,9 +39,14 @@ MAX_TRIED_FRAMES = 3
 CUTOUT_SIZE = 900
 CUTOUT_FIT = 0.78
 CUTOUT_LOW_OFFSET = 20
-#: Candidate file suffixes: cut-out first (default), Task 59 crop second.
+#: Candidate file suffixes: cut-out first (the "verify photo" input),
+#: square original second (Task 147: the item photo everywhere).
 CUTOUT_SUFFIX = "_cut"
 ORIGINAL_SUFFIX = "_orig"
+#: Task 147: the original is a square crop centred on the SAM box with
+#: this margin, at least this many pixels a side when the frame allows.
+SQUARE_MARGIN = 0.15
+SQUARE_MIN_SIDE = 480
 #: Task 67: whole objects only. A box within this frame fraction of any
 #: edge is cut off; mask components under this fraction of the main
 #: instance's area are slivers; neighbours must touch the main one, be
@@ -197,6 +202,71 @@ def crop_to_boxes(image: Path, boxes: list[Box], out: Path) -> Path:
 def centre_photo(image: Path, out: Path) -> Path:
     """Cut the 70% centre 4:3 photo (retakes and extra candidates)."""
     return crop_to_boxes(image, [], out)
+
+
+def square_crop_box(left: int, top: int, right: int, bottom: int,
+                    width: int, height: int, *,
+                    margin: float = SQUARE_MARGIN,
+                    floor: int = SQUARE_MIN_SIDE
+                    ) -> tuple[int, int, int, int]:
+    """Square around a box's centre: ~15% margin, clamped to the frame.
+
+    The side covers the box's long side plus the margin, grows to at
+    least ``floor`` (480) when the frame allows, and otherwise grows to
+    the largest square the frame fits.
+    """
+    box_w, box_h = max(right - left, 1), max(bottom - top, 1)
+    cx, cy = (left + right) / 2, (top + bottom) / 2
+    side = round(max(box_w, box_h) * (1 + margin))
+    side = max(side, min(min(width, height), floor))
+    side = min(side, min(width, height))
+    left = min(max(round(cx - side / 2), 0), max(width - side, 0))
+    top = min(max(round(cy - side / 2), 0), max(height - side, 0))
+    return left, top, left + side, top + side
+
+
+def square_box_for(boxes: list[Box], width: int, height: int
+                   ) -> tuple[int, int, int, int]:
+    """Square photo box: union of the 3 largest boxes, squared with margin."""
+    if not boxes:
+        side = round(min(width, height) * 0.7)
+        left = (width - side) // 2
+        top = (height - side) // 2
+        return left, top, left + side, top + side
+    biggest = sorted(boxes, key=lambda b: (b.x2 - b.x1) * (b.y2 - b.y1),
+                     reverse=True)[:3]
+    union = (min(b.x1 for b in biggest), min(b.y1 for b in biggest),
+             max(b.x2 for b in biggest), max(b.y2 for b in biggest))
+    return square_crop_box(*union, width, height)
+
+
+def crop_square_to_boxes(image: Path, boxes: list[Box], out: Path) -> Path:
+    """Cut a square product photo around the boxes, save the cleaned JPEG."""
+    with Image.open(image) as img:
+        rgb = img.convert("RGB")
+        width, height = rgb.size
+        crop = rgb.crop(square_box_for(boxes, width, height))
+    return save_photo(clean_crop(crop), out)
+
+
+def prefer_original(photo: str | Path | None) -> str | Path | None:
+    """The ``*_orig`` sibling when a ``*_cut`` photo has one, else the photo.
+
+    Existing sessions stored the cut-out as the item photo; where the
+    original crop exists on disk it is the item photo now (Task 147).
+    Retakes, uploads and sample photos never match the suffix and pass
+    through untouched.
+    """
+    if not photo:
+        return photo
+    path = Path(photo)
+    if not path.stem.endswith(CUTOUT_SUFFIX):
+        return photo
+    orig = path.with_name(path.stem[: -len(CUTOUT_SUFFIX)]
+                          + ORIGINAL_SUFFIX + path.suffix)
+    if orig.is_file():
+        return str(orig) if isinstance(photo, str) else orig
+    return photo
 
 
 def _passes(confidence: float | None, floor: float) -> bool:
@@ -587,8 +657,8 @@ def face_blocks_frame(faces: list[Box], *,
                       frame_size: tuple[int, int],
                       crop_area: tuple[int, int, int, int],
                       cluster: tuple[int, int, int, int]) -> bool:
-    """True when a confident face ruins the frame: it overlaps the 4:3 crop
-    or the cut-out cluster's box, or covers ≥2% of the frame (a selfie)."""
+    """True when a confident face ruins the frame: it overlaps the square
+    crop or the cluster's box, or covers ≥2% of the frame (a selfie)."""
     width, height = frame_size
     for face in faces:
         if face.confidence is not None and face.confidence < FACE_CONFIDENCE:
@@ -1082,7 +1152,7 @@ def _choose_frame(frames: list[Frame], noun: str, *,
         faces = find_boxes(frame.path, FACE_NOUN, ledger=ledger,
                            settings=settings, step="face check")
         if face_blocks_frame(faces, frame_size=size,
-                             crop_area=crop_box(boxes, *size),
+                             crop_area=square_box_for(boxes, *size),
                              cluster=cluster_box(cluster)):
             continue
         return frame, cluster
@@ -1091,19 +1161,19 @@ def _choose_frame(frames: list[Frame], noun: str, *,
 
 def make_photo(frame: Frame, noun: str, out: Path, *, ledger,
                settings) -> Path | None:
-    """Cut the product out of one frame: cut-out tile, else the 4:3 crop.
+    """Square original crop of the product in one frame (Task 147).
 
-    Returns None (no photo) when SAM finds no instance of the noun or a
-    face blocks the frame. No centre-crop fallback for automatic photos.
+    SAM still finds the box; the photo is the square frame crop around
+    it, never a cut-out. Returns None (no photo) when SAM finds no
+    instance of the noun or a face blocks the frame. No centre-crop
+    fallback for automatic photos.
     """
     chosen = _choose_frame([frame], noun, ledger=ledger, settings=settings)
     if chosen is None:
         return None
     _, cluster = chosen
-    try:
-        return cutout_from_instances(frame.path, cluster, out)
-    except NoCutout:
-        return crop_to_boxes(frame.path, [inst.box for inst in cluster], out)
+    return crop_square_to_boxes(
+        frame.path, [inst.box for inst in cluster], out)
 
 
 def window_frames(frames: list[Frame], picked: Frame,
@@ -1128,7 +1198,7 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
 
     Gates in order: target instances exist, a whole cluster selects, no
     face blocks, cross-check survivors remain, the cut-out verifies as
-    the target item. Without decodable masks the original 4:3 crop is
+    the target item. Without decodable masks the square original is
     offered alone when it still contains the target per SAM. Task 140:
     the rival cross-check queries run concurrently (same nouns, same
     order); the target nouns stay sequential with their early break and
@@ -1157,7 +1227,7 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
                       step="face check")
     boxes = [inst.box for inst in cluster]
     if face_blocks_frame(faces, frame_size=size,
-                         crop_area=crop_box(boxes, *size),
+                         crop_area=square_box_for(boxes, *size),
                          cluster=cluster_box(cluster)):
         return None, True
     if others:
@@ -1184,8 +1254,9 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
     try:
         cutout_from_instances(frame.path, cluster, cut_path, clean=True)
     except NoCutout:
-        if _intersects(cluster[0].box, crop_box(boxes, *size)):
-            return [str(crop_to_boxes(frame.path, boxes, orig_path))], True
+        if _intersects(cluster[0].box, square_box_for(boxes, *size)):
+            return [str(crop_square_to_boxes(
+                frame.path, boxes, orig_path))], True
         return None, True
     try:
         answer = verify_cutout(cut_path, noun, names, ledger=ledger,
@@ -1198,8 +1269,8 @@ def _try_clean_frame(frame: Frame, nouns: list[str], others: list[str],
         cut_path.unlink(missing_ok=True)
         return None, True
     saved = [str(cut_path)]
-    if _intersects(cluster[0].box, crop_box(boxes, *size)):
-        saved.append(str(crop_to_boxes(frame.path, boxes, orig_path)))
+    if _intersects(cluster[0].box, square_box_for(boxes, *size)):
+        saved.append(str(crop_square_to_boxes(frame.path, boxes, orig_path)))
     return saved, True
 
 
@@ -1240,19 +1311,19 @@ def _try_generic_fallback(frame: Frame, target: str, generic_noun: str,
                       step="face check")
     boxes = [inst.box for inst in cluster]
     if face_blocks_frame(faces, frame_size=size,
-                         crop_area=crop_box(boxes, *size),
+                         crop_area=square_box_for(boxes, *size),
                          cluster=cluster_box(cluster)):
         return None
     cut_path, orig_path = _clean_frame_paths(out_stem)
     try:
         cutout_from_instances(frame.path, cluster, cut_path, clean=True)
     except NoCutout:
-        if _intersects(cluster[0].box, crop_box(boxes, *size)):
-            return [str(crop_to_boxes(frame.path, boxes, orig_path))]
+        if _intersects(cluster[0].box, square_box_for(boxes, *size)):
+            return [str(crop_square_to_boxes(frame.path, boxes, orig_path))]
         return None
     saved = [str(cut_path)]
-    if _intersects(cluster[0].box, crop_box(boxes, *size)):
-        saved.append(str(crop_to_boxes(frame.path, boxes, orig_path)))
+    if _intersects(cluster[0].box, square_box_for(boxes, *size)):
+        saved.append(str(crop_square_to_boxes(frame.path, boxes, orig_path)))
     return saved
 
 
@@ -1321,7 +1392,7 @@ def make_candidates(frames: list[Frame], picked: Frame, noun: str,
                     count: int = 3, session_items=None,
                     picked_frames=None, noun_cache=None,
                     category_cache=None) -> list[str]:
-    """Cut-out (default) plus the Task 59 4:3 crop ("Original").
+    """Cut-out plus the square original (Task 147: the item photo).
 
     Probes the sharpest ``count`` frames for the noun; the first frame
     with product instances and no blocking face wins. Returns [] (no
@@ -1349,8 +1420,9 @@ def make_candidates(frames: list[Frame], picked: Frame, noun: str,
         return []
     frame, cluster = chosen
     boxes = [inst.box for inst in cluster]
-    original = crop_to_boxes(
-        frame.path, boxes, out_stem.parent / f"{out_stem.name}{ORIGINAL_SUFFIX}.jpg")
+    original = crop_square_to_boxes(
+        frame.path, boxes,
+        out_stem.parent / f"{out_stem.name}{ORIGINAL_SUFFIX}.jpg")
     try:
         cut = cutout_from_instances(
             frame.path, cluster,

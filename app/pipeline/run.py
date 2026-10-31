@@ -26,6 +26,7 @@ from app.pipeline.media import (
 )
 from app.pipeline.names import correct_draft_from_variety, keywords_for
 from app.pipeline.photos import (
+    ORIGINAL_SUFFIX,
     ensure_visual_nouns,
     make_candidates,
     make_photo,
@@ -348,7 +349,12 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 picked_frames=picked_list,
                 noun_cache=noun_cache, category_cache=category_cache)
             if saved:
-                item.photo = saved[0]
+                # Task 147: the item photo is the square original; the
+                # cut-out stays in the candidates for the verify input.
+                item.photo = next(
+                    (path for path in saved
+                     if Path(path).stem.endswith(ORIGINAL_SUFFIX)),
+                    saved[0])
                 item.photo_candidates = list(saved)
             else:
                 # No product in any tried frame, or every frame

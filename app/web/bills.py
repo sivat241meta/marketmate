@@ -49,7 +49,7 @@ from app.pipeline.names import (
     keywords_for,
     qualified_name,
 )
-from app.pipeline.photos import is_cutout_photo
+from app.pipeline.photos import is_cutout_photo, prefer_original
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 from app.web.auth import created_by_for, resolve_or_404
@@ -580,7 +580,7 @@ def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
         return urls
     for item in db.version_items(conn, version_id):
         if item.photo and item.name_en:
-            url = "/m/" + Path(item.photo).name
+            url = "/m/" + Path(prefer_original(item.photo)).name
             urls[item.name_en.strip().lower()] = url
             key = db.match_key_of(item).strip().lower()
             if key:
@@ -673,9 +673,9 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
             "unit_price": _fmt_money(first.price) if first is not None else "",
             "per_amount": _fmt_money(first.per_amount)
             if first is not None else "",
-            "photo_url": ("/m/" + Path(item.photo).name
+            "photo_url": ("/m/" + Path(prefer_original(item.photo)).name
                           if item.photo else None),
-            "photo_cutout": is_cutout_photo(item.photo),
+            "photo_cutout": is_cutout_photo(prefer_original(item.photo)),
         })
     return items
 

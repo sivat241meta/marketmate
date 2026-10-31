@@ -313,14 +313,21 @@ def test_change_photo_keeps_price_and_version(tmp_path, monkeypatch):
         conn.close()
 
 
-def test_review_page_shows_candidates_and_retake(tmp_path):
+def test_review_page_shows_single_photo_and_retake(tmp_path):
+    # Task 147: no "Pick the best photo" picker any more — one photo
+    # plus the retake upload.
     client = make_client(tmp_path)
     token = create_shop(client)
     session_id = seed_session(tmp_path, token, [draft()])
-    photo_with_candidates(tmp_path, token, session_id)
+    names = photo_with_candidates(tmp_path, token, session_id)
     html = client.get(f"/e/{token}/s/{session_id}").text
-    assert "Pick the best photo" in html
+    assert "Pick the best photo" not in html
+    assert "data-photo-pick" not in html
+    assert "data-photo-index" not in html
     assert "Take a new photo" in html
+    assert "data-photo-main" in html
+    assert "data-photo-retake" in html
+    assert Path(names[0]).name in html
     # Task 128: retake is the only picker on its card, so it must not
     # force the camera — the phone chooser offers gallery/files instead.
     assert 'capture="environment"' not in html
