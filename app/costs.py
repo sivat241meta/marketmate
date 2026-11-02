@@ -170,29 +170,58 @@ class CostLedger:
     def today_stats(self, shop_id: int) -> dict:
         """Calls today by model, total cost and average latency, one shop."""
         rows = self.rows_for_shop(shop_id, day=_today_ist(), limit=100000)
-        by_model = {"voice": 0, "spark_text": 0, "spark_vision": 0,
-                    "sam": 0, "baseten": 0}
-        cost = 0.0
-        latencies: list[int] = []
-        for row in rows:
-            cost += float(row["usd"] or 0.0)
-            if row["latency_ms"] is not None:
-                latencies.append(int(row["latency_ms"]))
-            if row["provider"] == "baseten":
-                by_model["baseten"] += 1
-            elif row["model"] == VOICE_MODEL:
-                by_model["voice"] += 1
-            elif row["model"] == SPARK_MODEL:
-                if (row["step"] or "") in VISION_STEPS:
-                    by_model["spark_vision"] += 1
-                else:
-                    by_model["spark_text"] += 1
-            elif row["model"] == SAM_MODEL:
-                by_model["sam"] += 1
-        return {
-            "calls": len(rows),
-            "by_model": by_model,
-            "cost_usd": cost,
-            "avg_latency_ms": (sum(latencies) // len(latencies)
-                               if latencies else None),
-        }
+        return _stats_from_rows(rows)
+
+    def session_stats(self, shop_id: int, session_id: int) -> dict:
+        """Task 165: one list's own totals, whatever day it ran on.
+
+        Same shape as :meth:`today_stats`: calls, per-model counts,
+        total cost, average latency and first-to-last wall time.
+        """
+        rows = self.rows_for_shop(shop_id, session_id=session_id,
+                                  limit=100000)
+        return _stats_from_rows(rows)
+
+
+def _row_wall_ms(rows: list[dict]) -> int | None:
+    """First-to-last call span in ms, None when no call has a timestamp."""
+    stamps = []
+    for row in rows:
+        try:
+            stamps.append(datetime.fromisoformat(row["created_at"] or ""))
+        except (ValueError, TypeError):
+            continue
+    if not stamps:
+        return None
+    return round((max(stamps) - min(stamps)).total_seconds() * 1000)
+
+
+def _stats_from_rows(rows: list[dict]) -> dict:
+    """Tile totals for ledger rows: calls, models, cost, average, wall."""
+    by_model = {"voice": 0, "spark_text": 0, "spark_vision": 0,
+                "sam": 0, "baseten": 0}
+    cost = 0.0
+    latencies: list[int] = []
+    for row in rows:
+        cost += float(row["usd"] or 0.0)
+        if row["latency_ms"] is not None:
+            latencies.append(int(row["latency_ms"]))
+        if row["provider"] == "baseten":
+            by_model["baseten"] += 1
+        elif row["model"] == VOICE_MODEL:
+            by_model["voice"] += 1
+        elif row["model"] == SPARK_MODEL:
+            if (row["step"] or "") in VISION_STEPS:
+                by_model["spark_vision"] += 1
+            else:
+                by_model["spark_text"] += 1
+        elif row["model"] == SAM_MODEL:
+            by_model["sam"] += 1
+    return {
+        "calls": len(rows),
+        "by_model": by_model,
+        "cost_usd": cost,
+        "avg_latency_ms": (sum(latencies) // len(latencies)
+                           if latencies else None),
+        "wall_ms": _row_wall_ms(rows),
+    }

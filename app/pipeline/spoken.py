@@ -74,10 +74,11 @@ _FRACTION_STOP_WORDS: frozenset[str] = frozenset({
 
 # Filler words around the spoken name ("So, sev vazhai இன்னைக்கு rate
 # rate 110"): skipped wherever they appear in the name portion, so the
-# seller's item words stand alone. Never item names.
+# seller's item words stand alone. Never item names. Task 165: "date"
+# is rate mis-heard, ரேட்/ரேட்டு its Tamil-script forms.
 _FILLER_WORDS: frozenset[str] = frozenset({
-    "so", "rate", "rates", "today", "innikku", "innaikku",
-    "இன்னைக்கு", "இன்று",
+    "so", "rate", "rates", "date", "dates", "today", "innikku",
+    "innaikku", "இன்னைக்கு", "இன்று", "ரேட்", "ரேட்டு",
 })
 
 
@@ -165,6 +166,39 @@ def strip_span_leading(text: str, said_start: int) -> tuple[str, int]:
     return (text[cut:], cut)
 
 
+def _is_known_name_exact(text: str) -> bool:
+    """True when text exactly names a known item (Task 165).
+
+    Canonical, synonym, romanised and Tamil-script names plus
+    variety nicknames ("sev vazhai") count; substring hits do not,
+    so "sev vazhai மூத்திபத்து" is not a known name.
+    """
+    lowered = " ".join(text.lower().split())
+    if lowered and (lowered in CANONICAL_NAMES or lowered in SYNONYMS
+                    or lowered in _ROMAN_TO_EN
+                    or lowered in VARIETY_ALIASES):
+        return True
+    stripped = " ".join(text.split())
+    return bool(stripped) and (stripped in TAMIL_SYNONYMS
+                               or stripped in _TAMIL_TO_EN)
+
+
+def _is_unclear_number(token: str, kept: list[str], next_token: str) -> bool:
+    """True when a token is a mis-heard number word (Task 165).
+
+    Mirrors the UNCLEAR_NUMBER check: a token right before a
+    currency word that parses as no number and no unit ("மூத்திபத்து"
+    for 110 before ரூபா). A token naming a known item, alone or
+    with the words kept so far ("sev vazhai" before a bare
+    currency), is the item's own words, never a number.
+    """
+    if not next_token or next_token.casefold() not in _CURRENCY_STOP_WORDS:
+        return False
+    if _is_known_name_exact(token):
+        return False
+    return not _is_known_name_exact(" ".join([*kept, token]))
+
+
 def spoken_item_name(span: str | None) -> str:
     """Item words of a spoken span, deterministically.
 
@@ -173,16 +207,18 @@ def spoken_item_name(span: str | None) -> str:
     "vazhai") and consecutive repeats collapsed
     ("உருளைக்கிழங்கு,உருளைக்கிழங்கு" -> once, "கிறன் கிறன் ஃப்ரூட்"
     -> "கிறன் ஃப்ரூட்"). The seller's script and case are kept.
-    Filler words (So, இன்னைக்கு, rate, today) are skipped, as is a
-    previous price's tail opening the span ("kilo. Nendran" ->
-    "Nendran"). A span that opens with a price ("இருபத்தைந்து.")
-    yields "".
+    Filler words (So, இன்னைக்கு, rate/date, today) are skipped, as
+    is a previous price's tail opening the span ("kilo. Nendran" ->
+    "Nendran"). A mis-heard number word before a currency word
+    ("மூத்திபத்து ரூபா") ends the name like a heard number does.
+    A span that opens with a price ("இருபத்தைந்து.") yields "".
     """
     if not span:
         return ""
+    cleaned = [collapse_repeated_runs(_clean_token(raw))
+               for raw in _SPLIT_RE.split(span)]
     kept: list[str] = []
-    for raw in _SPLIT_RE.split(span):
-        token = collapse_repeated_runs(_clean_token(raw))
+    for idx, token in enumerate(cleaned):
         if not token:
             continue
         if _is_filler(token):
@@ -191,6 +227,13 @@ def spoken_item_name(span: str | None) -> str:
             if kept or not _is_leading_noise(token):
                 break
             continue
+        following = ""
+        for later in cleaned[idx + 1:]:
+            if later:
+                following = later
+                break
+        if _is_unclear_number(token, kept, following):
+            break
         if kept and token.casefold() == kept[-1].casefold():
             continue
         kept.append(token)

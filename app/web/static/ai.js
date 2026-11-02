@@ -138,6 +138,10 @@
         if (avg && data.avg_text) {
           avg.textContent = data.avg_text;
         }
+        const wall = document.querySelector("[data-ai-wall]");
+        if (wall && data.wall_text) {
+          wall.textContent = data.wall_text;
+        }
       }
       if (!data.processing) {
         window.clearInterval(timer);

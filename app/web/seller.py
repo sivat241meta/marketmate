@@ -441,6 +441,20 @@ def _ai_row_time(created_at: str | None) -> str:
         return (created_at or "")[:5]
 
 
+def _ai_wall_text(wall_ms: int | None) -> str:
+    """Task 165: first-to-last call span as "38 s" / "1 m 30 s" / "2 h 05 m"."""
+    if wall_ms is None:
+        return "—"
+    total = max(round(wall_ms / 1000), 0)
+    if total < 60:
+        return f"{total} s"
+    minutes, seconds = divmod(total, 60)
+    if minutes < 60:
+        return f"{minutes} m" if not seconds else f"{minutes} m {seconds:02d} s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} h {minutes:02d} m"
+
+
 def _ai_row_view(row: dict, t) -> dict:
     """One ledger row as the page/JSON needs it (translated step label)."""
     step = row["step"] or ""
@@ -1910,7 +1924,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         session_id = _ai_session_param(session)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
-        stats = ledger.today_stats(shop["id"])
+        if session_id is None:
+            stats = ledger.today_stats(shop["id"])
+        else:
+            stats = ledger.session_stats(shop["id"], session_id)
         rows = ledger.rows_for_shop(
             shop["id"], session_id=session_id,
             kind=kind if kind != "all" else None)
@@ -1921,6 +1938,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "shop_lang": shop["language"],
             "stats": stats, "cost_text": f"${stats['cost_usd']:.4f}",
             "avg_text": f"{avg} ms" if avg is not None else "—",
+            "wall_text": _ai_wall_text(stats["wall_ms"]),
             "groups": _ai_groups(views),
             "max_id": max((view["id"] for view in views), default=0),
             "kind": kind, "session_id": session_id,
@@ -1940,7 +1958,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         session_id = _ai_session_param(session)
         ledger = CostLedger(data_dir / "costs.db",
                             app.state.settings.daily_budget_usd)
-        stats = ledger.today_stats(shop["id"])
+        if session_id is None:
+            stats = ledger.today_stats(shop["id"])
+        else:
+            stats = ledger.session_stats(shop["id"], session_id)
         rows = ledger.rows_for_shop(
             shop["id"], session_id=session_id, since_id=max(since_id, 0),
             kind=kind if kind != "all" else None)
@@ -1951,6 +1972,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "rows": views, "max_id": latest, "stats": stats,
             "cost_text": f"${stats['cost_usd']:.4f}",
             "avg_text": f"{avg} ms" if avg is not None else "—",
+            "wall_text": _ai_wall_text(stats["wall_ms"]),
             "processing": _ai_processing(conn, shop["id"], session_id),
         })
 

@@ -12,10 +12,16 @@
   </div>
 </div>
 
+{% if session_id is not none %}
+<p class="muted">{{ t('ai.this_list', id=session_id) }}</p>
+{% endif %}
 <div class="stat-grid ai-stats">
   <div class="stat"><span class="stat-icon">{{ ui.obj("call", 28) }}</span><b class="stat-num" data-ai-calls>{{ stats.calls }}</b><span class="stat-label">{{ t('ai.calls_today') }}</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.obj("cash", 28) }}</span><b class="stat-num money" data-ai-cost>{{ cost_text }}</b><span class="stat-label">{{ t('ai.cost_today') }}</span></div>
   <div class="stat"><span class="stat-icon">{{ ui.obj("clock", 28) }}</span><b class="stat-num" data-ai-avg>{{ avg_text }}</b><span class="stat-label">{{ t('ai.avg_latency') }}</span></div>
+  {% if session_id is not none %}
+  <div class="stat"><span class="stat-icon">{{ ui.obj("clock", 28) }}</span><b class="stat-num" data-ai-wall>{{ wall_text }}</b><span class="stat-label">{{ t('ai.total_time') }}</span></div>
+  {% endif %}
   <div class="stat ai-bymodel">
     <span class="stat-icon">{{ ui.obj("robot", 28) }}</span>
     <span class="stat-label">{{ t('ai.voice') }} · <b>{{ stats.by_model.voice }}</b></span>
