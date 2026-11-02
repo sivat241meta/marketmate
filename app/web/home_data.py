@@ -101,6 +101,22 @@ def _photo_url(photo: str | None) -> str | None:
     return "/m/" + Path(prefer_original(photo)).name
 
 
+def item_photo(name_en: str | None, photo: str | None,
+               ) -> tuple[str | None, bool]:
+    """Photo for one specific shop's item: own photo first (Task 164).
+
+    The seller's own photo wins; the v13 cut-out is only the fallback
+    when the item has no own photo; otherwise None (the letter tile).
+    """
+    own = _photo_url(photo)
+    if own:
+        return own, is_cutout_photo(prefer_original(photo))
+    cut = v13_cutout_url(name_en)
+    if cut:
+        return cut, True
+    return None, False
+
+
 def _per_text(per_amount, unit) -> str:
     if per_amount is not None and unit:
         return f"{per_amount} {unit}"
@@ -330,8 +346,9 @@ def _lowest_items(entries: list[dict]) -> list[dict]:
     """One row per live item name with its real lowest price today.
 
     Powers the v13 "What's fresh today" scroller and the "Today's
-    lowest prices" tiles: name, best photo (a cut-out wins), the
-    lowest price + per-unit text and the shop that says it.
+    lowest prices" tiles: name, best own photo (a cut-out wins, the
+    v13 cut-out only when no shop has its own photo), the lowest
+    price + per-unit text and the shop that says it.
     """
     best: dict[str, dict] = {}
     for entry in entries:
@@ -381,10 +398,11 @@ def _lowest_items(entries: list[dict]) -> list[dict]:
     for row in rows:
         del row["seen"]
         del row["amount"]
-        cutout = v13_cutout_url(row["name_en"])
-        if cutout:
-            row["photo_url"] = cutout
-            row["photo_cutout"] = True
+        if not row["photo_url"]:
+            cutout = v13_cutout_url(row["name_en"])
+            if cutout:
+                row["photo_url"] = cutout
+                row["photo_cutout"] = True
     rows.sort(key=lambda row: (-row["n_shops"], row["name_en"].lower()))
     return rows
 

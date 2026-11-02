@@ -263,9 +263,14 @@ def test_check_page_uses_same_rename_dialog(tmp_path):
 def test_todays_list_row_structure(tmp_path):
     client = _client(tmp_path)
     token = _create_shop(client)
-    _publish(tmp_path, token, [_draft()])
+    # Task 164: banana falls back to its v13 cut-out; watermelon has
+    # neither photo nor cut-out, so the letter tile still renders.
+    _publish(tmp_path, token, [_draft(),
+                               _draft("watermelon", 25, "தர்பூசணி",
+                                      None)])
     html = client.get(f"/e/{token}").text
     assert "list-thumb letter" in html
+    assert "/static/img/v13/banana.webp" in html
     assert "banana · poovan · 1 kg" in html
     assert "mini-main" in html
     css = CSS.read_text()
@@ -537,9 +542,11 @@ def test_two_banana_varieties_have_distinct_tiles(tmp_path):
     client = _client(tmp_path)
     token = _create_shop(client)
     slug = _slug(tmp_path, token)
+    # Task 164: watermelon has no v13 cut-out, so the two
+    # varieties keep letter tiles told apart by variety tags.
     _publish(tmp_path, token, [
-        _draft("banana", 80, "வாழைப்பழம்", "poovan"),
-        _draft("banana", 60, "வாழைப்பழம்", "yelakki"),
+        _draft("watermelon", 80, "தர்பூசணி", "poovan"),
+        _draft("watermelon", 60, "தர்பூசணி", "yelakki"),
     ])
     shop_html = client.get(f"/s/{slug}").text
     # Task 127: the shop page shows item photos, so the two varieties

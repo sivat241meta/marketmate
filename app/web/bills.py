@@ -49,10 +49,10 @@ from app.pipeline.names import (
     keywords_for,
     qualified_name,
 )
-from app.pipeline.photos import is_cutout_photo, prefer_original
 from app.pipeline.run import friendly_error_message
 from app.pipeline.units import convert
 from app.web.auth import created_by_for, resolve_or_404
+from app.web.home_data import item_photo
 from app.web.i18n import (
     bill_whatsapp_text,
     first_grapheme,
@@ -573,18 +573,25 @@ def _accept_if_collectable_order(conn, bill) -> None:
 
 
 def item_photo_urls(conn, shop_id: int) -> dict[str, str]:
-    """Map lower-cased item name to its public photo URL (display only)."""
+    """Map lower-cased item name to its public photo URL (display only).
+
+    Own photo first; the v13 cut-out only when the item has no own
+    photo (Task 164).
+    """
     urls: dict[str, str] = {}
     version_id = db.latest_version(conn, shop_id, published_only=True)
     if version_id is None:
         return urls
     for item in db.version_items(conn, version_id):
-        if item.photo and item.name_en:
-            url = "/m/" + Path(prefer_original(item.photo)).name
-            urls[item.name_en.strip().lower()] = url
-            key = db.match_key_of(item).strip().lower()
-            if key:
-                urls.setdefault(key, url)
+        if not item.name_en:
+            continue
+        url, _cut = item_photo(item.name_en, item.photo)
+        if url is None:
+            continue
+        urls[item.name_en.strip().lower()] = url
+        key = db.match_key_of(item).strip().lower()
+        if key:
+            urls.setdefault(key, url)
     return urls
 
 
@@ -657,6 +664,7 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
         else:
             summary = t("bill.no_price_yet")
         display = _display(item.name_en, item.variety)
+        photo_url, photo_cutout = item_photo(item.name_en, item.photo)
         items.append({
             "index": index,
             "name_en": item.name_en,
@@ -673,9 +681,8 @@ def _price_items(conn, shop_id: int, lang: str = "en") -> list[dict]:
             "unit_price": _fmt_money(first.price) if first is not None else "",
             "per_amount": _fmt_money(first.per_amount)
             if first is not None else "",
-            "photo_url": ("/m/" + Path(prefer_original(item.photo)).name
-                          if item.photo else None),
-            "photo_cutout": is_cutout_photo(prefer_original(item.photo)),
+            "photo_url": photo_url,
+            "photo_cutout": photo_cutout,
         })
     return items
 

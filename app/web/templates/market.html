@@ -176,8 +176,8 @@
           {% for row in group.rows %}
           {% set _cut = v13_cutout_url(row.name_en) if v13_cutout_url is defined else none %}
           {% set _live = (live_photos.get(row.slug) or {}).get((row.name_en or "") | lower) %}
-          {% set _pic = _cut or (_live.url if _live else none) %}
-          {% set _is_cut = _cut or (_live.cut if _live else false) %}
+          {% set _pic = (_live.url if _live else none) or _cut %}
+          {% set _is_cut = (_live.cut if _live else _cut) %}
           <div class="deal" data-shop-row data-orig="{{ loop.index }}" data-shop-lat="{{ row.lat if row.lat is not none else '' }}" data-shop-lng="{{ row.lng if row.lng is not none else '' }}">
             <span class="tile">{% if _pic %}<img src="{{ _pic }}" alt="" loading="lazy" width="110" height="110"{% if _is_cut %} data-cutout{% endif %}>{% else %}<span class="nophoto" aria-hidden="true">{{ row.name_en[:1] }}</span>{% endif %}</span>
             <b><a href="/s/{{ row.slug }}">{{ row.shop_name }}</a>{% if row.is_demo %} <span class="demo-tag">{{ t('hp.demo') }}</span>{% endif %}</b>

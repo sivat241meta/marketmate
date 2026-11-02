@@ -299,20 +299,22 @@ def test_recent_shops_show_cheapest_three(tmp_path):
 
 
 def test_lowest_photos_prefer_cutouts(tmp_path):
-    # Task 127: name-matched items use the transparent v13 cut-out;
-    # the rest keep their own photo in the lowest tiles.
+    # Task 164: the seller's own photo comes first in the lowest
+    # tiles; the v13 cut-out is only the fallback with no own photo.
     items = [draft(f"item{i}", f"பொருள்{i}", str(10 + i),
                    photo=(f"data/photos/it{i}_cut.jpg" if i == 9 else None))
              for i in range(10)]
     items.append(draft("tomato", "தக்காளி", "40",
                        photo="data/photos/tom_orig.jpg"))
+    items.append(draft("onion", "வெங்காயம்", "35"))
     seed_shop(tmp_path, "Big Veg", "Koyambedu", items)
     client = make_client(tmp_path)
     html = _home(client, "en")
     lowest = _section(html, "lowest", "how")
-    assert "/static/img/v13/tomato.webp" in lowest
+    assert "/m/tom_orig.jpg" in lowest
+    assert "/static/img/v13/tomato.webp" not in lowest
     assert "/m/it9_cut.jpg" in lowest
-    assert "tom_orig.jpg" not in lowest
+    assert "/static/img/v13/onion.webp" in lowest
 
 
 # --- 5. ?area= filters by area name --------------------------------------------

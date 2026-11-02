@@ -87,7 +87,7 @@ from app.pipeline.update import (
     parse_update,
 )
 from app.web.auth import owner_or_403, resolve_or_404
-from app.web.home_data import v13_cutout_url
+from app.web.home_data import item_photo
 from app.web.i18n import (
     SAMPLE_TIME,
     first_grapheme,
@@ -639,6 +639,8 @@ def _review_cards_context(conn, shop, token: str, session_id: int,
             base_items = []
         review_lang = shop["language"] or "en"
         for base in db.carried_from_base(items, base_items):
+            carried_url, carried_cut = item_photo(
+                base.name_en, base.photo)
             carried.append({
                 "id": base.id,
                 "name_local": base.name_local,
@@ -649,9 +651,8 @@ def _review_cards_context(conn, shop, token: str, session_id: int,
                     review_lang),
                 "title_en": english_title(base.name_en,
                                           base.variety),
-                "photo_url": _photo_url(base.photo),
-                "photo_cutout": is_cutout_photo(
-                    prefer_original(base.photo)),
+                "photo_url": carried_url,
+                "photo_cutout": carried_cut,
                 "sold_out": base.sold_out,
                 "price_summary": _price_summary(
                     base, shop["currency"] or "INR", ui_lang),
@@ -678,6 +679,7 @@ def _review_cards_context(conn, shop, token: str, session_id: int,
                 missed_names[option] = (
                     canonical_local_name(option, shop["language"] or "en")
                     or option)
+        card_url, card_cut = item_photo(item.name_en, item.photo)
         cards.append(
             {
                 "index": index,
@@ -688,9 +690,8 @@ def _review_cards_context(conn, shop, token: str, session_id: int,
                     shop["language"] or "en"),
                 "title_en": english_title(item.name_en,
                                           item.variety),
-                "photo_url": _photo_url(item.photo),
-                "photo_cutout": is_cutout_photo(
-                    prefer_original(item.photo)),
+                "photo_url": card_url,
+                "photo_cutout": card_cut,
                 "board_thumb_url": (
                     _photo_url(item.proof.frame) if is_board else None
                 ),
@@ -1180,6 +1181,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 if item.stock_qty is not None and item.stock_source:
                     stock_line = t("dash.stock_line", qty=item.stock_qty,
                                    source=item.stock_source)
+                photo_url, photo_cutout = item_photo(
+                    item.name_en, item.photo)
                 items.append({
                     "id": item.id,
                     "name_local": item.name_local,
@@ -1188,9 +1191,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                                            item.name_en),
                     "tile_var": tile_variety(item.variety),
                     "variety": item.variety,
-                    "photo_url": _photo_url(item.photo),
-                    "photo_cutout": is_cutout_photo(
-                        prefer_original(item.photo)),
+                    "photo_url": photo_url,
+                    "photo_cutout": photo_cutout,
                     "sold_out": item.sold_out,
                     "stock_line": stock_line,
                     "lines": [{"price": str(line.price),
@@ -2650,11 +2652,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         if version_id is not None:
             for item in db.version_items(conn, version_id):
                 name = item.name_local if language == shop_lang else item.name_en
-                named_cutout = v13_cutout_url(item.name_en)
-                photo_url = named_cutout or _photo_url(item.photo)
-                photo_cutout = (bool(named_cutout)
-                                or is_cutout_photo(
-                                    prefer_original(item.photo)))
+                photo_url, photo_cutout = item_photo(
+                    item.name_en, item.photo)
                 if photo_url and hero_photo is None and not item.sold_out:
                     hero_photo = photo_url
                 first = item.price_lines[0] if item.price_lines else None

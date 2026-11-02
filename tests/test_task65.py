@@ -430,7 +430,7 @@ def test_check_page_shows_original_photo_no_picker(tmp_path):
 def test_shop_card_uses_contain_for_cutout(tmp_path):
     client = make_client(tmp_path)
     token = create_shop(client)
-    session_id = seed_session(tmp_path, token, [draft()])
+    session_id = seed_session(tmp_path, token, [draft(), draft("onion")])
     names = seed_candidates(tmp_path, token, session_id)
     conn = db.connect(tmp_path / "data")
     try:
@@ -444,4 +444,8 @@ def test_shop_card_uses_contain_for_cutout(tmp_path):
         conn.close()
     resp = client.get(f"/s/{slug}")
     assert resp.status_code == 200
+    # Task 164: tomato keeps its own original; onion has no own photo
+    # so the row falls back to the v13 cut-out with the cut-out hook.
+    assert "/m/s9_0_orig.jpg" in resp.text
+    assert "/static/img/v13/onion.webp" in resp.text
     assert "data-cutout" in resp.text

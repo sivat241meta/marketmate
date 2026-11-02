@@ -342,9 +342,11 @@ def test_shop_page_item_rows_have_photo_add_and_hooks(tmp_path):
     assert html.count("<article") == 2
     assert html.count('class="pic"') == 2
     assert html.count('class="add-pill" data-add') == 2
-    # Task 127: tomato matches a v13 cut-out, so the row shows the
-    # transparent cut-out instead of its own photo.
-    assert 'src="/static/img/v13/tomato.webp"' in html
+    # Task 164: tomato keeps its own photo; onion has none, so its
+    # row falls back to the v13 cut-out.
+    assert 'src="/m/tom_cut.jpg"' in html
+    assert "/static/img/v13/tomato.webp" not in html
+    assert 'src="/static/img/v13/onion.webp"' in html
     assert "data-step" in html and "data-sizes" in html
     assert "cat-acc" in html  # category accordion, open by default
     assert "data-cart-bar" in html and "data-cart-view" in html
