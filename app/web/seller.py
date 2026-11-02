@@ -1527,7 +1527,14 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             "sample_available": sample_file.is_file(),
             "sample_url": f"/e/{token}/judge-sample",
             "max_upload_bytes": app.state.settings.max_upload_bytes,
-            "step": 1, "s2": {"state": "locked"}, "review": None,
+            "step": 1, "s2": {"state": "locked", "models": [
+                {"key": "voice", "code": VOICE_MODEL,
+                 "label": t("judge.model_listen"), "state": "todo"},
+                {"key": "spark", "code": SPARK_MODEL,
+                 "label": t("judge.model_think"), "state": "todo"},
+                {"key": "sam", "code": SAM_MODEL,
+                 "label": t("judge.model_see"), "state": "todo"},
+            ]}, "review": None,
             "ready": None,
         }
         if latest is not None:

@@ -1,5 +1,8 @@
 /* Task 159: light judge test page. Fluid under 320px, 44px targets.
-   Theme tokens (Task 122), no new colours except the WhatsApp bubble. */
+   Task 163: same font and colours as the app — the Inter stack matches
+   app.css and these token values are identical to app.css (repeated
+   here per the Task 122 per-file token rule). The only off-palette
+   colour is the WhatsApp bubble. */
 
 :root {
   --ink: #102A33;
@@ -20,7 +23,7 @@
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "PlusJakartaSans", "Noto Sans", system-ui, sans-serif;
+  font-family: "Inter", "Noto Sans", "Noto Sans Tamil", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Telugu", "Noto Sans Kannada", system-ui, sans-serif;
 }
 
 .judge-wrap {
@@ -111,6 +114,7 @@
   gap: 8px;
   text-align: center;
   max-width: 100%;
+  white-space: normal;
 }
 
 .judge-chips {
@@ -153,17 +157,55 @@
 }
 
 .judge-or {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: var(--muted);
-  margin: 12px 0;
+  font-size: 14px;
+  margin: 16px 0;
+}
+
+.judge-or::before,
+.judge-or::after {
+  content: "";
+  height: 1px;
+  background: var(--line);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Task 163: sample first — button stacked above a small 16:9 player on
+   phones; side by side on wider screens with the player capped. */
+.judge-sample {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.judge-sample form p {
+  margin: 0;
 }
 
 .judge-sample-video {
   display: block;
   width: 100%;
   max-width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
   border-radius: 8px;
   background: #000;
+}
+
+@media (min-width: 640px) {
+  .judge-sample {
+    grid-template-columns: 1fr minmax(0, 360px);
+    align-items: center;
+  }
+
+  .judge-sample-video {
+    max-width: 360px;
+    justify-self: end;
+  }
 }
 
 .judge-models {

@@ -29,18 +29,27 @@
       {% if notice_runs %}<div class="alert alert-warn" role="alert">{{ t('judge.limit') }}</div>{% endif %}
       <p class="muted">{{ t('judge.runs_left', left=runs_left, max=runs_max) }}</p>
       {% if runs_left > 0 %}
+      {% if sample_available %}
+      <div class="judge-sample">
+        <form method="post" action="/e/{{ token }}/upload-sample">
+          <p><button class="pill dark big" type="submit" data-sample-btn>{{ t('judge.sample_btn') }}</button></p>
+        </form>
+        <video class="judge-sample-video" controls preload="metadata" playsinline src="{{ sample_url }}" aria-label="{{ t('judge.sample_watch') }}"></video>
+      </div>
+      <p class="judge-or" aria-hidden="true">{{ t('judge.or_own') }}</p>
+      {% endif %}
       <form method="post" action="/e/{{ token }}/upload?from=judge" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
-        <p>
-          <label class="pill ghost" for="judge-clip">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
-            <input id="judge-clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" required>
-          </label>
-        </p>
         <fieldset class="judge-chips">
           <legend>{{ t('speak.label') }}</legend>
           {% for chip in speak_chips %}
           <label class="chip"><input type="radio" name="speak_lang" value="{{ chip.code }}"{% if chip.code == speak_default %} checked{% endif %}> {{ chip.name }}</label>
           {% endfor %}
         </fieldset>
+        <p>
+          <label class="pill ghost" for="judge-clip">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('judge.choose') }}</span>
+            <input id="judge-clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" onchange="this.form.requestSubmit()" required>
+          </label>
+        </p>
         <p class="help">{{ t('dash.upload_help') }}</p>
         <p class="upload-file" data-upload-file hidden></p>
         <p class="form-error" data-upload-error hidden></p>
@@ -49,16 +58,8 @@
           <p class="upload-meta" data-upload-meta></p>
           <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
         </div>
-        <p><button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button></p>
       </form>
       <p class="notice">{{ t('notice.voice') }}</p>
-      {% if sample_available %}
-      <p class="judge-or" aria-hidden="true">{{ t('judge.or') }}</p>
-      <form method="post" action="/e/{{ token }}/upload-sample">
-        <p><button class="pill dark big" type="submit" data-sample-btn>{{ t('judge.sample_btn') }}</button></p>
-      </form>
-      <video class="judge-sample-video" controls preload="metadata" playsinline src="{{ sample_url }}" aria-label="{{ t('judge.sample_watch') }}"></video>
-      {% endif %}
       {% else %}
       <div class="alert alert-warn" role="alert">{{ t('judge.limit') }}</div>
       {% endif %}
@@ -67,7 +68,15 @@
     <li class="judge-step{% if step > 2 or s2.state == 'done' %} is-done{% endif %}" id="judge-step2">
       <h2><span class="judge-num" aria-hidden="true">2</span> {{ t('judge.step2') }}{% if step > 2 or s2.state == 'done' %} <span class="judge-tick" aria-hidden="true">✓</span>{% endif %}</h2>
       {% if s2.state == "locked" %}
-      <p class="muted">{{ t('judge.locked', n=1) }}</p>
+      <ol class="judge-models">
+        {% for model in s2.models %}
+        <li class="jmodel is-{{ model.state }}" data-model="{{ model.key }}">
+          <span class="jdot" aria-hidden="true"></span>
+          <span class="jmain"><code>{{ model.code }}</code><span class="jlabel">{{ model.label }}</span></span>
+        </li>
+        {% endfor %}
+      </ol>
+      <p class="muted">{{ t('judge.waiting') }}</p>
       {% elif s2.state == "active" %}
       <ol class="judge-models" data-judge-status data-status-url="{{ s2.status_url }}" data-stage-order="uploaded,audio,listening,language_check,items,photos,checking,ready" data-elapsed-s="{{ t('sess.elapsed_s', s='__S__') }}" data-elapsed-m="{{ t('sess.elapsed_m', m='__M__', s='__S__') }}">
         {% for model in s2.models %}
