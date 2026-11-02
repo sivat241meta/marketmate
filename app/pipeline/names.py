@@ -215,7 +215,9 @@ VARIETY_ALIASES: dict[str, tuple[str, str]] = {
     "red banana": ("banana", "red"),
     "பச்சை வாழை": ("banana", "green"),
     "பச்சைவாழை": ("banana", "green"),
+    "பச்சை பழம்": ("banana", "green"),
     "பச்சை": ("banana", "green"),
+    "pachai pazham": ("banana", "green"),
     "pachai vazhai": ("banana", "green"),
     "pachaivazhai": ("banana", "green"),
     "pachai": ("banana", "green"),
@@ -270,6 +272,8 @@ _VARIETY_WORDS: dict[str, str] = {
     "sev vazhai": "red",
     "பச்சை வாழை": "green",
     "பச்சைவாழை": "green",
+    "பச்சை பழம்": "green",
+    "pachai pazham": "green",
     "பச்சை": "green",
     "pachai vazhai": "green",
     "pachaivazhai": "green",
@@ -385,6 +389,106 @@ def find_name_in_text(text: str) -> str | None:
         if len(syn) > best_len and _key_in_text(lowered, raw, syn):
             best, best_len = canon, len(syn)
     return best
+
+
+def _match_spans(text: str, key: str) -> list[tuple[int, int]]:
+    """All (start, end) spans where key occurs in text.
+
+    Latin keys match whole words case-insensitively; other scripts
+    match as substrings, like the rest of the market matching.
+    """
+    if not key or not text:
+        return []
+    lowered = text.lower()
+    wanted = key.lower()
+    spans: list[tuple[int, int]] = []
+    start = 0
+    while True:
+        idx = lowered.find(wanted, start)
+        if idx < 0:
+            return spans
+        end = idx + len(wanted)
+        if key.isascii():
+            before = lowered[idx - 1] if idx > 0 else " "
+            after = lowered[end] if end < len(lowered) else " "
+            if ((before.isalnum() or before == "_")
+                    or (after.isalnum() or after == "_")):
+                start = idx + 1
+                continue
+        spans.append((idx, end))
+        start = idx + 1
+
+
+def find_items_in_text(text: str) -> list[tuple[str, str]]:
+    """Every known item named in free text, in spoken order.
+
+    Returns (matched words, name_en) pairs: canonical English and
+    Tamil names, romanised names, synonyms and variety nicknames all
+    count. A match fully inside a longer match is dropped, so
+    தர்பூசணி names watermelon only, never pumpkin via பூசணி.
+    """
+    raw = text or ""
+    if not raw.strip():
+        return []
+    scored: list[tuple[int, int, str, str]] = []
+    seen: set[tuple[int, int, str]] = set()
+
+    def _add(key: str, name_en: str) -> None:
+        for span_start, span_end in _match_spans(raw, key):
+            tag = (span_start, span_end, name_en)
+            if tag in seen:
+                continue
+            seen.add(tag)
+            scored.append(
+                (span_start, span_end, raw[span_start:span_end], name_en))
+
+    for name_en, name_ta in CANONICAL_NAMES.items():
+        _add(name_en, name_en)
+        _add(name_ta, name_en)
+    for name_en, roman in EN_TO_ROMAN.items():
+        _add(roman, name_en)
+    for syn, name_en in SYNONYMS.items():
+        _add(syn, name_en)
+    for syn, name_en in TAMIL_SYNONYMS.items():
+        _add(syn, name_en)
+    for alias, (name_en, _variety) in VARIETY_ALIASES.items():
+        _add(alias, name_en)
+    scored.sort(key=lambda match: (match[0], -(match[1] - match[0])))
+    kept: list[tuple[int, int, str, str]] = []
+    for match in scored:
+        if any(keep[0] <= match[0] and match[1] <= keep[1]
+               for keep in kept):
+            continue
+        kept.append(match)
+    kept.sort(key=lambda match: (match[0], match[1]))
+    return [(match[2], match[3]) for match in kept]
+
+
+def item_name_in_text(name_en: str | None, text: str, *,
+                      name_local: str | None = None) -> bool:
+    """True when any of the item's name forms occurs in the text.
+
+    The English name, the given local name, its canonical Tamil and
+    Hindi names, its transliteration and every glossary synonym and
+    variety nickname count. Latin forms match whole words case
+    insensitively, other scripts as substrings.
+    """
+    base = (name_en or "").strip().lower()
+    if not base or not (text or "").strip():
+        return False
+    forms: set[str] = {base}
+    if name_local and name_local.strip():
+        forms.add(name_local.strip())
+    forms.add(CANONICAL_NAMES.get(base, ""))
+    forms.add(CANONICAL_NAMES_HI.get(base, ""))
+    forms.add(EN_TO_ROMAN.get(base, ""))
+    forms |= {syn for syn, canon in SYNONYMS.items() if canon == base}
+    forms |= {syn for syn, canon in TAMIL_SYNONYMS.items()
+              if canon == base}
+    forms |= {alias for alias, (canon, _variety) in VARIETY_ALIASES.items()
+              if canon == base}
+    return any(_match_spans(text, form)
+               for form in forms if form and form.strip())
 
 
 def normalize_qualifier(variety: str | None) -> str | None:
@@ -550,14 +654,20 @@ SYNONYMS: dict[str, str] = {
     "kirni kirni fruit": "muskmelon",
     "thenga": "coconut",
     "maanga": "raw mango",
+    "poosani": "pumpkin",
 }
 
 # Tamil-script market spellings heard in real stall videos (Task 136):
 # truncated qualifiers (தேங்கா, வெள்ளரிக்கா), the pumpkin word sellers
 # actually say (பூசணிக்காய், not the textbook வெண்பூசணி), spoken raw
-# mango (மாங்கா) and muskmelon (கிர்ணி/கிறணி/கிறன்).
+# mango (மாங்கா) and muskmelon (கிர்ணி/கிறணி/கிறன்). Task 156 adds the
+# yellow-pumpkin word (பூசணி), the spoken capsicum spelling
+# (குடமிளகாய்) and the snake-gourd variant (பொடலங்காய்).
 TAMIL_SYNONYMS: dict[str, str] = {
     "பூசணிக்காய்": "ash gourd",
+    "பூசணி": "pumpkin",
+    "குடமிளகாய்": "capsicum",
+    "பொடலங்காய்": "snake gourd",
     "மாங்கா": "raw mango",
     "கிர்ணி": "muskmelon",
     "கிறணி": "muskmelon",

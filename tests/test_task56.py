@@ -427,7 +427,8 @@ def test_56_06_name_fallback_and_aliases():
     assert resolve_name("elaki mathi") == ("banana", "yelakki")
     assert resolve_name("then vaazhai") == ("banana", "thenvazhai")
     assert resolve_name("thenvazhai") == ("banana", "thenvazhai")
-    # Two banana varieties at one price stay one line.
+    # Two banana varieties at one price stay one line, with a single
+    # variety (Task 156: a variety is one qualifier, never a list).
     items = parse_extract_json(
         {"items": [{
             "name_spoken": "karpooravalli then vaazhai",
@@ -442,7 +443,7 @@ def test_56_06_name_fallback_and_aliases():
         language="ta",
     )
     assert items[0].name_en == "banana"
-    assert items[0].variety == "karpooravalli / thenvazhai"
+    assert items[0].variety == "karpooravalli"
 
 
 def test_56_08_new_shop_defaults(tmp_path):

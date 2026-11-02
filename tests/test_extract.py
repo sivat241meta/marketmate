@@ -146,11 +146,16 @@ def test_prompt_lists_turns_with_ids(transcript_3_turns):
 def test_live_mixed_turn_shared_quotes(live_transcript):
     items = parse_extract_json(CANNED_LIVE, live_transcript)
     assert [item.name_en for item in items] == ["tomato", "onion", "small onion", "potato"]
-    turn_text = live_transcript.turns[0].text
+    turn = live_transcript.turns[0]
+    turn_text = turn.text
+    # Task 156: one turn with many items is split, so each item keeps
+    # only its own words, with clip times by character proportion.
     for item in items:
         assert item.proof.turn_ids == [1]
         assert item.proof.quote and item.proof.quote in turn_text
-        assert item.proof.start_ms == live_transcript.turns[0].start_ms
+        assert turn.start_ms <= item.proof.start_ms <= item.proof.end_ms <= turn.end_ms
+    starts = [item.proof.start_ms for item in items]
+    assert starts == sorted(starts)
     assert "இல்ல" in items[3].proof.quote
     assert items[0].name_local == "தக்காளி"
     assert items[2].name_local == "சின்ன வெங்காயம்"

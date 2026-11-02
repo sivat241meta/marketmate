@@ -8,6 +8,12 @@ from app.languages import by_api_name, currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine
 from app.pipeline.extract import merge_repeated_prices
+from app.pipeline.names import (
+    CANONICAL_NAMES,
+    display_name_en,
+    find_items_in_text,
+    item_name_in_text,
+)
 from app.pipeline.numbers import find_numbers, fold_tamil, parse_number
 from app.pipeline.units import (
     CANONICAL_UNITS,
@@ -371,6 +377,46 @@ def _is_clear_tier_list(priced: list[PriceLine]) -> bool:
     return all(nxt > cur for cur, nxt in pairwise(amounts))
 
 
+def _name_not_near_price_flag(item: DraftItem, quote: str) -> Flag | None:
+    """Blocking flag when the span names a different item (Task 156).
+
+    The claimed name is verified against the item's own per-item
+    span: when none of its forms (local, English, transliteration,
+    glossary aliases) occurs there but the span does name another
+    known item, the name is wrong and must never pass silently.
+    Bare spans naming nothing stay silent, as do unknown and
+    seller-named items and items without a price.
+    """
+    base = (item.name_en or "").strip().lower()
+    if not base or base not in CANONICAL_NAMES:
+        return None
+    span = quote or ""
+    if not span.strip():
+        return None
+    if item_name_in_text(base, span, name_local=item.name_local):
+        return None
+    found = [(word, name) for word, name in find_items_in_text(span)
+             if name != base]
+    if not found:
+        return None
+    price = next((line.price for line in item.price_lines
+                  if line.price is not None), None)
+    if price is None:
+        return None
+    word, heard = found[0]
+    options: list[str] = []
+    for _, name in found:
+        if name not in options:
+            options.append(name)
+    options.append(base)
+    return Flag(
+        field="name", code="NAME_NOT_NEAR_PRICE",
+        message=(f"Is this {display_name_en(item.name_en, item.variety)}?"
+                 f" Just before ₹{_fmt_amount(price)} we heard"
+                 f" '{word}' ({heard})."),
+        options=options)
+
+
 def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
                language: str = "ta", ledger=None, settings=None
                ) -> list[Flag]:
@@ -385,6 +431,9 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
     merge_repeated_prices(item)
     flags: list[Flag] = []
     quote = item.proof.quote or ""
+    name_flag = _name_not_near_price_flag(item, quote)
+    if name_flag is not None:
+        flags.append(name_flag)
     heard = find_numbers(quote,
                          decimal_comma=_decimal_comma_for(language))
     heard_values = {value for value, _ in heard}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from decimal import Decimal, InvalidOperation
 
 from app.languages import currency_words_for, get_language
@@ -9,13 +10,18 @@ from app.pipeline.names import (
     CANONICAL_NAMES,
     VARIETY_ALIASES,
     canonical_local_name,
+    find_items_in_text,
     find_name_in_text,
     repair_local_name,
     repair_variety_local_name,
     resolve_name,
     restore_spoken_local_name,
 )
-from app.pipeline.spoken import apply_spoken_name
+from app.pipeline.spoken import (
+    SPAN_STRIP_CHARS,
+    apply_spoken_name,
+    strip_span_leading,
+)
 from app.pipeline.units import normalize_price_line, normalize_qty_unit
 
 _SYSTEM_PROMPT = (
@@ -251,30 +257,162 @@ def _alias_in_text(text: str) -> tuple[str, str] | None:
     return best
 
 
-def _banana_varieties_in_order(text: str) -> list[str]:
-    """Distinct banana varieties in spoken order for a dual-variety line."""
-    lowered = (text or "").lower()
-    hits: list[tuple[int, str]] = []
-    for alias, (base, variety) in VARIETY_ALIASES.items():
-        if base != "banana":
+#: Padding around a per-item proof clip inside its turn.
+_SPAN_PAD_MS = 400
+
+
+def _find_phrase(text: str, phrase: str, start: int) -> tuple[int, int] | None:
+    """(start, end) of phrase in text at/after start, else None.
+
+    Exact match first, then a whitespace-flexible match so a price
+    phrase spanning a line break still locates.
+    """
+    key = " ".join((phrase or "").split())
+    if not key:
+        return None
+    idx = text.find(key, start)
+    if idx >= 0:
+        return (idx, idx + len(key))
+    if " " not in key:
+        return None
+    pattern = r"\s+".join(re.escape(part) for part in key.split(" "))
+    match = re.search(pattern, text[start:])
+    if match is None:
+        return None
+    return (start + match.start(), start + match.end())
+
+
+def _span_times(turn, start_char: int, end_char: int,
+                length: int) -> tuple[int, int]:
+    """Clip start/end_ms for a span by char proportion in the turn."""
+    if length <= 0:
+        return (turn.start_ms, turn.end_ms)
+    span = max(turn.end_ms - turn.start_ms, 0)
+    start_ms = (turn.start_ms + round(start_char / length * span)
+                - _SPAN_PAD_MS)
+    end_ms = (turn.start_ms + round(end_char / length * span)
+              + _SPAN_PAD_MS)
+    start_ms = max(start_ms, turn.start_ms)
+    end_ms = min(end_ms, turn.end_ms)
+    end_ms = max(end_ms, start_ms)
+    return (start_ms, end_ms)
+
+
+def assign_item_spans(items: list[DraftItem],
+                      transcript: Transcript) -> int:
+    """Give each item its own words inside a shared turn (Task 156).
+
+    Items sharing one turn each locate their own price phrase (the
+    price line's "said" text) in the turn text, in order: an item's
+    proof span runs from the previous item's price end (or the turn
+    start) to its own price end, with the last item in a turn also
+    keeping the turn's trailing words so a correction is never cut.
+    The span becomes proof.quote (leading fillers and price-tail
+    echoes dropped), and proof.start/end_ms follow the span's
+    character proportion in the turn, ±0.4 s, clamped to the turn.
+    An item whose price phrase is not found, or that spans turns,
+    keeps the model's quote and times. Returns the split count.
+    """
+    by_id = {turn.id: turn for turn in transcript.turns}
+    groups: dict[int, list[int]] = {}
+    for index, item in enumerate(items):
+        turn_ids = list(getattr(item.proof, "turn_ids", []) or [])
+        if len(turn_ids) != 1 or turn_ids[0] not in by_id:
             continue
-        key = alias.lower()
-        idx = lowered.find(key)
-        if idx >= 0 and " " not in key and key.isascii():
-            # Latin keys need word bounds; Tamil script matches as substring.
-            before = lowered[idx - 1] if idx > 0 else " "
-            after = (lowered[idx + len(key)]
-                     if idx + len(key) < len(lowered) else " ")
-            if before.isalnum() or after.isalnum():
+        groups.setdefault(turn_ids[0], []).append(index)
+    split = 0
+    for turn_id, positions in groups.items():
+        turn = by_id[turn_id]
+        text = turn.text or ""
+        cursor = 0
+        for order, index in enumerate(positions):
+            item = items[index]
+            bounds: tuple[int, int] | None = None
+            probe = cursor
+            for line in item.price_lines:
+                found = _find_phrase(text, line.said, probe)
+                if found is None:
+                    continue
+                bounds = found
+                probe = found[1]
+            if bounds is None:
+                # Not locatable: keep the model's quote, but still
+                # advance past it so later items start after it.
+                quote = (item.proof.quote or "").strip()
+                if quote:
+                    hit = text.find(quote, cursor)
+                    if hit >= 0:
+                        cursor = hit + len(quote)
                 continue
-        if idx >= 0:
-            hits.append((idx, variety))
-    hits.sort(key=lambda h: h[0])
-    ordered: list[str] = []
-    for _, variety in hits:
-        if variety not in ordered:
-            ordered.append(variety)
-    return ordered
+            said_start, said_end = bounds
+            raw_start = cursor
+            raw_end = len(text) if order == len(positions) - 1 else said_end
+            cursor = said_end
+            if raw_end <= raw_start:
+                continue
+            raw = text[raw_start:raw_end]
+            stripped, cut = strip_span_leading(raw, said_start - raw_start)
+            trail = len(stripped)
+            limit = said_end - (raw_start + cut)
+            while trail > limit and stripped[trail - 1] in SPAN_STRIP_CHARS:
+                trail -= 1
+            stripped = stripped[:trail]
+            if not stripped.strip():
+                continue
+            item.proof.quote = stripped
+            item.proof.start_ms, item.proof.end_ms = _span_times(
+                turn, raw_start + cut, raw_start + cut + trail, len(text))
+            split += 1
+    return split
+
+
+_MANNUR_WORDS: tuple[str, ...] = ("மன்னூர்", "mannur")
+
+
+def _has_mannur(span: str) -> bool:
+    text = span or ""
+    return any(word in text.lower() if word.isascii() else word in text
+               for word in _MANNUR_WORDS)
+
+
+def merge_mannur_lines(items: list[DraftItem]) -> list[DraftItem]:
+    """Fold a Mannur variety line into the previous beans item.
+
+    "மன்னூர்ல ... எழுபது ஒரு கிலோ" after beans names Mannur beans, a
+    beans variety/origin, not a new item: when an unresolvable item's
+    span says Mannur, names no other item, and the previous item is
+    beans, its price lines join that beans item (variety "mannur"
+    when none was said) and the line itself is dropped, so the item
+    is never "மன்னூர் · other". Anything else is left untouched.
+    """
+    merged: list[DraftItem] = []
+    for item in items or []:
+        span = item.proof.quote or ""
+        previous = merged[-1] if merged else None
+        if (item.name_en == "other" and item.price_lines
+                and previous is not None
+                and (previous.name_en or "").strip().lower() == "beans"
+                and _has_mannur(span)
+                and not find_items_in_text(span)):
+            previous.price_lines.extend(item.price_lines)
+            if span.strip():
+                if previous.proof.quote:
+                    previous.proof.quote = (
+                        f"{previous.proof.quote} {span}")
+                else:
+                    previous.proof.quote = span
+            for turn_id in item.proof.turn_ids or []:
+                if turn_id not in previous.proof.turn_ids:
+                    previous.proof.turn_ids.append(turn_id)
+            previous.proof.start_ms = min(previous.proof.start_ms,
+                                          item.proof.start_ms)
+            previous.proof.end_ms = max(previous.proof.end_ms,
+                                        item.proof.end_ms)
+            if not (previous.variety or "").strip():
+                previous.variety = "mannur"
+            continue
+        merged.append(item)
+    return merged
 
 
 def parse_extract_json(data: dict, transcript: Transcript, *,
@@ -314,10 +452,6 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
                 found_name = find_name_in_text(extra)
                 if found_name is not None:
                     name_en = found_name
-        if name_en == "banana" and extra:
-            found = _banana_varieties_in_order(extra)
-            if len(found) >= 2:
-                variety = " / ".join(found)
         price_lines = [
             PriceLine(
                 price=_decimal_or_none(line.get("price")),
@@ -357,11 +491,17 @@ def parse_extract_json(data: dict, transcript: Transcript, *,
             range_said=bool(raw.get("range_said", False)),
             flags=flags,
         )
-        # Names come from the seller's own span (Task 139), before price
-        # merging appends other lines' words to the quote.
+        items.append(item)
+    # One sentence with many items is split first (Task 156), so every
+    # item's names come from its own words only, and a variety stays
+    # one qualifier, never a list. Names come from the seller's own span
+    # (Task 139), before price merging appends other lines' words to
+    # the quote.
+    assign_item_spans(items, transcript)
+    items = merge_mannur_lines(items)
+    for item in items:
         apply_spoken_name(item, language=language)
         merge_repeated_prices(item)
-        items.append(item)
     return items
 
 

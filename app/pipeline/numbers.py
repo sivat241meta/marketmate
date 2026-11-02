@@ -276,6 +276,11 @@ _BENGALI_WORDS = set(_BENGALI)
 _TENS_VALUES = {20, 30, 40, 50, 60, 70, 80, 90}
 _HUNDRED_VALUES = {100, 200, 300, 400, 500}
 
+# Attributive "one": ஒரு கிலோ is "a kilo", never a unit digit, so a
+# tens word before it (எழுபது ஒரு கிலோ = 70, one kilo) must not join
+# it the way ஒன்னு/onnu does (muppathu onnu = 31).
+_ADJECTIVAL_ONE = frozenset({"oru", "ஒரு"})
+
 # Independent vowel -> dependent sign, for building sandhi compounds such as
 # முப்பத்தைந்து (முப்பது + ஐந்து).
 _VOWEL_SIGN = {
@@ -530,7 +535,8 @@ def _span_value(words: list[str]) -> int | Decimal | None:
     if len(words) == 2 and first_value in _TENS_VALUES:
         second = _single_value(words[1])
         if (second is not None and not isinstance(second[0], Decimal)
-                and 1 <= int(second[0]) <= 9):
+                and 1 <= int(second[0]) <= 9
+                and words[1] not in _ADJECTIVAL_ONE):
             return first_value + int(second[0])
     return None
 
@@ -699,7 +705,9 @@ def _word_hits(seg: str, base: int) -> list[tuple[int, int, str]]:
         value, start, end = seq[i]
         nxt = seq[i + 1] if i + 1 < len(seq) else None
         gap_ok = nxt is not None and re.fullmatch(r"\s*", seg[end - base:nxt[1] - base])
-        if gap_ok and value in _TENS_VALUES and 1 <= nxt[0] <= 9:
+        nxt_word = seg[nxt[1] - base:nxt[2] - base] if nxt is not None else ""
+        if (gap_ok and value in _TENS_VALUES and 1 <= nxt[0] <= 9
+                and nxt_word not in _ADJECTIVAL_ONE):
             hits.append((start, value + nxt[0], "tamil"))
             i += 2
         elif gap_ok and value in _HUNDRED_VALUES and nxt[0] < 100:

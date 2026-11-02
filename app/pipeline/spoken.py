@@ -14,7 +14,10 @@ words behind "Play what you said", kept in ``proof.quote``):
   own words; the variety becomes the English qualifier and the English
   name its base, so titles read "new potato" via the Task 136 helpers.
   A canonical model name for the same item is kept, and a missing span
-  keeps the model's names. Prices are never touched.
+  keeps the model's names. When the model name is itself a known item
+  for something else (banana claimed, poosani heard), nothing is
+  renamed: the blocking NAME_NOT_NEAR_PRICE check flags it instead.
+  Prices are never touched.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ from app.pipeline.names import (
     QUALIFIER_EN,
     SYNONYMS,
     TAMIL_SYNONYMS,
+    VARIETY_ALIASES,
     alias_hit_in_text,
     canonical_local_name,
     find_name_in_text,
@@ -65,6 +69,14 @@ _FRACTION_STOP_WORDS: frozenset[str] = frozenset({
     "முக்கால்", "mukkaal", "பாதி", "paathi",
 })
 
+# Filler words around the spoken name ("So, sev vazhai இன்னைக்கு rate
+# rate 110"): skipped wherever they appear in the name portion, so the
+# seller's item words stand alone. Never item names.
+_FILLER_WORDS: frozenset[str] = frozenset({
+    "so", "rate", "rates", "today", "innikku", "innaikku",
+    "இன்னைக்கு", "இன்று",
+})
+
 
 def _clean_token(raw: str) -> str:
     return raw.strip(_STRIP_CHARS)
@@ -92,6 +104,64 @@ def is_stop_token(token: str) -> bool:
     return parse_number(word) is not None
 
 
+def _is_filler(token: str) -> bool:
+    return token.casefold() in _FILLER_WORDS
+
+
+def _is_leading_noise(token: str) -> bool:
+    """Unit/currency/fraction/filler words opening a span.
+
+    A per-item span can open with the previous price's tail ("kilo."
+    after "110 ரூபாய் கிலோ. kilo"): those words are skipped until the
+    item's own words begin. Numbers are never skipped, so a span that
+    opens with a price still yields "".
+    """
+    word = _clean_token(token)
+    if not word:
+        return True
+    lowered = word.lower()
+    if lowered in _FILLER_WORDS:
+        return True
+    if (lowered in _UNIT_STOP_WORDS
+            or lowered in _CURRENCY_STOP_WORDS
+            or lowered in _FRACTION_STOP_WORDS):
+        return True
+    return normalise_unit(lowered) is not None
+
+
+# Characters stripped around a per-item proof span.
+SPAN_STRIP_CHARS = " .,;:!?\"'()[]{}।॥·/—–-"
+
+
+def strip_span_leading(text: str, said_start: int) -> tuple[str, int]:
+    """Drop a span's leading punctuation, fillers and price-tail words.
+
+    Leading punctuation, filler words (So, rate) and unit/currency
+    echoes from the previous price ("kilo.") are dropped, but never
+    at or past said_start, so the item's own price phrase always
+    stays. Returns (stripped text, dropped char count).
+    """
+    cut = 0
+    pos = 0
+    end = len(text)
+    while pos < end:
+        while pos < end and text[pos] in SPAN_STRIP_CHARS:
+            pos += 1
+        tok_start = pos
+        while pos < end and text[pos] not in SPAN_STRIP_CHARS:
+            pos += 1
+        if pos == tok_start:
+            cut = pos
+            break
+        token = text[tok_start:pos]
+        if pos <= said_start and _is_leading_noise(token):
+            cut = pos
+            continue
+        cut = tok_start
+        break
+    return (text[cut:], cut)
+
+
 def spoken_item_name(span: str | None) -> str:
     """Item words of a spoken span, deterministically.
 
@@ -99,7 +169,10 @@ def spoken_item_name(span: str | None) -> str:
     punctuation stripped and consecutive repeats collapsed
     ("உருளைக்கிழங்கு,உருளைக்கிழங்கு" -> once, "கிறன் கிறன் ஃப்ரூட்"
     -> "கிறன் ஃப்ரூட்"). The seller's script and case are kept.
-    A span that opens with a price ("இருபத்தைந்து.") yields "".
+    Filler words (So, இன்னைக்கு, rate, today) are skipped, as is a
+    previous price's tail opening the span ("kilo. Nendran" ->
+    "Nendran"). A span that opens with a price ("இருபத்தைந்து.")
+    yields "".
     """
     if not span:
         return ""
@@ -108,8 +181,12 @@ def spoken_item_name(span: str | None) -> str:
         token = _clean_token(raw)
         if not token:
             continue
+        if _is_filler(token):
+            continue
         if is_stop_token(token):
-            break
+            if kept or not _is_leading_noise(token):
+                break
+            continue
         if kept and token.casefold() == kept[-1].casefold():
             continue
         kept.append(token)
@@ -230,6 +307,58 @@ def _known_for(spoken: str) -> tuple[str | None, str | None]:
     return (base, qualifier)
 
 
+def _alias_key_said(key: str, lowered: str, raw: str) -> bool:
+    """True when a variety-nickname key occurs in the span text.
+
+    Latin keys match whole words case-insensitively; Tamil-script
+    keys match as substrings, like the market matching in names.
+    """
+    if key.isascii():
+        wanted = key.lower()
+        start = 0
+        while True:
+            idx = lowered.find(wanted, start)
+            if idx < 0:
+                return False
+            before = lowered[idx - 1] if idx > 0 else " "
+            end = idx + len(wanted)
+            after = lowered[end] if end < len(lowered) else " "
+            if (not before.isalnum() and before != "_"
+                    and not after.isalnum() and after != "_"):
+                return True
+            start = idx + 1
+    return key in raw
+
+
+def _model_variety_said(model_variety: str, base_en: str | None,
+                        text: str) -> bool:
+    """True when the model's variety word is said in the span text.
+
+    The model's variety may come from elsewhere in a shared turn
+    (Task 156): only a variety word inside the item's own span — a
+    qualifier token or one of the base's variety nicknames — keeps
+    the model's variety against the span's own qualifier.
+    """
+    want = normalize_qualifier(model_variety) or model_variety.strip().lower()
+    if not want or not (text or "").strip():
+        return False
+    for raw in _SPLIT_RE.split(text):
+        token = _clean_token(raw).lower()
+        if not token:
+            continue
+        if token == want or normalize_qualifier(token) == want:
+            return True
+    base = (base_en or "").strip().lower()
+    if base:
+        lowered = " ".join(text.lower().split())
+        for key, (alias_base, alias_var) in VARIETY_ALIASES.items():
+            if alias_base != base or alias_var != want:
+                continue
+            if _alias_key_said(key, lowered, text):
+                return True
+    return False
+
+
 def _alias_var_wins(alias_var: str, model_variety: str) -> bool:
     """True when a nickname's variety replaces the model's.
 
@@ -267,6 +396,19 @@ def apply_spoken_name(item, *, language: str = "ta") -> bool:
         return False
     direct = _direct_base(spoken)
     alias = alias_hit_in_text(spoken)
+    if (direct is not None and direct != model_base
+            and model_base in CANONICAL_NAMES):
+        # The span names a different known item than the model claimed
+        # (poosani heard, banana claimed): never rename silently
+        # across two known items; NAME_NOT_NEAR_PRICE flags it. A model
+        # variety from elsewhere in the turn is dropped, so the flag
+        # names the plain claimed item.
+        claimed_variety = (item.variety or "").strip()
+        if claimed_variety and not _model_variety_said(
+                claimed_variety, model_base, span or name_spoken):
+            item.variety = None
+            return True
+        return False
     if direct is None and alias is not None and alias[0] != model_base:
         return False
     final_base = direct if direct is not None else model_base
@@ -275,7 +417,9 @@ def apply_spoken_name(item, *, language: str = "ta") -> bool:
     new_variety: str | None = None
     if alias is not None and alias[0] == final_base:
         if (alias[1] != _normalize(model_variety)
-                and _alias_var_wins(alias[1], model_variety)):
+                and (not _model_variety_said(model_variety, final_base,
+                                             span or name_spoken)
+                     or _alias_var_wins(alias[1], model_variety))):
             new_variety = alias[1]
     else:
         token_var = _token_qualifier(spoken, final_base)
