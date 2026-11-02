@@ -2,6 +2,17 @@
 
 A market seller films the stall or says today's prices in Tamil, Hindi or English. MarketMate turns that into a checked price list, a shop page, WhatsApp messages, bills and a day close. Prices only ever come from the seller's own voice.
 
+## How to judge (3 minutes)
+
+Open `$PUBLIC_BASE_URL/try`. It makes a private test shop (unlisted, deleted after 7 days) and lands on a light 4-step page — no seller dashboard:
+
+1. **Your stall video or voice note** — upload a clip, or tap "Use a real sample: VPS stall, Tamil, 64 s" to run a real stall video that lives only on the server.
+2. **Meta AI at work** — watch `muse-voice-transcribe-1.0` turn speech into text, `muse-spark-1.3` find items, prices and checks, and `sam-3.1` pick a photo for each item.
+3. **Price card** — the checked list: tap anything unclear, play the seller's own voice clips, then approve.
+4. **Ready** — the WhatsApp catalog message, the Excel sheet (`.xlsx`), and the Meta AI call count and cost for the run.
+
+At most 3 runs per test shop per day; real shops are never touched. The sample video path comes from `JUDGE_SAMPLE_VIDEO` (default `DATA_DIR/samples/judge-sample.mp4`); the file itself is never committed.
+
 ## Why
 
 Street and market sellers change prices daily and say them out loud. They do not type catalogues. A buyer wants today's price, not last week's. The seller already speaks every price each morning. MarketMate starts from that spoken moment and keeps proof of it.
@@ -80,7 +91,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-2013 tests pass. `.venv/bin/ruff check .` is clean.
+2065 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Sample shops
 

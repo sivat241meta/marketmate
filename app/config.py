@@ -27,6 +27,7 @@ class Settings:
     max_upload_bytes: int = 512 * 1024 * 1024
     sample_shops: bool = True
     show_extras: bool = False
+    judge_sample_video: Path = Path("data/samples/judge-sample.mp4")
 
 
 def sample_shops_enabled(settings=None) -> bool:
@@ -109,6 +110,12 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     show_extras = _get(env, "SHOW_EXTRAS", "0").strip().lower() in (
         "1", "true", "yes", "on")
 
+    # Task 159: server-side judge sample video. The file itself lives
+    # only on the server (never in git); this is just its path.
+    judge_sample_video = Path(_get(
+        env, "JUDGE_SAMPLE_VIDEO",
+        str(data_dir / "samples" / "judge-sample.mp4")))
+
     return Settings(
         model_api_key=model_api_key,
         baseten_api_key=baseten_api_key,
@@ -122,4 +129,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         max_upload_bytes=max_upload_bytes,
         sample_shops=sample_shops,
         show_extras=show_extras,
+        judge_sample_video=judge_sample_video,
     )

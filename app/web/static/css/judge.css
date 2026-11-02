@@ -1,0 +1,317 @@
+/* Task 159: light judge test page. Fluid under 320px, 44px targets.
+   Theme tokens (Task 122), no new colours except the WhatsApp bubble. */
+
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+}
+
+.judge {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "PlusJakartaSans", "Noto Sans", system-ui, sans-serif;
+}
+
+.judge-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.judge-head {
+  margin-bottom: 8px;
+}
+
+.judge-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.judge-head h1 {
+  font-size: 24px;
+  margin: 8px 0 4px;
+}
+
+.judge-intro {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.judge-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.judge-step {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.judge-step h2 {
+  font-size: 18px;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.judge-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  flex: none;
+}
+
+.judge-tick {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.judge .pill,
+.judge .btn,
+.judge button,
+.judge .chip {
+  min-height: 44px;
+}
+
+.judge .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.judge-chips {
+  border: 0;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.judge-chips legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.judge .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.judge .chip:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.judge .chip input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.judge-or {
+  text-align: center;
+  color: var(--muted);
+  margin: 12px 0;
+}
+
+.judge-sample-video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  background: #000;
+}
+
+.judge-models {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.jmodel {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.jmodel.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.jmodel.is-todo {
+  opacity: 0.65;
+}
+
+.jdot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--line);
+  color: #fff;
+  font-size: 14px;
+  flex: none;
+}
+
+.jmodel.is-done .jdot {
+  background: var(--accent);
+}
+
+.jmodel.is-active .jdot {
+  background: var(--blue);
+}
+
+.jmain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.jmain code {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.jlabel {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.judge-counts {
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.judge-ready {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .judge-ready {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.judge-out {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 0;
+  background: var(--card);
+}
+
+.judge-out h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+/* WhatsApp outgoing-bubble green: the one off-palette colour, scoped here. */
+.wa-bubble {
+  background: #dcf8c6;
+  border-radius: 10px;
+  border-top-left-radius: 0;
+  padding: 10px 12px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.judge-link {
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.judge-full {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.judge-full a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--blue);
+}
+
+/* Never wider than the screen: review cards reuse seller.css, but media
+   and long words stay inside the judge column. */
+.judge img,
+.judge video {
+  max-width: 100%;
+}
+
+.judge .card,
+.judge .review-card,
+.judge blockquote,
+.judge .line {
+  max-width: 100%;
+}
+
+.judge .review-photo {
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .judge * {
+    animation: none;
+    transition: none;
+  }
+}

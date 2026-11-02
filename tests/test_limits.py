@@ -189,7 +189,12 @@ def test_try_creates_judge_shop_with_banner(tmp_path, monkeypatch):
     response = client.get("/try")
     assert response.status_code in (302, 303)
     seller_url = response.headers["location"]
-    html = client.get(seller_url).text
+    # Task 159: /try lands on the light judge page; the banner lives on
+    # the full seller dashboard linked from it.
+    assert seller_url.endswith("/judge")
+    token = seller_url.split("/e/")[1].rsplit("/judge", 1)[0]
+    assert "Judge test" in client.get(seller_url).text
+    html = client.get(f"/e/{token}").text
     assert JUDGE_BANNER in html
     assert 'href="/try"' in client.get("/").text
     conn = db.connect(tmp_path / "data")
@@ -205,7 +210,8 @@ def test_try_creates_judge_shop_with_banner(tmp_path, monkeypatch):
 
 def test_try_shop_never_appears_in_market(tmp_path, monkeypatch):
     client = make_client(tmp_path, monkeypatch)
-    token = client.get("/try").headers["location"].rsplit("/e/", 1)[1]
+    location = client.get("/try").headers["location"]
+    token = location.rsplit("/e/", 1)[1].rsplit("/judge", 1)[0]
     conn = db.connect(tmp_path / "data")
     try:
         shop = db.shop_by_token(conn, token)

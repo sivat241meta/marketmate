@@ -75,7 +75,9 @@ def test_changed_inputs_keep_hooks_without_capture():
     update = (TEMPLATES / "update.html").read_text()
     assert ('attrs={"id": "board-photo", "accept": "image/*"}') in update
     assert '"capture"' not in update
-    review = (TEMPLATES / "review.html").read_text()
+    # Task 159: the review cards live in a partial shared with the
+    # judge page; the retake hooks moved with them, unchanged.
+    review = (TEMPLATES / "_review_cards.html").read_text()
     retake = ('<input id="retake-{{ card.index }}" class="file-hidden" '
               'type="file" accept="image/*" data-photo-retake '
               'data-upload-url="/e/{{ token }}/s/{{ session[\'id\'] }}'
@@ -85,7 +87,7 @@ def test_changed_inputs_keep_hooks_without_capture():
     assert ('<input id="quote-photo" class="file-hidden" type="file" '
             'name="photo" accept="image/*" required>') in quote
     for name in ("seller.html", "bills_new.html", "review.html",
-                 "quote_start.html"):
+                 "_review_cards.html", "quote_start.html"):
         with_cap, _ = _file_inputs((TEMPLATES / name).read_text())
         assert with_cap == [], name
 

@@ -151,7 +151,9 @@ def test_half_kilo_half_amount_no_flag():
 
 
 def test_review_template_option_targets_per_field():
-    template = Path("app/web/templates/review.html").read_text(encoding="utf-8")
+    # Task 159: the review cards live in a partial shared with the judge page.
+    template = Path("app/web/templates/_review_cards.html").read_text(
+        encoding="utf-8")
     assert 'data-field="per_amount"' in template or "{{ flag.field }}" in template
     js = Path("app/web/static/review.js").read_text(encoding="utf-8")
     assert "dataset.targetField" in js

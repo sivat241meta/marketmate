@@ -745,13 +745,16 @@ def test_every_page_renders_en_ta_hi(tmp_path, monkeypatch):
         for url in sweep_urls(seed) + [market_url, market_open]:
             resp = client.get(url)
             assert resp.status_code == 200, f"{lang} {url}: {resp.status_code}"
-    # First-run seller home (the /try landing page with Save your link).
+    # First-run seller home (Task 159: /try lands on the judge page;
+    # Save your link lives on the full dashboard linked from it).
     client.cookies.set("ui_lang", "en")
     resp = client.get("/try")
     assert resp.status_code in (302, 303)
     first = client.get(resp.headers["location"])
     assert first.status_code == 200
-    assert "Save your link" in first.text
+    assert "Judge test" in first.text
+    token = resp.headers["location"].split("/e/")[1].rsplit("/judge", 1)[0]
+    assert "Save your link" in client.get(f"/e/{token}").text
     # A credit row renders its detail page too.
     bill_id = seed["order_id"]
     accept = client.post(f"/e/{seed['token']}/bills/{bill_id}/accept")

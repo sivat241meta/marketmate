@@ -207,8 +207,10 @@ def test_phone_keyboard_input_types(tmp_path):
     bills_new = client.get(f"/e/{token}/bills/new").text
     assert 'inputmode="decimal"' in bills_new
     # The close/review/update/bill quantity rows render only with day
-    # data; their templates carry the same decimal keyboards.
-    for name in ("close.html", "review.html", "update.html", "bill.html"):
+    # data; their templates carry the same decimal keyboards. (Task 159:
+    # the review rows live in the cards partial shared with the judge page.)
+    for name in ("close.html", "_review_cards.html", "update.html",
+                 "bill.html"):
         text = (ROOT / "app" / "web" / "templates" / name).read_text()
         assert 'inputmode="decimal"' in text, name
         assert 'type="number"' in text, name

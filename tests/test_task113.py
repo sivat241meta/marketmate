@@ -82,9 +82,12 @@ def add_review_session(tmp_path, token):
 
 
 def try_html(client):
+    # Task 159: /try lands on the light judge page; the seller chrome
+    # assertions below read the full dashboard linked from it.
     resp = client.get("/try")
     assert resp.status_code in (302, 303), resp.text
-    return client.get(resp.headers["location"]).text
+    token = resp.headers["location"].split("/e/")[1].rsplit("/judge", 1)[0]
+    return client.get(f"/e/{token}").text
 
 
 def app_css():

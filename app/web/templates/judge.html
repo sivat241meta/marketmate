@@ -1,0 +1,174 @@
+{# Task 159: light judge test page. Standalone on purpose: no seller
+   rail, top bar, bottom nav, popups or onboarding cards — just the logo,
+   the title, four steps that unlock in order, and the full-app link. #}
+{% import "_ui.html" as ui %}
+<!doctype html>
+<html lang="{{ ui_lang|default('en') }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t('judge.title') }} — MarketMate</title>
+<link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
+<link rel="stylesheet" href="{{ static_url('css/forms.css') if static_url is defined else '/static/css/forms.css' }}">
+<link rel="stylesheet" href="{{ static_url('css/seller.css') if static_url is defined else '/static/css/seller.css' }}">
+<link rel="stylesheet" href="{{ static_url('css/judge.css') if static_url is defined else '/static/css/judge.css' }}">
+<link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48">
+<meta name="theme-color" content="#0F766E">
+</head>
+<body class="judge">
+<div class="judge-wrap">
+  <header class="judge-head">
+    <a class="judge-brand" href="/" aria-label="MarketMate home"><img src="/static/brand/mark.svg" width="30" height="30" alt="MarketMate"><span>MarketMate</span></a>
+    <h1>{{ t('judge.title') }}</h1>
+    <p class="judge-intro">{{ t('judge.intro') }}</p>
+  </header>
+
+  <ol class="judge-steps">
+    <li class="judge-step{% if step > 1 %} is-done{% endif %}" id="judge-step1">
+      <h2><span class="judge-num" aria-hidden="true">1</span> {{ t('judge.step1') }}{% if step > 1 %} <span class="judge-tick" aria-hidden="true">✓</span>{% endif %}</h2>
+      {% if notice_runs %}<div class="alert alert-warn" role="alert">{{ t('judge.limit') }}</div>{% endif %}
+      <p class="muted">{{ t('judge.runs_left', left=runs_left, max=runs_max) }}</p>
+      {% if runs_left > 0 %}
+      <form method="post" action="/e/{{ token }}/upload?from=judge" enctype="multipart/form-data" data-upload-form data-max-bytes="{{ max_upload_bytes }}">
+        <p>
+          <label class="pill ghost" for="judge-clip">{{ ui.obj("video", 20) }}<span data-upload-name>{{ t('wa.media_label') }}</span>
+            <input id="judge-clip" class="file-hidden" type="file" name="video" accept="video/*,audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.amr" required>
+          </label>
+        </p>
+        <fieldset class="judge-chips">
+          <legend>{{ t('speak.label') }}</legend>
+          {% for chip in speak_chips %}
+          <label class="chip"><input type="radio" name="speak_lang" value="{{ chip.code }}"{% if chip.code == speak_default %} checked{% endif %}> {{ chip.name }}</label>
+          {% endfor %}
+        </fieldset>
+        <p class="help">{{ t('dash.upload_help') }}</p>
+        <p class="upload-file" data-upload-file hidden></p>
+        <p class="form-error" data-upload-error hidden></p>
+        <div class="upload-progress" data-upload-progress hidden>
+          <progress class="progress" data-upload-bar max="100" value="0" aria-label="{{ t('dash.upload_progress') }}"></progress>
+          <p class="upload-meta" data-upload-meta></p>
+          <button class="btn btn-small btn-secondary" type="button" data-upload-cancel>{{ t('dash.cancel_upload') }}</button>
+        </div>
+        <p><button class="btn btn-secondary btn-big" type="submit">{{ ui.obj("video", 20) }}{{ t('t61.upload_note') }}</button></p>
+      </form>
+      <p class="notice">{{ t('notice.voice') }}</p>
+      {% if sample_available %}
+      <p class="judge-or" aria-hidden="true">{{ t('judge.or') }}</p>
+      <form method="post" action="/e/{{ token }}/upload-sample">
+        <p><button class="pill dark big" type="submit" data-sample-btn>{{ t('judge.sample_btn') }}</button></p>
+      </form>
+      <video class="judge-sample-video" controls preload="metadata" playsinline src="{{ sample_url }}" aria-label="{{ t('judge.sample_watch') }}"></video>
+      {% endif %}
+      {% else %}
+      <div class="alert alert-warn" role="alert">{{ t('judge.limit') }}</div>
+      {% endif %}
+    </li>
+
+    <li class="judge-step{% if step > 2 or s2.state == 'done' %} is-done{% endif %}" id="judge-step2">
+      <h2><span class="judge-num" aria-hidden="true">2</span> {{ t('judge.step2') }}{% if step > 2 or s2.state == 'done' %} <span class="judge-tick" aria-hidden="true">✓</span>{% endif %}</h2>
+      {% if s2.state == "locked" %}
+      <p class="muted">{{ t('judge.locked', n=1) }}</p>
+      {% elif s2.state == "active" %}
+      <ol class="judge-models" data-judge-status data-status-url="{{ s2.status_url }}" data-stage-order="uploaded,audio,listening,language_check,items,photos,checking,ready" data-elapsed-s="{{ t('sess.elapsed_s', s='__S__') }}" data-elapsed-m="{{ t('sess.elapsed_m', m='__M__', s='__S__') }}">
+        {% for model in s2.models %}
+        <li class="jmodel is-{{ model.state }}" data-model="{{ model.key }}">
+          <span class="jdot" aria-hidden="true">{% if model.state == "done" %}✓{% endif %}</span>
+          <span class="jmain"><code>{{ model.code }}</code><span class="jlabel">{{ model.label }}</span></span>
+        </li>
+        {% endfor %}
+      </ol>
+      <p class="muted" data-judge-elapsed>{{ s2.elapsed_text }}</p>
+      <p class="vfriendly" data-judge-friendly>{{ s2.friendly }}</p>
+      <noscript>
+      <meta http-equiv="refresh" content="3">
+      <p class="muted">{{ t('sess.refresh_note') }}</p>
+      </noscript>
+      {% elif s2.state == "action" %}
+      <p>{{ t('judge.action') }}</p>
+      <p><a class="pill dark big" href="{{ s2.session_url }}">{{ t('judge.open_run') }}</a></p>
+      {% elif s2.state == "failed" %}
+      <div class="alert alert-warn" role="alert">{{ t('judge.failed') }}{% if s2.message %} {{ s2.message }}{% endif %}</div>
+      <p><a class="pill dark big" href="#judge-step1">{{ t('judge.retry') }}</a></p>
+      {% elif s2.state == "other" %}
+      <p class="muted">{{ t('judge.other') }}</p>
+      <p><a class="pill dark big" href="{{ s2.session_url }}">{{ t('judge.open_run') }}</a></p>
+      {% else %}
+      <ol class="judge-models">
+        {% for model in s2.models %}
+        <li class="jmodel is-{{ model.state }}" data-model="{{ model.key }}">
+          <span class="jdot" aria-hidden="true">✓</span>
+          <span class="jmain"><code>{{ model.code }}</code><span class="jlabel">{{ model.label }}</span></span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </li>
+
+    <li class="judge-step{% if step > 3 %} is-done{% endif %}" id="judge-step3">
+      <h2><span class="judge-num" aria-hidden="true">3</span> {{ t('judge.step3') }}{% if step > 3 %} <span class="judge-tick" aria-hidden="true">✓</span>{% endif %}</h2>
+      {% if review %}
+      <p class="judge-counts" data-review-counts>{{ t('judge.step3_counts', total=review.total, need=review.need_count) }}</p>
+      <form id="review-form" data-approve-url="{{ review.approve_url }}"
+            data-msg-ready="{{ t('review.ready') }}"
+            data-msg-need-one="{{ t('review.need_one') }}"
+            data-msg-need-many="{{ t('review.need_many', n='{n}') }}"
+            data-msg-counts="{{ t('judge.step3_counts', total='{total}', need='{need}') }}"
+            data-msg-counts-aria="{{ t('review.counts_aria', ok='{ok}', total='{total}') }}"
+            data-msg-play-confirm="{{ t('review.play_then_confirm') }}"
+            data-msg-approve-failed="{{ t('review.approve_failed') }}">
+      {% set cards = review.cards %}
+      {% set carried = review.carried %}
+      {% set session = review.session %}
+      {% set shop_native = review.shop_native %}
+      {% set total = review.total %}
+      {% set ok_count = review.ok_count %}
+      {% include "_review_cards.html" %}
+        <p class="form-error" id="approve-error" hidden></p>
+        <div class="sticky-bar action-bar">
+          <p class="muted sticky-count" id="approve-count" data-approve-count></p>
+          <button class="pill dark big" type="submit" id="approve-btn" aria-describedby="approve-count" disabled>{{ t('review.approve') }}</button>
+        </div>
+      </form>
+      {% elif step > 3 or ready %}
+      <p class="muted">{{ t('judge.step3_done') }}</p>
+      {% else %}
+      <p class="muted">{{ t('judge.locked', n=2) }}</p>
+      {% endif %}
+    </li>
+
+    <li class="judge-step" id="judge-step4">
+      <h2><span class="judge-num" aria-hidden="true">4</span> {{ t('judge.step4') }}</h2>
+      {% if ready %}
+      <div class="judge-ready">
+        <section class="judge-out" aria-label="{{ t('judge.wa_title') }}">
+          <h3>{{ t('judge.wa_title') }}</h3>
+          {% if ready.wa_text %}<div class="wa-bubble" data-wa-text>{{ ready.wa_text }}</div>{% endif %}
+          <p class="judge-link muted">{{ ready.shop_url }}</p>
+          {% if ready.wa_url %}<p><a class="pill dark big" href="{{ ready.wa_url }}" target="_blank" rel="noopener">{{ t('judge.wa_open') }}</a></p>{% endif %}
+          <p><a class="pill ghost" href="{{ ready.shop_path }}">{{ t('judge.catalog_open') }}</a></p>
+        </section>
+        <section class="judge-out" aria-label="{{ t('judge.xlsx') }}">
+          <p><a class="pill dark big" href="{{ ready.xlsx_url }}" download>{{ t('judge.xlsx') }}</a></p>
+        </section>
+        <section class="judge-out" aria-label="{{ t('judge.ai') }}">
+          <p class="muted">{{ t('judge.ai_counts', n=ready.ai_count, cost=ready.ai_cost) }}</p>
+          <p><a class="pill ghost" href="{{ ready.ai_url }}">{{ t('judge.ai') }}</a></p>
+        </section>
+      </div>
+      {% else %}
+      <p class="muted">{{ t('judge.locked', n=3) }}</p>
+      {% endif %}
+    </li>
+  </ol>
+
+  <p class="judge-full"><a href="/e/{{ token }}">{{ t('judge.full_app') }}</a></p>
+</div>
+<script src="{{ static_url('motion.js') if static_url is defined else '/static/motion.js' }}"></script>
+<script src="{{ static_url('upload.js') if static_url is defined else '/static/upload.js' }}"></script>
+<script src="{{ static_url('judge.js') if static_url is defined else '/static/judge.js' }}"></script>
+{% if review %}
+<script src="{{ static_url('rename-dialog.js') if static_url is defined else '/static/rename-dialog.js' }}"></script>
+<script src="{{ static_url('review.js') if static_url is defined else '/static/review.js' }}"></script>
+{% endif %}
+</body>
+</html>

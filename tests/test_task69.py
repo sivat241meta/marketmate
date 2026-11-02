@@ -130,7 +130,7 @@ def test_judge_shops_never_listed_and_no_switch(tmp_path):
     client = make_client(tmp_path)
     resp = client.get("/try")
     assert resp.status_code in (302, 303), resp.text
-    token = resp.headers["location"].split("/e/")[1]
+    token = resp.headers["location"].split("/e/")[1].rsplit("/judge", 1)[0]
     shop = shop_row(tmp_path, token)
     assert shop["is_judge"] == 1
     assert shop["listed"] == 0

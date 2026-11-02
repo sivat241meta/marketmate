@@ -109,11 +109,26 @@ TRY_COOKIE_AGE = 24 * 3600
 
 
 def _try_redirect(token: str):
-    """303 to a judge shop, remembering it in a 24 h cookie."""
-    response = RedirectResponse(f"/e/{token}", status_code=303)
+    """303 to a judge shop's light test page, remembered in a 24 h cookie."""
+    response = RedirectResponse(f"/e/{token}/judge", status_code=303)
     response.set_cookie(TRY_COOKIE, token, max_age=TRY_COOKIE_AGE,
                         httponly=True, samesite="lax")
     return response
+
+
+#: Task 159: at most 3 video runs (uploads + samples) per judge shop per day.
+JUDGE_RUNS_PER_DAY = 3
+
+
+def _judge_runs_today(conn, shop_id: int) -> int:
+    """Video sessions a shop started since midnight IST (uploads + samples)."""
+    start_utc = datetime.now(IST).replace(
+        hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
+    row = conn.execute(
+        "SELECT COUNT(*) FROM sessions WHERE shop_id = ? AND kind = 'video'"
+        " AND created_at >= ?",
+        (shop_id, start_utc.isoformat())).fetchone()
+    return int(row[0]) if row else 0
 
 
 def _voice_notice(ui_lang: str) -> str:
@@ -508,6 +523,114 @@ def _price_summary(item, currency: str = "INR", lang: str = "en") -> str:
                 return f"{price} / {line.unit}{mark}"
             return f"{price}{mark}"
     return t_for(lang)("review.no_price")
+
+
+def _review_cards_context(conn, shop, token: str, session_id: int,
+                            ui_lang: str) -> dict:
+    """Review-page card data, shared by the session page and the judge page.
+
+    Task 159: the light judge page renders the same checked list inline;
+    both templates consume ``cards``/``carried``/counts identically.
+    """
+    items = db.load_drafts(conn, session_id)
+    base_id = db.ensure_session_base(conn, session_id)
+    carried = []
+    if base_id is not None:
+        try:
+            base_items = db.version_items(conn, base_id)
+        except Exception:  # noqa: BLE001 - unreadable base means no carried
+            base_items = []
+        review_lang = shop["language"] or "en"
+        for base in db.carried_from_base(items, base_items):
+            carried.append({
+                "id": base.id,
+                "name_local": base.name_local,
+                "name_en": base.name_en,
+                "variety": base.variety,
+                "title_local": local_title(
+                    base.name_local, base.variety, base.name_en,
+                    review_lang),
+                "title_en": english_title(base.name_en,
+                                          base.variety),
+                "photo_url": _photo_url(base.photo),
+                "photo_cutout": is_cutout_photo(
+                    prefer_original(base.photo)),
+                "sold_out": base.sold_out,
+                "price_summary": _price_summary(
+                    base, shop["currency"] or "INR", ui_lang),
+            })
+    cards = []
+    for index, item in enumerate(items):
+        proof = {
+            "quote": item.proof.quote,
+            "turn_ids": item.proof.turn_ids,
+            "start_ms": item.proof.start_ms,
+            "end_ms": item.proof.end_ms,
+            "frame": item.proof.frame,
+            "audio_clip": item.proof.audio_clip,
+            "source": item.proof.source,
+        }
+        is_board = item.proof.source == "board_photo"
+        cards.append(
+            {
+                "index": index,
+                "item": item,
+                "title_local": local_title(
+                    item.name_local, item.variety, item.name_en,
+                    shop["language"] or "en"),
+                "title_en": english_title(item.name_en,
+                                          item.variety),
+                "photo_url": _photo_url(item.photo),
+                "photo_cutout": is_cutout_photo(
+                    prefer_original(item.photo)),
+                "board_thumb_url": (
+                    _photo_url(item.proof.frame) if is_board else None
+                ),
+                "is_board": is_board,
+                "clip_url": (
+                    f"/e/{token}/s/{session_id}/clip/{index}"
+                    if item.proof.audio_clip
+                    else None
+                ),
+                "proof_json": json.dumps(proof),
+                "needs_decision": _needs_decision(item),
+                "own_name": db.uses_chosen_name(conn, shop["id"],
+                                                item),
+                "board_only": _board_only(item),
+                "quote_html": _highlight_quote(item.proof.quote),
+                "price_summary": _price_summary(
+                    item, shop["currency"] or "INR", ui_lang),
+            }
+        )
+    cards.sort(key=lambda c: (not c["needs_decision"], c["index"]))
+    need_count = sum(1 for c in cards if c["needs_decision"])
+    return {"cards": cards, "carried": carried, "base_version_id": base_id,
+            "total": len(cards), "need_count": need_count,
+            "ok_count": len(cards) - need_count}
+
+
+#: Task 159: pipeline stage order for the judge page's 3-model stepper.
+_JUDGE_STAGE_ORDER = ("uploaded", "audio", "listening", "language_check",
+                      "items", "photos", "checking", "ready")
+
+
+def _judge_model_states(stage: str | None) -> tuple[str, str, str]:
+    """(voice, spark, sam) states for the judge "Meta AI at work" step.
+
+    Each is done/active/todo. Spark brackets SAM: it extracts items and
+    prices first, verifies each photo, then runs the final checks.
+    """
+    try:
+        position = _JUDGE_STAGE_ORDER.index(stage or "uploaded")
+    except ValueError:
+        position = 0
+    voice = ("done" if position > 2 else
+             "active" if position == 2 else "todo")
+    spark = ("done" if position > 6 else
+             "active" if position >= 4 else "todo")
+    sam = ("done" if position > 5 else
+           "active" if position == 5 else "todo")
+    return voice, spark, sam
 
 
 def _home_extras(conn, shop, ui_lang: str) -> dict:
@@ -1202,6 +1325,12 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         ui_lang = get_ui_lang(request, shop)
         t = t_for(ui_lang)
         db.purge_expired(conn, data_dir, datetime.now(UTC))
+        if shop["is_judge"] and _judge_runs_today(conn, shop["id"]) >= (
+                JUDGE_RUNS_PER_DAY):
+            # Task 159: a judge shop's 4th run of the day lands back on
+            # the judge page with a friendly note, never an error page.
+            return RedirectResponse(f"/e/{token}/judge?notice=runs",
+                                    status_code=303)
         limiter = request.app.state.limiter
         ip = client_ip(request)
         if not limiter.allow(ip, datetime.now(UTC)):
@@ -1240,7 +1369,233 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         saved = uploads / f"{session_id}_{safe_name}"
         saved.write_bytes(payload)
         jobs.submit(_run_session_job, settings, session_id, str(saved))
+        if request.query_params.get("from") == "judge":
+            # Task 159: uploads from the light judge page stay on it.
+            return RedirectResponse(f"/e/{token}/judge", status_code=303)
         return RedirectResponse(f"/e/{token}/s/{session_id}", status_code=303)
+
+    def _judge_shop(request, conn, token):
+        """Owner judge shop for the light test page; 404 for real shops."""
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return None, denied
+        if not shop["is_judge"]:
+            raise HTTPException(404, "not found")
+        return shop, None
+
+    @app.get("/e/{token}/judge")
+    def judge_page(request: Request, token: str, conn: Conn,
+                   notice: str | None = None):
+        """Light 4-step judge test page: video -> card -> catalog -> Excel.
+
+        Task 159: judges land here from /try instead of the full seller
+        dashboard. Real shops get a 404; the dashboard stays untouched.
+        """
+        shop, denied = _judge_shop(request, conn, token)
+        if denied is not None:
+            return denied
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
+        latest = conn.execute(
+            "SELECT * FROM sessions WHERE shop_id = ? ORDER BY id DESC"
+            " LIMIT 1", (shop["id"],)).fetchone()
+        runs_today = _judge_runs_today(conn, shop["id"])
+        sample_file = Path(app.state.settings.judge_sample_video)
+        chips = []
+        for code in ("ta", "hi", "en"):
+            try:
+                chips.append({"code": code,
+                              "name": get_language(code).native_name})
+            except KeyError:
+                continue
+        speak_default = (shop["language"]
+                         if shop["language"] in ("ta", "hi", "en") else "en")
+        context = {
+            "shop": shop, "token": token, "ui_lang": ui_lang,
+            "shop_lang": shop["language"], "notice_runs": notice == "runs",
+            "runs_today": runs_today, "runs_max": JUDGE_RUNS_PER_DAY,
+            "runs_left": max(0, JUDGE_RUNS_PER_DAY - runs_today),
+            "speak_chips": chips, "speak_default": speak_default,
+            "sample_available": sample_file.is_file(),
+            "sample_url": f"/e/{token}/judge-sample",
+            "max_upload_bytes": app.state.settings.max_upload_bytes,
+            "step": 1, "s2": {"state": "locked"}, "review": None,
+            "ready": None,
+        }
+        if latest is not None:
+            context["step"] = 2
+            status = latest["status"]
+            reviewable = (status == "review" and latest["kind"] in (
+                "video", "live", "board"))
+            if status in ("uploaded", "processing"):
+                progress, friendly = _translated_progress(latest, ui_lang)
+                states = _judge_model_states(progress["stage"])
+                elapsed = max(0, round(progress["elapsed_s"]))
+                if elapsed < 60:
+                    elapsed_text = t("sess.elapsed_s", s=elapsed)
+                else:
+                    elapsed_text = t("sess.elapsed_m", m=elapsed // 60,
+                                     s=elapsed % 60)
+                if progress["stage"] == "language_check":
+                    state = "action"
+                else:
+                    state = "active"
+                context["s2"] = {
+                    "state": state, "status_url":
+                    f"/e/{token}/s/{latest['id']}/status",
+                    "session_url": f"/e/{token}/s/{latest['id']}",
+                    "models": [
+                        {"key": "voice", "code": VOICE_MODEL,
+                         "label": t("judge.model_listen"), "state": states[0]},
+                        {"key": "spark", "code": SPARK_MODEL,
+                         "label": t("judge.model_think"), "state": states[1]},
+                        {"key": "sam", "code": SAM_MODEL,
+                         "label": t("judge.model_see"), "state": states[2]},
+                    ],
+                    "elapsed_text": elapsed_text, "friendly": friendly,
+                }
+            elif status == "failed":
+                context["s2"] = {"state": "failed",
+                                 "message": latest["message"] or ""}
+            elif reviewable:
+                context["step"] = 3
+                context["s2"] = {"state": "done", "models": [
+                    {"key": "voice", "code": VOICE_MODEL,
+                     "label": t("judge.model_listen"), "state": "done"},
+                    {"key": "spark", "code": SPARK_MODEL,
+                     "label": t("judge.model_think"), "state": "done"},
+                    {"key": "sam", "code": SAM_MODEL,
+                     "label": t("judge.model_see"), "state": "done"},
+                ]}
+                review = _review_cards_context(
+                    conn, shop, token, latest["id"], ui_lang)
+                try:
+                    shop_native = get_language(
+                        shop["language"]).native_name
+                except KeyError:
+                    shop_native = shop["language"]
+                review["session"] = latest
+                review["shop_native"] = shop_native
+                review["approve_url"] = (
+                    f"/e/{token}/s/{latest['id']}/approve?next=judge")
+                context["review"] = review
+            elif status == "approved":
+                context["step"] = 4
+                context["s2"] = {"state": "done", "models": [
+                    {"key": "voice", "code": VOICE_MODEL,
+                     "label": t("judge.model_listen"), "state": "done"},
+                    {"key": "spark", "code": SPARK_MODEL,
+                     "label": t("judge.model_think"), "state": "done"},
+                    {"key": "sam", "code": SAM_MODEL,
+                     "label": t("judge.model_see"), "state": "done"},
+                ]}
+            else:
+                # A run from the full app the light page cannot show
+                # (voice update, photo, purchase): point at the session.
+                context["s2"] = {
+                    "state": "other",
+                    "session_url": f"/e/{token}/s/{latest['id']}",
+                }
+        published_id = db.latest_version(conn, shop["id"],
+                                         published_only=True)
+        if published_id is not None:
+            wa_url, wa_text = _price_share(
+                conn, shop, ui_lang, app.state.settings.public_base_url)
+            approved = conn.execute(
+                "SELECT * FROM sessions WHERE shop_id = ? AND status ="
+                " 'approved' ORDER BY id DESC LIMIT 1",
+                (shop["id"],)).fetchone()
+            ai_session = approved["id"] if approved is not None else (
+                latest["id"] if latest is not None else None)
+            ledger = CostLedger(data_dir / "costs.db",
+                                app.state.settings.daily_budget_usd)
+            ai_count = ai_cost = 0
+            if ai_session is not None:
+                rows = ledger.rows_for_shop(
+                    shop["id"], session_id=ai_session, limit=100000)
+                ai_count = len(rows)
+                ai_cost = sum(float(row["usd"] or 0.0) for row in rows)
+            shop_path = f"/s/{shop['slug']}"
+            context["ready"] = {
+                "wa_url": wa_url, "wa_text": wa_text,
+                "shop_path": shop_path,
+                "shop_url": (f"{app.state.settings.public_base_url}"
+                             f"{shop_path}"),
+                "xlsx_url": f"/e/{token}/exports/pricelist.xlsx",
+                "ai_url": (f"/e/{token}/ai?session={ai_session}"
+                           if ai_session is not None else f"/e/{token}/ai"),
+                "ai_count": ai_count, "ai_cost": f"${ai_cost:.4f}",
+            }
+        return templates.TemplateResponse(request, "judge.html", context)
+
+    @app.post("/e/{token}/upload-sample")
+    def upload_sample(request: Request, token: str, conn: Conn):
+        """Start a normal Tamil session from the server-side sample video.
+
+        Task 159: judge shops only. Same pipeline, same limits and same
+        cost cap as a real upload; the file never lives in git.
+        """
+        shop = _owner_or_403_exc(conn, token)
+        if not shop["is_judge"]:
+            raise HTTPException(404, "not found")
+        ui_lang = get_ui_lang(request, shop)
+        t = t_for(ui_lang)
+        db.purge_expired(conn, data_dir, datetime.now(UTC))
+        sample = Path(app.state.settings.judge_sample_video)
+        if not sample.is_file():
+            raise HTTPException(404, "sample video not available")
+        if _judge_runs_today(conn, shop["id"]) >= JUDGE_RUNS_PER_DAY:
+            return RedirectResponse(f"/e/{token}/judge?notice=runs",
+                                    status_code=303)
+        limiter = request.app.state.limiter
+        ip = client_ip(request)
+        if not limiter.allow(ip, datetime.now(UTC)):
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": t("error.too_many_title"),
+                 "message": RATE_LIMIT_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
+                status_code=429)
+        ledger = CostLedger(data_dir / "costs.db",
+                            app.state.settings.daily_budget_usd)
+        try:
+            ledger.check()
+        except CostCapExceeded:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": t("error.budget_title"),
+                 "message": BUDGET_EXHAUSTED_MESSAGE, "token": token,
+                 "ui_lang": ui_lang},
+                status_code=503)
+        payload = sample.read_bytes()
+        limit = app.state.settings.max_upload_bytes
+        if len(payload) > limit:
+            return templates.TemplateResponse(
+                request, "error.html",
+                {"title": t("error.file_big_title"),
+                 "message": _too_big_message(len(payload), limit),
+                 "token": token, "ui_lang": ui_lang},
+                status_code=413)
+        session_id = db.create_session(conn, shop["id"], "video")
+        db.set_session_speak_lang(conn, session_id, "ta")
+        uploads = data_dir / "uploads"
+        uploads.mkdir(parents=True, exist_ok=True)
+        saved = uploads / f"{session_id}_judge-sample.mp4"
+        saved.write_bytes(payload)
+        jobs.submit(_run_session_job, settings, session_id, str(saved))
+        return RedirectResponse(f"/e/{token}/judge", status_code=303)
+
+    @app.get("/e/{token}/judge-sample")
+    def judge_sample(token: str, conn: Conn):
+        """Stream the server-side judge sample video (judge shops only)."""
+        shop = _owner_or_403_exc(conn, token)
+        if not shop["is_judge"]:
+            raise HTTPException(404, "not found")
+        sample = Path(settings.judge_sample_video)
+        if not sample.is_file():
+            raise HTTPException(404, "sample video not available")
+        return FileResponse(sample, media_type="video/mp4",
+                            filename="judge-sample.mp4")
 
     @app.post("/e/{token}/board")
     def board_upload(request: Request, token: str, photo: UploadFile,
@@ -1397,84 +1752,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             context["wa_text"] = wa_text
         if session["status"] == "review" and session["kind"] in (
                 "video", "live", "board"):
-            items = db.load_drafts(conn, session_id)
-            base_id = db.ensure_session_base(conn, session_id)
-            carried = []
-            if base_id is not None:
-                try:
-                    base_items = db.version_items(conn, base_id)
-                except Exception:  # noqa: BLE001 - unreadable base means no carried
-                    base_items = []
-                review_lang = shop["language"] or "en"
-                for base in db.carried_from_base(items, base_items):
-                    carried.append({
-                        "id": base.id,
-                        "name_local": base.name_local,
-                        "name_en": base.name_en,
-                        "variety": base.variety,
-                        "title_local": local_title(
-                            base.name_local, base.variety, base.name_en,
-                            review_lang),
-                        "title_en": english_title(base.name_en,
-                                                  base.variety),
-                        "photo_url": _photo_url(base.photo),
-                        "photo_cutout": is_cutout_photo(
-                            prefer_original(base.photo)),
-                        "sold_out": base.sold_out,
-                        "price_summary": _price_summary(
-                            base, shop["currency"] or "INR", ui_lang),
-                    })
-            context["carried"] = carried
-            context["base_version_id"] = base_id
-            cards = []
-            for index, item in enumerate(items):
-                proof = {
-                    "quote": item.proof.quote,
-                    "turn_ids": item.proof.turn_ids,
-                    "start_ms": item.proof.start_ms,
-                    "end_ms": item.proof.end_ms,
-                    "frame": item.proof.frame,
-                    "audio_clip": item.proof.audio_clip,
-                    "source": item.proof.source,
-                }
-                is_board = item.proof.source == "board_photo"
-                cards.append(
-                    {
-                        "index": index,
-                        "item": item,
-                        "title_local": local_title(
-                            item.name_local, item.variety, item.name_en,
-                            shop["language"] or "en"),
-                        "title_en": english_title(item.name_en,
-                                                  item.variety),
-                        "photo_url": _photo_url(item.photo),
-                        "photo_cutout": is_cutout_photo(
-                            prefer_original(item.photo)),
-                        "board_thumb_url": (
-                            _photo_url(item.proof.frame) if is_board else None
-                        ),
-                        "is_board": is_board,
-                        "clip_url": (
-                            f"/e/{token}/s/{session_id}/clip/{index}"
-                            if item.proof.audio_clip
-                            else None
-                        ),
-                        "proof_json": json.dumps(proof),
-                        "needs_decision": _needs_decision(item),
-                        "own_name": db.uses_chosen_name(conn, shop["id"],
-                                                        item),
-                        "board_only": _board_only(item),
-                        "quote_html": _highlight_quote(item.proof.quote),
-                        "price_summary": _price_summary(
-                            item, shop["currency"] or "INR", ui_lang),
-                    }
-                )
-            cards.sort(key=lambda c: (not c["needs_decision"], c["index"]))
-            need_count = sum(1 for c in cards if c["needs_decision"])
-            context["cards"] = cards
-            context["total"] = len(cards)
-            context["need_count"] = need_count
-            context["ok_count"] = len(cards) - need_count
+            context.update(_review_cards_context(
+                conn, shop, token, session_id, ui_lang))
             return templates.TemplateResponse(request, "review.html", context)
         return templates.TemplateResponse(request, "session.html", context)
 
@@ -1782,6 +2061,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 (stored.name_local, stored.name_en, stored.variety),
                 (item.name_local, item.name_en, item.variety))
         db.set_published(conn, version_id, True)
+        if request.query_params.get("next") == "judge":
+            # Task 159: the light judge page approves through this same
+            # endpoint and comes back to itself for the Ready step.
+            return RedirectResponse(f"/e/{token}/judge", status_code=303)
         return RedirectResponse(f"/e/{token}/s/{session_id}/live",
                                 status_code=303)
 
