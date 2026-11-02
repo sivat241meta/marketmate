@@ -33,7 +33,9 @@ from app.pipeline.names import (
     VARIETY_ALIASES,
     alias_hit_in_text,
     canonical_local_name,
+    collapse_repeated_runs,
     find_name_in_text,
+    is_word_char,
     normalize_qualifier,
 )
 from app.pipeline.numbers import parse_number
@@ -166,7 +168,8 @@ def spoken_item_name(span: str | None) -> str:
     """Item words of a spoken span, deterministically.
 
     The words before the first quantity/unit/price token, with
-    punctuation stripped and consecutive repeats collapsed
+    punctuation stripped, merged repeats halved ("vazhaiwazhai" ->
+    "vazhai") and consecutive repeats collapsed
     ("உருளைக்கிழங்கு,உருளைக்கிழங்கு" -> once, "கிறன் கிறன் ஃப்ரூட்"
     -> "கிறன் ஃப்ரூட்"). The seller's script and case are kept.
     Filler words (So, இன்னைக்கு, rate, today) are skipped, as is a
@@ -178,7 +181,7 @@ def spoken_item_name(span: str | None) -> str:
         return ""
     kept: list[str] = []
     for raw in _SPLIT_RE.split(span):
-        token = _clean_token(raw)
+        token = collapse_repeated_runs(_clean_token(raw))
         if not token:
             continue
         if _is_filler(token):
@@ -310,8 +313,9 @@ def _known_for(spoken: str) -> tuple[str | None, str | None]:
 def _alias_key_said(key: str, lowered: str, raw: str) -> bool:
     """True when a variety-nickname key occurs in the span text.
 
-    Latin keys match whole words case-insensitively; Tamil-script
-    keys match as substrings, like the market matching in names.
+    Latin keys match at the start of a token case-insensitively;
+    Tamil-script keys match as whole words only, so பூசணி inside
+    தர்பூசணி does not count.
     """
     if key.isascii():
         wanted = key.lower()
@@ -321,13 +325,21 @@ def _alias_key_said(key: str, lowered: str, raw: str) -> bool:
             if idx < 0:
                 return False
             before = lowered[idx - 1] if idx > 0 else " "
-            end = idx + len(wanted)
-            after = lowered[end] if end < len(lowered) else " "
-            if (not before.isalnum() and before != "_"
-                    and not after.isalnum() and after != "_"):
+            if not is_word_char(before):
                 return True
             start = idx + 1
-    return key in raw
+    haystack = " ".join(raw.split())
+    start = 0
+    while True:
+        idx = haystack.find(key, start)
+        if idx < 0:
+            return False
+        before = haystack[idx - 1] if idx > 0 else " "
+        end = idx + len(key)
+        after = haystack[end] if end < len(haystack) else " "
+        if not is_word_char(before) and not is_word_char(after):
+            return True
+        start = idx + 1
 
 
 def _model_variety_said(model_variety: str, base_en: str | None,

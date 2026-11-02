@@ -6,9 +6,10 @@ from decimal import Decimal, InvalidOperation
 from app.languages import currency_words_for, get_language
 from app.meta.spark import chat_json
 from app.models import DraftItem, Flag, PriceLine, Proof, Transcript
+from app.pipeline.coverage import add_missed_price_items
 from app.pipeline.names import (
     CANONICAL_NAMES,
-    VARIETY_ALIASES,
+    alias_hit_in_text,
     canonical_local_name,
     find_items_in_text,
     find_name_in_text,
@@ -236,25 +237,10 @@ def _alias_in_text(text: str) -> tuple[str, str] | None:
     """First (name_en, variety) whose alias key appears in lower text.
 
     Longest keys win so "ujala krishnagiri" beats bare "ujala".
+    Shared with the spoken-name pass, so merged repeats collapse and
+    Latin aliases match at token starts here too.
     """
-    lowered = f" {text.lower()} " if text else " "
-    stripped = lowered.strip()
-    best: tuple[str, str] | None = None
-    best_len = -1
-    for alias, pair in VARIETY_ALIASES.items():
-        key = alias.lower()
-        if not key or len(key) <= best_len:
-            continue
-        if " " in key:
-            found = key in stripped
-        else:
-            found = (
-                f" {key} " in lowered
-                or stripped == key
-                or (not key.isascii() and key in text))
-        if found:
-            best, best_len = pair, len(key)
-    return best
+    return alias_hit_in_text(text or "")
 
 
 #: Padding around a per-item proof clip inside its turn.
@@ -379,21 +365,26 @@ def merge_mannur_lines(items: list[DraftItem]) -> list[DraftItem]:
     """Fold a Mannur variety line into the previous beans item.
 
     "மன்னூர்ல ... எழுபது ஒரு கிலோ" after beans names Mannur beans, a
-    beans variety/origin, not a new item: when an unresolvable item's
-    span says Mannur, names no other item, and the previous item is
-    beans, its price lines join that beans item (variety "mannur"
-    when none was said) and the line itself is dropped, so the item
-    is never "மன்னூர் · other". Anything else is left untouched.
+    beans variety/origin, not a new item: when an item the model could
+    not resolve ("other", an echoed "mannur", or beans itself) says
+    Mannur in its span, names no item but beans, and the previous
+    item is beans, its price lines join that beans item (variety
+    "mannur" when none was said) and the line itself is dropped, so
+    the Mannur price is never dropped and never "மன்னூர் · other".
+    Anything else is left untouched.
     """
     merged: list[DraftItem] = []
     for item in items or []:
         span = item.proof.quote or ""
         previous = merged[-1] if merged else None
-        if (item.name_en == "other" and item.price_lines
+        base = (item.name_en or "").strip().lower()
+        heard = [name for _, name in find_items_in_text(span)]
+        if (item.price_lines
                 and previous is not None
                 and (previous.name_en or "").strip().lower() == "beans"
                 and _has_mannur(span)
-                and not find_items_in_text(span)):
+                and all(name == "beans" for name in heard)
+                and (base not in CANONICAL_NAMES or base == "beans")):
             previous.price_lines.extend(item.price_lines)
             if span.strip():
                 if previous.proof.quote:
@@ -525,6 +516,8 @@ def extract_items(transcript: Transcript, *, ledger, settings,
 
     ``progress`` is called as ``progress(part, total)`` before each chunk so
     callers can report "part 2 of 3" while long transcripts are extracted.
+    A coverage check runs once over the merged items, so a price the
+    model skipped still reaches the seller as a MISSED_PRICE item.
     """
     chunks = chunk_transcript(transcript)
     items: list[DraftItem] = []
@@ -539,7 +532,7 @@ def extract_items(transcript: Transcript, *, ledger, settings,
             summary=lambda reply, part=number, of=total: _part_summary(
                 reply, part, of))
         items.extend(parse_extract_json(data, transcript, language=language))
-    return items
+    return add_missed_price_items(items, transcript, language=language)
 
 
 def _part_summary(reply: dict, part: int, total: int) -> str:

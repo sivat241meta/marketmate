@@ -4,6 +4,8 @@
    duplicate lines are removed from the card, so approval keeps one line.
    On QTY_AS_PRICE / MULTI_PRICE_UNCLEAR the tapped option ("Rs.20 for
    5 pieces") keeps its line and drops the other lines the same way.
+   On MISSED_PRICE the "Remove" tap drops the whole card and its index
+   rides along as `removed`, so the server drops the same stored draft.
    Approve posts the edited cards as JSON.
    Option buttons carry data-target-field (never data-field) so input queries
    below only ever match real inputs and selects. */
@@ -90,7 +92,32 @@ function collectCards(form) {
       carried.push(Number.isNaN(num) ? raw : num);
     }
   });
-  return { items, confirmed, carried };
+  return { items, confirmed, carried, removed: removedIndexes(form) };
+}
+
+function removedIndexes(form) {
+  try {
+    const raw = JSON.parse((form.dataset && form.dataset.removed) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function removeMissedCard(form, card) {
+  // A MISSED_PRICE "Remove" tap drops the whole card: the seller says
+  // the heard price was not real. The removed index rides along so the
+  // server drops the same stored draft.
+  if (card && card.dataset && card.dataset.card !== undefined) {
+    const key = Number(card.dataset.card);
+    const removed = removedIndexes(form);
+    if (!removed.includes(key)) {
+      removed.push(key);
+      form.dataset.removed = JSON.stringify(removed);
+    }
+    card.remove();
+  }
+  updateApprove(form);
 }
 
 function lineKey(wrap) {
@@ -571,6 +598,12 @@ document.addEventListener("DOMContentLoaded", () => {
   form.querySelectorAll(".opt-btn").forEach((button) => {
     button.addEventListener("click", () => {
       const group = button.closest(".flag-options");
+      const card = button.closest(".card");
+      if (group && group.dataset.flag === "MISSED_PRICE" &&
+          button.dataset.value === "Remove") {
+        removeMissedCard(form, card);
+        return;
+      }
       group.querySelectorAll(".opt-btn").forEach((other) => {
         other.classList.remove("chosen");
       });
@@ -591,7 +624,6 @@ document.addEventListener("DOMContentLoaded", () => {
                  group.dataset.flag === "MULTI_PRICE_UNCLEAR") {
         keepOptionLine(button.closest(".card"), button.dataset.value);
       }
-      const card = button.closest(".card");
       if (card) {
         if (isLineChoiceFlag(group.dataset.flag)) {
           // Trimming lines is part of the choice, not an edit.

@@ -1,0 +1,429 @@
+{
+ "duration_ms": 64480,
+ "turns": [
+  {
+   "id": 1,
+   "start_ms": 380,
+   "end_ms": 12620,
+   "text": "so, sev vazhaiwazhai இன்னைக்கு rate நூற்றி பத்து ரூபா கிலோ. நேந்திரன் நூறு ரூபா. கற்பூரவள்ளி எண்பது பச்சை பழம் அம்பது ரூபா கிலோ"
+  },
+  {
+   "id": 2,
+   "start_ms": 14220,
+   "end_ms": 36460,
+   "text": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "id": 3,
+   "start_ms": 39020,
+   "end_ms": 41340,
+   "text": "மன்னூர்ல இன்னைக்கு ரேட்டு எழுபது ஒரு கிலோ."
+  },
+  {
+   "id": 4,
+   "start_ms": 43180,
+   "end_ms": 44860,
+   "text": "சுரக்கா ஒரு கிலோ அறுபது ரூபா."
+  },
+  {
+   "id": 5,
+   "start_ms": 46780,
+   "end_ms": 48380,
+   "text": "பொடலங்கா ஒரு கிலோ கிலோ எழுபது ரூபா."
+  },
+  {
+   "id": 6,
+   "start_ms": 51020,
+   "end_ms": 52780,
+   "text": "வெண்டைக்கா ஒரு கிலோ அறுபது."
+  },
+  {
+   "id": 7,
+   "start_ms": 54540,
+   "end_ms": 56300,
+   "text": "குடமுளகா ஒரு கிலோ நூறு."
+  },
+  {
+   "id": 8,
+   "start_ms": 58460,
+   "end_ms": 60220,
+   "text": "வெள்ளரிக்கா ஒரு கிலோ அறுபது."
+  }
+ ],
+ "items": [
+  {
+   "name_spoken": "sev vazhaiwazhai",
+   "name_en": "banana",
+   "name_local": "வாழைப்பழம்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "நூற்றி பத்து ரூபா கிலோ",
+     "price": 110,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    1
+   ],
+   "quote": "so, sev vazhaiwazhai இன்னைக்கு rate நூற்றி பத்து ரூபா கிலோ. நேந்திரன் நூறு ரூபா. கற்பூரவள்ளி எண்பது பச்சை பழம் அம்பது ரூபா கிலோ"
+  },
+  {
+   "name_spoken": "நேந்திரன்",
+   "name_en": "banana",
+   "name_local": "நேந்திரன்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "நூறு ரூபா",
+     "price": 100,
+     "per_amount": null,
+     "unit": null
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    1
+   ],
+   "quote": "so, sev vazhaiwazhai இன்னைக்கு rate நூற்றி பத்து ரூபா கிலோ. நேந்திரன் நூறு ரூபா. கற்பூரவள்ளி எண்பது பச்சை பழம் அம்பது ரூபா கிலோ"
+  },
+  {
+   "name_spoken": "கற்பூரவள்ளி",
+   "name_en": "banana",
+   "name_local": "வாழைப்பழம்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "எண்பது",
+     "price": 80,
+     "per_amount": null,
+     "unit": null
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    1
+   ],
+   "quote": "so, sev vazhaiwazhai இன்னைக்கு rate நூற்றி பத்து ரூபா கிலோ. நேந்திரன் நூறு ரூபா. கற்பூரவள்ளி எண்பது பச்சை பழம் அம்பது ரூபா கிலோ"
+  },
+  {
+   "name_spoken": "பச்சை பழம்",
+   "name_en": "banana",
+   "name_local": "பச்சை பழம்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "அம்பது ரூபா கிலோ",
+     "price": 50,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    1
+   ],
+   "quote": "so, sev vazhaiwazhai இன்னைக்கு rate நூற்றி பத்து ரூபா கிலோ. நேந்திரன் நூறு ரூபா. கற்பூரவள்ளி எண்பது பச்சை பழம் அம்பது ரூபா கிலோ"
+  },
+  {
+   "name_spoken": "தற்பூசணி",
+   "name_en": "watermelon",
+   "name_local": "தர்பூசணி",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கிலோ முப்பது",
+     "price": 30,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "ஏலகி",
+   "name_en": "banana",
+   "name_local": "வாழைப்பழம்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கிலோ நூற்றி இருபது",
+     "price": 120,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "பூசணி",
+   "name_en": "ash gourd",
+   "name_local": "பூசணி",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ முப்பது ரூபா",
+     "price": 30,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "கத்தரிக்கா",
+   "name_en": "brinjal",
+   "name_local": "கத்தரிக்காய்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கால் கிலோ இருபது ரூபா",
+     "price": 20,
+     "per_amount": 0.25,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "அவரக்கா",
+   "name_en": "broad beans",
+   "name_local": "அவரைக்காய்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கால் கிலோ முப்பத்தஞ்சு",
+     "price": 35,
+     "per_amount": 0.25,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "கேரட்",
+   "name_en": "carrot",
+   "name_local": "கேரட்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கால் கிலோ இருபது ரூபா",
+     "price": 20,
+     "per_amount": 0.25,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "beans",
+   "name_en": "beans",
+   "name_local": "பீன்ஸ்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "கால் கிலோ முப்பத்தஞ்சு",
+     "price": 35,
+     "per_amount": 0.25,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    2
+   ],
+   "quote": "தற்பூசணி கிலோ முப்பது ஏலகி கிலோ நூற்றி இருபது பூசணி ஒரு கிலோ முப்பது ரூபா கத்தரிக்கா கால் கிலோ இருபது ரூபா அவரக்கா கால் கிலோ முப்பத்தஞ்சு கேரட் கால் கிலோ இருபது ரூபா beans கால் கிலோ முப்பத்தஞ்சு"
+  },
+  {
+   "name_spoken": "சுரக்கா",
+   "name_en": "bottle gourd",
+   "name_local": "சுரைக்காய்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ அறுபது ரூபா",
+     "price": 60,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    4
+   ],
+   "quote": "சுரக்கா ஒரு கிலோ அறுபது ரூபா."
+  },
+  {
+   "name_spoken": "பொடலங்கா",
+   "name_en": "snake gourd",
+   "name_local": "புடலங்காய்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ கிலோ எழுபது ரூபா",
+     "price": 70,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    5
+   ],
+   "quote": "பொடலங்கா ஒரு கிலோ கிலோ எழுபது ரூபா."
+  },
+  {
+   "name_spoken": "வெண்டைக்கா",
+   "name_en": "ladies finger",
+   "name_local": "வெண்டைக்காய்",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ அறுபது",
+     "price": 60,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    6
+   ],
+   "quote": "வெண்டைக்கா ஒரு கிலோ அறுபது."
+  },
+  {
+   "name_spoken": "kudamulaga",
+   "name_en": "capsicum",
+   "name_local": "குடமுளகா",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ நூறு",
+     "price": 100,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    7
+   ],
+   "quote": "குடமுளகா ஒரு கிலோ நூறு."
+  },
+  {
+   "name_spoken": "vellarikka",
+   "name_en": "cucumber",
+   "name_local": "வெள்ளரிக்கா",
+   "variety": null,
+   "prices": [
+    {
+     "said": "ஒரு கிலோ அறுபது",
+     "price": 60,
+     "per_amount": 1.0,
+     "unit": "kg"
+    }
+   ],
+   "range_said": false,
+   "qty_said": null,
+   "qty": null,
+   "qty_unit": null,
+   "turn_ids": [
+    8
+   ],
+   "quote": "வெள்ளரிக்கா ஒரு கிலோ அறுபது."
+  }
+ ],
+ "mannur_item": {
+  "name_spoken": "மன்னூர்",
+  "name_en": "other",
+  "name_local": "மன்னூர்",
+  "variety": null,
+  "prices": [
+   {
+    "said": "எழுபது ஒரு கிலோ",
+    "price": 70,
+    "per_amount": 1,
+    "unit": "kg"
+   }
+  ],
+  "range_said": false,
+  "qty_said": null,
+  "qty": null,
+  "qty_unit": null,
+  "turn_ids": [
+   3
+  ],
+  "quote": "மன்னூர்ல இன்னைக்கு ரேட்டு எழுபது ஒரு கிலோ."
+ }
+}

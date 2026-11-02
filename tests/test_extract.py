@@ -208,7 +208,14 @@ def test_extract_items_wires_chat_json(monkeypatch, transcript_3_turns, tmp_path
     ledger = CostLedger(tmp_path / "c.db", 100.0)
     settings = load_settings({"MODEL_API_KEY": "k"})
     items = extract_items(transcript_3_turns, ledger=ledger, settings=settings)
-    assert [item.name_en for item in items] == ["tomato"]
+    # The canned model skipped turn 2's price, so the coverage check
+    # adds it back as an unnamed MISSED_PRICE item in turn order.
+    assert [item.name_en for item in items] == ["other", "tomato"]
+    missed = items[0]
+    assert missed.proof.turn_ids == [2]
+    (flag,) = [f for f in missed.flags if f.code == "MISSED_PRICE"]
+    assert flag.blocking is True
+    assert "Remove" in flag.options
     assert "[3]" in seen["messages"][-1]["content"]
     assert seen["kwargs"]["reasoning_effort"] == "low"
 

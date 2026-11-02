@@ -1675,6 +1675,18 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             saved_drafts = db.load_drafts(conn, session_id)
         except Exception:  # noqa: BLE001 - missing drafts keep variety empty
             saved_drafts = []
+        removed: set[int] = set()
+        for raw_id in body.get("removed", []) or []:
+            try:
+                removed.add(int(raw_id))
+            except (TypeError, ValueError):
+                continue
+        if removed:
+            # Cards the seller removed (MISSED_PRICE "Remove" taps) never
+            # reach the client list; drop the same stored drafts so the
+            # positional mapping below stays aligned.
+            saved_drafts = [draft for pos, draft in enumerate(saved_drafts)
+                            if pos not in removed]
         from app.pipeline.namecheck import (
             NameValidationError,
             validate_names,
@@ -1712,9 +1724,33 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     item, previous,
                     language=spoken_language(conn, session_id),
                     ledger=ledger, settings=app.state.settings)
+            if stored is not None and (
+                    (item.name_en or "").strip().lower() in ("", "other")):
+                # The recheck above cannot see the transcript, so it
+                # cannot re-derive MISSED_PRICE; a still-unnamed item
+                # keeps its stored flag until the seller picks a name.
+                for old in stored.flags:
+                    if old.code == "MISSED_PRICE":
+                        item.flags.append(old)
+                        break
             item.confirmed = index in confirmed
             items.append(item)
         try:
+            unnamed = [
+                {"index": pos, "name": item.name_en,
+                 "messages": [flag.message for flag in item.flags
+                              if flag.code == "MISSED_PRICE"]}
+                for pos, item in enumerate(items)
+                if any(flag.code == "MISSED_PRICE" and flag.blocking
+                       for flag in item.flags)
+            ]
+            if unnamed:
+                # A tick is not a name: the seller must pick one of the
+                # offered names (or remove the card) before approving.
+                from app.web.i18n import t_for
+
+                detail = t_for(ui_lang)("review.missed_pick_name")
+                raise db.ApprovalError(detail, needs_confirm=unnamed)
             version_id = db.approve(conn, session_id, items,
                                     carried_ids=carried_ids)
         except db.ApprovalError as exc:

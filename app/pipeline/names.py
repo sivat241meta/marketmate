@@ -166,6 +166,88 @@ def canonical_local_name(name_en: str | None,
         return CANONICAL_NAMES_HI.get(base)
     return None
 
+
+def is_word_char(char: str) -> bool:
+    """True for characters that continue a word: letters, digits, "_",
+    and Tamil vowel signs (category M* in the Tamil block), so பூசணி
+    inside தர்பூசணி never counts as a whole-word match."""
+    if not char:
+        return False
+    if char == "_" or char.isalnum():
+        return True
+    return ("\u0B80" <= char <= "\u0BFF"
+            and unicodedata.category(char).startswith("M"))
+
+
+# Tamil spelling variants (Task 157): speech transcripts vary ற/ர, ண/ன,
+# ள/ல/ழ and short/long vowels, and sellers say கா for காய். Folding
+# both sides makes தற்பூசணி == தர்பூசணி and கத்தரிக்கா ==
+# கத்தரிக்காய், so a claimed name is found despite the variants.
+_TAMIL_CONSONANT_FOLD = str.maketrans({
+    "ற": "ர",
+    "ண": "ன",
+    "ள": "ல", "ழ": "ல",
+})
+_TAMIL_VOWEL_FOLD = str.maketrans({
+    "ஆ": "அ", "ஈ": "இ", "ஊ": "உ", "ஏ": "எ", "ஓ": "ஒ",
+})
+
+
+def normalize_tamil_spelling(text: str | None) -> str:
+    """Fold common Tamil spelling variants for name comparison.
+
+    Dependent vowel signs (including the ் pulli) are dropped,
+    confusable consonants (ற→ர, ண→ன, ள/ழ→ல) and independent vowels
+    (ஆ→அ, ஈ→இ, ஊ→உ, ஏ→எ, ஓ→ஒ) are folded, and a word-final ய is
+    dropped so the spoken கா ending matches காய். Latin and other
+    scripts pass through case-folded. Both sides of a comparison must
+    be normalized; the stored text is never changed.
+    """
+    words: list[str] = []
+    for word in (text or "").split():
+        bare = "".join(
+            char for char in word
+            if not ("\u0B80" <= char <= "\u0BFF"
+                    and unicodedata.category(char).startswith("M")))
+        folded = bare.translate(_TAMIL_CONSONANT_FOLD).translate(
+            _TAMIL_VOWEL_FOLD)
+        words.append(folded.removesuffix("ய"))
+    return " ".join(words).casefold()
+
+
+def _runs_equal(first: str, second: str) -> bool:
+    """True when two halves repeat: case-insensitively, with Tamil's
+    v/w alternation folded (வ is written either way)."""
+    if first.casefold() == second.casefold():
+        return True
+    fold = lambda run: run.casefold().replace("w", "v")
+    return fold(first) == fold(second)
+
+
+def _collapse_token(token: str) -> str:
+    """Halve an immediately repeated run: vazhaiwazhai -> vazhai."""
+    word = token or ""
+    while len(word) >= 2 and len(word) % 2 == 0:
+        half = len(word) // 2
+        if _runs_equal(word[:half], word[half:]):
+            word = word[:half]
+        else:
+            break
+    return word
+
+
+def collapse_repeated_runs(text: str | None) -> str:
+    """Collapse immediately repeated syllable runs in each token.
+
+    Speech transcripts merge a repeated word ("sev vazhaiwazhai" for
+    sev vazhai); halving the doubled token before matching lets the
+    glossary aliases match. Adjacent repeated words are the caller's
+    own collapse.
+    """
+    if not text:
+        return ""
+    return " ".join(_collapse_token(token) for token in text.split())
+
 # Real-shop variety nicknames (Task 47): normalized alias -> (name_en, variety).
 # Keys are lower-cased; Tamil script keys stay as-is for exact matching.
 VARIETY_ALIASES: dict[str, tuple[str, str]] = {
@@ -299,14 +381,16 @@ for _name_en, _name_ta, _roman in _ITEMS:
 
 
 def _alias_hit_with_key(text: str) -> tuple[str, tuple[str, str]] | None:
-    """Longest (alias key, pair) found as whole word(s) in text, else None.
+    """Longest (alias key, pair) found in text, else None.
 
-    Keys match only with word bounds on both sides, so "krishnagiri"
-    is found inside "வரி krishnagiri வரி" but "pachai" never matches
-    inside "pachaivazhai". Tamil script compares the same way: market
-    speech separates words with spaces.
+    Repeated runs collapse first ("sev vazhaiwazhai" -> "sev
+    vazhai"). Latin keys match at the start of a token, so "sev
+    vazhai" matches "sev vazhaiwazhai"; a key never matches
+    mid-token. Tamil-script keys match as whole words only: no Tamil
+    letter or vowel sign may touch either side, so பூசணி inside
+    தர்பூசணி does not count.
     """
-    lowered = " ".join((text or "").lower().split())
+    lowered = " ".join(collapse_repeated_runs(text or "").lower().split())
     if not lowered:
         return None
     best: tuple[str, tuple[str, str]] | None = None
@@ -324,8 +408,11 @@ def _alias_hit_with_key(text: str) -> tuple[str, tuple[str, str]] | None:
             before = lowered[idx - 1] if idx > 0 else " "
             end = idx + len(key)
             after = lowered[end] if end < len(lowered) else " "
-            if (not before.isalnum() and before != "_"
-                    and not after.isalnum() and after != "_"):
+            if key.isascii():
+                if not is_word_char(before):
+                    found = True
+                    break
+            elif not is_word_char(before) and not is_word_char(after):
                 found = True
                 break
             start = idx + 1
@@ -346,24 +433,30 @@ def alias_hit_in_text(text: str) -> tuple[str, str] | None:
 
 
 def _key_in_text(lowered: str, raw: str, key: str) -> bool:
-    """True when key appears in the text: word bounds for Latin keys,
-    substring for Tamil script (market speech separates words)."""
+    """True when key appears in the text as whole word(s).
+
+    Both Latin and Tamil-script keys need word bounds on both sides;
+    Tamil vowel signs count as word characters, so பூசணி inside
+    தர்பூசணி does not count. ``lowered`` is the space-normalized
+    lower-cased text, ``raw`` the original for Tamil-script search.
+    """
     if not key:
         return False
     if key.isascii():
-        start = 0
-        while True:
-            idx = lowered.find(key, start)
-            if idx < 0:
-                return False
-            before = lowered[idx - 1] if idx > 0 else " "
-            end = idx + len(key)
-            after = lowered[end] if end < len(lowered) else " "
-            if (not before.isalnum() and before != "_"
-                    and not after.isalnum() and after != "_"):
-                return True
-            start = idx + 1
-    return key in raw
+        haystack = lowered
+    else:
+        haystack = " ".join(raw.split())
+    start = 0
+    while True:
+        idx = haystack.find(key, start)
+        if idx < 0:
+            return False
+        before = haystack[idx - 1] if idx > 0 else " "
+        end = idx + len(key)
+        after = haystack[end] if end < len(haystack) else " "
+        if not is_word_char(before) and not is_word_char(after):
+            return True
+        start = idx + 1
 
 
 def find_name_in_text(text: str) -> str | None:
@@ -392,10 +485,11 @@ def find_name_in_text(text: str) -> str | None:
 
 
 def _match_spans(text: str, key: str) -> list[tuple[int, int]]:
-    """All (start, end) spans where key occurs in text.
+    """All (start, end) spans where key occurs in text as whole word(s).
 
-    Latin keys match whole words case-insensitively; other scripts
-    match as substrings, like the rest of the market matching.
+    Every script matches whole words case-insensitively; Tamil vowel
+    signs count as word characters, so பூசணி inside தர்பூசணி and
+    poosani inside tharpoosani never match.
     """
     if not key or not text:
         return []
@@ -408,13 +502,11 @@ def _match_spans(text: str, key: str) -> list[tuple[int, int]]:
         if idx < 0:
             return spans
         end = idx + len(wanted)
-        if key.isascii():
-            before = lowered[idx - 1] if idx > 0 else " "
-            after = lowered[end] if end < len(lowered) else " "
-            if ((before.isalnum() or before == "_")
-                    or (after.isalnum() or after == "_")):
-                start = idx + 1
-                continue
+        before = lowered[idx - 1] if idx > 0 else " "
+        after = lowered[end] if end < len(lowered) else " "
+        if is_word_char(before) or is_word_char(after):
+            start = idx + 1
+            continue
         spans.append((idx, end))
         start = idx + 1
 
@@ -424,8 +516,8 @@ def find_items_in_text(text: str) -> list[tuple[str, str]]:
 
     Returns (matched words, name_en) pairs: canonical English and
     Tamil names, romanised names, synonyms and variety nicknames all
-    count. A match fully inside a longer match is dropped, so
-    தர்பூசணி names watermelon only, never pumpkin via பூசணி.
+    count. Every key matches whole words only, so தர்பூசணி names
+    watermelon only, never ash gourd via பூசணி.
     """
     raw = text or ""
     if not raw.strip():
@@ -464,14 +556,27 @@ def find_items_in_text(text: str) -> list[tuple[str, str]]:
     return [(match[2], match[3]) for match in kept]
 
 
+def _normalized_words_in(norm_words: list[str], norm_form: str) -> bool:
+    """True when the normalized form's words run inside the text words."""
+    wanted = norm_form.split()
+    if not wanted:
+        return False
+    if len(wanted) == 1:
+        return wanted[0] in norm_words
+    return any(norm_words[pos:pos + len(wanted)] == wanted
+               for pos in range(len(norm_words) - len(wanted) + 1))
+
+
 def item_name_in_text(name_en: str | None, text: str, *,
                       name_local: str | None = None) -> bool:
     """True when any of the item's name forms occurs in the text.
 
     The English name, the given local name, its canonical Tamil and
     Hindi names, its transliteration and every glossary synonym and
-    variety nickname count. Latin forms match whole words case
-    insensitively, other scripts as substrings.
+    variety nickname count, all as whole words. When no exact form
+    matches, both sides compare again on the spelling-variant
+    normalized form, so தர்பூசணி is found in தற்பூசணி and
+    கத்தரிக்காய் in கத்தரிக்கா.
     """
     base = (name_en or "").strip().lower()
     if not base or not (text or "").strip():
@@ -487,8 +592,13 @@ def item_name_in_text(name_en: str | None, text: str, *,
               if canon == base}
     forms |= {alias for alias, (canon, _variety) in VARIETY_ALIASES.items()
               if canon == base}
-    return any(_match_spans(text, form)
-               for form in forms if form and form.strip())
+    if any(_match_spans(text, form)
+           for form in forms if form and form.strip()):
+        return True
+    norm_words = normalize_tamil_spelling(text).split()
+    return any(_normalized_words_in(
+        norm_words, normalize_tamil_spelling(form))
+        for form in forms if form and form.strip())
 
 
 def normalize_qualifier(variety: str | None) -> str | None:
@@ -654,18 +764,22 @@ SYNONYMS: dict[str, str] = {
     "kirni kirni fruit": "muskmelon",
     "thenga": "coconut",
     "maanga": "raw mango",
-    "poosani": "pumpkin",
+    "poosani": "ash gourd",
+    "parangi": "pumpkin",
 }
 
 # Tamil-script market spellings heard in real stall videos (Task 136):
-# truncated qualifiers (தேங்கா, வெள்ளரிக்கா), the pumpkin word sellers
-# actually say (பூசணிக்காய், not the textbook வெண்பூசணி), spoken raw
-# mango (மாங்கா) and muskmelon (கிர்ணி/கிறணி/கிறன்). Task 156 adds the
-# yellow-pumpkin word (பூசணி), the spoken capsicum spelling
-# (குடமிளகாய்) and the snake-gourd variant (பொடலங்காய்).
+# truncated qualifiers (தேங்கா, வெள்ளரிக்கா), the ash-gourd word
+# sellers actually say (பூசணிக்காய், not the textbook வெண்பூசணி),
+# spoken raw mango (மாங்கா) and muskmelon (கிர்ணி/கிறணி/கிறன்).
+# Task 156 adds the spoken capsicum spelling (குடமிளகாய்) and the
+# snake-gourd variant (பொடலங்காய்). Task 157: plain பூசணி is ash
+# gourd (white pumpkin) in Tamil Nadu markets; yellow pumpkin is
+# பரங்கிக்காய் / parangi / மஞ்சள் பூசணி.
 TAMIL_SYNONYMS: dict[str, str] = {
     "பூசணிக்காய்": "ash gourd",
-    "பூசணி": "pumpkin",
+    "பூசணி": "ash gourd",
+    "மஞ்சள் பூசணி": "pumpkin",
     "குடமிளகாய்": "capsicum",
     "பொடலங்காய்": "snake gourd",
     "மாங்கா": "raw mango",

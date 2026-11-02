@@ -3,8 +3,8 @@
 A real 64 s Tamil stall video (shop owner 2, 17 items) opens with one
 ~30 s turn naming nine items. The draft items all carried the whole
 turn as proof.quote, so every banana variety leaked into every item,
-two items were titled "So sev vazhai இன்னைக்கு rate", and a pumpkin
-line passed as banana with a green tick. After extraction each item
+two items were titled "So sev vazhai இன்னைக்கு rate", and an ash
+gourd line passed as banana with a green tick. After extraction each item
 now keeps only its own words (own price phrase back to the previous
 item's price end), names and single varieties come from that span
 only, a claimed name missing from its span raises blocking
@@ -144,8 +144,8 @@ def test_wrong_item_name_is_flagged_never_renamed():
     flag = next(f for f in flags if f.code == "NAME_NOT_NEAR_PRICE")
     assert flag.blocking is True
     assert flag.message == (
-        "Is this Banana? Just before ₹30 we heard 'poosani' (pumpkin).")
-    assert flag.options == ["pumpkin", "banana"]
+        "Is this Banana? Just before ₹30 we heard 'poosani' (ash gourd).")
+    assert flag.options == ["ash gourd", "banana"]
     assert heard.name_en == "banana"  # flagged, never silently renamed
 
 
@@ -164,7 +164,7 @@ def test_flagged_card_shows_needs_you_never_a_tick(tmp_path):
     assert 'data-needs="0"' not in html
     assert 'class="tick"' not in html
     assert "poosani" in html
-    assert 'data-value="pumpkin"' in html
+    assert 'data-value="ash gourd"' in html
 
 
 # --- 5. Mannur beans ------------------------------------------------------------
@@ -213,8 +213,8 @@ def test_prices_untouched_by_splitting():
 def test_tamil_gourd_glossary():
     from app.pipeline.names import find_name_in_text, resolve_name
 
-    assert resolve_name("poosani") == ("pumpkin", None)
-    assert find_name_in_text("பூசணி") == "pumpkin"
+    assert resolve_name("poosani") == ("ash gourd", None)
+    assert find_name_in_text("பூசணி") == "ash gourd"
     assert find_name_in_text("தர்பூசணி") == "watermelon"
     assert resolve_name("tharpoosani") == ("watermelon", None)
     assert resolve_name("avaraikkai") == ("broad beans", None)

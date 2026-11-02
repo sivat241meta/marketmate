@@ -368,6 +368,7 @@ _ENGLISH: dict[str, str] = {
     "review.sold_out": "Sold out",
     "review.play_then_confirm": "Play the clip, then tick I confirm.",
     "review.approve_failed": "Approve failed.",
+    "review.missed_pick_name": "One price still needs a name — pick one or remove it.",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ Edit name",
     "rename.open": "Rename",
@@ -421,6 +422,7 @@ _ENGLISH: dict[str, str] = {
     "flag.board_confirm": "Read from your board – tap to confirm",
     "flag.not_read": "{name} could not be read from your board – type the price",
     "flag.new_item": "{name} is not in the current price list",
+    "flag.missed_price": "We heard ₹{price} here — '{quote}'. Which item is it?",
     # --- voice update ---
     "upd.confirm_title": "Confirm price changes",
     "upd.record_title": "Update prices by voice",
@@ -1871,6 +1873,7 @@ _TAMIL: dict[str, str] = {
     "review.sold_out": "தீர்ந்தது",
     "review.play_then_confirm": "சொன்னதை கேட்டு, சரி என்று டிக் செய்யுங்க.",
     "review.approve_failed": "ஒப்புதல் முடியலை.",
+    "review.missed_pick_name": "ஒரு விலைக்கு இன்னும் பெயர் வேண்டும் — பெயரைத் தேர்ந்தெடுங்கள் அல்லது நீக்குங்கள்.",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ பெயரை மாற்று",
     "rename.open": "பெயரை மாற்று",
@@ -1924,6 +1927,7 @@ _TAMIL: dict[str, str] = {
     "flag.board_confirm": "போர்டிலிருந்து எடுத்தது – தட்டி உறுதி செய்",
     "flag.not_read": "{name} போர்டில் தெரியலை – விலையை எழுதுங்க",
     "flag.new_item": "{name} இப்போதைய பட்டியலில் இல்லை",
+    "flag.missed_price": "இங்கே ₹{price} என்று கேட்டது — '{quote}'. இது எந்தப் பொருள்?",
     # --- voice update ---
     "upd.confirm_title": "விலை மாற்றத்தை உறுதி செய்",
     "upd.record_title": "இன்றைய விலை சொல்லுங்கள்",
@@ -3372,6 +3376,7 @@ _HINDI: dict[str, str] = {
     "review.sold_out": "खत्म",
     "review.play_then_confirm": "बोली सुनकर पक्के पर टिक करिए।",
     "review.approve_failed": "पक्का नहीं हो पाया।",
+    "review.missed_pick_name": "एक दाम का नाम अभी बाकी है — नाम चुनिए या हटाइए।",
     # --- rename a product (Task 66) ---
     "rename.edit_name": "✎ नाम बदलें",
     "rename.open": "नाम बदलें",
@@ -3425,6 +3430,7 @@ _HINDI: dict[str, str] = {
     "flag.board_confirm": "बोर्ड से पढ़ा – दबाकर पक्का करिए",
     "flag.not_read": "{name} बोर्ड में नहीं दिखा – दाम लिखिए",
     "flag.new_item": "{name} आज की सूची में नहीं",
+    "flag.missed_price": "यहाँ ₹{price} सुनाई दिया — '{quote}'। यह कौन-सी चीज़ है?",
     # --- voice update ---
     "upd.confirm_title": "दाम बदलाव पक्का करिए",
     "upd.record_title": "आज के दाम बोलिए",
@@ -4766,6 +4772,8 @@ _UNCLEAR_RE = re.compile(r'unclear number\s+"([^"]+)"\s+before currency', re.IGN
 _CORRECTION_RE = re.compile(r'seller corrected themselves\s*\(?"?([^")]*?)"?\)?\s*$', re.IGNORECASE)
 _NOT_READ_RE = re.compile(r"^(.*?)\s*could not be read from your board", re.IGNORECASE)
 _NEW_ITEM_RE = re.compile(r"^(.*?)\s*is not in the current price list", re.IGNORECASE)
+_MISSED_PRICE_RE = re.compile(
+    r"We heard ₹([\d.]+) here — '(.*)'\. Which item is it\?")
 
 
 def _sound_alike_vars(message: str, options: list[str]) -> dict[str, str]:
@@ -4915,6 +4923,12 @@ def _flag_text_inner(flag: Any, lang: str = "en") -> str:
         match = _NEW_ITEM_RE.search(message)
         name = match.group(1).strip() if match else ""
         return t("flag.new_item", name=name or message)
+    if code == "MISSED_PRICE":
+        match = _MISSED_PRICE_RE.search(message)
+        if match:
+            return t("flag.missed_price", price=match.group(1).strip(),
+                     quote=match.group(2).strip())
+        return message
     return message
 
 
