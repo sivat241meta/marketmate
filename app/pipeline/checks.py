@@ -19,6 +19,7 @@ from app.pipeline.units import (
     CANONICAL_UNITS,
     convert,
     normalise_unit,
+    normalize_unit,
     rate,
 )
 
@@ -377,6 +378,69 @@ def _is_clear_tier_list(priced: list[PriceLine]) -> bool:
     return all(nxt > cur for cur, nxt in pairwise(amounts))
 
 
+# Task 160: a fraction word right before a unit word ("கால் கிலோ")
+# is the per amount the seller said. When the line says anything else,
+# the seller picks; the price is never changed silently.
+_QTY_FRACTIONS: dict[str, Decimal] = {
+    "கால்": Decimal("0.25"), "kaal": Decimal("0.25"),
+    "quarter": Decimal("0.25"),
+    "அரை": Decimal("0.5"), "arai": Decimal("0.5"),
+    "half": Decimal("0.5"),
+    "முக்கால்": Decimal("0.75"), "mukkal": Decimal("0.75"),
+    "mukkaal": Decimal("0.75"),
+}
+
+_VULGAR_FRACTIONS: dict[Decimal, str] = {
+    Decimal("0.25"): "¼", Decimal("0.5"): "½", Decimal("0.75"): "¾",
+}
+
+
+def _qty_word_pairs(tokens: list[str]) -> list[tuple[Decimal, str, str]]:
+    """(value, unit, heard words) for each fraction word before a unit."""
+    pairs: list[tuple[Decimal, str, str]] = []
+    for first, second in pairwise(tokens):
+        value = _QTY_FRACTIONS.get(first)
+        if value is None:
+            continue
+        unit, _ = normalize_unit(second)
+        if unit is None:
+            continue
+        pairs.append((value, unit, f"{first} {second}"))
+    return pairs
+
+
+def _qty_word_mismatch_flag(pairs: list[tuple[Decimal, str, str]],
+                            line: PriceLine) -> Flag | None:
+    """Blocking flag when the said fraction differs from the line amount.
+
+    Only for one heard pair on a single-line item: with several lines
+    or several said fractions the words cannot be attributed to one
+    line. A line that agrees (¼ kg heard, 250 g lined) or is
+    incomparable (¼ kg heard, per piece lined) stays silent; the
+    options only ever set the per amount.
+    """
+    if len(pairs) != 1:
+        return None
+    if line.per_amount is None or line.unit is None:
+        return None
+    heard_value, heard_unit, heard_words = pairs[0]
+    if line.unit == heard_unit:
+        if line.per_amount == heard_value:
+            return None
+        heard_opt = f"{_VULGAR_FRACTIONS[heard_value]} {heard_unit}"
+    else:
+        heard_in_line = convert(heard_value, heard_unit, line.unit)
+        if heard_in_line is None or heard_in_line == line.per_amount:
+            return None
+        heard_opt = f"{_fmt_amount(heard_in_line)} {line.unit}"
+    line_opt = f"{_fmt_amount(line.per_amount)} {line.unit}"
+    return Flag(
+        field="per_amount", code="QTY_WORD_MISMATCH",
+        message=(f"We heard '{heard_words}' ({heard_opt})"
+                 f" but the line says per {line_opt}. Which is right?"),
+        options=[heard_opt, line_opt])
+
+
 def _name_not_near_price_flag(item: DraftItem, quote: str) -> Flag | None:
     """Blocking flag when the span names a different item (Task 156).
 
@@ -605,6 +669,12 @@ def check_item(item: DraftItem, previous: dict[str, PriceLine], *,
         flags.append(Flag(
             field="per_amount", code="SOUND_ALIKE", message=message,
             options=["0.5", "6"], blocking=blocking))
+
+    if len(item.price_lines) == 1:
+        mismatch = _qty_word_mismatch_flag(
+            _qty_word_pairs(quote_tokens), item.price_lines[0])
+        if mismatch is not None:
+            flags.append(mismatch)
 
     zh_confused = (_ZH_BUNCH_HEARD in quote and _ZH_DOZEN_WORD not in quote)
     th_confused = (_TH_DOZEN_WORD not in quote

@@ -519,9 +519,14 @@ def _quantity_groups(tokens: list[str], idxs: list[int],
             if followed is not None and not inside[followed]:
                 got, scale = _unit_at(tokens[followed])
                 if got is not None:
-                    groups.append(("qty", value * scale, got, tok_idx,
-                                   followed + 1))
-                    while pos < len(idxs) and idxs[pos] <= followed:
+                    end = followed + 1
+                    while end in seg_set and not inside[end]:
+                        repeat, _ = _unit_at(tokens[end])
+                        if repeat != got:
+                            break
+                        end += 1
+                    groups.append(("qty", value * scale, got, tok_idx, end))
+                    while pos < len(idxs) and idxs[pos] < end:
                         pos += 1
                     continue
             if followed is not None and not inside[followed] and _is_currency(
@@ -543,6 +548,11 @@ def _quantity_groups(tokens: list[str], idxs: list[int],
             continue
         got, scale = _unit_at(tokens[tok_idx])
         if got is not None:
+            prev = tok_idx - 1
+            if (prev in seg_set and not inside[prev]
+                    and _unit_at(tokens[prev])[0] == got):
+                pos += 1
+                continue
             groups.append(("qty", Decimal(1) * scale, got, tok_idx,
                            tok_idx + 1))
         pos += 1

@@ -181,6 +181,20 @@ function singularUnit(word) {
   return map[lower] || lower;
 }
 
+function parseAmountOption(text) {
+  // QTY_WORD_MISMATCH options read "¼ kg" / "1 kg" (see checks.py) but
+  // the per-amount input needs the plain number.
+  const head = String(text || "").trim().split(/\s+/)[0] || "";
+  const vulgar = { "¼": "0.25", "½": "0.5", "¾": "0.75" };
+  if (Object.prototype.hasOwnProperty.call(vulgar, head)) {
+    return vulgar[head];
+  }
+  if (/^\d+(?:\.\d+)?$/.test(head)) {
+    return head;
+  }
+  return null;
+}
+
 function parseLineOption(text) {
   // "Rs.20 for 5 pieces" or "Rs.5 per kg" (see checks._describe_line).
   // "per <unit>" implies a per-amount of 1 but also matches a blank one.
@@ -613,10 +627,17 @@ document.addEventListener("DOMContentLoaded", () => {
         `input[data-item="${button.dataset.item}"][data-field="${field}"],` +
         ` select[data-item="${button.dataset.item}"][data-field="${field}"]`);
       if (input) {
-        input.value = button.dataset.value;
+        let value = button.dataset.value;
+        if (field === "per_amount" || field === "qty") {
+          const parsed = parseAmountOption(value);
+          if (parsed !== null) {
+            value = parsed;
+          }
+        }
+        input.value = value;
         // Choosing an offered option is the confirmation, not a manual
         // edit: align the baseline so the edit note stays hidden.
-        input.dataset.original = button.dataset.value;
+        input.dataset.original = value;
       }
       if (group.dataset.flag === "TWO_PRICES") {
         keepChosenLine(button.closest(".card"));

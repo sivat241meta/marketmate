@@ -34,6 +34,7 @@ from app.pipeline.names import (
     alias_hit_in_text,
     canonical_local_name,
     collapse_repeated_runs,
+    find_items_in_text,
     find_name_in_text,
     is_word_char,
     normalize_qualifier,
@@ -387,6 +388,21 @@ def _alias_var_wins(alias_var: str, model_variety: str) -> bool:
     return mapped is None or mapped == alias_var
 
 
+def _plain_poosani_without_yellow(*texts: str) -> bool:
+    """True when the texts name plain poosani but never yellow pumpkin.
+
+    Plain பூசணி/பூசணிக்காய்/poosani is ash gourd (white pumpkin) in
+    Tamil Nadu markets; yellow pumpkin is மஞ்சள் பூசணி, parangi or
+    பரங்கிக்காய். Whole-word glossary matching, so தர்பூசணி
+    (watermelon) never counts as poosani and மஞ்சள் பூசணி reads as
+    pumpkin, never ash gourd.
+    """
+    heard: set[str] = set()
+    for text in texts:
+        heard.update(name for _, name in find_items_in_text(text or ""))
+    return "ash gourd" in heard and "pumpkin" not in heard
+
+
 def apply_spoken_name(item, *, language: str = "ta") -> bool:
     """Re-derive one draft item's names from its spoken span.
 
@@ -400,12 +416,22 @@ def apply_spoken_name(item, *, language: str = "ta") -> bool:
     model_base = (item.name_en or "").strip().lower()
     span = (getattr(item.proof, "quote", "") or "").strip()
     name_spoken = (item.name_spoken or "").strip()
+    poosani_fixed = False
+    if (model_base == "pumpkin" and _plain_poosani_without_yellow(
+            item.name_local, span, name_spoken)):
+        # Task 160: the model called plain பூசணி "pumpkin"; it is ash
+        # gourd. A naming fix only; the rest of this pass then runs
+        # against the corrected base.
+        item.name_en = "ash gourd"
+        item.match_key = "ash gourd"
+        model_base = "ash gourd"
+        poosani_fixed = True
     if not span and not name_spoken:
-        return False
+        return poosani_fixed
     spoken, _, _ = _derive_from(span or name_spoken, model_base,
                                 name_spoken or None)
     if not spoken:
-        return False
+        return poosani_fixed
     direct = _direct_base(spoken)
     alias = alias_hit_in_text(spoken)
     if (direct is not None and direct != model_base
@@ -420,9 +446,9 @@ def apply_spoken_name(item, *, language: str = "ta") -> bool:
                 claimed_variety, model_base, span or name_spoken):
             item.variety = None
             return True
-        return False
+        return poosani_fixed
     if direct is None and alias is not None and alias[0] != model_base:
-        return False
+        return poosani_fixed
     final_base = direct if direct is not None else model_base
     base_changed = direct is not None and direct != model_base
     model_variety = (item.variety or "").strip()
@@ -460,7 +486,7 @@ def apply_spoken_name(item, *, language: str = "ta") -> bool:
             and (base_changed or new_variety is not None or model_garbled)):
         item.name_local = spoken
         changed = True
-    return changed
+    return changed or poosani_fixed
 
 
 def apply_spoken_names(items: list, *, language: str = "ta") -> int:

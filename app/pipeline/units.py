@@ -138,7 +138,11 @@ _KILO_WORDS = {"kilo", "kilos", "kilogram", "kilograms", "kg", "கிலோ"}
 
 
 def parse_amount(said: str) -> tuple[Decimal, str] | None:
-    """Parse e.g. "kaal kilo", "1 kilo", "oru kattu" into (amount, unit)."""
+    """Parse e.g. "kaal kilo", "1 kilo", "oru kattu" into (amount, unit).
+
+    A stuttered unit word ("kilo kilo", "கிலோ கிலோ") counts once, so
+    "kaal kilo kilo" is still a quarter kilo.
+    """
     words = [w for w in _words(said) if w]
     kilo_said = any(w in _KILO_WORDS for w in words)
     if "kaal" in words or "கால்" in words or ("quarter" in words and kilo_said):
@@ -149,8 +153,13 @@ def parse_amount(said: str) -> tuple[Decimal, str] | None:
     number_words: list[str] = []
     for w in words:
         found = normalise_unit(w)
-        if found is not None and unit is None:
-            unit = found
+        if found is not None:
+            if unit is None:
+                unit = found
+            elif found == unit:
+                continue
+            else:
+                number_words.append(w)
         else:
             number_words.append(w)
     if unit is None:

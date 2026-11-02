@@ -75,7 +75,13 @@ class PricePhrase(NamedTuple):
 
 
 def _tokens(text: str) -> list[dict]:
-    """Whitespace tokens with stripped words and char offsets."""
+    """Whitespace tokens with stripped words and char offsets.
+
+    A stuttered unit word ("கிலோ கிலோ") counts once: the repeat is
+    dropped so a fraction before it ("கால் கிலோ கிலோ") stays inside
+    the price's anchor window. The kept token's end extends over the
+    repeat so the quoted phrase stays word for word.
+    """
     found: list[dict] = []
     for match in _TOKEN_RE.finditer(text or ""):
         start, end = match.start(), match.end()
@@ -86,7 +92,13 @@ def _tokens(text: str) -> list[dict]:
         word = text[start:end]
         if not word:
             continue
-        found.append({"word": word, "lower": word.lower(),
+        lower = word.lower()
+        if found and lower in _UNIT_WORDS:
+            prev = found[-1]["lower"]
+            if prev in _UNIT_WORDS and _UNIT_WORDS[prev] == _UNIT_WORDS[lower]:
+                found[-1]["end"] = end
+                continue
+        found.append({"word": word, "lower": lower,
                       "start": start, "end": end})
     return found
 

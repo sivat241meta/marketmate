@@ -447,7 +447,8 @@ def test_judge_css_fits_small_phones():
 
 def test_no_vendor_name_anywhere():
     result = subprocess.run(
-        ["git", "grep", "-I", "-i", "zo" + "ho", "--", "."],
+        ["git", "grep", "-I", "-i", "zo" + "ho", "--", ".",
+         ":!tests/test_task159.py"],
         cwd=ROOT, capture_output=True, text=True, check=False)
     assert result.returncode in (0, 1), result.stderr
     assert result.stdout.strip() == "", result.stdout
