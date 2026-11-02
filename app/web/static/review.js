@@ -5,8 +5,10 @@
    On QTY_AS_PRICE / MULTI_PRICE_UNCLEAR the tapped option ("Rs.20 for
    5 pieces") keeps its line and drops the other lines the same way.
    On MISSED_PRICE the "Remove" tap drops the whole card and its index
-   rides along as `removed`, so the server drops the same stored draft.
-   Approve posts the edited cards as JSON.
+   rides along as `removed`, so the server drops the same stored draft,
+   while picking a name renames the card's h2 for real (there is no
+   name input) so collectCards sends the chosen name; the tick stays
+   required. Approve posts the edited cards as JSON.
    Option buttons carry data-target-field (never data-field) so input queries
    below only ever match real inputs and selects. */
 
@@ -118,6 +120,28 @@ function removeMissedCard(form, card) {
     card.remove();
   }
   updateApprove(form);
+}
+
+function applyMissedName(card, button) {
+  // A MISSED_PRICE name pick renames the card for real: the h2 holds
+  // the card's names for collectCards (there is no name input), so
+  // the glossary names ride on the button as data-name-local/en.
+  if (!card || !button) {
+    return;
+  }
+  const en = button.dataset.nameEn || button.dataset.value || "";
+  const local = button.dataset.nameLocal || button.dataset.value || "";
+  card.querySelectorAll(".name-local").forEach((node) => {
+    node.textContent = local;
+  });
+  card.querySelectorAll(".name-en").forEach((node) => {
+    node.textContent = en;
+  });
+  card.dataset.renamed = "1";
+  const mark = card.querySelector("[data-renamed-mark]");
+  if (mark) {
+    mark.hidden = false;
+  }
 }
 
 function lineKey(wrap) {
@@ -622,6 +646,9 @@ document.addEventListener("DOMContentLoaded", () => {
         other.classList.remove("chosen");
       });
       button.classList.add("chosen");
+      if (group && group.dataset.flag === "MISSED_PRICE") {
+        applyMissedName(card, button);
+      }
       const field = button.dataset.targetField || "price";
       const input = form.querySelector(
         `input[data-item="${button.dataset.item}"][data-field="${field}"],` +

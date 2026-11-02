@@ -39,7 +39,7 @@
         <h3 class="question">{{ t_flag(flag) }}</h3>
         <div class="choice">
           {% for option in flag.options %}
-          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% elif option == "Remove" %}{{ t('review.remove') }}{% else %}{{ option }}{% endif %}</button>
+          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}"{% if flag.code == "MISSED_PRICE" and option != "Remove" %} data-name-local="{{ card.missed_names.get(option, option) }}" data-name-en="{{ option }}"{% endif %}>{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% elif option == "Remove" %}{{ t('review.remove') }}{% else %}{{ option }}{% endif %}</button>
           {% endfor %}
         </div>
         {% if card.board_only and flag.code == "BOARD_CONFIRM" %}
@@ -141,7 +141,7 @@
         <h3 class="question">{{ t_flag(flag) }}</h3>
         <div class="choice">
           {% for option in flag.options %}
-          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}">{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% elif option == "Remove" %}{{ t('review.remove') }}{% else %}{{ option }}{% endif %}</button>
+          <button type="button" class="opt-btn" data-item="{{ card.index }}" data-flag="{{ flag.code }}" data-target-field="{{ flag.field }}" data-value="{{ option }}"{% if flag.code == "MISSED_PRICE" and option != "Remove" %} data-name-local="{{ card.missed_names.get(option, option) }}" data-name-en="{{ option }}"{% endif %}>{% if flag.field == "price" %}{{ option | money(shop["currency"]) }}{% elif option == "Remove" %}{{ t('review.remove') }}{% else %}{{ option }}{% endif %}</button>
           {% endfor %}
         </div>
         {% if card.board_only and flag.code == "BOARD_CONFIRM" %}

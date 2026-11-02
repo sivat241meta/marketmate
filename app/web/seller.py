@@ -58,6 +58,8 @@ from app.pipeline.media import extract_audio
 from app.pipeline.names import (
     CANONICAL_NAMES,
     QUALIFIER_VARIETIES,
+    alias_hit_in_text,
+    canonical_local_name,
     display_name_en,
     english_title,
     keywords_for,
@@ -268,6 +270,101 @@ def _draft_from_client(raw: dict, stored=None):
         if line.per_amount is None and line.unit:
             line.per_amount = Decimal(1)
     return item
+
+
+#: Mannur variety words, mirroring app.pipeline.extract._MANNUR_WORDS.
+_MISSED_MANNUR_WORDS = ("மன்னூர்", "mannur")
+
+
+def _missed_span_variety(span: str, base: str) -> str | None:
+    """Variety heard in a renamed MISSED span for ``base``, if any.
+
+    Mannur beans keep their origin variety; any other known
+    variety nickname counts only when it names the same item.
+    """
+    text = span or ""
+    if base == "beans" and any(
+            word in text.lower() if word.isascii() else word in text
+            for word in _MISSED_MANNUR_WORDS):
+        return "mannur"
+    hit = alias_hit_in_text(text)
+    if hit is not None and hit[0] == base:
+        return hit[1]
+    return None
+
+
+def _merge_named_missed(items, stores):
+    """Fold renamed MISSED_PRICE items into same-named items.
+
+    A MISSED_PRICE card the seller named to a name another card
+    already carries joins that card as extra price lines: prices are
+    never touched, the span's variety fills an empty target variety,
+    and the proofs join so both spans' words and turns stay. A picked
+    name with no match stays its own item. The target keeps its names,
+    flags, photo, match key and confirm state. Returns (items,
+    stores) with the folded pairs dropped.
+    """
+    named = []
+    for pos, item in enumerate(items):
+        stored = stores[pos] if pos < len(stores) else None
+        if stored is None:
+            continue
+        if not any(flag.code == "MISSED_PRICE" for flag in stored.flags):
+            continue
+        base = (item.name_en or "").strip().lower()
+        if not base or base == "other":
+            continue
+        named.append(pos)
+    dropped = set()
+    for pos in named:
+        if pos in dropped:
+            continue
+        item = items[pos]
+        base = (item.name_en or "").strip().lower()
+        target = None
+        for cand, other in enumerate(items):
+            if cand == pos or cand in dropped:
+                continue
+            if (other.name_en or "").strip().lower() == base:
+                target = cand
+                break
+        if target is None:
+            continue
+        other = items[target]
+        other.price_lines.extend(item.price_lines)
+        if not (other.variety or "").strip():
+            if (item.variety or "").strip():
+                other.variety = item.variety
+            else:
+                heard = _missed_span_variety(
+                    item.proof.quote if item.proof else "", base)
+                if heard:
+                    other.variety = heard
+        if item.proof is not None and other.proof is not None:
+            span = (item.proof.quote or "").strip()
+            if span:
+                if (other.proof.quote or "").strip():
+                    other.proof.quote = f"{other.proof.quote} {span}"
+                else:
+                    other.proof.quote = span
+            for turn_id in item.proof.turn_ids or []:
+                if turn_id not in other.proof.turn_ids:
+                    other.proof.turn_ids.append(turn_id)
+            other.proof.start_ms = min(other.proof.start_ms,
+                                       item.proof.start_ms)
+            other.proof.end_ms = max(other.proof.end_ms, item.proof.end_ms)
+            if not other.proof.audio_clip and item.proof.audio_clip:
+                other.proof.audio_clip = item.proof.audio_clip
+            if not other.proof.frame and item.proof.frame:
+                other.proof.frame = item.proof.frame
+        dropped.add(pos)
+    if not dropped:
+        return items, stores
+    kept_items = [item for pos, item in enumerate(items)
+                  if pos not in dropped]
+    kept_stores = [stored for pos, stored in enumerate(stores)
+                   if pos not in dropped]
+    return kept_items, kept_stores
 
 
 def _board_flags(item):
@@ -571,10 +668,21 @@ def _review_cards_context(conn, shop, token: str, session_id: int,
             "source": item.proof.source,
         }
         is_board = item.proof.source == "board_photo"
+        missed_names = {}
+        for miss_flag in item.flags:
+            if miss_flag.code != "MISSED_PRICE":
+                continue
+            for option in miss_flag.options or []:
+                if option == "Remove" or option in missed_names:
+                    continue
+                missed_names[option] = (
+                    canonical_local_name(option, shop["language"] or "en")
+                    or option)
         cards.append(
             {
                 "index": index,
                 "item": item,
+                "missed_names": missed_names,
                 "title_local": local_title(
                     item.name_local, item.variety, item.name_en,
                     shop["language"] or "en"),
@@ -1972,8 +2080,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         )
 
         items = []
+        stores: list = []
         for index, raw in enumerate(raw_items):
             stored = saved_drafts[index] if index < len(saved_drafts) else None
+            stores.append(stored)
             item = _draft_from_client(raw, stored)
             if stored is not None and (
                     item.name_local != stored.name_local
@@ -2030,6 +2140,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
                 detail = t_for(ui_lang)("review.missed_pick_name")
                 raise db.ApprovalError(detail, needs_confirm=unnamed)
+            items, stores = _merge_named_missed(items, stores)
             version_id = db.approve(conn, session_id, items,
                                     carried_ids=carried_ids)
         except db.ApprovalError as exc:
@@ -2045,8 +2156,13 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         except Exception:  # noqa: BLE001 - audit is best effort
             new_items = []
         for index, item in enumerate(items):
-            stored = saved_drafts[index] if index < len(saved_drafts) else None
+            stored = stores[index] if index < len(stores) else None
             if stored is None:
+                continue
+            if any(flag.code == "MISSED_PRICE" for flag in stored.flags):
+                # A picked name for a heard-but-unassigned price is not a
+                # rename; its match key ("other") must never gain a
+                # chosen name that later MISSED items would inherit.
                 continue
             if (item.name_local == stored.name_local
                     and item.name_en == stored.name_en
