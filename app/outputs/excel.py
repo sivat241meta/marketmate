@@ -1,4 +1,4 @@
-"""Sales Excel export (.xlsx) via openpyxl: Bills, Lines, Items, Summary."""
+"""Excel exports (.xlsx) via openpyxl: sales workbook + price-list sheet."""
 
 from __future__ import annotations
 
@@ -18,8 +18,18 @@ SUMMARY_HEADER = ["Date", "Bills", "Sales", "Cash", "UPI", "Card", "Unpaid",
 
 _MONEY_FMT = "0.00"
 
-__all__ = ["BILLS_HEADER", "ITEMS_HEADER", "LINES_HEADER", "SUMMARY_HEADER",
-           "sales_workbook"]
+PRICELIST_HEADER = ["Item code", "Item (English)", "Item (local)",
+                    "Unit", "Per", "Price", "Sold out"]
+
+__all__ = [
+    "BILLS_HEADER",
+    "ITEMS_HEADER",
+    "LINES_HEADER",
+    "PRICELIST_HEADER",
+    "SUMMARY_HEADER",
+    "pricelist_workbook",
+    "sales_workbook",
+]
 
 
 def _decimal(value, default="0.00") -> Decimal:
@@ -281,6 +291,53 @@ def sales_workbook(conn: sqlite3.Connection, shop, start: str,
         for index, width in enumerate(widths[ws.title], start=1):
             ws.column_dimensions[get_column_letter(index)].width = width
 
+    buf = io.BytesIO()
+    book.save(buf)
+    return buf.getvalue()
+
+
+def pricelist_workbook(conn: sqlite3.Connection, shop) -> bytes:
+    """Today's published price list as a one-sheet Excel workbook."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+
+    from app import db as _db
+    from app.dayclose import item_code
+    from app.pipeline.names import english_title, qualified_name
+
+    book = Workbook()
+    ws = book.active
+    ws.title = "Pricelist"
+    ws.append(PRICELIST_HEADER)
+    for cell in ws[1]:
+        _style_header(cell)
+    ws.freeze_panes = "A2"
+
+    version_id = _db.latest_version(conn, shop["id"], published_only=True)
+    items = _db.version_items(conn, version_id) if version_id else []
+    for item in items:
+        line = next((ln for ln in item.price_lines
+                     if ln.price is not None), None)
+        if line is None:
+            continue
+        variety = (item.variety or "").strip() or None
+        item_name = (english_title(item.name_en, variety) if variety
+                     else item.name_en)
+        row_no = ws.max_row + 1
+        ws.cell(row=row_no, column=1,
+                value=item_code(qualified_name(item.name_en, variety)))
+        ws.cell(row=row_no, column=2, value=item_name)
+        ws.cell(row=row_no, column=3, value=item.name_local or "")
+        ws.cell(row=row_no, column=4, value=line.unit or "")
+        _number(ws.cell(row=row_no, column=5),
+                _decimal(line.per_amount, "0") if line.per_amount is not None
+                else None)
+        _money(ws.cell(row=row_no, column=6), line.price)
+        ws.cell(row=row_no, column=7,
+                value="TRUE" if item.sold_out else "FALSE")
+
+    for index, width in enumerate([16, 20, 20, 8, 8, 12, 10], start=1):
+        ws.column_dimensions[get_column_letter(index)].width = width
     buf = io.BytesIO()
     book.save(buf)
     return buf.getvalue()

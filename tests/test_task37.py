@@ -6,11 +6,18 @@ import sqlite3
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 QUOTE = "t37 secret quote"
 CLIP = "/tmp/clips/t37.m4a"

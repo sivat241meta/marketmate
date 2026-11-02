@@ -36,7 +36,7 @@
   </div>
   <div class="hero-cta">
     <a class="pill ghost big" href="/e/{{ token }}/v/{{ version_id }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>
-    <a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>
+    {% if show_extras_now is not defined or show_extras_now() %}<a class="pill ghost big" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>{% endif %}
   </div>
 </section>
 <p class="back-link"><a href="/e/{{ token }}">{{ t('error.back_home') }}</a></p>

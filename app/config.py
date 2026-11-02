@@ -26,6 +26,7 @@ class Settings:
     uploads_per_hour: int
     max_upload_bytes: int = 512 * 1024 * 1024
     sample_shops: bool = True
+    show_extras: bool = False
 
 
 def sample_shops_enabled(settings=None) -> bool:
@@ -33,6 +34,14 @@ def sample_shops_enabled(settings=None) -> bool:
     if settings is not None and not getattr(settings, "sample_shops", True):
         return False
     return os.environ.get("SAMPLE_SHOPS", "").strip() != "0"
+
+
+def show_extras_enabled(settings=None) -> bool:
+    """True when rare extras are visible (SHOW_EXTRAS=1, default off)."""
+    if settings is not None and bool(getattr(settings, "show_extras", False)):
+        return True
+    return os.environ.get("SHOW_EXTRAS", "").strip().lower() in (
+        "1", "true", "yes", "on")
 
 
 def _get(env: Mapping[str, str], key: str, default: str) -> str:
@@ -97,6 +106,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     sample_shops = _get(env, "SAMPLE_SHOPS", "1").strip().lower() not in (
         "0", "false", "no", "off")
 
+    show_extras = _get(env, "SHOW_EXTRAS", "0").strip().lower() in (
+        "1", "true", "yes", "on")
+
     return Settings(
         model_api_key=model_api_key,
         baseten_api_key=baseten_api_key,
@@ -109,4 +121,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         uploads_per_hour=uploads_per_hour,
         max_upload_bytes=max_upload_bytes,
         sample_shops=sample_shops,
+        show_extras=show_extras,
     )

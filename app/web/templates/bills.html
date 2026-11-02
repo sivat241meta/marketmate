@@ -10,6 +10,17 @@
     <p class="page-sub muted">{{ t('bills.sub', shop=shop["name"]) }}</p>
   </div>
 </div>
+{% if show_extras_now is defined and not show_extras_now() %}
+<nav class="chips tabs" aria-label="{{ t('bills.subnav_aria') }}">
+  <a class="chip on" href="/e/{{ token }}/bills" aria-current="page">{{ t('nav.bills') }}</a>
+  {% if not is_staff|default(false) or can_credit|default(false) %}
+  <a class="chip" href="/e/{{ token }}/credit">{{ t('nav.credit') }}</a>
+  {% endif %}
+  {% if not is_staff|default(false) %}
+  <a class="chip" href="/e/{{ token }}/close">{{ t('nav.close') }}</a>
+  {% endif %}
+</nav>
+{% endif %}
 <nav class="chips" aria-label="{{ t('bills.date_aria') }}">
   <a class="chip{% if range == "today" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=today&amp;status={{ status }}">{{ t('bills.today') }}</a>
   <a class="chip{% if range == "yesterday" %} is-active{% endif %}" href="/e/{{ token }}/bills?range=yesterday&amp;status={{ status }}">{{ t('bills.yesterday') }}</a>
@@ -158,8 +169,10 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
     <p>
       <button class="pill ghost" type="submit">{{ t('bills.excel') }}</button>
+      {% if show_extras_now is not defined or show_extras_now() %}
       <button class="pill ghost" type="submit" formaction="/e/{{ token }}/exports/pos.csv">{{ t('bills.pos_csv') }}</button>
       <a class="pill ghost" href="/e/{{ token }}/exports/pricelist.csv">{{ t('bills.pricelist_csv') }}</a>
+      {% endif %}
     </p>
   </form>
 {% endcall %}

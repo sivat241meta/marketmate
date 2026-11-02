@@ -3,12 +3,19 @@
 import json
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
 from app.web.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 
 def _clean_item(**over):

@@ -109,6 +109,9 @@
 {% endcall %}
 {% if items %}
 <h2>{{ t('upd.current_prices') }}</h2>
+{% if show_extras_now is defined and not show_extras_now() %}
+<p><a class="pill ghost" href="/e/{{ token }}/exports/pricelist.xlsx">{{ ui.icon("download") }}{{ t('bills.download_excel') }}</a></p>
+{% endif %}
 {% for item in items %}
 <div class="list-row">
   <div class="list-main">

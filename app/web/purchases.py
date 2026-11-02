@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import db, jobs
+from app.config import show_extras_enabled
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
     IST,
@@ -177,6 +178,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/purchases")
     def purchases_page(request: Request, token: str, conn: Conn,
                        saved: str | None = None):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -187,6 +190,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/purchases/voice")
     def purchases_voice(request: Request, token: str, audio: UploadFile,
                         conn: Conn, speak_lang: str = Form("")):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -235,6 +240,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/purchases/{session_id}")
     def purchase_review(request: Request, token: str, session_id: int,
                         conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -267,6 +274,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/purchases/{session_id}/confirm")
     async def purchase_confirm(request: Request, token: str, session_id: int):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         from app import purchases as pur
 
         conn = db.connect(data_dir)
@@ -311,6 +320,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/purchases/add")
     async def purchases_add(request: Request, token: str):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         from app import purchases as pur
         from app.pipeline.names import CANONICAL_NAMES
 

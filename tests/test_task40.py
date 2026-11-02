@@ -5,11 +5,18 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, Flag, PriceLine, Proof
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 
 def _client(tmp_path):

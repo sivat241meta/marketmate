@@ -8,24 +8,14 @@ Street and market sellers change prices daily and say them out loud. They do not
 
 ## What it does
 
-The core story: the seller films the stall or speaks today's prices, checks the proof-backed list, and publishes — a shop page, a WhatsApp price message and a printed price board. Customers compare shops and order by voice.
+Not a ledger app: MarketMate turns a market stall's spoken prices into a proof-checked public price list that customers can compare and order from.
 
-Seller:
+1. The seller films the stall or speaks today's prices — a stall video, a voice note, a board photo, or live mode — and Muse Voice + Muse Spark + SAM 3.1 build a proof-checked list. A check page keeps every price's voice-clip proof; the seller taps unclear ones, then approves. Edit names on the check page or later; names are remembered for the next list and for billing. Square item photos: each item is found in the video — sam-3.1 finds its box, and we keep a square original crop from the seller's own video. Whole objects only (a shape test rejects half fruit), cross-checked against the other items and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
+2. Approve publishes a version: a WhatsApp catalog message, a shop page with product tiles and today's prices, and a printed price board PDF.
+3. Customers compare shops and order by voice, text or photo. Marketplace homepage: hero search, top picks, markets, new shops, and an area chooser. Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in MarketMate's Find a shop", on for new shops, switch in Settings). The market page has an honest empty state. "My orders" shows status; the seller marks orders packing/ready.
+4. The same list runs the seller's whole day: voice and typed billing with UPI QR, an orders board, the credit (udhaar) book with WhatsApp reminders, a day close with wastage and a summary PDF, and an Excel sheet.
 
-- Morning prices from a stall video, a voice note, a board photo, or live mode.
-- A check page where every price keeps its voice-clip proof. The seller taps unclear ones, then approves.
-- Approve publishes a version: shop page, WhatsApp price message, price board PDF, shelf tags, CSV and Excel.
-- Edit names on the check page or later. Names are remembered for the next list and for billing.
-- Square item photos: each item is found in the video — sam-3.1 finds its box, and we keep a square original crop from the seller's own video. Whole objects only (a shape test rejects half fruit), cross-checked against the other items and verified by one vision call. If SAM misses the item noun, one fallback re-query with the category noun ("fruit"/"vegetable"/"produce") goes through the same verification. No photo is better than a wrong photo.
-
-Customer:
-
-- Marketplace homepage: hero search, top picks, markets, new shops, and an area chooser.
-- Shop page with product tiles and today's prices.
-- Order by voice, text or photo. "My orders" shows status.
-- Find a shop: search, open-now chips, and near-me distance computed on the phone. Sellers choose to join ("Show my shop in MarketMate's Find a shop", on for new shops, switch in Settings). The market page has an honest empty state.
-
-Also built: voice and typed billing with UPI QR, credit (udhaar) with WhatsApp reminders, an orders board, and a day close with wastage and a summary PDF.
+Also built (off by default, SHOW_EXTRAS=1): purchases, stock photo counts, helpers, POS CSV, shelf tags.
 
 Example of the printed board (demo data): [docs/img/board.png](docs/img/board.png).
 
@@ -90,7 +80,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-1999 tests pass. `.venv/bin/ruff check .` is clean.
+2013 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Sample shops
 

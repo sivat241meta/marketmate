@@ -15,12 +15,19 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from test_task64 import BILL_HOOKS, BILLS_NEW_HOOKS, LIVE_HOOKS, REVIEW_HOOKS, SHOP_HOOKS
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 ROOT = Path(__file__).resolve().parent.parent
 ICONS_DIR = ROOT / "app" / "web" / "static" / "icons" / "fluent"

@@ -141,7 +141,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.middleware("http")
     async def _shell_announcement(request: Request, call_next):
+        from app.config import show_extras_enabled as _show_extras
+
         request.state.shell_ann = None
+        request.state.show_extras = _show_extras(app.state.settings)
         if request.method == "GET":
             request.state.shell_ann = shell_data.ann_for_path(
                 data_dir, request.url.path)
@@ -195,6 +198,13 @@ def create_app(settings: Settings) -> FastAPI:
             conn.close()
 
     templates.env.globals["footer_places"] = _footer_places
+
+    def _show_extras_now():
+        from app.config import show_extras_enabled as _enabled
+
+        return _enabled(app.state.settings)
+
+    templates.env.globals["show_extras_now"] = _show_extras_now
     app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)

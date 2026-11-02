@@ -8,11 +8,18 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from urllib.parse import quote as url_quote
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 QUOTE = "t41 tomato secret"
 

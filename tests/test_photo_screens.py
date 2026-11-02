@@ -4,6 +4,7 @@ import io
 import json
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -15,6 +16,12 @@ from app.models import Box, DraftItem, Item, PriceLine, Proof
 from app.outputs.value import stock_value
 from app.pipeline.vision import DetectedProduct, PhotoReport, Suggestion
 from app.web.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 
 def jpeg_bytes(size=(64, 48), color="red"):

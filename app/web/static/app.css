@@ -4336,8 +4336,16 @@ body.mm-locked { overflow: hidden; }
     min-width: 44px;
     min-height: 44px;
   }
+  /* Task 154: "All orders" link gets a 44px tap area on phones. */
+  .grp-more .hp-more {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
   /* No text below 12px on phones (badges + laptop rails excluded). */
   .land-photo figcaption { font-size: 12px; }
+  /* Task 154: seller header status pill text floors at 12px. */
+  body.is-seller .hdr .seller-status { font-size: 12px; }
   /* iOS focuses zoom when inputs are under 16px: floor every form
      control at 16px on phones without shrinking larger text. */
   input, select, textarea { font-size: max(16px, 1em); }

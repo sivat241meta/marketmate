@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app import db
+from app.config import show_extras_enabled
 from app.costs import IST
 from app.dayclose import (
     day_tiles,
@@ -23,7 +24,7 @@ from app.dayclose import (
     whatsapp_summary,
 )
 from app.outputs.day_pdf import day_summary_pdf
-from app.outputs.excel import sales_workbook
+from app.outputs.excel import pricelist_workbook, sales_workbook
 from app.outputs.money import format_money
 from app.outputs.pos_csv import pos_csv, pricelist_csv
 from app.pipeline.names import qualified_name
@@ -312,6 +313,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/exports/pos.csv")
     def exports_pos(request: Request, token: str, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -325,6 +328,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/exports/pricelist.csv")
     def exports_pricelist(request: Request, token: str, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -333,3 +338,16 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             data, media_type="text/csv",
             headers={"Content-Disposition":
                      'attachment; filename="pricelist.csv"'})
+
+    @app.get("/e/{token}/exports/pricelist.xlsx")
+    def exports_pricelist_xlsx(request: Request, token: str, conn: Conn):
+        shop, denied = _owner_page(request, conn, token)
+        if denied is not None:
+            return denied
+        data = pricelist_workbook(conn, shop)
+        return Response(
+            data,
+            media_type="application/vnd.openxmlformats-officedocument"
+                       ".spreadsheetml.sheet",
+            headers={"Content-Disposition":
+                     'attachment; filename="pricelist.xlsx"'})

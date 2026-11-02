@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
@@ -18,6 +19,12 @@ from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
 from app.pipeline.names import CANONICAL_NAMES
 from app.web.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "app" / "web" / "templates"

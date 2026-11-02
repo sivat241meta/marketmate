@@ -13,12 +13,19 @@ import subprocess
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from jinja2 import Environment, FileSystemLoader
 
 from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "app" / "web" / "templates"

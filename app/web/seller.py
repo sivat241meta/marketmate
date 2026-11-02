@@ -26,6 +26,7 @@ from app.config import (
     SPARK_OPEN_MODEL,
     VOICE_MODEL,
     sample_shops_enabled,
+    show_extras_enabled,
 )
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
@@ -1121,6 +1122,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/tags.pdf")
     def shop_tags(request: Request, token: str, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -1137,6 +1140,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/v/{version_id}/export.csv")
     def version_csv(request: Request, token: str, version_id: int, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         _shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -1147,6 +1152,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.get("/e/{token}/link-card.pdf")
     def link_card(request: Request, token: str, conn: Conn):
         """Printable "Keep this safe" card with the seller link QR."""
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         from app.outputs.link_card import link_card_pdf
 
         shop, denied = _owner_page(request, conn, token)

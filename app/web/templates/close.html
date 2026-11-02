@@ -20,6 +20,13 @@
   </div>
 </div>
 
+{% if show_extras_now is defined and not show_extras_now() %}
+<nav class="chips tabs" aria-label="{{ t('bills.subnav_aria') }}">
+  <a class="chip" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
+  <a class="chip" href="/e/{{ token }}/credit">{{ t('nav.credit') }}</a>
+  <a class="chip on" href="/e/{{ token }}/close" aria-current="page">{{ t('nav.close') }}</a>
+</nav>
+{% endif %}
 {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
 {% if request.query_params.get("saved") == "1" %}{{ ui.toast(t('v10.saved')) }}{% endif %}
 
@@ -82,6 +89,9 @@
 <div class="hero-cta close-cta">
   <a class="pill ghost" href="{{ whatsapp_url }}">{{ ui.obj("chat", 20) }}{{ t('close.wa_send') }}</a>
   <a class="pill ghost" href="/e/{{ token }}/close.pdf?date={{ day }}">{{ ui.obj("printer", 20) }}{{ t('close.print_pdf') }}</a>
+  {% if show_extras_now is defined and not show_extras_now() %}
+  <a class="pill ghost" href="/e/{{ token }}/exports/sales.xlsx?range=custom&amp;from={{ day }}&amp;to={{ day }}">{{ ui.icon("download") }}{{ t('bills.download_excel') }}</a>
+  {% endif %}
 </div>
 
 <section class="ssec" aria-label="{{ t('bills.exports') }}">
@@ -107,8 +117,10 @@
     </div>
     <p>
       <button class="pill ghost" type="submit">{{ t('bills.excel') }}</button>
+      {% if show_extras_now is not defined or show_extras_now() %}
       <button class="pill ghost" type="submit" formaction="/e/{{ token }}/exports/pos.csv">{{ t('bills.pos_csv') }}</button>
       <a class="pill ghost" href="/e/{{ token }}/exports/pricelist.csv">{{ t('bills.pricelist_csv') }}</a>
+      {% endif %}
     </p>
   </form>
 {% endcall %}

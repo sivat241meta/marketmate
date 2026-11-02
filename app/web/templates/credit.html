@@ -10,6 +10,15 @@
     {% else %}<h1 class="page-title">{{ t('credit.sub', shop=shop["name"]) }}</h1>{% endif %}
   </div>
 </div>
+{% if show_extras_now is defined and not show_extras_now() %}
+<nav class="chips tabs" aria-label="{{ t('bills.subnav_aria') }}">
+  <a class="chip" href="/e/{{ token }}/bills">{{ t('nav.bills') }}</a>
+  <a class="chip on" href="/e/{{ token }}/credit" aria-current="page">{{ t('nav.credit') }}</a>
+  {% if not is_staff|default(false) %}
+  <a class="chip" href="/e/{{ token }}/close">{{ t('nav.close') }}</a>
+  {% endif %}
+</nav>
+{% endif %}
 {% if entries %}
 <section class="ssec" aria-label="{{ t('credit.heading') }}">
 <div class="grp">

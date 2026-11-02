@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from PIL import Image, ImageOps
 
 from app import db
+from app.config import show_extras_enabled
 from app.languages import LANGUAGES, all_currencies
 from app.market.hours import (
     has_hours,
@@ -187,11 +188,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             if denied is not None:
                 return denied
             form = await request.form()
+            extras_on = show_extras_enabled(app.state.settings)
             name = str(form.get("name") or "").strip()
             area = str(form.get("area") or "").strip()
             phone = _clean_phone(str(form.get("phone") or ""))
             language = str(form.get("language") or "").strip()
-            currency = str(form.get("currency") or "").strip().upper()
+            if extras_on:
+                currency = str(form.get("currency") or "").strip().upper()
+            else:
+                currency = (shop["currency"] or "INR").upper()
             shop_type = str(form.get("type") or "").strip()
             upi_payee_raw = str(form.get("upi_payee") or "").strip()
             error = error_field = None
@@ -272,11 +277,15 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             fresh, seller_url),
                         **_hours_context(fresh),
                     }, status_code=400)
+            if extras_on:
+                round_bills = "round_bills" in form
+            else:
+                round_bills = db.shop_rounding_enabled(shop)
             db.update_shop_settings(
                 conn, shop["id"], name=name, area=area, phone=phone,
                 language=language, currency=currency, shop_type=shop_type,
                 upi_id=upi_id, upi_payee=(upi_payee_raw or None),
-                round_bills=("round_bills" in form),
+                round_bills=round_bills,
                 hours_json=(parsed_hours if parsed_hours
                             else db._UNCHANGED),
                 pincode=pincode, lat=lat, lng=lng, listed=listed)
@@ -310,6 +319,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/settings/helpers")
     async def helper_add(request: Request, token: str):
         """Create a billing-only helper; the link + QR show once."""
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         conn = db.connect(data_dir)
         try:
             shop, denied = _owner_page(request, conn, token)
@@ -333,6 +344,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/settings/helpers/{helper_id}/credit")
     async def helper_credit(request: Request, token: str, helper_id: int):
         """Grant or revoke one helper's credit permission (default off)."""
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         conn = db.connect(data_dir)
         try:
             shop, denied = _owner_page(request, conn, token)
@@ -358,6 +371,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.post("/e/{token}/settings/helpers/{helper_id}/remove")
     async def helper_remove(request: Request, token: str, helper_id: int):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         conn = db.connect(data_dir)
         try:
             shop, denied = _owner_page(request, conn, token)

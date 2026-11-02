@@ -34,6 +34,7 @@
   {% call ui.form_card(t('set.payments'), t('set.payments_sub'), cls="rcpt") %}
     {{ ui.field(t('set.upi'), "upi_id", value=shop["upi_id"] or "", hint=t('set.upi_help'), inputmode="email", autocomplete="off", error=error if error_field == "upi_id" else None, attrs={"id": "set-upi", "placeholder": "name@bank"}) }}
     {{ ui.field(t('set.payee'), "upi_payee", value=shop["upi_payee"] or "", hint=t('set.payee_help'), autocomplete="off", attrs={"id": "set-payee", "placeholder": shop["name"]}) }}
+    {% if show_extras_now is not defined or show_extras_now() %}
     {% call ui.more(t('form.more_options')) %}
     <div class="field">
       <label class="toggle-row" for="set-round">
@@ -43,6 +44,9 @@
       <span class="help">{{ t('set.round_help') }}</span>
     </div>
     {% endcall %}
+    {% else %}
+    {% if rounding_on %}<input type="hidden" name="round_bills" value="on">{% endif %}
+    {% endif %}
   {% endcall %}
 
   {% call ui.form_card(t('set.hours'), t('set.hours_help'), cls="rcpt") %}
@@ -107,11 +111,15 @@
       <option value="{{ lang.code }}"{% if lang.code == shop["language"] %} selected{% endif %}>{% if lang.native_name == lang.api_name %}{{ lang.native_name }}{% else %}{{ lang.native_name }} ({{ lang.api_name }}){% endif %}</option>
       {% endfor %}
     {% endcall %}
+    {% if show_extras_now is not defined or show_extras_now() %}
     {% call ui.select_field(t('set.currency'), "currency", required=True, error=error if error_field == "currency" else None, attrs={"id": "set-currency"}) %}
       {% for currency in currencies %}
       <option value="{{ currency }}"{% if currency == shop["currency"] %} selected{% endif %}>{{ currency }}</option>
       {% endfor %}
     {% endcall %}
+    {% else %}
+    <input type="hidden" name="currency" value="{{ shop["currency"] }}">
+    {% endif %}
     <div class="field">
       <span class="field-label" id="set-ui-lang-label">{{ t('top.lang_label') }}</span>
       <span class="lang set-lang" role="group" aria-labelledby="set-ui-lang-label" data-ui-toggle>
@@ -153,10 +161,11 @@
 {% call ui.form_card(t('set.keep_safe'), t('set.keep_safe_desc'), cls="rcpt") %}
   <p>
     <a class="pill cta" href="{{ self_wa_url }}">{{ ui.obj("chat", 20) }}{{ t('set.send_link_wa') }}</a>
-    <a class="pill ghost" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
+    {% if show_extras_now is not defined or show_extras_now() %}<a class="pill ghost" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>{% endif %}
   </p>
 {% endcall %}
 
+{% if show_extras_now is not defined or show_extras_now() %}
 {% call ui.form_card(t('set.add_helper'), t('set.helpers_sub'), cls="rcpt") %}
 <div id="helpers"></div>
   <p class="muted">{{ t('set.helper_desc') }}</p>
@@ -190,6 +199,7 @@
     <button class="btn btn-secondary" type="submit">{{ t('set.add_helper') }}</button>
   </form>
 {% endcall %}
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>

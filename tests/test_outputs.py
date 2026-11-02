@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import db
@@ -14,6 +15,12 @@ from app.outputs.pdf import price_board_pdf
 from app.outputs.qr import qr_png
 from app.outputs.value import stock_value
 from app.web.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
 
 IST = ZoneInfo("Asia/Kolkata")
 

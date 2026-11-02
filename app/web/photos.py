@@ -18,6 +18,7 @@ from fastapi.templating import Jinja2Templates
 from PIL import Image
 
 from app import db, jobs
+from app.config import show_extras_enabled
 from app.costs import (
     BUDGET_EXHAUSTED_MESSAGE,
     CostCapExceeded,
@@ -351,6 +352,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/photos")
     def photos_list(request: Request, token: str, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -363,6 +366,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
     @app.post("/e/{token}/photos")
     def photos_upload(request: Request, token: str, photo: UploadFile,
                       conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -435,6 +440,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
 
     @app.get("/e/{token}/photos/{check_id}")
     def photo_result(request: Request, token: str, check_id: int, conn: Conn):
+        if not show_extras_enabled(app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied
@@ -457,6 +464,8 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     request: Request,
                     action: str = Form(""), item: str = Form(""),
                     qty: str | None = Form(None)):
+        if not show_extras_enabled(request.app.state.settings):
+            raise HTTPException(404, "not found")
         shop, denied = _owner_page(request, conn, token)
         if denied is not None:
             return denied

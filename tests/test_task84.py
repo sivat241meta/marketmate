@@ -23,6 +23,12 @@ from app import db
 from app.config import load_settings
 from app.models import DraftItem, PriceLine, Proof
 
+
+@pytest.fixture(autouse=True)
+def _show_extras(monkeypatch):
+    """Task 154: these pages predate SHOW_EXTRAS; keep extras visible."""
+    monkeypatch.setenv("SHOW_EXTRAS", "1")
+
 ROOT = Path(__file__).resolve().parent.parent
 HOME_JS = ROOT / "app" / "web" / "static" / "home.js"
 APP_CSS = ROOT / "app" / "web" / "static" / "app.css"

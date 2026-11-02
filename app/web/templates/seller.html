@@ -32,7 +32,7 @@
           <p>{{ t('gs.step1_d') }}</p>
           <div class="hero-cta">
             <a class="pill cta sm" href="{{ self_wa_url }}" data-gs-done="link">{{ ui.obj("chat", 20) }}{{ t('dash.send_link_wa') }}</a>
-            <a class="pill ghost sm" href="/e/{{ token }}/link-card.pdf" data-gs-done="link">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
+            {% if show_extras_now is not defined or show_extras_now() %}<a class="pill ghost sm" href="/e/{{ token }}/link-card.pdf" data-gs-done="link">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>{% endif %}
           </div>
         </div>
       </li>
@@ -162,7 +162,7 @@
   </div>
   <p class="mini-links">
     {% if versions %}<a href="/e/{{ token }}/v/{{ versions[0]["id"] }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>{% endif %}
-    {% if versions %}<a href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>{% endif %}
+    {% if versions and (show_extras_now is not defined or show_extras_now()) %}<a href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('dash.tile_print_tags') }}</a>{% endif %}
     <a href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
     {% if wa_url %}<button class="linklike" type="button" data-wa-copy data-wa-text="{{ wa_text }}" data-msg-copied="{{ t('dash.copied') }}">{{ t('wa.copy_text') }}</button>{% endif %}
   </p>
@@ -199,6 +199,71 @@
   {% endif %}
 </section>
 {% endif %}
+
+{% if show_extras_now is defined and not show_extras_now() %}
+<details class="list-card" id="todays-list" open>
+  <summary class="section-head"><span>{{ t('dash.todays_list') }}</span>{% if versions %}<a href="/e/{{ token }}/update">{{ t('dash.edit') }}</a>{% endif %}</summary>
+  {% if show_extras_now is defined and not show_extras_now() and versions %}
+  <p class="mini-links">
+    {% if wa_url %}<a href="{{ wa_url }}">{{ ui.obj("chat", 20) }}{{ t('wa.send_prices') }}</a>{% endif %}
+    <a href="{{ shop_url }}/qr.png" download>{{ ui.icon("qr") }}{{ t('sh.quick_qr') }}</a>
+    <a href="/e/{{ token }}/v/{{ versions[0]["id"] }}/board.pdf">{{ ui.obj("printer", 20) }}{{ t('dash.tile_print_board') }}</a>
+  </p>
+  {% endif %}
+  {% if stock %}
+  {% if stock.counted %}
+  <p class="muted"><strong>{{ t('dash.stock_total', total=stock.total | money(shop["currency"]), vid=stock.version_id) }}</strong>{% if stock.left_out %} {{ t('dash.stock_left_out', items=stock.left_out | join(", ")) }}{% endif %}</p>
+  {% else %}
+  <p class="muted">{{ t('dash.stock_not_counted') }}</p>
+  {% endif %}
+  {% endif %}
+  {% if items %}
+  {% for item in items %}
+  <div class="list-row" data-search-row="{{ item.name_local }} {{ item.name_en }} {{ item.variety or '' }}">
+    {% if item.photo_url %}<img class="list-thumb" src="{{ item.photo_url }}" alt="" loading="lazy"{% if item.photo_cutout %} data-cutout{% endif %}>{% else %}<span class="list-thumb letter" aria-hidden="true"><span class="til-g">{{ item.tile }}</span>{% if item.tile_var %}<span class="til-v">{{ item.tile_var }}</span>{% endif %}</span>{% endif %}
+    <div class="list-main">
+      <span class="list-name" lang="{{ shop_lang }}">{{ item.name_local }}</span>
+      <span class="list-sub">{{ item.name_en }}{% if item.variety %} · {{ item.variety }}{% endif %}{% if item.lines %} · {{ item.lines[0].per }}{% endif %}</span>
+      {% if item.stock_line %}<span class="list-sub">{{ item.stock_line }}</span>{% endif %}
+      {% if item.margin_chip and (show_extras_now is not defined or show_extras_now()) %}<span class="list-sub">{{ item.margin_chip }}</span>{% endif %}
+      {% if item.sold_out %}{{ ui.pill(t('dash.sold_out'), "soldout") }}{% endif %}
+    </div>
+    <div class="list-price">{% for line in item.lines %}<span>{{ line.price | money(shop["currency"]) }}</span><small>{{ t('dash.per', per=line.per) }}</small>{% endfor %}</div>
+    {% if not is_staff %}
+    <div class="list-action">
+      <form class="inline-form" method="post" action="/e/{{ token }}/item/{{ item.id }}/soldout">
+        <button class="btn btn-small btn-secondary" type="submit">{% if item.sold_out %}{{ t('dash.back_in_stock') }}{% else %}{{ t('dash.sold_out') }}{% endif %}</button>
+      </form>
+      <form class="inline-form" method="post" action="/e/{{ token }}/item/{{ item.id }}/photo" enctype="multipart/form-data" data-item-photo-form>
+        <label class="btn btn-small btn-ghost" for="item-photo-{{ item.id }}">{{ t('dash.change_photo') }}
+          <input id="item-photo-{{ item.id }}" class="file-hidden" type="file" name="photo" accept="image/*" data-item-photo-input onchange="this.form.requestSubmit()" required>
+        </label>
+      </form>
+      <details class="rename-sheet" data-rename-sheet>
+        <summary class="pen-icon" data-rename-open aria-label="{{ t('rename.open') }}">{{ ui.icon("pencil") }}</summary>
+        <form method="post" action="/e/{{ token }}/item/{{ item.id }}/name" data-rename-form>
+          <h3>{{ t('rename.title') }}</h3>
+          <p class="muted">{{ t('rename.sub') }}</p>
+          {{ ui.field(t('rename.local', lang=shop_native), "name_local", value=item.name_local, required=True, lang=shop_lang, autocomplete="off", attrs={"id": "rn-local-" ~ item.id ~ "-a", "maxlength": "40"}) }}
+          {{ ui.field(t('rename.en'), "name_en", value=item.name_en, required=True, lang="en", autocomplete="off", attrs={"id": "rn-en-" ~ item.id ~ "-a", "maxlength": "40"}) }}
+          {{ ui.field(t('rename.variety'), "variety", value=item.variety or "", autocomplete="off", attrs={"id": "rn-var-" ~ item.id ~ "-a", "maxlength": "30"}) }}
+          <div class="rename-actions">
+            <button type="button" class="btn btn-small btn-ghost" data-rename-cancel>{{ t('rename.cancel') }}</button>
+            <button type="submit" class="btn btn-small btn-primary">{{ t('rename.save') }}</button>
+          </div>
+          <p class="form-error" data-rename-error hidden></p>
+        </form>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), ("/e/" ~ token ~ "/live") if not is_staff else None, t('sh.say_prices') if not is_staff else None, "photo", "mic") }}
+  {% endif %}
+</details>
+{% endif %}
+
 
 <section class="step-card" id="step-day" aria-label="{{ t('t61.step2_kick') }}">
   <div class="grp" data-grp="orders">
@@ -246,7 +311,7 @@
   </div>
 </section>
 
-{% if not is_staff %}
+{% if not is_staff and (show_extras_now is not defined or show_extras_now()) %}
 <section class="step-card grp" id="step-evening" data-grp="evening" aria-label="{{ t('t61.step3_kick') }}">
   <button type="button" class="gh" data-grp-toggle aria-expanded="true">{{ ui.icon("chev") }}{{ ui.obj("moon") }}{% if closed_at %}<span class="chip c-done">{{ t('t64.chip_done') }}</span>{% else %}<span class="chip c-todo">{{ t('t64.chip_todo') }}</span>{% endif %} {{ t('t64.g_evening') }} <span class="n">{{ close_preview.bills }}</span></button>
   {% if closed_at %}<p class="closed-line"><span aria-hidden="true">✓</span> {{ t('t61.closed_at', time=closed_at) }}</p>{% endif %}
@@ -262,7 +327,7 @@
   {% endif %}
 </section>
 {% endif %}
-
+{% if show_extras_now is not defined or show_extras_now() %}
 <details class="list-card" id="todays-list" open>
   <summary class="section-head"><span>{{ t('dash.todays_list') }}</span>{% if versions %}<a href="/e/{{ token }}/update">{{ t('dash.edit') }}</a>{% endif %}</summary>
   {% if stock %}
@@ -317,24 +382,33 @@
   {{ ui.empty_state(t('dash.no_prices_title'), t('dash.no_prices_text'), ("/e/" ~ token ~ "/live") if not is_staff else None, t('sh.say_prices') if not is_staff else None, "photo", "mic") }}
   {% endif %}
 </details>
+{% endif %}
+
+{% if not is_staff and show_extras_now is defined and not show_extras_now() %}
+<section class="card compact" id="ai-link">
+  <p><a class="pill ghost" href="/e/{{ token }}/ai">{{ ui.obj("robot", 20) }}{{ t('ai.title') }}</a></p>
+</section>
+{% endif %}
 
 <details class="more-card" id="more">
   <summary class="section-head"><span>{{ t('nav.more') }}</span></summary>
   <div class="more-list">
     {% if not is_staff %}
     <a class="pill ghost" href="/e/{{ token }}/settings">{{ ui.obj("settings", 20) }}{{ t('sh.quick_settings') }}</a>
+    {% if show_extras_now is not defined or show_extras_now() %}
     <a class="pill ghost" href="/e/{{ token }}/settings#helpers">{{ ui.obj("customer", 20) }}{{ t('t61.helpers') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/purchases">{{ ui.obj("cart", 20) }}{{ t('sh.quick_purchases') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.obj("ledger", 20) }}{{ t('nav.credit') }}</a>
+    {% endif %}
     <a class="pill ghost" href="/e/{{ token }}/update#board">{{ ui.obj("camera", 20) }}{{ t('sh.quick_board') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/ai">{{ ui.obj("robot", 20) }}{{ t('ai.title') }}</a>
-    {% if versions %}
+    {% if versions and (show_extras_now is not defined or show_extras_now()) %}
     <a class="pill ghost" href="/e/{{ token }}/tags.pdf">{{ ui.obj("tag", 20) }}{{ t('sh.quick_tags') }}</a>
     <a class="pill ghost" href="/e/{{ token }}/v/{{ versions[0]["id"] }}/export.csv">{{ ui.icon("download") }}{{ t('dash.tile_export_csv') }}</a>
     {% endif %}
     <a class="pill ghost" href="/e/{{ token }}/exports/sales.xlsx?range=today">{{ ui.icon("download") }}{{ t('bills.excel') }}</a>
     {% endif %}
-    {% if is_staff and can_credit|default(false) %}
+    {% if is_staff and can_credit|default(false) and (show_extras_now is not defined or show_extras_now()) %}
     <a class="pill ghost" href="/e/{{ token }}/credit">{{ ui.obj("ledger", 20) }}{{ t('nav.credit') }}</a>
     {% endif %}
     <a class="pill ghost" href="/#lost-link">{{ t('home.lost_title') }}</a>
@@ -345,7 +419,7 @@
     <p class="muted">{{ t('set.keep_safe_desc') }}</p>
     <p>
       <a class="btn btn-green" href="{{ self_wa_url }}">{{ ui.obj("chat", 20) }}{{ t('dash.send_link_wa') }}</a>
-      <a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>
+      {% if show_extras_now is not defined or show_extras_now() %}<a class="btn btn-secondary" href="/e/{{ token }}/link-card.pdf">{{ ui.obj("printer", 20) }}{{ t('set.print_card') }}</a>{% endif %}
     </p>
   </section>
   {% endif %}
@@ -362,7 +436,7 @@
       <div class="gc"><span class="gi">{{ ui.obj("chart", 28) }}</span><b class="money">{{ week.sales }}</b><small>{{ t('sh.week_sales') }}</small></div>
       <div class="gc"><span class="gi g">{{ ui.obj("receipt", 28) }}</span><b>{{ week.bills }}</b><small>{{ t('sh.week_bills') }}</small></div>
       <div class="gc"><span class="gi g">{{ ui.obj("bags", 28) }}</span><b>{{ week.orders }}</b><small>{{ t('sh.week_orders') }}</small></div>
-      {% if week.margin_known %}<div class="gc"><span class="gi">{{ ui.obj("cash", 28) }}</span><b class="money">{{ week.margin }}</b><small>{{ t('sh.week_margin') }}</small></div>{% endif %}
+      {% if week.margin_known and (show_extras_now is not defined or show_extras_now()) %}<div class="gc"><span class="gi">{{ ui.obj("cash", 28) }}</span><b class="money">{{ week.margin }}</b><small>{{ t('sh.week_margin') }}</small></div>{% endif %}
     </div>
   </div>
   {% endif %}

@@ -935,6 +935,9 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                     })
                 board.append({"key": board_key, "chip": chip,
                               "cards": cards})
+            from app.web.auth import staff_credit_allowed as _allowed
+
+            _shop, _role, _helper = resolve_or_404(conn, token)
             return templates.TemplateResponse(request, "bills.html", {
                 "shop": shop, "token": token, "range": range_key,
                 "status": status_key, "rows": items, "board": board,
@@ -950,6 +953,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 "unpaid_total": _fmt_money(unpaid_total),
                 "top": top_items(conn, shop["id"], now=now),
                 "ui_lang": ui_lang, "is_staff": _is_staff(conn, token),
+                "can_credit": _allowed(conn, _role, token),
             })
         finally:
             conn.close()

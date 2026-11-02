@@ -18,7 +18,7 @@
 </div>
 {% if stopped_note %}<div class="alert alert-warn">{{ stopped_note }}</div>{% endif %}
 <progress class="progress review-bar" data-review-bar value="{{ ok_count }}" max="{{ total }}" aria-label="{{ t('review.counts_aria', ok=ok_count, total=total) }}"></progress>
-<p class="muted"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
+<p class="muted back-link"><a href="/e/{{ token }}/ai?session={{ session["id"] }}">{{ t('ai.session_link') }}</a></p>
 <form id="review-form" data-approve-url="/e/{{ token }}/s/{{ session["id"] }}/approve"
       data-msg-ready="{{ t('review.ready') }}"
       data-msg-need-one="{{ t('review.need_one') }}"
