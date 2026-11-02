@@ -103,7 +103,7 @@ def test_wal_two_connections_write_in_turn(tmp_path):
     first = db.connect(tmp_path)
     try:
         assert first.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
-        assert first.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
+        assert first.execute("PRAGMA busy_timeout").fetchone()[0] == 30000
     finally:
         first.close()
     errors = []

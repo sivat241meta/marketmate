@@ -1096,7 +1096,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                 (session_dir / "transcript.json").write_text(json.dumps(payload))
                 if not turns:
                     db.save_drafts(fin_conn, session_id, [])
-                    db.set_stage(fin_conn, session_id, "ready")
+                    db.note_stage(fin_conn, session_id, "ready")
                     db.ensure_session_base(fin_conn, session_id)
                     db.set_session_status(fin_conn, session_id, "review",
                                           "No prices heard")
@@ -1134,10 +1134,10 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
             except (WebSocketDisconnect, RuntimeError):
                 pass
             return
-        except Exception:  # noqa: BLE001 - final failure becomes a status
+        except Exception as exc:  # noqa: BLE001 - final failure becomes a status
             conn = db.connect(data_dir)
             try:
-                db.set_session_status(conn, session_id, "failed", LOST_MESSAGE)
+                db.report_pipeline_error(conn, session_id, exc, LOST_MESSAGE)
             finally:
                 conn.close()
             try:

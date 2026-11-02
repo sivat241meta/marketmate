@@ -2398,24 +2398,23 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
                             app.state.settings.daily_budget_usd)
         ledger.bind(shop_id=shop["id"], session_id=session_id)
         try:
-            db.set_session_status(conn, session_id, "processing",
-                                  "Listening to the update...")
-            db.set_stage(conn, session_id, "listening")
+            db.note_status(conn, session_id, "Listening to the update...")
+            db.note_stage(conn, session_id, "listening")
             wav = extract_audio(saved, session_dir / "audio.wav")
             transcript = transcribe_wav(
                 wav, keywords=keywords_for(shop["language"]), ledger=ledger,
                 settings=app.state.settings,
                 languages=shop_bias(shop["language"]))
-            db.set_stage(conn, session_id, "items")
+            db.note_stage(conn, session_id, "items")
             current = db.version_items(conn, base_version_id)
             changes = parse_update(transcript, current,
                                    ledger=ledger, settings=app.state.settings,
                                    language=shop["language"])
-            db.set_stage(conn, session_id, "checking")
+            db.note_stage(conn, session_id, "checking")
         except (TranscribeError, SparkError, CostCapExceeded,
                 subprocess.CalledProcessError, OSError) as exc:
             message = friendly_error_message(exc, media="recording")
-            db.set_session_status(conn, session_id, "failed", message)
+            db.fail_session(conn, session_id, message)
             items = db.version_items(conn, base_version_id)
             return templates.TemplateResponse(request, "update.html", {
                 "shop": shop, "token": token, "mode": "record", "items": items,
@@ -2428,7 +2427,7 @@ def register(app: FastAPI, settings, templates: Jinja2Templates) -> None:
         _update_path(data_dir, session_id).write_text(json.dumps({
             "base_version_id": base_version_id,
             "changes": [change_to_dict(change) for change in changes]}))
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(changes)} changes heard")
         current_map = _current_map(current)

@@ -62,7 +62,7 @@ def _session_dir(settings, session_id: int) -> Path:
 
 
 def _progress(conn, session_id: int, message: str) -> None:
-    db.set_session_status(conn, session_id, "processing", message)
+    db.note_status(conn, session_id, message)
 
 
 def _shop_language(conn, session_id: int) -> str:
@@ -106,9 +106,9 @@ def _stop_for_language(conn, session_id: int, script: str,
     except KeyError:
         lang_name = "English"
     heard = f"{script} letters" if script != "other" else "an unfamiliar script"
-    db.set_stage(conn, session_id, "language_check", detail=script)
-    db.set_session_status(
-        conn, session_id, "processing",
+    db.note_stage(conn, session_id, "language_check", detail=script)
+    db.note_status(
+        conn, session_id,
         f"We heard {heard}, but this video was set to {lang_name}. "
         "Pick the language you spoke.")
 
@@ -199,9 +199,9 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
 
     def _extract_progress(part: int, total: int) -> None:
         detail = f"part {part} of {total}" if total > 1 else None
-        db.set_stage(conn, session_id, "items", detail=detail)
+        db.note_stage(conn, session_id, "items", detail=detail)
 
-    db.set_stage(conn, session_id, "items")
+    db.note_stage(conn, session_id, "items")
     items = extract_items(transcript, ledger=ledger, settings=settings,
                           language=language, progress=_extract_progress)
     for item in items:
@@ -229,7 +229,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
     # no photo flags; transcription, extraction, clips and checks continue.
     audio_only = not is_live and not (all_frames or [])
     if not is_live and not audio_only:
-        db.set_stage(conn, session_id, "photos")
+        db.note_stage(conn, session_id, "photos")
     # Video path, first pass: pick each item's frame and pool up front, so
     # the photo step knows the other items' picked frames (cross-check).
     # Task 140: the per-item Spark frame picks run concurrently.
@@ -370,8 +370,8 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
             return matches
 
         def _photo_done(done: int, total: int) -> None:
-            db.set_stage(conn, session_id, "photos",
-                         detail=f"item {done} of {total}")
+            db.note_stage(conn, session_id, "photos",
+                          detail=f"item {done} of {total}")
 
         photo_workers_used = photo_workers()
         photo_started = perf_counter()
@@ -395,7 +395,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                                                  sort_keys=True))
         except OSError:
             pass  # The cache is a nice-to-have.
-    db.set_stage(conn, session_id, "checking")
+    db.note_stage(conn, session_id, "checking")
     # Task 140: the per-item checks (one cross-check Spark call each for
     # unparsed languages) run concurrently; flags land in item order.
     def _check_one(index: int):
@@ -411,7 +411,7 @@ def process_turns(conn, session_id: int, turns: list[Turn], frames_by_turn,
                 message=f"no frame clearly shows {items[index].name_en}"))
     flag_same_name_two_prices(items, language=language)
     db.save_drafts(conn, session_id, items)
-    db.set_stage(conn, session_id, "ready")
+    db.note_stage(conn, session_id, "ready")
     db.ensure_session_base(conn, session_id)
     db.set_session_status(conn, session_id, "review", f"{len(items)} items need review")
     return items
@@ -442,18 +442,18 @@ def process_video_session(conn, session_id: int, video: Path, *,
     video = Path(video)
     _bind_session(conn, session_id, ledger)
     try:
-        db.set_stage(conn, session_id, "uploaded")
+        db.note_stage(conn, session_id, "uploaded")
         check_length(video, settings.max_video_seconds)
         session_dir = _session_dir(settings, session_id)
         _progress(conn, session_id, "Extracting audio and frames...")
-        db.set_stage(conn, session_id, "audio")
+        db.note_stage(conn, session_id, "audio")
         wav = extract_audio(video, session_dir / "audio.wav")
         if has_video_stream(video):
             frames = extract_frames(video, session_dir / "frames")
         else:
             frames = []
         _progress(conn, session_id, "Transcribing...")
-        db.set_stage(conn, session_id, "listening")
+        db.note_stage(conn, session_id, "listening")
         language = spoken_language(conn, session_id)
         bias = _speak_bias(conn, session_id)
         transcript = transcribe_wav(wav, keywords=keywords_for(language),
@@ -463,7 +463,7 @@ def process_video_session(conn, session_id: int, video: Path, *,
             json.dumps(_transcript_to_json(transcript)))
         if not transcript.turns:
             db.save_drafts(conn, session_id, [])
-            db.set_stage(conn, session_id, "ready")
+            db.note_stage(conn, session_id, "ready")
             db.ensure_session_base(conn, session_id)
             db.set_session_status(conn, session_id, "review", "No prices heard")
         else:
@@ -478,10 +478,10 @@ def process_video_session(conn, session_id: int, video: Path, *,
                             video=video)
         video.unlink(missing_ok=True)
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc))
 
 
 def apply_spoken_language(conn, session_id: int, new_lang: str, *,
@@ -497,8 +497,8 @@ def apply_spoken_language(conn, session_id: int, new_lang: str, *,
     try:
         get_language(new_lang)
     except KeyError:
-        db.set_session_status(conn, session_id, "failed",
-                              "Unknown language. Please try again.")
+        db.fail_session(conn, session_id,
+                        "Unknown language. Please try again.")
         return
     _bind_session(conn, session_id, ledger)
     try:
@@ -519,7 +519,7 @@ def apply_spoken_language(conn, session_id: int, new_lang: str, *,
             db.set_session_speak_lang(conn, session_id, new_lang)
         else:
             _progress(conn, session_id, "Transcribing...")
-            db.set_stage(conn, session_id, "listening")
+            db.note_stage(conn, session_id, "listening")
             transcript = transcribe_wav(
                 wav, keywords=keywords_for(new_lang), ledger=ledger,
                 settings=settings, languages=bias)
@@ -533,7 +533,7 @@ def apply_spoken_language(conn, session_id: int, new_lang: str, *,
                 return
         if not transcript.turns:
             db.save_drafts(conn, session_id, [])
-            db.set_stage(conn, session_id, "ready")
+            db.note_stage(conn, session_id, "ready")
             db.ensure_session_base(conn, session_id)
             db.set_session_status(conn, session_id, "review", "No prices heard")
         else:
@@ -542,10 +542,10 @@ def apply_spoken_language(conn, session_id: int, new_lang: str, *,
             _finish_session(conn, session_id, transcript, frames, wav, session_dir,
                             settings=settings, ledger=ledger, language=new_lang)
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc))
 
 
 def _load_live_frames(frames_dir: Path) -> dict[int, dict[str, Frame]]:
@@ -578,7 +578,7 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
     if not transcript_path.is_file():
         raise ValueError("this session has nothing to re-run yet; upload again")
     transcript = _transcript_from_json(json.loads(transcript_path.read_text()))
-    db.set_session_status(conn, session_id, "processing", "Trying again...")
+    db.note_status(conn, session_id, "Trying again...")
     try:
         wav = session_dir / "audio.wav"
         language = spoken_language(conn, session_id)
@@ -592,7 +592,7 @@ def reprocess(conn, session_id: int, *, settings, ledger: CostLedger) -> None:
                         settings=settings, ledger=ledger,
                         language=language)
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed", BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc))

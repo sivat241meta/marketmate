@@ -1,17 +1,31 @@
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
+import logging
 import re
 import secrets
 import shutil
 import sqlite3
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from app.models import DraftItem, Flag, Item, PriceLine, Proof
 from app.pipeline.names import repair_local_name
+
+_log = logging.getLogger(__name__)
+
+#: How long SQLite itself waits on a locked database before raising.
+BUSY_TIMEOUT_MS = 30000
+
+#: How long pipeline writes keep retrying on "database is locked".
+LOCK_RETRY_SECONDS = 60.0
+_LOCK_RETRY_FIRST_S = 0.05
+_LOCK_RETRY_MAX_S = 2.0
 
 _SESSION_STATUSES = {"uploaded", "processing", "review", "approved", "failed"}
 _SESSION_KINDS = {"video", "voice_update", "photo", "quote_voice", "quote_photo",
@@ -178,8 +192,61 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def is_locked_error(exc: BaseException) -> bool:
+    """True for SQLite's "database is locked" (another connection holds it)."""
+    return (isinstance(exc, sqlite3.OperationalError)
+            and "database is locked" in str(exc).lower())
+
+
+def run_with_lock_retry(fn, *, conn=None, timeout_s: float | None = None,
+                        label: str = "db write"):
+    """Run ``fn()``, retrying on "database is locked" with short backoff.
+
+    Gives up after ``timeout_s`` (default LOCK_RETRY_SECONDS) and re-raises.
+    Any other error is re-raised immediately.
+    """
+    if timeout_s is None:
+        timeout_s = LOCK_RETRY_SECONDS
+    deadline = time.monotonic() + timeout_s
+    delay = _LOCK_RETRY_FIRST_S
+    while True:
+        try:
+            return fn()
+        except sqlite3.OperationalError as exc:
+            if not is_locked_error(exc) or time.monotonic() >= deadline:
+                raise
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except sqlite3.Error:
+                    pass
+            time.sleep(delay)
+            delay = min(delay * 2, _LOCK_RETRY_MAX_S)
+
+
+def _retry_locked(fn):
+    """Retry a ``(conn, ...)`` write on "database is locked" (~60 s)."""
+
+    @functools.wraps(fn)
+    def wrapper(conn, *args, **kwargs):
+        return run_with_lock_retry(lambda: fn(conn, *args, **kwargs),
+                                   conn=conn, label=fn.__name__)
+
+    return wrapper
+
+
+#: Database paths whose schema this process already created/migrated.
+_SCHEMA_DONE: set[str] = set()
+_SCHEMA_LOCK = threading.Lock()
+
+
 def connect(data_dir: Path) -> sqlite3.Connection:
-    """Open the app database, creating the schema on first use."""
+    """Open the app database, creating the schema on first use.
+
+    Schema creation and migrations run once per process per database
+    path; later connections only open and set pragmas, so a plain page
+    view never takes the write lock.
+    """
     data_dir = Path(data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
     # Each request gets its own connection and uses it sequentially, so this is safe.
@@ -187,7 +254,17 @@ def connect(data_dir: Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA busy_timeout = 5000")
+    conn.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
+    key = str((data_dir / "marketmate.db").resolve())
+    with _SCHEMA_LOCK:
+        if key not in _SCHEMA_DONE:
+            _init_schema(conn)
+            _SCHEMA_DONE.add(key)
+    return conn
+
+
+def _init_schema(conn: sqlite3.Connection) -> None:
+    """Create tables and migrate an old database. Runs once per path."""
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS shops (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -377,7 +454,6 @@ def connect(data_dir: Path) -> sqlite3.Connection:
         " ON wastage(shop_id, date, name_en)")
     _repair_markless_names(conn)
     conn.commit()
-    return conn
 
 
 def _repair_markless_names(conn) -> int:
@@ -684,6 +760,7 @@ def create_session(conn, shop_id: int, kind: str) -> int:
     return cursor.lastrowid
 
 
+@_retry_locked
 def set_stage(conn, session_id: int, key: str, detail: str | None = None) -> None:
     """Move a session to a stage, closing the previous history entry.
 
@@ -762,12 +839,63 @@ def session_progress(row, *, now: datetime | None = None) -> dict:
             "elapsed_s": round(elapsed, 1)}
 
 
+@_retry_locked
 def set_session_status(conn, session_id: int, status: str, message: str = "") -> None:
     if status not in _SESSION_STATUSES:
         raise ValueError(f"unknown session status: {status}")
     conn.execute("UPDATE sessions SET status = ?, message = ? WHERE id = ?",
                  (status, message, session_id))
     conn.commit()
+
+
+def note_stage(conn, session_id: int, key: str,
+               detail: str | None = None) -> None:
+    """Progress-only stage move; a stuck lock is logged and skipped.
+
+    Retries like set_stage first, but never fails the session: a
+    "database is locked" that outlasts the retries is dropped.
+    """
+    try:
+        set_stage(conn, session_id, key, detail=detail)
+    except sqlite3.OperationalError as exc:
+        if not is_locked_error(exc):
+            raise
+        _log.warning("session %s: dropping progress update (%s): locked",
+                     session_id, key)
+
+
+def note_status(conn, session_id: int, message: str) -> None:
+    """Progress-only "processing" message; a stuck lock is logged and skipped."""
+    try:
+        set_session_status(conn, session_id, "processing", message)
+    except sqlite3.OperationalError as exc:
+        if not is_locked_error(exc):
+            raise
+        _log.warning("session %s: dropping progress message: locked",
+                     session_id)
+
+
+def fail_session(conn, session_id: int, message: str) -> None:
+    """Record a terminal session failure. Never raises."""
+    try:
+        set_session_status(conn, session_id, "failed", message)
+    except Exception as exc:  # noqa: BLE001 - reporting must not crash jobs
+        _log.warning("session %s: could not record failure: %s",
+                     session_id, exc)
+
+
+def report_pipeline_error(conn, session_id: int, exc: BaseException,
+                          message: str) -> None:
+    """Record a terminal pipeline error; never raises.
+
+    A lock error (after retries) is logged and skipped instead: only
+    real pipeline errors fail a session.
+    """
+    if is_locked_error(exc):
+        _log.warning("session %s: database stayed locked; leaving it to retry",
+                     session_id)
+        return
+    fail_session(conn, session_id, message)
 
 
 def _decimal_to_str(value: Decimal | None) -> str | None:
@@ -838,6 +966,7 @@ def _draft_from_json(data: str) -> DraftItem:
     )
 
 
+@_retry_locked
 def save_drafts(conn, session_id: int, items: list[DraftItem]) -> None:
     row = conn.execute("SELECT shop_id FROM sessions WHERE id = ?",
                        (session_id,)).fetchone()
@@ -1024,6 +1153,7 @@ def session_speak_lang(conn, session_id: int) -> str | None:
     return _row_get(row, "speak_lang")
 
 
+@_retry_locked
 def set_session_speak_lang(conn, session_id: int, code: str | None) -> None:
     conn.execute("UPDATE sessions SET speak_lang = ? WHERE id = ?",
                  (code, session_id))
@@ -1046,6 +1176,7 @@ def session_lang_retries(conn, session_id: int) -> int:
     return int(value) if value is not None else 0
 
 
+@_retry_locked
 def bump_session_lang_retries(conn, session_id: int) -> int:
     """Count one more guard re-run; returns the new total."""
     total = session_lang_retries(conn, session_id) + 1
@@ -1053,8 +1184,10 @@ def bump_session_lang_retries(conn, session_id: int) -> int:
         conn.execute("UPDATE sessions SET lang_retries = ? WHERE id = ?",
                      (total, session_id))
         conn.commit()
-    except sqlite3.OperationalError:
-        pass
+    except sqlite3.OperationalError as exc:
+        # Old databases lack the column; a lock error retries via the wrapper.
+        if "no such column" not in str(exc).lower():
+            raise
     return total
 
 
@@ -1074,15 +1207,19 @@ def session_base_version(conn, session_id: int) -> int | None:
     return int(value) if value is not None else None
 
 
+@_retry_locked
 def set_session_base(conn, session_id: int, base_id: int | None) -> None:
     try:
         conn.execute("UPDATE sessions SET base_version_id = ? WHERE id = ?",
                      (base_id, session_id))
         conn.commit()
-    except sqlite3.OperationalError:
-        pass
+    except sqlite3.OperationalError as exc:
+        # Old databases lack the column; a lock error retries via the wrapper.
+        if "no such column" not in str(exc).lower():
+            raise
 
 
+@_retry_locked
 def ensure_session_base(conn, session_id: int) -> int | None:
     """Pin the merge base when review starts; two tabs share one base.
 
@@ -1339,6 +1476,7 @@ def set_stock(conn, item_id: int, qty: int | str | None, unit: str | None,
     conn.commit()
 
 
+@_retry_locked
 def save_photo_check(conn, *, shop_id: int, image_path: str | Path,
                      report_json: str | dict, cost: float) -> int:
     """Store a photo analysis report; returns the check id."""
@@ -1412,6 +1550,7 @@ def _store_totals(conn, shop_id: int, kind: str,
     return str(exact), str(exact)
 
 
+@_retry_locked
 def create_quote(conn, *, shop_id: int, quote, source: str = "customer",
                  kind: str = "quote", status: str = "new",
                  customer_note: str | None = None,

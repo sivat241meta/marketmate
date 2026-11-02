@@ -22,6 +22,8 @@ def submit(fn: Callable, *args) -> None:
         try:
             fn(*args)
         finally:
-            storage.commit()
+            # A finished job always commits immediately (ready or failed);
+            # request-triggered commits stay throttled.
+            storage.commit_now()
 
     _EXECUTOR.submit(_run)

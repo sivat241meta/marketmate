@@ -615,9 +615,16 @@ def test_migration_repairs_existing_rows_but_not_seller_names(tmp_path):
         db.log_name_change(conn, shop["id"], items[1].id,
                            ("old", "broad beans", None),
                            ("அவரககய", "broad beans", "karpooravalli"))
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     finally:
         conn.close()
-    repaired = db.connect(tmp_path / "data")
+    # Task 166: migrations run on the first connect per path, so the
+    # legacy rows must predate it: move the file where no connect ran.
+    legacy = tmp_path / "legacy"
+    legacy.mkdir()
+    shutil.copy(tmp_path / "data" / "marketmate.db",
+                legacy / "marketmate.db")
+    repaired = db.connect(legacy)
     try:
         again = db.version_items(repaired, version_id)
         assert again[0].name_local == "அவரைக்காய்"
@@ -625,8 +632,9 @@ def test_migration_repairs_existing_rows_but_not_seller_names(tmp_path):
     finally:
         repaired.close()
     # A later connect changes nothing further.
-    third_conn = db.connect(tmp_path / "data")
+    third_conn = db.connect(legacy)
     try:
+        assert third_conn.total_changes == 0
         third = db.version_items(third_conn, version_id)
         assert [item.name_local for item in third] == [
             "அவரைக்காய்", "அவரககய"]
@@ -645,9 +653,15 @@ def test_migration_skips_non_tamil_shops(tmp_path):
         version_id = db.approve(
             conn, session_id, [_draft("broad beans", 50, "அவரககய",
                                       None)])
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     finally:
         conn.close()
-    fixed = db.connect(tmp_path / "data")
+    # Task 166: the legacy rows must predate the first connect per path.
+    legacy = tmp_path / "legacy"
+    legacy.mkdir()
+    shutil.copy(tmp_path / "data" / "marketmate.db",
+                legacy / "marketmate.db")
+    fixed = db.connect(legacy)
     try:
         items = db.version_items(fixed, version_id)
         assert items[0].name_local == "அவரககய"

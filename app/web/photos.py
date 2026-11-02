@@ -193,9 +193,8 @@ def process_photo_session(conn, session_id: int, image: Path, *,
     """Analyse one stock photo; records stages, never raises. Returns check id."""
     image = Path(image)
     try:
-        db.set_session_status(conn, session_id, "processing",
-                              "Looking at your photo...")
-        db.set_stage(conn, session_id, "looking")
+        db.note_status(conn, session_id, "Looking at your photo...")
+        db.note_stage(conn, session_id, "looking")
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
@@ -206,10 +205,10 @@ def process_photo_session(conn, session_id: int, image: Path, *,
             for item in db.version_items(conn, version_id):
                 shop_items.append({"name_en": item.name_en,
                                    "sold_out": item.sold_out})
-        db.set_stage(conn, session_id, "counting")
+        db.note_stage(conn, session_id, "counting")
         report = analyse_photo(Path(image), shop_items=shop_items,
                                ledger=ledger, settings=settings)
-        db.set_stage(conn, session_id, "suggesting")
+        db.note_stage(conn, session_id, "suggesting")
         width, height = _image_size(Path(image))
         payload = report_to_dict(report, width, height)
         check_id = db.save_photo_check(
@@ -217,19 +216,18 @@ def process_photo_session(conn, session_id: int, image: Path, *,
             report_json=json.dumps(payload), cost=report.cost_usd)
         write_photo_meta(Path(settings.data_dir), session_id,
                          {"image": str(image), "check_id": check_id})
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         found = len(report.products)
         noun = "product" if found == 1 else "products"
         db.set_session_status(conn, session_id, "review",
                               f"{found} {noun} found")
         return check_id
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed",
-                              BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
         return None
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc, media="photo"))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc, media="photo"))
         return None
 
 

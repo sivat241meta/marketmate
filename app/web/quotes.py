@@ -255,7 +255,7 @@ def _store_empty_session(conn, session_id: int, quote, *, settings) -> None:
     meta = read_quote_meta(Path(settings.data_dir), session_id)
     meta["empty_lines"] = _empty_session_lines(quote)
     write_quote_meta(Path(settings.data_dir), session_id, meta)
-    db.set_stage(conn, session_id, "ready")
+    db.note_stage(conn, session_id, "ready")
     db.set_session_status(conn, session_id, "review",
                           "nothing on this shop's list matched")
 
@@ -264,9 +264,8 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
                                 settings, ledger) -> str | None:
     """Transcribe a spoken list, match it, store the quote. Never raises."""
     try:
-        db.set_session_status(conn, session_id, "processing",
-                              "Listening to your list...")
-        db.set_stage(conn, session_id, "listening")
+        db.note_status(conn, session_id, "Listening to your list...")
+        db.note_stage(conn, session_id, "listening")
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
@@ -278,14 +277,14 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
         transcript = transcribe_wav(
             wav, keywords=keywords_for(shop_lang), ledger=ledger,
             settings=settings, languages=shop_bias(shop_lang))
-        db.set_stage(conn, session_id, "matching")
+        db.note_stage(conn, session_id, "matching")
         wanted = wanted_from_text(transcript.text, ledger=ledger,
                                   settings=settings, step="voice order")
         for line in wanted:
             line.source = "voice"
         if not wanted:
-            db.set_session_status(conn, session_id, "failed",
-                                  "We could not hear any items. Please try again.")
+            db.fail_session(conn, session_id,
+                            "We could not hear any items. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
         if not quote_has_priced(quote):
@@ -298,17 +297,17 @@ def process_quote_voice_session(conn, session_id: int, audio: Path, *,
                                 customer_phone=meta.get("customer_phone"))
         meta["token"] = token
         write_quote_meta(Path(settings.data_dir), session_id, meta)
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines quoted")
         return token
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed",
-                              BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
         return None
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc, media="recording"))
+        db.report_pipeline_error(
+            conn, session_id, exc,
+            friendly_error_message(exc, media="recording"))
         return None
 
 
@@ -316,19 +315,18 @@ def process_quote_photo_session(conn, session_id: int, image: Path, *,
                                 settings, ledger) -> str | None:
     """Read a photo list (or items), match it, store the quote. Never raises."""
     try:
-        db.set_session_status(conn, session_id, "processing",
-                              "Looking at your photo...")
-        db.set_stage(conn, session_id, "looking")
+        db.note_status(conn, session_id, "Looking at your photo...")
+        db.note_stage(conn, session_id, "looking")
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
         ledger.bind(shop_id=shop_id, session_id=session_id)
-        db.set_stage(conn, session_id, "matching")
+        db.note_stage(conn, session_id, "matching")
         wanted = wanted_from_photo(Path(image), ledger=ledger,
                                    settings=settings)
         if not wanted:
-            db.set_session_status(conn, session_id, "failed",
-                                  "We could not read that photo. Please try again.")
+            db.fail_session(conn, session_id,
+                            "We could not read that photo. Please try again.")
             return None
         quote = build_quote(conn, shop_id, wanted)
         if not quote_has_priced(quote):
@@ -341,17 +339,16 @@ def process_quote_photo_session(conn, session_id: int, image: Path, *,
                                 customer_phone=meta.get("customer_phone"))
         meta["token"] = token
         write_quote_meta(Path(settings.data_dir), session_id, meta)
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         db.set_session_status(conn, session_id, "review",
                               f"{len(quote.lines)} lines quoted")
         return token
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed",
-                              BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
         return None
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc, media="photo"))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc, media="photo"))
         return None
 
 

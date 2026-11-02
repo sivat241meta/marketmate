@@ -4,11 +4,19 @@ import sys
 import threading
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import jobs, storage
 from app.config import load_settings
 from app.web.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _fresh_throttle():
+    storage.reset_throttle_for_tests()
+    yield
+    storage.reset_throttle_for_tests()
 
 
 class _ExplodingModal:
@@ -114,7 +122,7 @@ def _wait_for(calls, count=1, timeout=10.0):
 
 def test_finished_job_calls_commit(monkeypatch):
     calls = []
-    monkeypatch.setattr(storage, "commit", lambda: calls.append(1))
+    monkeypatch.setattr(storage, "commit_now", lambda: calls.append(1))
     done = threading.Event()
     jobs.submit(done.set)
     assert done.wait(timeout=10)
@@ -123,7 +131,7 @@ def test_finished_job_calls_commit(monkeypatch):
 
 def test_failed_job_still_calls_commit(monkeypatch):
     calls = []
-    monkeypatch.setattr(storage, "commit", lambda: calls.append(1))
+    monkeypatch.setattr(storage, "commit_now", lambda: calls.append(1))
     done = threading.Event()
 
     def boom():

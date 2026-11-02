@@ -207,9 +207,8 @@ def process_board_session(conn, session_id: int, image: Path, *,
 
     image = Path(image)
     try:
-        db.set_session_status(conn, session_id, "processing",
-                              "Reading your board...")
-        db.set_stage(conn, session_id, "looking")
+        db.note_status(conn, session_id, "Reading your board...")
+        db.note_stage(conn, session_id, "looking")
         row = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?", (session_id,)).fetchone()
         shop_id = row["shop_id"]
@@ -217,7 +216,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
         shop_row = conn.execute("SELECT language FROM shops WHERE id = ?",
                                 (shop_id,)).fetchone()
         language = shop_row["language"] if shop_row else "ta"
-        db.set_stage(conn, session_id, "items")
+        db.note_stage(conn, session_id, "items")
         items = read_board(Path(image), ledger=ledger, settings=settings,
                             language=language)
         for item in items:
@@ -226,7 +225,7 @@ def process_board_session(conn, session_id: int, image: Path, *,
             if db.chosen_name_for(conn, shop_id, db.match_key_of(item),
                                   item.variety) is None:
                 correct_draft_from_variety(item, language=language)
-        db.set_stage(conn, session_id, "checking")
+        db.note_stage(conn, session_id, "checking")
         previous = db.last_prices(conn, shop_id)
         for item in items:
             for flag in check_item(item, previous, language=language,
@@ -242,17 +241,16 @@ def process_board_session(conn, session_id: int, image: Path, *,
         db.save_drafts(conn, session_id, items)
         write_board_meta(Path(settings.data_dir), session_id,
                          {"image": str(image)})
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         db.ensure_session_base(conn, session_id)
         noun = "item" if len(items) == 1 else "items"
         db.set_session_status(conn, session_id, "review",
                               f"{len(items)} {noun} read from your board")
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed",
-                              BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc, media="photo"))
+        db.report_pipeline_error(conn, session_id, exc,
+                                 friendly_error_message(exc, media="photo"))
 
 
 def run_board_job(settings, session_id: int, image: str) -> None:

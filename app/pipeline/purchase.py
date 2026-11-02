@@ -246,9 +246,8 @@ def process_purchase_session(conn, session_id: int, audio: Path, *,
     from app.pipeline.run import friendly_error_message
 
     try:
-        db.set_session_status(conn, session_id, "processing",
-                              "Listening to your purchases...")
-        db.set_stage(conn, session_id, "listening")
+        db.note_status(conn, session_id, "Listening to your purchases...")
+        db.note_stage(conn, session_id, "listening")
         shop_id = conn.execute(
             "SELECT shop_id FROM sessions WHERE id = ?",
             (session_id,)).fetchone()["shop_id"]
@@ -262,23 +261,23 @@ def process_purchase_session(conn, session_id: int, audio: Path, *,
         transcript = transcribe_wav(
             wav, keywords=keywords_for(shop_lang), ledger=ledger,
             settings=settings, languages=shop_bias(shop_lang))
-        db.set_stage(conn, session_id, "items")
+        db.note_stage(conn, session_id, "items")
         drafts = extract_purchases(transcript, ledger=ledger,
                                    settings=settings, language=shop_lang)
-        db.set_stage(conn, session_id, "checking")
+        db.note_stage(conn, session_id, "checking")
         write_purchase_meta(Path(settings.data_dir), session_id, {
             "transcript": transcript.text,
             "drafts": [_draft_to_dict(d) for d in drafts]})
-        db.set_stage(conn, session_id, "ready")
+        db.note_stage(conn, session_id, "ready")
         noun = "item" if len(drafts) == 1 else "items"
         db.set_session_status(conn, session_id, "review",
                               f"{len(drafts)} {noun} heard")
     except CostCapExceeded:
-        db.set_session_status(conn, session_id, "failed",
-                              BUDGET_EXHAUSTED_MESSAGE)
+        db.fail_session(conn, session_id, BUDGET_EXHAUSTED_MESSAGE)
     except Exception as exc:  # noqa: BLE001 - every failure becomes a status
-        db.set_session_status(conn, session_id, "failed",
-                              friendly_error_message(exc, media="recording"))
+        db.report_pipeline_error(
+            conn, session_id, exc,
+            friendly_error_message(exc, media="recording"))
 
 
 def run_purchase_job(settings, session_id: int, audio: str) -> None:
