@@ -1556,6 +1556,13 @@ _ENGLISH: dict[str, str] = {
     "judge.ai": "See the Meta AI calls",
     "judge.ai_counts": "{n} calls · {cost}",
     "judge.full_app": "Open the full seller app",
+    # --- permanent judge demo button + home strip (Task 172) ---
+    "judge.hdr_btn": "Judge demo",
+    "judge.hdr_tip": "Judge demo for hackathon judges (3 minutes)",
+    "judge.strip_btn": "Start the judge demo",
+    "judge.strip_txt": ("Try MarketMate in 3 minutes: upload a stall video "
+                        "or use a real sample, get a checked price card, "
+                        "WhatsApp catalog and Excel."),
     # --- entry page (Task 167) ---
     "entry.title": "MarketMate",
     "entry.visit_t": "Visit MarketMate",
@@ -3110,6 +3117,14 @@ _TAMIL: dict[str, str] = {
     "judge.ai": "Meta AI அழைப்புகளைப் பார்க்கவும்",
     "judge.ai_counts": "{n} அழைப்புகள் · {cost}",
     "judge.full_app": "முழு விற்பனையாளர் செயலியைத் திறக்கவும்",
+    # --- permanent judge demo button + home strip (Task 172) ---
+    "judge.hdr_btn": "Judge demo",
+    "judge.hdr_tip": "Hackathon நடுவர்களுக்கான Judge demo (3 நிமிடம்)",
+    "judge.strip_btn": "Judge demo-வைத் தொடங்குக",
+    "judge.strip_txt": ("MarketMate-ஐ 3 நிமிடத்தில் முயற்சிக்கவும்: கடை "
+                        "வீடியோவைப் பதிவேற்றுங்கள் அல்லது உண்மையான "
+                        "மாதிரியைப் பயன்படுத்துங்கள் — சரிபார்த்த விலை "
+                        "அட்டை, WhatsApp பட்டியல், Excel பெறுங்கள்."),
     # --- entry page (Task 167) ---
     "entry.title": "MarketMate",
     "entry.visit_t": "MarketMate-ஐப் பார்வையிடுக",
@@ -4664,6 +4679,13 @@ _HINDI: dict[str, str] = {
     "judge.ai": "Meta AI कॉल देखें",
     "judge.ai_counts": "{n} कॉल · {cost}",
     "judge.full_app": "पूरा सेलर ऐप खोलें",
+    # --- permanent judge demo button + home strip (Task 172) ---
+    "judge.hdr_btn": "Judge demo",
+    "judge.hdr_tip": "हैकाथॉन जजों के लिए Judge demo (3 मिनट)",
+    "judge.strip_btn": "Judge demo शुरू करें",
+    "judge.strip_txt": ("MarketMate को 3 मिनट में आज़माएँ: स्टॉल वीडियो "
+                        "अपलोड करें या असली सैंपल इस्तेमाल करें — जाँचा "
+                        "प्राइस कार्ड, WhatsApp कैटलॉग और Excel पाएँ।"),
     # --- entry page (Task 167) ---
     "entry.title": "MarketMate",
     "entry.visit_t": "MarketMate देखें",

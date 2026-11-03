@@ -114,6 +114,12 @@ body.v13 .btn-teal:hover{background:var(--teal-ink)}
 /* Task 149: the short sell label + icon below 1440px (the full
    label stays in aria-label). */
 body.v13 .btn-teal .sell-short,body.v13 .btn-teal .sell-ic{display:none}
+/* Task 172: permanent Judge demo pill — teal-soft fill with a teal
+   outline, bold; reads on the white bar and the teal hero alike,
+   and stays distinct from plain nav links and the solid sell
+   buttons. Never shrinks: the location button absorbs narrow rows. */
+body.v13 .judge-pill{display:flex;align-items:center;white-space:nowrap;flex:none;min-height:44px;padding:8px 18px;border:1.5px solid var(--teal);border-radius:999px;background:var(--teal-soft);color:var(--teal-ink);font-weight:800;font-size:14px}
+body.v13 .judge-pill:hover{background:#fff}
 body.v13 .menu-btn{display:none;color:#fff;width:44px;height:44px;place-items:center;border-radius:12px}
 body.v13 .menu-btn:hover{background:rgba(255,255,255,.1)}
 body.v13 .stickybar .menu-btn{color:var(--ink-2)}
@@ -154,6 +160,13 @@ body.v13 .loc-hint[hidden]{display:none}
 body.v13 .loc-hint>span{flex:1;min-width:0}
 body.v13 .loc-hint button{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:none;color:#fff;font-size:18px;line-height:1;cursor:pointer}
 body.v13 .loc-hint button:hover{background:rgba(255,255,255,.16)}
+/* Task 172: slim judges strip directly under the hero search block —
+   one row on laptop (badge + text + CTA), stacked on phones. */
+body.v13 .judge-strip{display:flex;align-items:center;gap:12px;max-width:700px;margin:0 auto 26px;padding:10px 10px 10px 16px;border-radius:18px;background:var(--teal-soft);color:var(--ink-2);text-align:left;min-width:0}
+body.v13 .judge-badge{flex:none;font-size:12px;font-weight:800;color:var(--teal-ink);background:#fff;border:1px solid var(--teal);border-radius:999px;padding:4px 10px;white-space:nowrap}
+body.v13 .judge-strip p{flex:1;min-width:0;margin:0;font-size:14px;line-height:1.45;overflow-wrap:break-word}
+body.v13 .judge-cta{flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px;border-radius:12px;background:var(--teal);color:#fff;font-weight:800;font-size:14px;white-space:nowrap}
+body.v13 .judge-cta:hover{background:var(--teal-ink)}
 body.v13 .loc-pulse{animation:locpulse13 1.6s ease-in-out 2}
 @keyframes locpulse13{0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,0)}50%{box-shadow:0 0 0 6px rgba(15,118,110,.35)}}
 
@@ -470,6 +483,15 @@ body.v13 .my-card{border:1px solid var(--line);border-radius:16px}
   body.v13 .foot-in{grid-template-columns:repeat(3,1fr)}
   body.v13 .mkt-shop-grid{grid-template-columns:repeat(2,1fr)}
   body.v13 .topbar .top-actions{margin-left:auto}
+  /* Task 172: the hero Start selling button moves into the menu sheet
+     with the collapsed nav, leaving room for the Judge pill (the
+     sheet and the hero sell card keep the /new link). */
+  body.v13 .topbar .btn-dark{display:none}
+}
+@media (max-width:900px){
+  /* Task 172: mark-only sticky bar leaves room for the Judge pill
+     plus a readable location (the ≤430 rule below stays pinned). */
+  body.v13 .stickybar .brand-word{display:none}
 }
 /* ---------- phones ---------- */
 @media (max-width:700px){
@@ -538,8 +560,20 @@ body.v13 .my-card{border:1px solid var(--line);border-radius:16px}
   body.v13 .stickybar .topbar-in{gap:8px}
   body.v13 .stickybar .top-actions{gap:4px}
   body.v13 .loc-mini span{display:none}
-  body.v13 .loc-mini{flex:1;min-width:0;max-width:none;margin-left:0}
+  body.v13 .loc-mini{flex:1;min-width:0;max-width:none;margin-left:0;overflow:hidden}
   body.v13 .loc-mini b{min-width:0}
+  /* Task 172: the Judge pill stays in the bar on phones — compact
+     text; the hero language switch moves to the menu sheet, the
+     sticky chevron hides, icons/menu never squish, and the location
+     clips cleanly instead of overflowing. */
+  body.v13 .judge-pill{font-size:12px;padding:8px 10px}
+  body.v13 .topbar .top-actions .lang{display:none}
+  body.v13 .stickybar .loc-mini .chev{display:none}
+  body.v13 .topbar-in .brand,body.v13 .topbar-in .top-actions{flex:none}
+  body.v13 .stickybar .icon-btn,body.v13 .menu-btn{flex:none}
+  body.v13 .judge-strip{flex-direction:column;align-items:stretch;text-align:center;margin:0 auto 20px;padding:14px}
+  body.v13 .judge-badge{align-self:center}
+  body.v13 .judge-cta{width:100%}
   /* Task 150: no text below 12px on phones (laptop look unchanged). */
   body.v13 .tag-sample{font-size:12px}
   body.v13 .board .ok{font-size:12px}
@@ -560,6 +594,13 @@ body.v13 .my-card{border:1px solid var(--line);border-radius:16px}
    row (location flexes, EN lives in the menu sheet). */
 @media (max-width:430px){
   body.v13 .stickybar .brand-word{display:none}
+}
+/* Task 172 very-narrow: at 320px the sticky bag icon (still in the
+   menu sheet as My orders) and the hero wordmark make room, so the
+   Judge pill fits with the logo and menu on-screen. */
+@media (max-width:359.98px){
+  body.v13 .stickybar .hp-bag{display:none}
+  body.v13 .topbar .brand-word{display:none}
 }
 /* Above 1100px the menu button hides, so the sheet can never open;
    keep it hidden if the window grows while it stands open. */

@@ -70,6 +70,11 @@
       {% endif %}
       <a class="icon-btn bag hp-bag" href="/my" aria-label="{{ t('shell.bag') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg><span class="bag-label">{{ t('shell.bag') }}</span><span class="nbadge" data-bag-count hidden></span></a>
       <a class="btn-teal" href="/new" aria-label="{{ t('hp.start_selling') }}"><span class="sell-ic" aria-hidden="true">{{ ui.icon("tag") }}</span><span class="sell-full">{{ t('hp.start_selling') }}</span><span class="sell-short" aria-hidden="true">{{ t('hp.sell_short') }}</span></a>
+      {# Task 172: permanent Judge demo button. Bills (popups "none")
+         stay clean; every other public page shows it. #}
+      {% if _ph_pop != "none" %}
+      <a class="judge-pill" href="/try" title="{{ t('judge.hdr_tip') }}" aria-label="{{ t('judge.hdr_tip') }}">{{ t('judge.hdr_btn') }}</a>
+      {% endif %}
       <button type="button" class="iconbtn hp-menu-btn menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
   </div>

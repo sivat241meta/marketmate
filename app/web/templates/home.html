@@ -30,6 +30,8 @@
         {{ _lang.lang_buttons("lang", t('top.lang_label'), _L) }}
         <a class="btn-outline-w" href="#app">{{ t('v13.get_app') }} <svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
         <a class="btn-dark" href="/new">{{ t('hp.start_selling') }}</a>
+        {# Task 172: permanent Judge demo button, next to Start selling. #}
+        <a class="judge-pill" href="/try" title="{{ t('judge.hdr_tip') }}" aria-label="{{ t('judge.hdr_tip') }}">{{ t('judge.hdr_btn') }}</a>
         <button type="button" class="iconbtn hp-menu-btn menu-btn" data-menu-open aria-expanded="false" aria-controls="mobile-nav" aria-label="{{ t('hp.menu') }}"><svg width="20" height="20" class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
     </div>
@@ -57,6 +59,13 @@
       </div>
     </div>
     <p class="loc-hint" data-loc-hint hidden><span>{{ t('hp.all_hint') }}</span><button type="button" data-loc-hint-x aria-label="{{ t('hp.close') }}">×</button></p>
+
+    {# Task 172: slim judges strip directly under the hero search block. #}
+    <div class="judge-strip" role="note" aria-label="{{ t('entry.judge_badge') }}">
+      <span class="judge-badge">{{ t('entry.judge_badge') }}</span>
+      <p>{{ t('judge.strip_txt') }}</p>
+      <a class="judge-cta" href="/try">{{ t('judge.strip_btn') }}</a>
+    </div>
 
     <div class="svc-row">
       <a class="svc" href="/market{% if hp.area %}?area={{ hp.area | urlencode }}{% endif %}">
