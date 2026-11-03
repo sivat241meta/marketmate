@@ -2,9 +2,11 @@
 
 A market seller films the stall or says today's prices in Tamil, Hindi or English. MarketMate turns that into a checked price list, a shop page, WhatsApp messages, bills and a day close. Prices only ever come from the seller's own voice.
 
+**Live:** [https://sivat241--marketmate-web.modal.run](https://sivat241--marketmate-web.modal.run) — pick **Judge demo** to try it in about 3 minutes.
+
 ## How to judge (3 minutes)
 
-The live URL opens a small entry page — pick **Judge demo** (or go straight to `$PUBLIC_BASE_URL/try`). It makes a private test shop (unlisted, deleted after 7 days) and lands on a light 4-step page — no seller dashboard:
+[https://sivat241--marketmate-web.modal.run](https://sivat241--marketmate-web.modal.run) opens a small entry page — pick **Judge demo**, or go straight to the judge demo at [https://sivat241--marketmate-web.modal.run/try](https://sivat241--marketmate-web.modal.run/try). It makes a private test shop (unlisted, deleted after 7 days) and lands on a light 4-step page — no seller dashboard:
 
 1. **Your stall video or voice note** — upload a clip, or tap "Use a real sample: VPS stall, Tamil, 64 s" to run a real stall video that lives only on the server.
 2. **Meta AI at work** — watch `muse-voice-transcribe-1.0` turn speech into text, `muse-spark-1.3` find items, prices and checks, and `sam-3.1` pick a photo for each item.
@@ -77,7 +79,7 @@ Prerequisites: Python 3.12 or newer, `ffmpeg`, and the WeasyPrint system librari
 python -m venv .venv && .venv/bin/pip install -e .
 ```
 
-Copy `.env.example` to `.env` and set the keys by name: `MODEL_API_KEY`, optional `BASETEN_API_KEY`, `TEXT_PROVIDER`, `DATA_DIR`. Then start the server:
+Copy `.env.example` to `.env` and set the keys by name: `MODEL_API_KEY` (your Meta Model API key), optional `BASETEN_API_KEY`, `TEXT_PROVIDER`, `DATA_DIR`. Then start the server:
 
 ```bash
 .venv/bin/uvicorn app.web.main:app
@@ -91,7 +93,7 @@ Run the tests (needs the dev extras and a key in `.env`):
 PYTHONPATH=$PWD .venv/bin/pytest -q
 ```
 
-2065 tests pass. `.venv/bin/ruff check .` is clean.
+2126 tests pass. `.venv/bin/ruff check .` is clean.
 
 ## Sample shops
 
@@ -132,7 +134,7 @@ Stored on disk: the SQLite database, item photos, voice clips and the cost ledge
 
 ## How it was built
 
-Every commit in this repository was made by Muse Code, Meta's coding agent. 199 of 200 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
+Every commit in this repository was made by Muse Code, Meta's coding agent. 215 of 216 commits carry the `Built-with: Muse Code` trailer (the one without it is a 3-line docs commit). Built during the hackathon building period, 27 Oct – 4 Nov 2026.
 
 Logo: the MarketMate "Mm leaves" mark (teal green + soft blue) and wordmark were drawn in code by Muse Code — see [docs/brand.md](docs/brand.md).
 
