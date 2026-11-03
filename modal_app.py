@@ -33,6 +33,7 @@ secret = modal.Secret.from_name("marketmate-secrets")
     volumes={"/data": volume},
     secrets=[secret],
     max_containers=1,
+    min_containers=1,  # one container always warm so pages open at once (costs a little idle CPU/memory; set to 0 after judging).
     scaledown_window=1200,
     timeout=900,
 )

@@ -126,7 +126,7 @@ Real sellers can upload their own stall photo under Settings →
 
 ## Deploy
 
-See [docs/deploy.md](docs/deploy.md) for the Modal deploy. The app runs as one container with a persistent volume for the database, photos, clips and cost ledger. Secrets come from a Modal secret built from `.env`. It scales to zero after 20 idle minutes and the daily budget cap still applies.
+See [docs/deploy.md](docs/deploy.md) for the Modal deploy. The app runs as one container with a persistent volume for the database, photos, clips and cost ledger. Secrets come from a Modal secret built from `.env`. It scales to zero after 20 idle minutes and the daily budget cap still applies. The web app keeps one warm container (min_containers=1); set it to 0 in modal_app.py to turn it off.
 
 ## Privacy
 
