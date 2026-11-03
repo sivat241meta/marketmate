@@ -212,7 +212,9 @@ def test_public_pages_carry_header_popups_and_composer(tmp_path):
     client = make_client(tmp_path)
     for url in ("/", "/market", f"/s/{slug}", "/sellers", "/how",
                 f"/s/{slug}/quote"):
-        resp = client.get(url)
+        # Task 171: same-host Referer so / reads the home page.
+        resp = client.get(
+            url, headers={"referer": "http://testserver/market"})
         assert resp.status_code == 200, url
         assert "data-public-header" in resp.text, url
         assert 'id="search-pop"' in resp.text, url

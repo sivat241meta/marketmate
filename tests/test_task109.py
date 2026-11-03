@@ -131,7 +131,8 @@ def test_homepage_tamil_renders_compare_link(tmp_path):
 
     client = make_client(tmp_path)
     client.cookies.set("ui_lang", "ta")
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'href="/market"' in html
     assert t_for("ta")("hp.nav_find") in html
     assert t_for("ta")("v13.hero_a") in htmlmod.unescape(html)

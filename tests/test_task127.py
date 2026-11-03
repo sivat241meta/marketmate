@@ -43,7 +43,8 @@ def test_v13_tokens_and_jakarta_fontface():
 
 
 def test_homepage_section_order(tmp_path):
-    html = _seed(tmp_path).get("/").text
+    html = _seed(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     marks = ['<header class="topbar">', 'class="svc-row"',
              'id="fresh"', 'id="cats"', 'id="shops"', 'id="lowest"',
              'id="how"', 'id="app"', 'id="markets"', 'class="foot"']
@@ -111,7 +112,8 @@ def test_reduced_motion_rule_present():
 def test_hero_uses_unclashed_classes(tmp_path):
     # Task 127 polish: app.css owns .hero (card) and .float (dark
     # bar), so the v13 hero uses v13-hero/hero-float instead.
-    html = _seed(tmp_path).get("/").text
+    html = _seed(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'class="v13-hero"' in html
     assert "hero-float" in html
     assert 'class="float' not in html

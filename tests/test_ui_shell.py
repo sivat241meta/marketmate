@@ -59,7 +59,8 @@ def test_home_has_shell_and_hero(tmp_path):
     from app.web.i18n import t_for
 
     client = make_client(tmp_path)
-    html = htmlmod.unescape(client.get("/").text)
+    html = htmlmod.unescape(client.get(
+        "/", headers={"referer": "http://testserver/market"}).text)
     assert_shell(html, t_for("en")("v13.hero_a"))
     assert "Start selling" in html
     assert "/try" in html

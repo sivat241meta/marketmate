@@ -218,7 +218,9 @@ def test_headline_space(tmp_path, lang):
     assert "h1br{display:none}" not in flat
     client = _seed(tmp_path)
     client.cookies.set("ui_lang", lang)
-    m = re.search(r"<h1>(.*?)</h1>", client.get("/").text, re.DOTALL)
+    m = re.search(r"<h1>(.*?)</h1>", client.get(
+        "/", headers={"referer": "http://testserver/market"}).text,
+        re.DOTALL)
     assert m
     h1 = html_module.unescape(m.group(1))
     a, b, c = (lookup("v13.hero_a", lang), lookup("v13.hero_b", lang),
@@ -232,7 +234,8 @@ def test_headline_space(tmp_path, lang):
 
 
 def test_hooks_routes_i18n_kept(tmp_path):
-    html = _seed(tmp_path).get("/").text
+    html = _seed(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     m = re.search(r'<button[^>]*class="svc"[^>]*>', html)
     assert m
     for hook in ("data-search-open", "data-search-voice",

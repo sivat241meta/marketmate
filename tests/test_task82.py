@@ -71,7 +71,8 @@ def test_landing_meta_block_links_to_ai_calls_note(tmp_path):
     # Task 127: the v13 "How the prices get here" cards name the Meta
     # models and link to /how for the full story.
     client = _client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     meta = html.split('id="how"')[1].split('id="app"')[0]
     for known in ("muse-voice-transcribe-1.0", "muse-spark-1.3",
                   "sam-3.1"):

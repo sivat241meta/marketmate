@@ -297,10 +297,12 @@ def test_sample_label_renders_in_all_languages(tmp_path):
     seed(tmp_path / "data")
     for lang in LANGS:
         client = make_client(tmp_path, lang=lang)
-        html = client.get("/").text
+        html = client.get(
+            "/", headers={"referer": "http://testserver/market"}).text
         assert t_for(lang)("hp.demo") in html, lang
         assert t_for(lang)("hp.said_sample") in html, lang
-    home_en = make_client(tmp_path, lang="en").get("/").text
+    home_en = make_client(tmp_path, lang="en").get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert re.search(r"said today \d\d:\d\d", home_en) is None
 
 

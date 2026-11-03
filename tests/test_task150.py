@@ -65,7 +65,8 @@ def test_no_drawer_auto_open_and_all_areas_default(tmp_path):
     src = POPUPS_JS.read_text()
     assert "openPop2(pop, null)" not in src
     client = make_client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'id="loc-drawer"' in html
     assert '<div class="mm-pop" id="loc-drawer" hidden>' in html
     assert t_for("en")("hp.all_areas") in html
@@ -76,7 +77,8 @@ def test_first_visit_hint_and_pulse_hooks(tmp_path):
         assert t_for(lang)("hp.all_hint"), lang
     assert missing_keys() == {"ta": [], "hi": []}
     client = make_client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert "data-loc-hint" in html
     assert t_for("en")("hp.all_hint") in html
     assert '<p class="loc-hint" data-loc-hint hidden>' in html
@@ -247,7 +249,8 @@ def test_manifest_fields_and_install_hooks(tmp_path):
     assert any("maskable" in purpose for purpose in purposes)
     sizes = {icon["sizes"] for icon in body["icons"]}
     assert "192x192" in sizes and "512x512" in sizes
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert "data-install" in html
     assert "data-ios-hint" in html
     assert t_for("en")("dash.install_ios") in html
@@ -283,7 +286,8 @@ def test_sw_caches_static_only_with_offline_page(tmp_path):
 
 def test_homepage_speed_hooks_and_small_floats(tmp_path):
     client = make_client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'rel="preload"' in html
     assert "PlusJakartaSans-Variable.ttf" in html
     assert 'as="font"' in html
@@ -319,7 +323,8 @@ def test_cover_srcset_uses_800_on_phones(tmp_path):
     finally:
         conn.close()
     assert client.get("/m/t150cover-800.jpg").status_code == 200
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert "/m/t150cover-800.jpg 800w" in html
     assert "/m/t150cover.jpg 1600w" in html
     shop_html = client.get("/s/t150-veg").text

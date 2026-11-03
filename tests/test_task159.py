@@ -150,7 +150,9 @@ def test_try_redirects_to_judge_page(tmp_path):
 def test_entry_links_on_home_sellers_how(tmp_path):
     client = _client(tmp_path)
     for path in ("/", "/sellers", "/how"):
-        html = client.get(path).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            path, headers={"referer": "http://testserver/market"}).text
         assert 'href="/try"' in html, path
         assert "Judges: test it in 3 minutes" in html, path
 

@@ -112,7 +112,10 @@ def seed_market(tmp_path):
 
 def _home(client, lang="en", query=""):
     client.cookies.set("ui_lang", lang)
-    resp = client.get(f"/{query}")
+    # Task 171: in-site navigation (same-host Referer) reads today's
+    # home page at /; the cookie alone now gets the entry page.
+    resp = client.get(f"/{query}",
+                      headers={"referer": "http://testserver/market"})
     assert resp.status_code == 200, lang
     return resp.text
 

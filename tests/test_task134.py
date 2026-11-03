@@ -30,7 +30,8 @@ def test_node_remembered_area_never_bounces():
 
 def test_homepage_service_cards_link_market_voice_new(tmp_path):
     seed_market(tmp_path)
-    html = make_client(tmp_path).get("/").text
+    html = make_client(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     row = re.search(r'class="svc-row".*?</div>\s*</div>',
                     html, re.DOTALL)
     assert row, "homepage must keep the three service cards"

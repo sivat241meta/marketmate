@@ -191,7 +191,9 @@ def test_bag_in_header_only_on_shop_pages(tmp_path):
     client, _token, slug, qtoken, _public = _seed(tmp_path)
     for url in (f"/s/{slug}", f"/s/{slug}/quote", f"/q/{qtoken}",
                 "/", "/market", "/my", "/share", "/new"):
-        head = _header(client.get(url).text)
+        # Task 171: same-host Referer so / reads the home page.
+        head = _header(client.get(
+            url, headers={"referer": "http://testserver/market"}).text)
         assert "hp-bag" in head, f"{url}: no Bag in header"
         assert 'href="/my"' in head, f"{url}: Bag link missing"
         assert "data-bag-count" in head, f"{url}: no Bag badge"
@@ -205,7 +207,9 @@ def test_top_strip_has_no_language_switch_on_public_pages(tmp_path):
     urls = ["/", "/new", "/market", "/my", "/share", f"/s/{slug}",
             f"/s/{slug}/quote", f"/q/{qtoken}", f"/b/{public}"]
     for url in urls:
-        html = client.get(url).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            url, headers={"referer": "http://testserver/market"}).text
         ann = _ann(html)
         assert "data-ui-toggle" not in ann, f"{url}: switch in top strip"
         assert 'class="lang' not in ann, f"{url}: lang in top strip"

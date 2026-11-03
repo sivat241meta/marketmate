@@ -208,7 +208,8 @@ def test_review_page_own_photo_first(tmp_path):
 
 def test_home_category_art_keeps_cutouts(tmp_path):
     seed_shop(tmp_path)
-    html = make_client(tmp_path).get("/").text
+    html = make_client(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     cats = html.split('id="cats"')[1].split('id="shops"')[0]
     for stem in ("cauliflower", "tomato", "capsicum",
                  "papaya", "apple", "guava"):

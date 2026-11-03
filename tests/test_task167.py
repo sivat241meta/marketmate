@@ -103,7 +103,10 @@ def test_root_with_cookie_matches_home(tmp_path):
     client = entered_client(tmp_path)
     home = client.get("/home").text
     _assert_home(home)
-    root = client.get("/").text
+    # Task 171: the cookie alone is not enough; in-site navigation
+    # (a same-host Referer) reads today's home page at /.
+    root = client.get("/",
+                      headers={"referer": "http://testserver/market"}).text
     _assert_home(root)
     assert root == home
 

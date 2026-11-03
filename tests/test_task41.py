@@ -120,7 +120,8 @@ def test_sw_served_with_js_content_type(tmp_path):
 
 def test_base_links_manifest_and_icons(tmp_path):
     client = _client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'href="/manifest.webmanifest"' in html
     assert 'rel="apple-touch-icon"' in html
     assert 'name="theme-color"' in html and "#0F766E" in html

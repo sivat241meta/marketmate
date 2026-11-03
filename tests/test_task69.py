@@ -257,7 +257,8 @@ def test_home_and_shop_keep_find_shop_links(tmp_path):
     token = create_shop(client)
     slug = shop_row(tmp_path, token)["slug"]
     publish(tmp_path, token, [_draft("banana", 40)])
-    assert 'href="/market"' in client.get("/").text
+    assert 'href="/market"' in client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert 'href="/market"' in client.get(f"/s/{slug}").text
 
 

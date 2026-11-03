@@ -447,7 +447,8 @@ def test_home_credit_and_lost_link(tmp_path):
     from app.web.i18n import t_for
 
     client = make_client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     # Task 127: the v13 footer credits the Meta AI models.
     assert t_for("en")("v13.built_models") in html
     # Task 127: the shared footer links the lost-link help, but the
@@ -457,12 +458,14 @@ def test_home_credit_and_lost_link(tmp_path):
     assert "Lost your link?" in html
     assert 'id="lost-link"' in html
     client.cookies.set("ui_lang", "ta")
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert t_for("ta")("v13.built_models") in html
     html = client.get("/sellers").text
     assert t_for("ta")("home.lost_title") in html
     client.cookies.set("ui_lang", "hi")
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert t_for("hi")("v13.built_models") in html
     html = client.get("/sellers").text
     assert t_for("hi")("home.lost_title") in html

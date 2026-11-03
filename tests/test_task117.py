@@ -48,7 +48,8 @@ def test_homepage_shows_five_sample_shops_with_covers(tmp_path):
     from app.web.i18n import t_for
 
     seed(tmp_path / "data")
-    html = make_client(tmp_path).get("/").text
+    html = make_client(tmp_path).get(
+        "/", headers={"referer": "http://testserver/market"}).text
     t = t_for("en")
     for name in NAMES:
         assert name in html, name

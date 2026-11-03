@@ -132,7 +132,9 @@ def _public_urls(slug, qtoken, public):
 def test_every_public_page_includes_shared_header(tmp_path):
     client, _token, slug, qtoken, public = _seed(tmp_path)
     for url in _public_urls(slug, qtoken, public):
-        html = client.get(url).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            url, headers={"referer": "http://testserver/market"}).text
         assert "data-public-header" in html, f"{url}: no shared header"
         assert 'href="/market"' in html, f"{url}: no Find a shop link"
         assert 'href="/my"' in html, f"{url}: no My orders link"
@@ -143,7 +145,8 @@ def test_every_public_page_includes_shared_header(tmp_path):
 
 def test_header_anchors_stay_on_home_but_point_home_elsewhere(tmp_path):
     client, _token, slug, _qtoken, _public = _seed(tmp_path)
-    home = client.get("/").text
+    home = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     for anchor in ("#lowest", "#markets"):
         assert f'href="{anchor}"' in home, anchor
     for href in ("/market", "/sellers", "/how"):
@@ -171,7 +174,9 @@ def test_no_shop_strip_bag_lives_in_header(tmp_path):
     # Task 122: Bag (with count badge) sits in the header on every
     # public page now.
     for url in ("/", "/market", "/my", "/share"):
-        html = client.get(url).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            url, headers={"referer": "http://testserver/market"}).text
         assert "data-shop-strip" not in html, f"{url}: stray shop strip"
         head = re.search(r'<header id="site-header".*?</header>', html,
                          re.DOTALL).group(0)
@@ -543,7 +548,8 @@ def test_homepage_header_unchanged(tmp_path):
     assert before.count('{% include "_public_header.html" %}') == 1
     assert 'id="site-header"' not in before
     client = _client(tmp_path)
-    html = client.get("/").text
+    html = client.get(
+        "/", headers={"referer": "http://testserver/market"}).text
     assert html.count('id="site-header"') == 1
     assert "data-public-header" in html
     assert 'href="#lowest"' in html

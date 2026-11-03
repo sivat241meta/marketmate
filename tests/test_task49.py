@@ -222,7 +222,8 @@ def test_home_renders_all_langs(tmp_path):
 
     client = _client(tmp_path)
     t = t_for("en")
-    en = htmlmod.unescape(client.get("/").text)
+    en = htmlmod.unescape(client.get(
+        "/", headers={"referer": "http://testserver/market"}).text)
     # Task 127: v13 hero + footer credit.
     assert t("v13.hero_a") in en
     assert "Start selling" in en

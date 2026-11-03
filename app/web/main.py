@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, Form, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse, Response
@@ -83,9 +84,30 @@ def _open_all_url(*, q: str, area: str, pincode: str, sort: str,
 
 #: Task 167: entry-page cookie. A browser that has entered the site
 #: (tapped "Visit MarketMate" or opened any page but /) gets today's
-#: home page at /; without it / shows the entry page.
+#: home page at / on in-site navigation; without it / shows the entry
+#: page (Task 171: arrivals from outside always get the entry page).
 ENTER_COOKIE = "mm_entered"
 ENTER_COOKIE_AGE = 365 * 24 * 3600
+
+
+def _is_in_site_navigation(request: Request) -> bool:
+    """True only when the Referer is a page on the same host.
+
+    Task 171: a missing, malformed, or host-less Referer counts as
+    arriving from outside the site. Only the Referer host is compared
+    against the request host; nothing else from it is trusted.
+    """
+    referer = (request.headers.get("referer") or "").strip()
+    if not referer:
+        return False
+    try:
+        ref_host = urlsplit(referer).hostname
+    except ValueError:
+        return False
+    if not ref_host:
+        return False
+    req_host = request.url.hostname or ""
+    return ref_host.lower() == req_host.lower()
 
 
 def _set_entered(response):
@@ -747,9 +769,12 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/")
     def home(request: Request, conn: Conn, area: str | None = None):
-        # Task 167: first-time browsers get the entry page; everyone
-        # else gets today's home page exactly as before.
-        if request.cookies.get(ENTER_COOKIE) != "1":
+        # Task 171: anyone arriving from outside the site (no Referer,
+        # or a Referer on another host) gets the entry page, cookie or
+        # not. Only in-site navigation by an entered browser gets
+        # today's home page, exactly as before.
+        if (request.cookies.get(ENTER_COOKIE) != "1"
+                or not _is_in_site_navigation(request)):
             from app.web.i18n import get_ui_lang
 
             return templates.TemplateResponse(

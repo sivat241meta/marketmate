@@ -313,7 +313,9 @@ def test_every_page_has_one_hdr_and_one_toggle(tmp_path):
                                   f"/s/{slug}/quote", f"/q/{qtoken}",
                                   f"/b/{public}"]
     for url in urls:
-        html = client.get(url).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            url, headers={"referer": "http://testserver/market"}).text
         assert html.count('class="hdr"') == 1, f"{url}: hdr count"
         assert html.count('class="lang"') == 1, f"{url}: toggle count"
         assert "data-ui-toggle" in html, f"{url}: toggle missing hook"
@@ -432,7 +434,9 @@ def test_customer_pages_have_no_seller_nav(tmp_path):
     qtoken, public = _seed_customer_quote(tmp_path, token)
     for url in ("/", "/new", "/market", f"/s/{slug}", f"/s/{slug}/quote",
                 f"/q/{qtoken}", f"/b/{public}"):
-        html = client.get(url).text
+        # Task 171: same-host Referer so / reads the home page.
+        html = client.get(
+            url, headers={"referer": "http://testserver/market"}).text
         assert 'class="bnav"' not in html, f"{url} leaks seller bnav"
         assert "seller-hero" not in html, f"{url} leaks seller hero"
         assert "side-link" not in html, f"{url} leaks seller sidebar"
