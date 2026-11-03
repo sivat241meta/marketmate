@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import secrets
 import sqlite3
@@ -133,9 +134,153 @@ def build_static_url(static_dir: Path):
     return static_url
 
 
+#: Task 169: content types worth gzipping. Everything else (audio,
+#: video, raster images, xlsx/pdf/zip downloads, event streams) goes
+#: out untouched.
+GZIP_TYPES = frozenset({
+    "text/html",
+    "text/css",
+    "text/plain",
+    "text/csv",
+    "application/javascript",
+    "text/javascript",
+    "application/json",
+    "image/svg+xml",
+})
+
+#: Task 169: bodies below this size cost more to zip than to send.
+GZIP_MIN_SIZE = 1000
+
+
+class _GzipResponder:
+    """Buffers one compressible response, then sends it gzipped."""
+
+    def __init__(self, send, minimum_size: int):
+        self._send = send
+        self._minimum_size = minimum_size
+        self._start = None
+        self._chunks: list[bytes] = []
+
+    async def _passthrough_start(self, message) -> None:
+        self._start = None
+        await self._send(message)
+
+    async def _flush_plain(self) -> None:
+        start = self._start
+        self._start = None
+        body = b"".join(self._chunks)
+        self._chunks = []
+        await self._send(start)
+        await self._send({"type": "http.response.body", "body": body,
+                          "more_body": False})
+
+    async def __call__(self, message) -> None:
+        if self._start is None:
+            if message["type"] != "http.response.start":
+                await self._send(message)
+                return
+            headers = [(k.decode("latin-1").lower(), v.decode("latin-1"))
+                       for k, v in message.get("headers", [])]
+            lookup = dict(headers)
+            media = lookup.get("content-type", "").split(";")[0].strip()
+            media = media.lower()
+            if (message.get("status") == 206
+                    or "content-encoding" in lookup
+                    or "content-range" in lookup
+                    or media not in GZIP_TYPES):
+                await self._passthrough_start(message)
+                return
+            self._start = message
+            return
+        if message["type"] != "http.response.body":
+            # A file/path send slipped past the compressible check:
+            # replay the buffered start untouched.
+            await self._flush_plain()
+            await self._send(message)
+            return
+        self._chunks.append(message.get("body", b""))
+        if message.get("more_body"):
+            return
+        body = b"".join(self._chunks)
+        if len(body) < self._minimum_size:
+            await self._flush_plain()
+            return
+        zipped = gzip.compress(body)
+        headers = [(k, v) for k, v in self._start.get("headers", [])
+                   if k.lower() != b"content-length"]
+        headers = [(k, v) for k, v in headers if k.lower() != b"vary"]
+        lookup = {k.decode("latin-1").lower(): v.decode("latin-1")
+                  for k, v in self._start.get("headers", [])}
+        vary = [v.strip() for v in lookup.get("vary", "").split(",")
+                if v.strip()]
+        if all(v.lower() != "accept-encoding" for v in vary):
+            vary.append("Accept-Encoding")
+        headers.append((b"content-encoding", b"gzip"))
+        headers.append((b"content-length", str(len(zipped)).encode()))
+        headers.append((b"vary", ", ".join(vary).encode("latin-1")))
+        start = dict(self._start)
+        start["headers"] = headers
+        self._start = None
+        self._chunks = []
+        await self._send(start)
+        await self._send({"type": "http.response.body", "body": zipped,
+                          "more_body": False})
+
+
+class SelectiveGzipMiddleware:
+    """Gzip text responses for clients that accept it.
+
+    Compresses only when the client sends ``Accept-Encoding: gzip``,
+    the body is at least ``minimum_size`` bytes, and the content type
+    is in :data:`GZIP_TYPES`. Range replies (206 / Content-Range),
+    streams, media, downloads, and already-encoded bodies pass through
+    byte-identical.
+    """
+
+    def __init__(self, app, minimum_size: int = GZIP_MIN_SIZE):
+        self.app = app
+        self.minimum_size = minimum_size
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        accept = ""
+        for key, value in scope.get("headers", []):
+            if key == b"accept-encoding":
+                accept = value.decode("latin-1")
+                break
+        if "gzip" not in accept.lower():
+            await self.app(scope, receive, send)
+            return
+        await self.app(scope, receive,
+                       _GzipResponder(send, self.minimum_size))
+
+
+class CachedStaticFiles(StaticFiles):
+    """Static files with a public Cache-Control header (Task 169).
+
+    One hour for CSS/JS/images; fonts and brand art (rarely changed)
+    get a day. Only /static goes through here, so HTML pages, seller
+    pages, and JSON/status endpoints are never cached by this.
+    """
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            if path.startswith(("fonts/", "brand/")):
+                max_age = 86400
+            else:
+                max_age = 3600
+            response.headers["Cache-Control"] = (
+                f"public, max-age={max_age}")
+        return response
+
+
 def create_app(settings: Settings) -> FastAPI:
     """Build the MarketMate web app (seller flow plus the customer market)."""
     app = FastAPI()
+    app.add_middleware(SelectiveGzipMiddleware)
     app.state.settings = settings
     app.state.limiter = RateLimiter(settings.uploads_per_ip_hour,
                                     settings.uploads_per_hour)
@@ -238,7 +383,9 @@ def create_app(settings: Settings) -> FastAPI:
         return _enabled(app.state.settings)
 
     templates.env.globals["show_extras_now"] = _show_extras_now
-    app.mount("/static", StaticFiles(directory=str(here / "static")), name="static")
+    app.mount(
+        "/static", CachedStaticFiles(directory=str(here / "static")),
+        name="static")
     seller_routes.register(app, settings, templates)
     photo_routes.register(app, settings, templates)
     quote_routes.register(app, settings, templates)
