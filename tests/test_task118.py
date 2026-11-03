@@ -223,6 +223,8 @@ def test_open_weights_card_label_and_sentence(tmp_path):
            "TEXT_PROVIDER": "baseten", "BASETEN_API_KEY": "k"}
     open_client = TestClient(create_app(load_settings(env)),
                              follow_redirects=False)
+    # Task 167: read today's home page at /, past the entry page.
+    open_client.cookies.set("mm_entered", "1")
     open_meta = _section(open_client.get("/").text, "how", "app")
     assert "meta-models/muse-spark-open-1026" in open_meta
 

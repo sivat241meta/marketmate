@@ -4,7 +4,7 @@ A market seller films the stall or says today's prices in Tamil, Hindi or Englis
 
 ## How to judge (3 minutes)
 
-Open `$PUBLIC_BASE_URL/try`. It makes a private test shop (unlisted, deleted after 7 days) and lands on a light 4-step page — no seller dashboard:
+The live URL opens a small entry page — pick **Judge demo** (or go straight to `$PUBLIC_BASE_URL/try`). It makes a private test shop (unlisted, deleted after 7 days) and lands on a light 4-step page — no seller dashboard:
 
 1. **Your stall video or voice note** — upload a clip, or tap "Use a real sample: VPS stall, Tamil, 64 s" to run a real stall video that lives only on the server.
 2. **Meta AI at work** — watch `muse-voice-transcribe-1.0` turn speech into text, `muse-spark-1.3` find items, prices and checks, and `sam-3.1` pick a photo for each item.

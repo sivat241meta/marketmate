@@ -29,7 +29,10 @@ def _client(tmp_path) -> TestClient:
     from app.web.main import create_app
 
     env = {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")}
-    return TestClient(create_app(load_settings(env)), follow_redirects=False)
+    client = TestClient(create_app(load_settings(env)), follow_redirects=False)
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
+    return client
 
 
 def _create_shop(client, name="T90 Store", phone="+914400000090",

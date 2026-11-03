@@ -1,0 +1,128 @@
+/* Task 167: entry page. One light branded page: the logo, two way-in
+   cards (stacked on phones, side by side on laptop) and the footer
+   line. Token values are identical to app.css (repeated here per the
+   Task 122 per-file token rule); nothing here touches any other page. */
+:root {
+  --ink: #102A33;
+  --muted: #56707A;
+  --line: #E2EAEE;
+  --bg: #F3F8FA;
+  --card: #FFFFFF;
+  --accent: #0F766E;
+  --accent-ink: #115E59;
+  --accent-soft: #E6FAF6;
+  --accent-bright: #14B8A6;
+  --blue: #0369A1;
+  --blue-soft: #E8F4FD;
+  --sky: #38BDF8;
+}
+
+body.entry {
+  background: var(--bg);
+}
+
+.entry-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 720px) {
+  .entry-wrap {
+    max-width: 960px;
+  }
+}
+
+.entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.entry-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--accent);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.entry-brand img {
+  flex: none;
+}
+
+.entry-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 720px) {
+  .entry-cards {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.entry-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.entry-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.entry-card p {
+  margin: 0 0 12px;
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.entry-badge {
+  display: inline-block;
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-radius: var(--radius-chip);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+}
+
+.entry-cta {
+  margin: 16px 0 0;
+}
+
+.entry-cta .pill.big {
+  max-width: 100%;
+}
+
+.entry-foot {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
+}

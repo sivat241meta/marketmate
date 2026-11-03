@@ -1,0 +1,55 @@
+{# Task 167: simple entry page in front of the website. Standalone on
+   purpose: just the logo, the language switch, the two way-in cards
+   and the one-line footer. No existing template is touched. #}
+<!doctype html>
+<html lang="{{ ui_lang|default('en') }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t('entry.title') }}</title>
+<link rel="stylesheet" href="{{ static_url('app.css') if static_url is defined else '/static/app.css' }}">
+<link rel="stylesheet" href="{{ static_url('css/entry.css') if static_url is defined else '/static/css/entry.css' }}">
+<link rel="icon" href="/static/brand/favicon.ico" sizes="16x16 32x32 48x48">
+<meta name="theme-color" content="#0F766E">
+</head>
+<body class="entry">
+<div class="entry-wrap">
+  <header class="entry-head">
+    <span class="entry-brand"><img src="/static/brand/mark.svg" width="34" height="34" alt="MarketMate"><span>MarketMate</span></span>
+    <span class="lang" role="group" aria-label="{{ t('top.lang_label') }}" data-ui-toggle>
+      <button type="button" data-ui-lang="en" class="{% if ui_lang|default('en') == 'en' %}on{% endif %}">EN</button>
+      <button type="button" data-ui-lang="ta" lang="ta" class="{% if ui_lang|default('en') == 'ta' %}on{% endif %}">தமிழ்</button>
+      <button type="button" data-ui-lang="hi" lang="hi" class="{% if ui_lang|default('en') == 'hi' %}on{% endif %}">हिन्दी</button>
+    </span>
+  </header>
+  <h1 class="visually-hidden">MarketMate</h1>
+  <main class="entry-cards">
+    <section class="entry-card" aria-label="{{ t('entry.visit_t') }}">
+      <h2>{{ t('entry.visit_t') }}</h2>
+      <p>{{ t('entry.visit_d') }}</p>
+      <p class="entry-cta"><a class="pill cta big" href="/home?enter=1">{{ t('entry.visit_btn') }}</a></p>
+    </section>
+    <section class="entry-card" aria-label="{{ t('entry.judge_t') }}">
+      <p class="entry-badge">{{ t('entry.judge_badge') }}</p>
+      <h2>{{ t('entry.judge_t') }}</h2>
+      <p>{{ t('entry.judge_d') }}</p>
+      <p class="entry-cta"><a class="pill dark big" href="/try">{{ t('entry.judge_btn') }}</a></p>
+    </section>
+  </main>
+  <footer class="entry-foot">{{ t('entry.footer') }}</footer>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-ui-toggle]").forEach((toggle) => {
+    toggle.querySelectorAll("[data-ui-lang]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const lang = btn.getAttribute("data-ui-lang") || "en";
+        document.cookie = "ui_lang=" + encodeURIComponent(lang) + "; path=/; max-age=31536000; SameSite=Lax";
+        window.location.reload();
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

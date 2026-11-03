@@ -39,6 +39,8 @@ def _client(tmp_path, monkeypatch=None, **env_extra):
     client = TestClient(create_app(load_settings(env)),
                         follow_redirects=False)
     client.cookies.set("ui_lang", "en")
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
     if monkeypatch is not None:
         monkeypatch.setattr("app.web.seller.jobs.submit",
                             lambda fn, *args: None)

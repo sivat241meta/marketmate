@@ -27,6 +27,8 @@ def _client(tmp_path: Path) -> TestClient:
         {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")})
     client = TestClient(create_app(settings), follow_redirects=False)
     client.cookies.set("ui_lang", "en")
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
     return client
 
 

@@ -80,6 +80,20 @@ def _open_all_url(*, q: str, area: str, pincode: str, sort: str,
     return "/market?" + urlencode(params)
 
 
+#: Task 167: entry-page cookie. A browser that has entered the site
+#: (tapped "Visit MarketMate" or opened any page but /) gets today's
+#: home page at /; without it / shows the entry page.
+ENTER_COOKIE = "mm_entered"
+ENTER_COOKIE_AGE = 365 * 24 * 3600
+
+
+def _set_entered(response):
+    """Mark the browser as entered: mm_entered=1, 1 year, Lax, site-wide."""
+    response.set_cookie(ENTER_COOKIE, "1", max_age=ENTER_COOKIE_AGE,
+                        path="/", samesite="lax")
+    return response
+
+
 def _parse_budget(value: str | None) -> Decimal | None:
     """Basket budget from a ``?budget=`` param; None when blank/invalid."""
     text = (value or "").strip().replace("₹", "").replace(",", "")
@@ -149,6 +163,25 @@ def create_app(settings: Settings) -> FastAPI:
             request.state.shell_ann = shell_data.ann_for_path(
                 data_dir, request.url.path)
         return await call_next(request)
+
+    @app.middleware("http")
+    async def _mark_entered(request: Request, call_next):
+        # Task 167: any GET of an existing page other than / marks the
+        # browser as entered, so a WhatsApp-link visitor who later taps
+        # the logo lands on the home page, not the entry page. Static
+        # files, JSON/status endpoints, media and errors are untouched.
+        response = await call_next(request)
+        if (request.method == "GET" and request.url.path != "/"
+                and not request.url.path.startswith("/static")
+                and ENTER_COOKIE not in request.cookies
+                and response.status_code < 400
+                and f"{ENTER_COOKIE}=" not in response.headers.get(
+                    "set-cookie", "")):
+            ctype = response.headers.get("content-type", "")
+            if ("text/html" in ctype
+                    or response.status_code in (301, 302, 303, 307, 308)):
+                _set_entered(response)
+        return response
     startup_conn = db.connect(data_dir)
     try:
         db.purge_expired(startup_conn, data_dir, datetime.now(UTC))
@@ -553,8 +586,7 @@ def create_app(settings: Settings) -> FastAPI:
                      "Cache-Control": "no-cache"},
         )
 
-    @app.get("/")
-    def home(request: Request, conn: Conn, area: str | None = None):
+    def _render_home(request: Request, conn, area: str | None):
         from app.web.i18n import get_ui_lang
 
         data = home_data_mod.home_data(conn, area=area,
@@ -565,6 +597,34 @@ def create_app(settings: Settings) -> FastAPI:
                 "hp": data,
                 "spark_open": (app.state.settings.text_provider
                                == "baseten")})
+
+    @app.get("/")
+    def home(request: Request, conn: Conn, area: str | None = None):
+        # Task 167: first-time browsers get the entry page; everyone
+        # else gets today's home page exactly as before.
+        if request.cookies.get(ENTER_COOKIE) != "1":
+            from app.web.i18n import get_ui_lang
+
+            return templates.TemplateResponse(
+                request, "entry.html",
+                {"ui_lang": get_ui_lang(request)})
+        return _render_home(request, conn, area)
+
+    @app.get("/home")
+    def home_entered(request: Request, conn: Conn,
+                     area: str | None = None, enter: str | None = None):
+        # Task 167: always today's home page; ?enter=1 (the "Visit
+        # MarketMate" card) also stamps the browser as entered. The
+        # shared header reads request.url.path, so render with a
+        # root-pathed copy: /home bytes equal / bytes exactly.
+        scope = dict(request.scope)
+        scope["path"] = "/"
+        scope["path_params"] = {}
+        as_root = Request(scope, request.receive)
+        response = _render_home(as_root, conn, area)
+        if enter == "1":
+            _set_entered(response)
+        return response
 
     @app.get("/app-qr.png")
     def app_qr():

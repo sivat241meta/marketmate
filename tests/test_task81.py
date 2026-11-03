@@ -43,8 +43,11 @@ def make_client(tmp_path):
     from app.web.main import create_app
 
     env = {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")}
-    return TestClient(create_app(load_settings(env)),
-                      follow_redirects=False)
+    client = TestClient(create_app(load_settings(env)),
+                        follow_redirects=False)
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
+    return client
 
 
 def _home(client, lang):
@@ -122,6 +125,8 @@ def test_landing_headline_and_honesty_all_langs(tmp_path):
         assert t("land.hero_a") in sellers, lang
         assert t("land.hero_b") in sellers, lang
         client.cookies.clear()
+        # Task 167: fresh language, but still past the entry page.
+        client.cookies.set("mm_entered", "1")
 
 
 # --- 4. CTAs point at existing routes -----------------------------------------

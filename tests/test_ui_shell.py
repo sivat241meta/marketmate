@@ -24,6 +24,8 @@ def make_client(tmp_path):
     client = TestClient(create_app(settings), follow_redirects=False)
     # Task 40: seller UI defaults to the shop language; these tests pin English.
     client.cookies.set("ui_lang", "en")
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
     return client
 
 

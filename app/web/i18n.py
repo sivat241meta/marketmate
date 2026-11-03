@@ -1556,6 +1556,21 @@ _ENGLISH: dict[str, str] = {
     "judge.ai": "See the Meta AI calls",
     "judge.ai_counts": "{n} calls · {cost}",
     "judge.full_app": "Open the full seller app",
+    # --- entry page (Task 167) ---
+    "entry.title": "MarketMate",
+    "entry.visit_t": "Visit MarketMate",
+    "entry.visit_d": ("Shop prices said by the seller, checked by Meta AI. "
+                      "Find a shop, compare prices, order."),
+    "entry.visit_btn": "Visit the website",
+    "entry.judge_t": "Judge demo",
+    "entry.judge_badge": "For hackathon judges",
+    "entry.judge_d": ("Upload a stall video (or tap our real sample) and watch "
+                      "it become a checked price card, a WhatsApp catalog and "
+                      "an Excel sheet in about 3 minutes. Uses "
+                      "muse-voice-transcribe-1.0, muse-spark-1.3 and sam-3.1."),
+    "entry.judge_btn": "Start the judge demo",
+    "entry.footer": ("Built with Meta's Muse Spark, Muse Voice Transcribe "
+                     "and SAM 3.1."),
 }
 
 
@@ -3095,6 +3110,23 @@ _TAMIL: dict[str, str] = {
     "judge.ai": "Meta AI அழைப்புகளைப் பார்க்கவும்",
     "judge.ai_counts": "{n} அழைப்புகள் · {cost}",
     "judge.full_app": "முழு விற்பனையாளர் செயலியைத் திறக்கவும்",
+    # --- entry page (Task 167) ---
+    "entry.title": "MarketMate",
+    "entry.visit_t": "MarketMate-ஐப் பார்வையிடுக",
+    "entry.visit_d": ("விற்பனையாளர் சொன்ன விலைகள், Meta AI சரிபார்த்தது. "
+                      "கடையைக் கண்டுபிடித்து, விலைகளை ஒப்பிட்டு, ஆர்டர் "
+                      "செய்யுங்கள்."),
+    "entry.visit_btn": "இணையதளத்தைப் பாருங்கள்",
+    "entry.judge_t": "நடுவர் செயல்விளக்கம்",
+    "entry.judge_badge": "ஹேக்கத்தான் நடுவர்களுக்கு",
+    "entry.judge_d": ("ஒரு கடை வீடியோவைப் பதிவேற்றுங்கள் (அல்லது எங்கள் "
+                      "உண்மையான மாதிரியைத் தட்டுங்கள்) — சுமார் 3 நிமிடத்தில் "
+                      "அது சரிபார்த்த விலை அட்டை, WhatsApp பட்டியல், Excel "
+                      "தாளாக மாறுவதைப் பாருங்கள். muse-voice-transcribe-1.0, "
+                      "muse-spark-1.3 மற்றும் sam-3.1 பயன்படுத்தப்படுகிறது."),
+    "entry.judge_btn": "நடுவர் செயல்விளக்கத்தைத் தொடங்குக",
+    "entry.footer": ("Meta-வின் Muse Spark, Muse Voice Transcribe மற்றும் "
+                     "SAM 3.1 உடன் உருவாக்கப்பட்டது."),
 }
 
 
@@ -4632,6 +4664,22 @@ _HINDI: dict[str, str] = {
     "judge.ai": "Meta AI कॉल देखें",
     "judge.ai_counts": "{n} कॉल · {cost}",
     "judge.full_app": "पूरा सेलर ऐप खोलें",
+    # --- entry page (Task 167) ---
+    "entry.title": "MarketMate",
+    "entry.visit_t": "MarketMate देखें",
+    "entry.visit_d": ("विक्रेता की बोली कीमतें, Meta AI द्वारा जाँची हुई। "
+                      "दुकान खोजें, कीमतें तुलना करें, ऑर्डर करें।"),
+    "entry.visit_btn": "वेबसाइट देखें",
+    "entry.judge_t": "जज डेमो",
+    "entry.judge_badge": "हैकाथॉन जजों के लिए",
+    "entry.judge_d": ("स्टॉल का वीडियो अपलोड करें (या हमारा असली सैंपल टैप "
+                      "करें) और देखें कि लगभग 3 मिनट में वह जाँचा हुआ प्राइस "
+                      "कार्ड, WhatsApp कैटलॉग और Excel शीट बन जाता है। "
+                      "muse-voice-transcribe-1.0, muse-spark-1.3 और sam-3.1 "
+                      "इस्तेमाल होता है।"),
+    "entry.judge_btn": "जज डेमो शुरू करें",
+    "entry.footer": ("Meta के Muse Spark, Muse Voice Transcribe और SAM 3.1 "
+                     "के साथ बनाया गया।"),
 }
 
 

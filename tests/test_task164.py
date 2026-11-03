@@ -26,8 +26,11 @@ def make_client(tmp_path):
     from app.web.main import create_app
 
     env = {"MODEL_API_KEY": "k", "DATA_DIR": str(tmp_path / "data")}
-    return TestClient(create_app(load_settings(env)),
-                      follow_redirects=False)
+    client = TestClient(create_app(load_settings(env)),
+                        follow_redirects=False)
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
+    return client
 
 
 def draft(name_en, name_local, price, photo=None):

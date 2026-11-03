@@ -41,7 +41,10 @@ def make_client(tmp_path, monkeypatch, settings=None):
 
     monkeypatch.setattr("app.web.seller.jobs.submit", fake_submit)
     monkeypatch.setattr("app.web.seller.process_video_session", fake_process)
-    return TestClient(app, follow_redirects=False)
+    client = TestClient(app, follow_redirects=False)
+    # Task 167: tests read today's home page at /, past the entry page.
+    client.cookies.set("mm_entered", "1")
+    return client
 
 
 def clean_draft():
