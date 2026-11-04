@@ -2,6 +2,8 @@
 
 A market seller films the stall or says today's prices in Tamil, Hindi or English. MarketMate turns that into a checked price list, a shop page, WhatsApp messages, bills and a day close. Prices only ever come from the seller's own voice.
 
+**Built for loose produce sold by weight.** Prices are spoken in Tamil (with Tamil numbers such as "முப்பத்தஞ்சு" = 35 and "கால் கிலோ" = ¼ kg), every price is checked against the seller's own voice clip, and every photo is a real frame from the seller's own video — never a generated image. It is live with two real sellers near Chennai: AK (A.V. Market, Padappai) and VPS (Urapakkam).
+
 **Live:** [https://sivat241--marketmate-web.modal.run](https://sivat241--marketmate-web.modal.run) — pick **Judge demo** to try it in about 3 minutes.
 
 ## How to judge (3 minutes)
